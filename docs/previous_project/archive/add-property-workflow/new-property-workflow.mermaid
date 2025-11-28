@@ -1,0 +1,121 @@
+---
+config:
+  flowchart:
+    htmlLabels: true
+    nodeSpacing: 50
+    rankSpacing: 50
+---
+flowchart TD
+    Start([User Logged In]) -->|Views Dashboard| Dashboard["`<b>Dashboard</b>
+    User sees 'Add Property' button`"]
+    
+    Dashboard -->|Clicks 'Add Property'| AddForm["`<b>Add Property Form</b>
+    Route: /properties/add
+    Fields: street, address2, city, state, zipCode
+    Submit button DISABLED`"]
+    
+    AddForm -->|User fills form| Validate{"`<b>Validate on Blur</b>
+    Each field validates
+    when user leaves field`"}
+    
+    Validate -->|Field Invalid| ShowError["`<b>Show Field Error</b>
+    Red error text appears
+    Submit button stays DISABLED`"]
+    
+    ShowError -->|User corrects field| ClearError["`<b>Error Clears</b>
+    Real-time validation
+    as user types`"]
+    
+    ClearError --> Validate
+    
+    Validate -->|All fields valid| EnableSubmit["`<b>Submit Button Enabled</b>
+    'Create' button is clickable
+    User can submit form`"]
+    
+    EnableSubmit -->|User clicks Cancel| CancelForm["`<b>Cancel Form</b>
+    Discard all data`"]
+    
+    CancelForm --> Dashboard
+    
+    EnableSubmit -->|User clicks Create| SubmitForm["`<b>Submit Form</b>
+    POST /api/properties
+    Button shows loading state`"]
+    
+    SubmitForm -->|Network/Server Error| SubmitError["`<b>Submission Error</b>
+    Backend returns error
+    e.g., 400, 409, 500`"]
+    
+    SubmitError -->|Display Error| ErrorDisplay["`<b>Error Message Shown</b>
+    Form data intact
+    Submit button re-enabled
+    User can retry or cancel`"]
+    
+    ErrorDisplay -->|User clicks Cancel| CancelForm
+    ErrorDisplay -->|User retries| SubmitForm
+    
+    SubmitForm -->|Success 201| CreateSuccess["`<b>Property Created</b>
+    Server returns property object`"]
+    
+    CreateSuccess --> SuccessToast["`<b>Success Toast</b>
+    'Property created successfully'
+    Auto-dismiss 3-5 seconds`"]
+    
+    SuccessToast -->|Auto-navigate| ListView["`<b>Property List View</b>
+    Route: /properties
+    Shows all properties as cards
+    New property visible in list`"]
+    
+    ListView -->|User clicks property card| DetailView["`<b>Property Detail View</b>
+    Route: /properties/:id
+    Shows full address
+    Shows vacancy status
+    Shows tenant history (empty if new)
+    Shows maintenance records (empty if new)
+    Buttons: Edit, Delete, Back`"]
+    
+    DetailView -->|User clicks Back| ListView
+    DetailView -->|User clicks Edit| EditForm["`<b>Edit Property Form</b>
+    Route: /properties/:id/edit
+    Form pre-populated with data
+    Same validation as Add Form`"]
+    
+    EditForm -->|User cancels| DetailView
+    EditForm -->|User submits valid form| UpdateSuccess["`<b>Property Updated</b>
+    Server returns updated property`"]
+    
+    UpdateSuccess --> UpdateToast["`<b>Success Toast</b>
+    'Property updated successfully'
+    Auto-dismiss 3-5 seconds`"]
+    
+    UpdateToast --> DetailView
+    
+    DetailView -->|User clicks Delete| ConfirmDelete["`<b>Delete Confirmation</b>
+    Are you sure?`"]
+    
+    ConfirmDelete -->|Confirm| DeleteProperty["`<b>Property Deleted</b>
+    Removed from database`"]
+    
+    DeleteProperty --> ListView
+    
+    ConfirmDelete -->|Cancel| DetailView
+    
+    style Start fill:#e1f5e1
+    style Dashboard fill:#e3f2fd
+    style AddForm fill:#fff3e0
+    style Validate fill:#f3e5f5
+    style ShowError fill:#ffebee
+    style ClearError fill:#fff9c4
+    style EnableSubmit fill:#e8f5e9
+    style SubmitForm fill:#e0f2f1
+    style SubmitError fill:#ffebee
+    style ErrorDisplay fill:#ffccbc
+    style CreateSuccess fill:#c8e6c9
+    style SuccessToast fill:#a5d6a7
+    style ListView fill:#e3f2fd
+    style DetailView fill:#e3f2fd
+    style EditForm fill:#fff3e0
+    style UpdateSuccess fill:#c8e6c9
+    style UpdateToast fill:#a5d6a7
+    style ConfirmDelete fill:#ffe0b2
+    style DeleteProperty fill:#ffccbc
+    style CancelForm fill:#f5f5f5
