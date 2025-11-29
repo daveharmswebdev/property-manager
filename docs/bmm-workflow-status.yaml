@@ -80,7 +80,7 @@ workflow_status:
     phase_name: "Solutioning"
     workflows:
       - id: "architecture"
-        status: "required"
+        status: "docs/architecture.md"
         agent: "architect"
         command: "/bmad:bmm:workflows:architecture"
         output: "System architecture document"
