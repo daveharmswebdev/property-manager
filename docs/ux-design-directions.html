@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Manager - Design Directions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #66BB6A;
+      --primary-dark: #4CAF50;
+      --primary-light: #A5D6A7;
+      --accent: #FFA726;
+      --success: #4CAF50;
+      --error: #EF5350;
+      --warning: #FFA726;
+      --info: #29B6F6;
+      --text-primary: #33691E;
+      --text-secondary: #666666;
+      --text-muted: #9E9E9E;
+      --bg: #FAFAFA;
+      --surface: #FFFFFF;
+      --border: #E0E0E0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1a1a1a;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    .nav-header {
+      background: #222;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav-header h1 {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-tab {
+      background: #333;
+      color: #aaa;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .nav-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .direction-container {
+      display: none;
+      padding: 24px;
+    }
+
+    .direction-container.active {
+      display: block;
+    }
+
+    .direction-header {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    .direction-header h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .direction-header p {
+      color: #aaa;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .direction-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .direction-tag {
+      background: #444;
+      color: #ddd;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .mockup-frame {
+      background: var(--bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    /* Shared component styles */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary-dark);
+    }
+
+    .logo .material-icons {
+      font-size: 28px;
+      color: var(--primary);
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--primary-dark);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-icon {
+      padding: 8px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .btn-icon:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .property-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .property-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .property-card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .property-card .address {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .property-card .amount {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .property-card .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      min-height: 500px;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .sidebar-nav a:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .sidebar-nav a.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-left: 3px solid var(--primary);
+    }
+
+    .top-nav {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .top-nav a {
+      padding: 8px 16px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .top-nav a:hover {
+      background: var(--surface);
+    }
+
+    .top-nav a.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .receipt-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+
+    .expense-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: var(--surface);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .expense-row .title {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .expense-row .meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .expense-row .amount {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .category-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    /* Direction 1: Sidebar Navigation */
+    .d1-layout {
+      display: flex;
+    }
+
+    .d1-content {
+      flex: 1;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    .d1-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    /* Direction 2: Top Navigation, Card Grid */
+    .d2-header {
+      padding: 20px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .d2-content {
+      padding: 32px;
+      background: var(--bg);
+    }
+
+    .d2-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .d2-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* Direction 3: Compact Dashboard */
+    .d3-layout {
+      display: flex;
+    }
+
+    .d3-sidebar {
+      width: 280px;
+      background: var(--primary-dark);
+      color: #fff;
+      padding: 24px;
+      min-height: 500px;
+    }
+
+    .d3-sidebar .logo {
+      color: #fff;
+      margin-bottom: 32px;
+    }
+
+    .d3-sidebar .logo .material-icons {
+      color: var(--primary-light);
+    }
+
+    .d3-sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 14px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      transition: all 0.2s;
+    }
+
+    .d3-sidebar-nav a:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    .d3-sidebar-nav a.active {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    .d3-content {
+      flex: 1;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    .d3-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .d3-list {
+      background: var(--surface);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .d3-list-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .d3-list-item:hover {
+      background: var(--bg);
+    }
+
+    .d3-list-item:last-child {
+      border-bottom: none;
+    }
+
+    .d3-list-item .info {
+      flex: 1;
+    }
+
+    .d3-list-item .name {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .d3-list-item .address {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .d3-list-item .amount {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary-dark);
+    }
+
+    /* Direction 4: Big Cards */
+    .d4-content {
+      padding: 40px;
+      background: var(--bg);
+      min-height: 500px;
+    }
+
+    .d4-hero {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 16px;
+      padding: 32px;
+      color: #fff;
+      margin-bottom: 32px;
+    }
+
+    .d4-hero h2 {
+      font-size: 16px;
+      font-weight: 500;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    .d4-hero .amount {
+      font-size: 48px;
+      font-weight: 700;
+    }
+
+    .d4-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .d4-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+
+    .d4-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .d4-card .amount {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    /* Direction 5: Pinterest Masonry */
+    .d5-header {
+      padding: 16px 24px;
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .d5-content {
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    .d5-masonry {
+      column-count: 4;
+      column-gap: 16px;
+    }
+
+    .d5-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      break-inside: avoid;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .d5-card.tall {
+      padding-bottom: 40px;
+    }
+
+    .d5-card.short {
+      padding-bottom: 8px;
+    }
+
+    /* Direction 6: Mobile-First Responsive */
+    .d6-layout {
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--bg);
+    }
+
+    .d6-header {
+      background: var(--primary);
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .d6-header h1 {
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .d6-header .amount {
+      font-size: 36px;
+      font-weight: 700;
+      margin: 8px 0;
+    }
+
+    .d6-content {
+      padding: 16px;
+    }
+
+    .d6-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .d6-bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      background: var(--surface);
+      padding: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .d6-bottom-nav a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 11px;
+    }
+
+    .d6-bottom-nav a.active {
+      color: var(--primary);
+    }
+
+    .d6-fab {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(102, 187, 106, 0.4);
+    }
+
+    .comparison-note {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-top: 24px;
+      color: #ccc;
+      font-size: 13px;
+    }
+
+    .comparison-note strong {
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nav-header">
+    <h1>Property Manager - Design Directions</h1>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showDirection(1)">1. Sidebar</button>
+      <button class="nav-tab" onclick="showDirection(2)">2. Top Nav</button>
+      <button class="nav-tab" onclick="showDirection(3)">3. Compact</button>
+      <button class="nav-tab" onclick="showDirection(4)">4. Big Cards</button>
+      <button class="nav-tab" onclick="showDirection(5)">5. Pinterest</button>
+      <button class="nav-tab" onclick="showDirection(6)">6. Mobile</button>
+    </div>
+  </div>
+
+  <!-- Direction 1: Sidebar Navigation -->
+  <div class="direction-container active" id="direction-1">
+    <div class="direction-header">
+      <h2>Direction 1: Sidebar Navigation</h2>
+      <p>Classic dashboard layout with persistent left sidebar. Great for desktop-first apps with many sections.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Desktop-optimized</span>
+        <span class="direction-tag">Persistent navigation</span>
+        <span class="direction-tag">Card grid</span>
+        <span class="direction-tag">Spacious</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="d1-layout">
+        <div class="sidebar">
+          <div style="padding: 0 24px 20px;">
+            <div class="logo">
+              <span class="material-icons">home_work</span>
+              Property Manager
+            </div>
+          </div>
+          <nav class="sidebar-nav">
+            <a href="#" class="active">
+              <span class="material-icons">dashboard</span>
+              Dashboard
+            </a>
+            <a href="#">
+              <span class="material-icons">receipt_long</span>
+              Expenses
+            </a>
+            <a href="#">
+              <span class="material-icons">photo_camera</span>
+              Receipts
+              <span class="receipt-badge">3</span>
+            </a>
+            <a href="#">
+              <span class="material-icons">attach_money</span>
+              Income
+            </a>
+            <a href="#">
+              <span class="material-icons">assessment</span>
+              Reports
+            </a>
+            <a href="#">
+              <span class="material-icons">settings</span>
+              Settings
+            </a>
+          </nav>
+        </div>
+        <div class="d1-content">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h1 style="font-size: 24px; color: var(--text-primary);">Dashboard</h1>
+              <p style="color: var(--text-secondary); font-size: 14px;">2025 Tax Year</p>
+            </div>
+            <button class="btn btn-primary">
+              <span class="material-icons" style="font-size: 18px;">add</span>
+              Add Expense
+            </button>
+          </div>
+
+          <div class="d1-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 24px;">
+            <div class="stat-card">
+              <div class="value">$24,850</div>
+              <div class="label">Total Expenses</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">$42,000</div>
+              <div class="label">Total Income</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" style="color: var(--success);">$17,150</div>
+              <div class="label">Net Income</div>
+            </div>
+          </div>
+
+          <h2 style="font-size: 18px; margin: 32px 0 16px; color: var(--text-primary);">Properties</h2>
+          <div class="d1-grid">
+            <div class="property-card">
+              <h3>123 Oak Street</h3>
+              <p class="address">Austin, TX 78701</p>
+              <p class="label">YTD Expenses</p>
+              <p class="amount">$4,250</p>
+            </div>
+            <div class="property-card">
+              <h3>456 Elm Avenue</h3>
+              <p class="address">Austin, TX 78702</p>
+              <p class="label">YTD Expenses</p>
+              <p class="amount">$3,180</p>
+            </div>
+            <div class="property-card">
+              <h3>789 Pine Road</h3>
+              <p class="address">Round Rock, TX 78664</p>
+              <p class="label">YTD Expenses</p>
+              <p class="amount">$5,420</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Users who need quick access to all sections. The sidebar stays visible, making navigation predictable. Works well for desktop-primary use.
+    </div>
+  </div>
+
+  <!-- Direction 2: Top Navigation -->
+  <div class="direction-container" id="direction-2">
+    <div class="direction-header">
+      <h2>Direction 2: Top Navigation</h2>
+      <p>Clean horizontal layout with stats prominently displayed. Maximum content area.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Horizontal nav</span>
+        <span class="direction-tag">Stats-forward</span>
+        <span class="direction-tag">4-column grid</span>
+        <span class="direction-tag">Modern</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="d2-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="logo">
+            <span class="material-icons">home_work</span>
+            Property Manager
+          </div>
+          <nav class="top-nav">
+            <a href="#" class="active">Dashboard</a>
+            <a href="#">Expenses</a>
+            <a href="#">Receipts <span class="receipt-badge">3</span></a>
+            <a href="#">Income</a>
+            <a href="#">Reports</a>
+          </nav>
+          <button class="btn btn-primary">
+            <span class="material-icons" style="font-size: 18px;">add</span>
+            Add Expense
+          </button>
+        </div>
+      </div>
+      <div class="d2-content">
+        <div class="d2-stats">
+          <div class="stat-card">
+            <div class="value">$24,850</div>
+            <div class="label">Total Expenses</div>
+          </div>
+          <div class="stat-card">
+            <div class="value">$42,000</div>
+            <div class="label">Total Income</div>
+          </div>
+          <div class="stat-card">
+            <div class="value" style="color: var(--success);">$17,150</div>
+            <div class="label">Net Income</div>
+          </div>
+          <div class="stat-card">
+            <div class="value">14</div>
+            <div class="label">Properties</div>
+          </div>
+        </div>
+
+        <h2 style="font-size: 18px; margin-bottom: 16px; color: var(--text-primary);">Your Properties</h2>
+        <div class="d2-grid">
+          <div class="property-card">
+            <h3>123 Oak Street</h3>
+            <p class="address">Austin, TX 78701</p>
+            <p class="label">YTD Expenses</p>
+            <p class="amount">$4,250</p>
+          </div>
+          <div class="property-card">
+            <h3>456 Elm Avenue</h3>
+            <p class="address">Austin, TX 78702</p>
+            <p class="label">YTD Expenses</p>
+            <p class="amount">$3,180</p>
+          </div>
+          <div class="property-card">
+            <h3>789 Pine Road</h3>
+            <p class="address">Round Rock, TX 78664</p>
+            <p class="label">YTD Expenses</p>
+            <p class="amount">$5,420</p>
+          </div>
+          <div class="property-card">
+            <h3>321 Maple Lane</h3>
+            <p class="address">Cedar Park, TX 78613</p>
+            <p class="label">YTD Expenses</p>
+            <p class="amount">$2,890</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Maximizing content area. Stats are always visible at the top. Clean, modern feel. Works well if you have fewer nav items.
+    </div>
+  </div>
+
+  <!-- Direction 3: Compact Dashboard -->
+  <div class="direction-container" id="direction-3">
+    <div class="direction-header">
+      <h2>Direction 3: Compact List View</h2>
+      <p>Dense, scannable layout with dark sidebar. Efficient for power users with many properties.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Dark sidebar</span>
+        <span class="direction-tag">List-based</span>
+        <span class="direction-tag">Dense</span>
+        <span class="direction-tag">Scannable</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="d3-layout">
+        <div class="d3-sidebar">
+          <div class="logo">
+            <span class="material-icons">home_work</span>
+            Property Manager
+          </div>
+          <nav class="d3-sidebar-nav">
+            <a href="#" class="active">
+              <span class="material-icons">dashboard</span>
+              Dashboard
+            </a>
+            <a href="#">
+              <span class="material-icons">receipt_long</span>
+              Expenses
+            </a>
+            <a href="#">
+              <span class="material-icons">photo_camera</span>
+              Receipts
+              <span class="receipt-badge">3</span>
+            </a>
+            <a href="#">
+              <span class="material-icons">attach_money</span>
+              Income
+            </a>
+            <a href="#">
+              <span class="material-icons">assessment</span>
+              Reports
+            </a>
+          </nav>
+        </div>
+        <div class="d3-content">
+          <div class="d3-header">
+            <div>
+              <h1 style="font-size: 20px; color: var(--text-primary);">All Properties</h1>
+              <p style="color: var(--text-secondary); font-size: 13px;">14 properties | 2025 Tax Year</p>
+            </div>
+            <button class="btn btn-primary">
+              <span class="material-icons" style="font-size: 18px;">add</span>
+              Add Expense
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="stat-card">
+              <div class="value">$24,850</div>
+              <div class="label">Expenses</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">$42,000</div>
+              <div class="label">Income</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" style="color: var(--success);">$17,150</div>
+              <div class="label">Net</div>
+            </div>
+          </div>
+
+          <div class="d3-list">
+            <div class="d3-list-item">
+              <div class="info">
+                <div class="name">123 Oak Street</div>
+                <div class="address">Austin, TX 78701</div>
+              </div>
+              <div class="amount">$4,250</div>
+            </div>
+            <div class="d3-list-item">
+              <div class="info">
+                <div class="name">456 Elm Avenue</div>
+                <div class="address">Austin, TX 78702</div>
+              </div>
+              <div class="amount">$3,180</div>
+            </div>
+            <div class="d3-list-item">
+              <div class="info">
+                <div class="name">789 Pine Road</div>
+                <div class="address">Round Rock, TX 78664</div>
+              </div>
+              <div class="amount">$5,420</div>
+            </div>
+            <div class="d3-list-item">
+              <div class="info">
+                <div class="name">321 Maple Lane</div>
+                <div class="address">Cedar Park, TX 78613</div>
+              </div>
+              <div class="amount">$2,890</div>
+            </div>
+            <div class="d3-list-item">
+              <div class="info">
+                <div class="name">555 Birch Court</div>
+                <div class="address">Pflugerville, TX 78660</div>
+              </div>
+              <div class="amount">$1,950</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Users with many properties who need to scan quickly. List view shows more items at once. Dark sidebar feels more "app-like."
+    </div>
+  </div>
+
+  <!-- Direction 4: Big Cards -->
+  <div class="direction-container" id="direction-4">
+    <div class="direction-header">
+      <h2>Direction 4: Hero Stats + Big Cards</h2>
+      <p>Bold, spacious layout with prominent totals. Friendly and approachable.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Hero section</span>
+        <span class="direction-tag">Large cards</span>
+        <span class="direction-tag">Very spacious</span>
+        <span class="direction-tag">Friendly</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="app-header">
+        <div class="logo">
+          <span class="material-icons">home_work</span>
+          Property Manager
+        </div>
+        <nav class="top-nav">
+          <a href="#" class="active">Dashboard</a>
+          <a href="#">Expenses</a>
+          <a href="#">Receipts <span class="receipt-badge">3</span></a>
+          <a href="#">Reports</a>
+        </nav>
+        <button class="btn btn-primary">
+          <span class="material-icons" style="font-size: 18px;">add</span>
+          Add Expense
+        </button>
+      </div>
+      <div class="d4-content">
+        <div class="d4-hero">
+          <h2>Total Expenses This Year</h2>
+          <div class="amount">$24,850</div>
+        </div>
+
+        <h2 style="font-size: 20px; margin-bottom: 20px; color: var(--text-primary);">Your Properties</h2>
+        <div class="d4-grid">
+          <div class="d4-card">
+            <h3>123 Oak Street</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Austin, TX 78701</p>
+            <p style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">YTD Expenses</p>
+            <p class="amount">$4,250</p>
+          </div>
+          <div class="d4-card">
+            <h3>456 Elm Avenue</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Austin, TX 78702</p>
+            <p style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">YTD Expenses</p>
+            <p class="amount">$3,180</p>
+          </div>
+          <div class="d4-card">
+            <h3>789 Pine Road</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Round Rock, TX 78664</p>
+            <p style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">YTD Expenses</p>
+            <p class="amount">$5,420</p>
+          </div>
+          <div class="d4-card">
+            <h3>321 Maple Lane</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Cedar Park, TX 78613</p>
+            <p style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">YTD Expenses</p>
+            <p class="amount">$2,890</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Users who want the answer to "how much?" immediately visible. Friendly, approachable feel. Great for non-technical users.
+    </div>
+  </div>
+
+  <!-- Direction 5: Pinterest Masonry -->
+  <div class="direction-container" id="direction-5">
+    <div class="direction-header">
+      <h2>Direction 5: Pinterest-Style Masonry</h2>
+      <p>Card-based masonry layout inspired by Pinterest. Visual, scannable, familiar.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Masonry grid</span>
+        <span class="direction-tag">Pinterest-inspired</span>
+        <span class="direction-tag">Visual scanning</span>
+        <span class="direction-tag">Familiar</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="d5-header">
+        <div class="logo">
+          <span class="material-icons">home_work</span>
+          Property Manager
+        </div>
+        <nav class="top-nav">
+          <a href="#" class="active">Dashboard</a>
+          <a href="#">Expenses</a>
+          <a href="#">Receipts <span class="receipt-badge">3</span></a>
+          <a href="#">Reports</a>
+        </nav>
+        <button class="btn btn-primary">
+          <span class="material-icons" style="font-size: 18px;">add</span>
+          Add
+        </button>
+      </div>
+      <div class="d5-content">
+        <div class="d5-masonry">
+          <div class="d5-card" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;">
+            <p style="font-size: 12px; opacity: 0.9;">Total Expenses</p>
+            <p style="font-size: 28px; font-weight: 700;">$24,850</p>
+          </div>
+          <div class="d5-card">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">123 Oak Street</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">Austin, TX</p>
+            <p style="font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-top: 12px;">$4,250</p>
+          </div>
+          <div class="d5-card tall">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">456 Elm Avenue</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">Austin, TX</p>
+            <p style="font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-top: 12px;">$3,180</p>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);">
+              <p style="font-size: 11px; color: var(--text-muted);">Recent: Plumbing repair $450</p>
+            </div>
+          </div>
+          <div class="d5-card" style="background: var(--accent); color: #fff;">
+            <p style="font-size: 12px; opacity: 0.9;">Pending Receipts</p>
+            <p style="font-size: 28px; font-weight: 700;">3</p>
+          </div>
+          <div class="d5-card">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">789 Pine Road</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">Round Rock, TX</p>
+            <p style="font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-top: 12px;">$5,420</p>
+          </div>
+          <div class="d5-card short">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">321 Maple Lane</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">Cedar Park, TX</p>
+            <p style="font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-top: 12px;">$2,890</p>
+          </div>
+          <div class="d5-card">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">555 Birch Court</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">Pflugerville, TX</p>
+            <p style="font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-top: 12px;">$1,950</p>
+          </div>
+          <div class="d5-card" style="background: var(--success); color: #fff;">
+            <p style="font-size: 12px; opacity: 0.9;">Net Income</p>
+            <p style="font-size: 28px; font-weight: 700;">$17,150</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Users who love Pinterest's visual scanning. Familiar pattern for the primary user. Mixes stats and properties naturally.
+    </div>
+  </div>
+
+  <!-- Direction 6: Mobile-First -->
+  <div class="direction-container" id="direction-6">
+    <div class="direction-header">
+      <h2>Direction 6: Mobile-First Design</h2>
+      <p>Optimized for phone use with bottom navigation and floating action button.</p>
+      <div class="direction-tags">
+        <span class="direction-tag">Mobile-optimized</span>
+        <span class="direction-tag">Bottom nav</span>
+        <span class="direction-tag">FAB button</span>
+        <span class="direction-tag">Touch-friendly</span>
+      </div>
+    </div>
+
+    <div class="mockup-frame" style="max-width: 480px; margin: 0 auto; position: relative;">
+      <div class="d6-layout">
+        <div class="d6-header">
+          <h1>Total Expenses</h1>
+          <div class="amount">$24,850</div>
+          <p style="opacity: 0.8; font-size: 13px;">2025 Tax Year</p>
+        </div>
+        <div class="d6-content">
+          <h2 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">Properties</h2>
+          <div class="d6-card">
+            <div>
+              <div style="font-weight: 600; color: var(--text-primary);">123 Oak Street</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Austin, TX</div>
+            </div>
+            <div style="font-weight: 700; color: var(--primary-dark);">$4,250</div>
+          </div>
+          <div class="d6-card">
+            <div>
+              <div style="font-weight: 600; color: var(--text-primary);">456 Elm Avenue</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Austin, TX</div>
+            </div>
+            <div style="font-weight: 700; color: var(--primary-dark);">$3,180</div>
+          </div>
+          <div class="d6-card">
+            <div>
+              <div style="font-weight: 600; color: var(--text-primary);">789 Pine Road</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Round Rock, TX</div>
+            </div>
+            <div style="font-weight: 700; color: var(--primary-dark);">$5,420</div>
+          </div>
+          <div class="d6-card">
+            <div>
+              <div style="font-weight: 600; color: var(--text-primary);">321 Maple Lane</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Cedar Park, TX</div>
+            </div>
+            <div style="font-weight: 700; color: var(--primary-dark);">$2,890</div>
+          </div>
+        </div>
+        <button class="d6-fab">+</button>
+        <nav class="d6-bottom-nav">
+          <a href="#" class="active">
+            <span class="material-icons">dashboard</span>
+            Home
+          </a>
+          <a href="#">
+            <span class="material-icons">receipt_long</span>
+            Expenses
+          </a>
+          <a href="#">
+            <span class="material-icons">photo_camera</span>
+            Receipts
+          </a>
+          <a href="#">
+            <span class="material-icons">assessment</span>
+            Reports
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="comparison-note">
+      <strong>Best for:</strong> Mobile receipt capture flow. This shows how the app would feel on phone. Desktop would use a different layout (Direction 1-5).
+    </div>
+  </div>
+
+  <script>
+    function showDirection(num) {
+      // Hide all directions
+      document.querySelectorAll('.direction-container').forEach(el => {
+        el.classList.remove('active');
+      });
+      // Remove active from all tabs
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('active');
+      });
+      // Show selected direction
+      document.getElementById('direction-' + num).classList.add('active');
+      // Mark tab as active
+      document.querySelectorAll('.nav-tab')[num - 1].classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

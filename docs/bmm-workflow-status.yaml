@@ -59,7 +59,7 @@ workflow_status:
     phase_name: "Planning"
     workflows:
       - id: "prd"
-        status: "required"
+        status: "docs/prd.md"
         agent: "pm"
         command: "/bmad:bmm:workflows:prd"
         output: "Product Requirements Document with FRs and NFRs"
@@ -71,11 +71,9 @@ workflow_status:
         note: "Quality check for PRD completeness"
 
       - id: "create-ux-design"
-        status: "conditional"
-        condition: "if_has_ui"
+        status: "docs/ux-design-specification.md"
         agent: "ux-designer"
         command: "/bmad:bmm:workflows:create-ux-design"
-        note: "Determined after PRD - user/agent decides if needed"
 
   # Phase 2 - Solutioning
   - phase: 2

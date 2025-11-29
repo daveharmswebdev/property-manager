@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Manager - Color Theme Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .header {
+      background: #fff;
+      padding: 24px 40px;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .themes-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      padding: 40px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1200px) {
+      .themes-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .theme-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .theme-header {
+      padding: 24px;
+      color: #fff;
+    }
+
+    .theme-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .theme-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .theme-content {
+      padding: 24px;
+    }
+
+    .color-palette {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .color-swatch {
+      text-align: center;
+    }
+
+    .swatch {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .swatch-label {
+      font-size: 10px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .swatch-hex {
+      font-size: 9px;
+      color: #999;
+      font-family: monospace;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      margin-top: 20px;
+    }
+
+    .component-preview {
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary {
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      border: 2px solid;
+    }
+
+    .sample-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .card-amount {
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .category-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    .form-preview {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .form-field {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .personality {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .personality h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .personality ul {
+      font-size: 12px;
+      color: #666;
+      padding-left: 16px;
+    }
+
+    .personality li {
+      margin-bottom: 4px;
+    }
+
+    /* Theme 1: Warm Terracotta */
+    .theme-terracotta .theme-header { background: linear-gradient(135deg, #C67B5C, #B5634A); }
+    .theme-terracotta .btn-primary { background: #C67B5C; }
+    .theme-terracotta .btn-secondary { color: #C67B5C; border-color: #C67B5C; }
+    .theme-terracotta .card-amount { color: #B5634A; }
+    .theme-terracotta .category-tag { background: #FDF2EE; color: #B5634A; }
+    .theme-terracotta .form-input:focus { border-color: #C67B5C; }
+
+    /* Theme 2: Fresh Teal */
+    .theme-teal .theme-header { background: linear-gradient(135deg, #26A69A, #00897B); }
+    .theme-teal .btn-primary { background: #26A69A; }
+    .theme-teal .btn-secondary { color: #26A69A; border-color: #26A69A; }
+    .theme-teal .card-amount { color: #00897B; }
+    .theme-teal .category-tag { background: #E0F2F1; color: #00897B; }
+    .theme-teal .form-input:focus { border-color: #26A69A; }
+
+    /* Theme 3: Sunset Coral */
+    .theme-coral .theme-header { background: linear-gradient(135deg, #FF8A80, #E57373); }
+    .theme-coral .btn-primary { background: #FF8A80; }
+    .theme-coral .btn-secondary { color: #E57373; border-color: #E57373; }
+    .theme-coral .card-amount { color: #E57373; }
+    .theme-coral .category-tag { background: #FFEBEE; color: #E57373; }
+    .theme-coral .form-input:focus { border-color: #FF8A80; }
+
+    /* Theme 4: Forest Green */
+    .theme-forest .theme-header { background: linear-gradient(135deg, #66BB6A, #4CAF50); }
+    .theme-forest .btn-primary { background: #66BB6A; }
+    .theme-forest .btn-secondary { color: #4CAF50; border-color: #4CAF50; }
+    .theme-forest .card-amount { color: #4CAF50; }
+    .theme-forest .category-tag { background: #E8F5E9; color: #388E3C; }
+    .theme-forest .form-input:focus { border-color: #66BB6A; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Property Manager - Color Theme Options</h1>
+    <p>Compare these 4 theme directions. Each creates a different emotional feel while maintaining the "friendly, warm, confident" personality.</p>
+  </div>
+
+  <div class="themes-container">
+
+    <!-- Theme 1: Warm Terracotta -->
+    <div class="theme-card theme-terracotta">
+      <div class="theme-header">
+        <h2>1. Warm Terracotta</h2>
+        <p>Grounded, homey, property-appropriate</p>
+      </div>
+      <div class="theme-content">
+        <div class="section-title">Color Palette</div>
+        <div class="color-palette">
+          <div class="color-swatch">
+            <div class="swatch" style="background: #C67B5C;"></div>
+            <div class="swatch-label">Primary</div>
+            <div class="swatch-hex">#C67B5C</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #8D6E63;"></div>
+            <div class="swatch-label">Secondary</div>
+            <div class="swatch-hex">#8D6E63</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #FFB74D;"></div>
+            <div class="swatch-label">Accent</div>
+            <div class="swatch-hex">#FFB74D</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #4CAF50;"></div>
+            <div class="swatch-label">Success</div>
+            <div class="swatch-hex">#4CAF50</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #F44336;"></div>
+            <div class="swatch-label">Error</div>
+            <div class="swatch-hex">#F44336</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #5D4E47;"></div>
+            <div class="swatch-label">Text</div>
+            <div class="swatch-hex">#5D4E47</div>
+          </div>
+        </div>
+
+        <div class="section-title">Buttons</div>
+        <div class="component-preview">
+          <div class="button-row">
+            <button class="btn btn-primary">Add Expense</button>
+            <button class="btn btn-secondary">View Reports</button>
+          </div>
+        </div>
+
+        <div class="section-title">Expense Card</div>
+        <div class="component-preview">
+          <div class="sample-card">
+            <div class="card-header">
+              <span class="card-title">Home Depot - Faucet Repair</span>
+              <span class="card-amount">$127.45</span>
+            </div>
+            <div class="card-meta">123 Oak Street | Nov 28, 2025</div>
+            <span class="category-tag">Repairs</span>
+          </div>
+        </div>
+
+        <div class="section-title">Form Input</div>
+        <div class="component-preview">
+          <div class="form-preview">
+            <div class="form-field">
+              <label class="form-label">Amount</label>
+              <input type="text" class="form-input" value="$127.45" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Success Alert</div>
+        <div class="component-preview">
+          <div class="alert alert-success">
+            <span>&#10003;</span> Expense saved successfully
+          </div>
+        </div>
+
+        <div class="personality">
+          <h4>Theme Personality</h4>
+          <ul>
+            <li><strong>Emotional impact:</strong> Warm, grounded, trustworthy</li>
+            <li><strong>Best for:</strong> Property/real estate contexts</li>
+            <li><strong>Feels like:</strong> A well-organized home office</li>
+            <li><strong>Vibe:</strong> Approachable professional</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 2: Fresh Teal -->
+    <div class="theme-card theme-teal">
+      <div class="theme-header">
+        <h2>2. Fresh Teal</h2>
+        <p>Modern, calming, approachable</p>
+      </div>
+      <div class="theme-content">
+        <div class="section-title">Color Palette</div>
+        <div class="color-palette">
+          <div class="color-swatch">
+            <div class="swatch" style="background: #26A69A;"></div>
+            <div class="swatch-label">Primary</div>
+            <div class="swatch-hex">#26A69A</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #00897B;"></div>
+            <div class="swatch-label">Secondary</div>
+            <div class="swatch-hex">#00897B</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #FFB300;"></div>
+            <div class="swatch-label">Accent</div>
+            <div class="swatch-hex">#FFB300</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #66BB6A;"></div>
+            <div class="swatch-label">Success</div>
+            <div class="swatch-hex">#66BB6A</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #EF5350;"></div>
+            <div class="swatch-label">Error</div>
+            <div class="swatch-hex">#EF5350</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #37474F;"></div>
+            <div class="swatch-label">Text</div>
+            <div class="swatch-hex">#37474F</div>
+          </div>
+        </div>
+
+        <div class="section-title">Buttons</div>
+        <div class="component-preview">
+          <div class="button-row">
+            <button class="btn btn-primary">Add Expense</button>
+            <button class="btn btn-secondary">View Reports</button>
+          </div>
+        </div>
+
+        <div class="section-title">Expense Card</div>
+        <div class="component-preview">
+          <div class="sample-card">
+            <div class="card-header">
+              <span class="card-title">Home Depot - Faucet Repair</span>
+              <span class="card-amount">$127.45</span>
+            </div>
+            <div class="card-meta">123 Oak Street | Nov 28, 2025</div>
+            <span class="category-tag">Repairs</span>
+          </div>
+        </div>
+
+        <div class="section-title">Form Input</div>
+        <div class="component-preview">
+          <div class="form-preview">
+            <div class="form-field">
+              <label class="form-label">Amount</label>
+              <input type="text" class="form-input" value="$127.45" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Success Alert</div>
+        <div class="component-preview">
+          <div class="alert alert-success">
+            <span>&#10003;</span> Expense saved successfully
+          </div>
+        </div>
+
+        <div class="personality">
+          <h4>Theme Personality</h4>
+          <ul>
+            <li><strong>Emotional impact:</strong> Fresh, calm, organized</li>
+            <li><strong>Best for:</strong> Finance/productivity apps</li>
+            <li><strong>Feels like:</strong> A clean, modern dashboard</li>
+            <li><strong>Vibe:</strong> Friendly professional</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 3: Sunset Coral -->
+    <div class="theme-card theme-coral">
+      <div class="theme-header">
+        <h2>3. Sunset Coral</h2>
+        <p>Warm, friendly, Pinterest-esque</p>
+      </div>
+      <div class="theme-content">
+        <div class="section-title">Color Palette</div>
+        <div class="color-palette">
+          <div class="color-swatch">
+            <div class="swatch" style="background: #FF8A80;"></div>
+            <div class="swatch-label">Primary</div>
+            <div class="swatch-hex">#FF8A80</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #E57373;"></div>
+            <div class="swatch-label">Secondary</div>
+            <div class="swatch-hex">#E57373</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #4DB6AC;"></div>
+            <div class="swatch-label">Accent</div>
+            <div class="swatch-hex">#4DB6AC</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #81C784;"></div>
+            <div class="swatch-label">Success</div>
+            <div class="swatch-hex">#81C784</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #E53935;"></div>
+            <div class="swatch-label">Error</div>
+            <div class="swatch-hex">#E53935</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #4E342E;"></div>
+            <div class="swatch-label">Text</div>
+            <div class="swatch-hex">#4E342E</div>
+          </div>
+        </div>
+
+        <div class="section-title">Buttons</div>
+        <div class="component-preview">
+          <div class="button-row">
+            <button class="btn btn-primary">Add Expense</button>
+            <button class="btn btn-secondary">View Reports</button>
+          </div>
+        </div>
+
+        <div class="section-title">Expense Card</div>
+        <div class="component-preview">
+          <div class="sample-card">
+            <div class="card-header">
+              <span class="card-title">Home Depot - Faucet Repair</span>
+              <span class="card-amount">$127.45</span>
+            </div>
+            <div class="card-meta">123 Oak Street | Nov 28, 2025</div>
+            <span class="category-tag">Repairs</span>
+          </div>
+        </div>
+
+        <div class="section-title">Form Input</div>
+        <div class="component-preview">
+          <div class="form-preview">
+            <div class="form-field">
+              <label class="form-label">Amount</label>
+              <input type="text" class="form-input" value="$127.45" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Success Alert</div>
+        <div class="component-preview">
+          <div class="alert alert-success">
+            <span>&#10003;</span> Expense saved successfully
+          </div>
+        </div>
+
+        <div class="personality">
+          <h4>Theme Personality</h4>
+          <ul>
+            <li><strong>Emotional impact:</strong> Warm, inviting, friendly</li>
+            <li><strong>Best for:</strong> Consumer apps, lifestyle tools</li>
+            <li><strong>Feels like:</strong> Pinterest, lifestyle apps</li>
+            <li><strong>Vibe:</strong> Approachable and fun</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 4: Forest Green -->
+    <div class="theme-card theme-forest">
+      <div class="theme-header">
+        <h2>4. Forest Green</h2>
+        <p>Natural, trustworthy, growth-oriented</p>
+      </div>
+      <div class="theme-content">
+        <div class="section-title">Color Palette</div>
+        <div class="color-palette">
+          <div class="color-swatch">
+            <div class="swatch" style="background: #66BB6A;"></div>
+            <div class="swatch-label">Primary</div>
+            <div class="swatch-hex">#66BB6A</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #4CAF50;"></div>
+            <div class="swatch-label">Secondary</div>
+            <div class="swatch-hex">#4CAF50</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #FFA726;"></div>
+            <div class="swatch-label">Accent</div>
+            <div class="swatch-hex">#FFA726</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #29B6F6;"></div>
+            <div class="swatch-label">Info</div>
+            <div class="swatch-hex">#29B6F6</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #EF5350;"></div>
+            <div class="swatch-label">Error</div>
+            <div class="swatch-hex">#EF5350</div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch" style="background: #33691E;"></div>
+            <div class="swatch-label">Text</div>
+            <div class="swatch-hex">#33691E</div>
+          </div>
+        </div>
+
+        <div class="section-title">Buttons</div>
+        <div class="component-preview">
+          <div class="button-row">
+            <button class="btn btn-primary">Add Expense</button>
+            <button class="btn btn-secondary">View Reports</button>
+          </div>
+        </div>
+
+        <div class="section-title">Expense Card</div>
+        <div class="component-preview">
+          <div class="sample-card">
+            <div class="card-header">
+              <span class="card-title">Home Depot - Faucet Repair</span>
+              <span class="card-amount">$127.45</span>
+            </div>
+            <div class="card-meta">123 Oak Street | Nov 28, 2025</div>
+            <span class="category-tag">Repairs</span>
+          </div>
+        </div>
+
+        <div class="section-title">Form Input</div>
+        <div class="component-preview">
+          <div class="form-preview">
+            <div class="form-field">
+              <label class="form-label">Amount</label>
+              <input type="text" class="form-input" value="$127.45" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Success Alert</div>
+        <div class="component-preview">
+          <div class="alert alert-success">
+            <span>&#10003;</span> Expense saved successfully
+          </div>
+        </div>
+
+        <div class="personality">
+          <h4>Theme Personality</h4>
+          <ul>
+            <li><strong>Emotional impact:</strong> Natural, reliable, growth</li>
+            <li><strong>Best for:</strong> Finance, investment, eco-friendly</li>
+            <li><strong>Feels like:</strong> Mint, financial wellness apps</li>
+            <li><strong>Vibe:</strong> Trustworthy and calm</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="text-align: center; padding: 40px; color: #666; font-size: 14px;">
+    <p>Open this file in your browser to see all themes side-by-side.</p>
+    <p>Consider: Which theme makes you feel <strong>confident and organized</strong>?</p>
+  </div>
+
+</body>
+</html>
