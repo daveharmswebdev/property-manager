@@ -1,0 +1,210 @@
+<story-context id="1-1-project-infrastructure-setup" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1</storyId>
+    <title>Project Infrastructure Setup</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-1-project-infrastructure-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>the monorepo structure, build system, and local development environment configured</iWant>
+    <soThat>I can begin implementing features with consistent tooling</soThat>
+    <tasks>
+      <task id="1" title="Initialize monorepo structure" acs="1.2, 1.3">
+        <subtask>Create backend/ folder with PropertyManager.sln</subtask>
+        <subtask>Create frontend/ folder for Angular project</subtask>
+        <subtask>Create postman/ folder for API collection</subtask>
+        <subtask>Create root docker-compose.yml</subtask>
+        <subtask>Create root README.md with setup instructions</subtask>
+      </task>
+      <task id="2" title="Set up backend Clean Architecture projects" acs="1.2, 1.4">
+        <subtask>Create PropertyManager.Domain class library (.NET 10)</subtask>
+        <subtask>Create PropertyManager.Application class library (.NET 10)</subtask>
+        <subtask>Create PropertyManager.Infrastructure class library (.NET 10)</subtask>
+        <subtask>Create PropertyManager.Api web API project (.NET 10)</subtask>
+        <subtask>Configure project references per Clean Architecture dependency rules</subtask>
+        <subtask>Add core NuGet packages (MediatR, FluentValidation, Serilog, EF Core)</subtask>
+        <subtask>Verify dotnet build succeeds with zero errors</subtask>
+      </task>
+      <task id="3" title="Set up backend project scaffolding" acs="1.2">
+        <subtask>Create Domain layer folders: Entities/, ValueObjects/, Exceptions/, Interfaces/</subtask>
+        <subtask>Create Application layer folders: Common/Behaviors/, Common/Interfaces/</subtask>
+        <subtask>Create Infrastructure layer folders: Persistence/, Identity/</subtask>
+        <subtask>Create Api layer folders: Controllers/, Middleware/</subtask>
+        <subtask>Add placeholder files to establish structure</subtask>
+      </task>
+      <task id="4" title="Configure Angular 21 frontend" acs="1.3, 1.5">
+        <subtask>Initialize Angular 21 project with ng new property-manager --style=scss</subtask>
+        <subtask>Install Angular Material 21 and configure custom theme shell</subtask>
+        <subtask>Install @ngrx/signals for state management</subtask>
+        <subtask>Configure Vitest as the test runner</subtask>
+        <subtask>Create feature-based folder structure under src/app/</subtask>
+        <subtask>Verify ng build succeeds with zero errors</subtask>
+      </task>
+      <task id="5" title="Configure Docker Compose for local development" acs="1.1">
+        <subtask>Create docker-compose.yml with PostgreSQL 16 service</subtask>
+        <subtask>Configure volume for database persistence</subtask>
+        <subtask>Add MailHog service for email testing</subtask>
+        <subtask>Configure API service with proper environment variables</subtask>
+        <subtask>Configure web service (nginx for Angular build)</subtask>
+        <subtask>Test docker compose up starts all services correctly</subtask>
+        <subtask>Verify PostgreSQL accessible on port 5432</subtask>
+      </task>
+      <task id="6" title="Configure NSwag TypeScript client generation" acs="1.6">
+        <subtask>Add NSwag.AspNetCore package to Api project</subtask>
+        <subtask>Configure NSwag in Program.cs</subtask>
+        <subtask>Create nswag.json configuration file</subtask>
+        <subtask>Add npm script to generate TypeScript client</subtask>
+        <subtask>Test client generation produces valid TypeScript</subtask>
+      </task>
+      <task id="7" title="Verify complete setup and documentation" acs="1.1-1.6">
+        <subtask>Run full verification: docker compose up -d db and dotnet build and ng build</subtask>
+        <subtask>Document local development setup in README.md</subtask>
+        <subtask>Create .env.example with required environment variables</subtask>
+        <subtask>Verify all acceptance criteria are met</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1.1">Running docker compose up starts PostgreSQL database on port 5432 and is accessible for connections</criterion>
+    <criterion id="AC1.2">Backend project structure follows 4-layer Clean Architecture: PropertyManager.Domain/ (entities, value objects, exceptions, interfaces), PropertyManager.Application/ (commands, queries, handlers, common behaviors), PropertyManager.Infrastructure/ (EF Core, persistence, identity, external services), PropertyManager.Api/ (controllers, middleware, Program.cs)</criterion>
+    <criterion id="AC1.3">Frontend project uses feature-based folder structure: core/ (auth, api, services), shared/ (components, pipes, directives), features/ (dashboard, properties, expenses, income, receipts, reports)</criterion>
+    <criterion id="AC1.4">dotnet build succeeds with zero errors across all backend projects</criterion>
+    <criterion id="AC1.5">ng build succeeds with zero errors for the Angular frontend</criterion>
+    <criterion id="AC1.6">NSwag is configured to generate TypeScript API client from .NET controllers</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Repository Layout</section>
+        <snippet>Defines the monorepo structure with backend/, frontend/, postman/, docker-compose.yml. Backend follows Clean Architecture with Domain, Application, Infrastructure, Api layers.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Backend Structure (Clean Architecture)</section>
+        <snippet>Details the 4-layer structure: Domain (Entities, ValueObjects, Exceptions, Interfaces), Application (Common/Behaviors, feature folders), Infrastructure (Persistence, Storage, Identity), Api (Controllers, Hubs, Middleware).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Frontend Structure (Feature-Based)</section>
+        <snippet>Angular structure: core/ (auth, api, signalr), shared/ (components, pipes, directives), features/ (dashboard, properties, expenses, receipts, income, reports).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Technology Stack Details</section>
+        <snippet>Frontend: Angular 21, @ngrx/signals, Angular Material 21. Backend: .NET 10, ASP.NET Core 10, EF Core 10, PostgreSQL 16. Tools: NSwag, Docker, Vitest, xUnit, Serilog, FluentValidation, MediatR.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Development Environment</section>
+        <snippet>Prerequisites: .NET 10 SDK, Node.js 22 LTS, Docker Desktop, Angular CLI. Setup commands for starting infrastructure and running backend/frontend.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation</title>
+        <section>Dependencies and Integrations</section>
+        <snippet>Backend packages: MediatR 12.x, FluentValidation.AspNetCore 11.x, Serilog.AspNetCore 8.x, NSwag.AspNetCore 14.x, Npgsql.EntityFrameworkCore.PostgreSQL 10.x. Frontend: @angular/material 21.x, @ngrx/signals, vitest.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation</title>
+        <section>Docker Configuration</section>
+        <snippet>Provides complete docker-compose.yml with api, web, db (postgres:16), and mailhog services. Includes Dockerfile templates for backend (.NET SDK 10.0) and frontend (node:22-alpine, nginx).</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Technology Stack</section>
+        <snippet>Confirms stack choices: Angular + @ngrx/signals frontend, .NET + ASP.NET Core backend, PostgreSQL + EF Core database, NSwag for TypeScript generation, Clean Architecture + CQRS/MediatR pattern.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <!-- This is a greenfield project - no existing code artifacts yet -->
+      <note>Greenfield project: No existing source code. This story creates the initial project structure from scratch.</note>
+    </code>
+    <dependencies>
+      <backend framework=".NET 10">
+        <package name="Microsoft.AspNetCore.Authentication.JwtBearer" version="10.x" />
+        <package name="Microsoft.AspNetCore.Identity.EntityFrameworkCore" version="10.x" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" />
+        <package name="Npgsql.EntityFrameworkCore.PostgreSQL" version="10.x" />
+        <package name="MediatR" version="12.x" />
+        <package name="FluentValidation.AspNetCore" version="11.x" />
+        <package name="Serilog.AspNetCore" version="8.x" />
+        <package name="Serilog.Sinks.Console" version="5.x" />
+        <package name="NSwag.AspNetCore" version="14.x" />
+        <package name="Swashbuckle.AspNetCore" version="6.x" />
+      </backend>
+      <frontend framework="Angular 21">
+        <package name="@angular/core" version="21.x" />
+        <package name="@angular/material" version="21.x" />
+        <package name="@angular/cdk" version="21.x" />
+        <package name="@ngrx/signals" version="latest" />
+        <package name="rxjs" version="7.x" />
+      </frontend>
+      <devDependencies>
+        <package name="vitest" version="latest" purpose="Angular unit test runner" />
+        <package name="@testing-library/angular" version="latest" purpose="Component testing" />
+        <package name="playwright" version="latest" purpose="E2E testing" />
+        <package name="typescript" version="5.x" />
+      </devDependencies>
+      <infrastructure>
+        <service name="PostgreSQL" version="16" purpose="Database" />
+        <service name="Docker" purpose="Containerization and local development" />
+        <service name="MailHog" purpose="Email testing (SMTP on 1025, Web UI on 8025)" />
+      </infrastructure>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">Clean Architecture layer dependencies: Domain has no dependencies, Application depends only on Domain, Infrastructure depends on Application (implements interfaces), Api depends on Application and Infrastructure (composition root).</constraint>
+    <constraint source="Architecture">All backend projects must target .NET 10 LTS.</constraint>
+    <constraint source="Architecture">Frontend must use Angular 21 with standalone components.</constraint>
+    <constraint source="Architecture">State management must use @ngrx/signals (signal-based).</constraint>
+    <constraint source="Architecture">Test framework: xUnit for .NET, Vitest for Angular.</constraint>
+    <constraint source="Architecture">Use GUIDs for all primary keys.</constraint>
+    <constraint source="Architecture">Naming: PascalCase for .NET, kebab-case for Angular files, camelCase for JSON.</constraint>
+    <constraint source="Tech Spec">Backend project naming: PropertyManager.{Layer} (e.g., PropertyManager.Domain).</constraint>
+    <constraint source="Tech Spec">Project references per Clean Architecture: Api references Application and Infrastructure, Infrastructure references Application, Application references Domain.</constraint>
+  </constraints>
+
+  <interfaces>
+    <note>No existing interfaces - this story creates the foundational project structure. Future stories will define API endpoints and interfaces.</note>
+    <planned>
+      <interface name="NSwag Generated Client" kind="TypeScript API Client" path="frontend/src/app/core/api/api.service.ts" note="Will be generated from .NET controllers after NSwag configuration" />
+    </planned>
+  </interfaces>
+
+  <tests>
+    <standards>
+      For this infrastructure story, testing focuses on verification rather than unit tests. Verify that dotnet build succeeds with no compilation errors, ng build succeeds with no TypeScript errors, docker compose up starts services correctly, and PostgreSQL accepts connections on port 5432. Per Architecture doc, the test pyramid uses xUnit for .NET unit/integration tests, Vitest for Angular component tests, and Playwright for E2E tests. Test naming convention: Method_Scenario_ExpectedResult.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Domain.Tests/</location>
+      <location>backend/tests/PropertyManager.Application.Tests/</location>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>frontend/src/**/*.spec.ts (Vitest)</location>
+      <location>frontend/e2e/ (Playwright)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC1.1">Integration test: Verify docker compose up starts PostgreSQL and accepts connections on port 5432</idea>
+      <idea ac="AC1.2">Verification: Confirm all 4 backend projects exist with correct names and project references</idea>
+      <idea ac="AC1.3">Verification: Confirm frontend folder structure matches spec (core/, shared/, features/)</idea>
+      <idea ac="AC1.4">CI verification: dotnet build --no-restore returns exit code 0 with no warnings treated as errors</idea>
+      <idea ac="AC1.5">CI verification: ng build --configuration production returns exit code 0</idea>
+      <idea ac="AC1.6">Integration test: NSwag generates TypeScript client file without errors when running npm script</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -5,7 +5,7 @@
 Property Manager is a web application that transforms paper-based rental property expense tracking into organized, tax-ready Schedule E reports. This architecture document defines the technical decisions and patterns that ensure consistent implementation across all development - whether by AI agents or human developers.
 
 **Core Stack:**
-- **Frontend:** Angular 21 + @ngrx/signals + Angular Material
+- **Frontend:** Angular 20 + @ngrx/signals + Angular Material
 - **Backend:** .NET 10 + ASP.NET Core + Clean Architecture + CQRS/MediatR
 - **Database:** PostgreSQL + EF Core 10
 - **Hosting:** Render (portable to AWS/GCP/Azure)
@@ -194,9 +194,9 @@ src/app/
 
 | Layer | Technology | Version |
 |-------|------------|---------|
-| Frontend Framework | Angular | 21 |
+| Frontend Framework | Angular | 20 |
 | State Management | @ngrx/signals | Latest |
-| UI Components | Angular Material | 21.x |
+| UI Components | Angular Material | 20.x |
 | Backend Runtime | .NET | 10 (LTS) |
 | Web Framework | ASP.NET Core | 10 |
 | ORM | Entity Framework Core | 10 |
@@ -870,11 +870,11 @@ ng serve
 
 ---
 
-### ADR-006: Angular 21 + Vitest
+### ADR-006: Angular 20 + Vitest
 
-**Decision:** Use Angular 21 with Vitest as test runner
+**Decision:** Use Angular 20 with Vitest as test runner
 
-**Rationale:** Vitest is now Angular's official default, faster than Jest/Karma
+**Rationale:** Angular 20 used for @ngrx/signals compatibility; Vitest is faster than Karma
 
 **Trade-offs:** Migration docs available if needed
 

@@ -32,9 +32,9 @@ This is a browser-based single-page application (SPA) with a .NET backend, desig
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| Frontend | Angular 19 + @ngrx/signals | Expert knowledge, structured state management |
-| Backend | .NET 8 + ASP.NET Core | Expert knowledge, Clean Architecture |
-| Database | PostgreSQL + EF Core | Proven, cloud-ready, excellent tooling |
+| Frontend | Angular 20 + @ngrx/signals | Expert knowledge, structured state management |
+| Backend | .NET 10 + ASP.NET Core | Expert knowledge, Clean Architecture |
+| Database | PostgreSQL + EF Core 10 | Proven, cloud-ready, excellent tooling |
 | API Contracts | NSwag | Auto-generate TypeScript from C# |
 | Architecture | Clean Architecture + CQRS/MediatR | Testable, maintainable |
 
