@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using PropertyManager.Infrastructure.Persistence;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,13 @@ builder.Host.UseSerilog();
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Configure EF Core with PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? "Host=localhost;Database=propertymanager;Username=postgres;Password=localdev";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // Configure NSwag/OpenAPI
 builder.Services.AddOpenApiDocument(config =>

@@ -1,0 +1,268 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>2</storyId>
+    <title>Database Schema and EF Core Setup</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-2-database-schema-and-ef-core-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>the core database schema created with EF Core migrations</iWant>
+    <soThat>entities can be persisted and the multi-tenant foundation is established</soThat>
+    <tasks>
+      <task id="1" name="Create Domain entities" acs="2.1, 2.5">
+        <subtask>Create Account.cs entity with Id, Name, CreatedAt properties</subtask>
+        <subtask>Create User.cs entity with all user properties and Account navigation</subtask>
+        <subtask>Create Property.cs entity with audit fields and soft delete</subtask>
+        <subtask>Create Expense.cs entity with all expense properties</subtask>
+        <subtask>Create Income.cs entity with all income properties</subtask>
+        <subtask>Create Receipt.cs entity with all receipt properties</subtask>
+        <subtask>Create ExpenseCategory.cs entity (global, no AccountId)</subtask>
+        <subtask>Create base AuditableEntity class with CreatedAt, UpdatedAt fields</subtask>
+        <subtask>Create ISoftDeletable interface with DeletedAt property</subtask>
+      </task>
+      <task id="2" name="Configure EF Core DbContext" acs="2.1, 2.3, 2.4">
+        <subtask>Create AppDbContext.cs in Infrastructure/Persistence</subtask>
+        <subtask>Add DbSet properties for all entities</subtask>
+        <subtask>Configure connection string from environment variables</subtask>
+        <subtask>Implement ICurrentUser interface for tenant context</subtask>
+        <subtask>Configure global query filter for soft deletes</subtask>
+        <subtask>Configure global query filter for AccountId tenant isolation</subtask>
+      </task>
+      <task id="3" name="Create EF Core entity configurations" acs="2.1, 2.5, 2.6">
+        <subtask>Create AccountConfiguration.cs with table name and column mappings</subtask>
+        <subtask>Create UserConfiguration.cs with email unique constraint</subtask>
+        <subtask>Create PropertyConfiguration.cs with indexes and FK relationships</subtask>
+        <subtask>Create ExpenseConfiguration.cs with decimal precision and indexes</subtask>
+        <subtask>Create IncomeConfiguration.cs with decimal precision and indexes</subtask>
+        <subtask>Create ReceiptConfiguration.cs with nullable FK configurations</subtask>
+        <subtask>Create ExpenseCategoryConfiguration.cs for global category table</subtask>
+      </task>
+      <task id="4" name="Create seed data for ExpenseCategories" acs="2.2">
+        <subtask>Create ExpenseCategorySeeder.cs with 15 IRS Schedule E categories</subtask>
+        <subtask>Configure seeder to run on migration or app startup</subtask>
+        <subtask>Verify all 15 categories are inserted with correct Line numbers</subtask>
+      </task>
+      <task id="5" name="Create and run initial migration" acs="2.1">
+        <subtask>Install EF Core tools if not present: dotnet tool install --global dotnet-ef</subtask>
+        <subtask>Create initial migration: dotnet ef migrations add InitialCreate</subtask>
+        <subtask>Review generated migration SQL for correctness</subtask>
+        <subtask>Apply migration: dotnet ef database update</subtask>
+        <subtask>Verify all tables created in PostgreSQL</subtask>
+      </task>
+      <task id="6" name="Add integration tests for database operations" acs="2.1-2.6">
+        <subtask>Create PropertyManager.Infrastructure.Tests project</subtask>
+        <subtask>Add Testcontainers.PostgreSql package for test database</subtask>
+        <subtask>Create test for migration applies successfully</subtask>
+        <subtask>Create test for ExpenseCategories seeded with 15 rows</subtask>
+        <subtask>Create test for soft delete filter excludes deleted records</subtask>
+        <subtask>Create test for AccountId filter enforces tenant isolation</subtask>
+      </task>
+      <task id="7" name="Verification and documentation" acs="all">
+        <subtask>Verify dotnet ef database update succeeds on fresh database</subtask>
+        <subtask>Query PostgreSQL to confirm all tables exist with correct schema</subtask>
+        <subtask>Query ExpenseCategories to confirm 15 seed records</subtask>
+        <subtask>Document EF Core commands in README.md</subtask>
+        <subtask>Add database schema diagram to documentation</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.1">Running `dotnet ef database update` creates the following tables with correct column types:
+      - Accounts (Id UUID PK, Name VARCHAR(255), CreatedAt TIMESTAMP)
+      - Users (Id UUID PK, AccountId UUID FK, Email VARCHAR(255) UNIQUE, PasswordHash TEXT, Role VARCHAR(50), CreatedAt TIMESTAMP, UpdatedAt TIMESTAMP)
+      - Properties (Id UUID PK, AccountId UUID FK, Name VARCHAR(255), Address TEXT, CreatedAt TIMESTAMP, UpdatedAt TIMESTAMP, DeletedAt TIMESTAMP NULL)
+      - Expenses (Id UUID PK, AccountId UUID FK, PropertyId UUID FK, CategoryId UUID FK, Amount DECIMAL(10,2), Date DATE, Description TEXT, ReceiptId UUID NULL, CreatedByUserId UUID FK, CreatedAt TIMESTAMP, UpdatedAt TIMESTAMP, DeletedAt TIMESTAMP NULL)
+      - Income (Id UUID PK, AccountId UUID FK, PropertyId UUID FK, Amount DECIMAL(10,2), Date DATE, Source VARCHAR(255), Description TEXT, CreatedByUserId UUID FK, CreatedAt TIMESTAMP, UpdatedAt TIMESTAMP, DeletedAt TIMESTAMP NULL)
+      - Receipts (Id UUID PK, AccountId UUID FK, PropertyId UUID NULL FK, StorageKey VARCHAR(500), OriginalFileName VARCHAR(255), ContentType VARCHAR(100), FileSizeBytes BIGINT, ExpenseId UUID NULL, CreatedByUserId UUID FK, CreatedAt TIMESTAMP, ProcessedAt TIMESTAMP NULL, DeletedAt TIMESTAMP NULL)
+      - ExpenseCategories (Id UUID PK, Name VARCHAR(100), ScheduleELine VARCHAR(50), SortOrder INT)</ac>
+    <ac id="2.2">ExpenseCategories table is seeded with 15 IRS Schedule E line items: Advertising (Line 5), Auto and Travel (Line 6), Cleaning and Maintenance (Line 7), Commissions (Line 8), Insurance (Line 9), Legal and Professional Fees (Line 10), Management Fees (Line 11), Mortgage Interest (Line 12), Other Interest (Line 13), Repairs (Line 14), Supplies (Line 15), Taxes (Line 16), Utilities (Line 17), Depreciation (Line 18), Other (Line 19)</ac>
+    <ac id="2.3">Global query filters are configured for soft deletes (WHERE DeletedAt IS NULL) on all applicable entities (Properties, Expenses, Income, Receipts)</ac>
+    <ac id="2.4">Global query filters enforce AccountId tenant isolation - all queries automatically filter by the current user's AccountId</ac>
+    <ac id="2.5">All primary keys use GUIDs (UUID) with gen_random_uuid() default in PostgreSQL</ac>
+    <ac id="2.6">Appropriate indexes are created for frequently queried columns: IX_Users_AccountId, IX_Users_Email, IX_Properties_AccountId, IX_Expenses_AccountId, IX_Expenses_PropertyId, IX_Income_AccountId, IX_Income_PropertyId</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Data Architecture</section>
+        <snippet>Entity Relationship: Account (tenant boundary) with Users, Properties (with Expenses, Income), and Receipts. ExpenseCategories are global. Multi-tenancy via shared database with AccountId filtering using EF Core global query filters.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Core Tables</section>
+        <snippet>SQL schema definitions for Accounts, Users, Properties, Expenses, Receipts, Income, and ExpenseCategories tables with column types, constraints, and relationships.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Project Structure - Backend</section>
+        <snippet>Clean Architecture layout: Domain (Entities, ValueObjects, Exceptions), Application (Common, Features), Infrastructure (Persistence, Configurations, Migrations), Api (Controllers, Middleware).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Core entity C# definitions for Account and User classes with properties, navigation properties, and relationships. Database schema SQL with table definitions and indexes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation</title>
+        <section>Seed Data - Expense Categories</section>
+        <snippet>15 IRS Schedule E categories with Name, Schedule E Line (5-19), and Sort Order (1-15): Advertising, Auto and Travel, Cleaning and Maintenance, Commissions, Insurance, Legal and Professional Fees, Management Fees, Mortgage Interest, Other Interest, Repairs, Supplies, Taxes, Utilities, Depreciation, Other.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation</title>
+        <section>AC2: Database Schema</section>
+        <snippet>Acceptance criteria for database setup including table creation, ExpenseCategories seeding, soft delete filters, and UUID primary keys with gen_random_uuid() defaults.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Expense Management FR12-22</section>
+        <snippet>Expense categories must align with IRS Schedule E line items. System tracks expenses linked to properties with amount, date, category, description, and optional receipt attachment.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-1-project-infrastructure-setup.md</path>
+        <title>Story 1.1: Project Infrastructure Setup</title>
+        <section>Dev Agent Record</section>
+        <snippet>Project structure established with Clean Architecture folders containing .gitkeep placeholders. Npgsql.EntityFrameworkCore.PostgreSQL already added to Infrastructure project. PostgreSQL 16 running on port 5432 via Docker Compose.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/Entities/</path>
+        <kind>directory</kind>
+        <symbol>Entities folder</symbol>
+        <lines>-</lines>
+        <reason>Target location for all domain entity classes (Account, User, Property, Expense, Income, Receipt, ExpenseCategory). Currently contains only .gitkeep placeholder.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Infrastructure/Persistence/</path>
+        <kind>directory</kind>
+        <symbol>Persistence folder</symbol>
+        <lines>-</lines>
+        <reason>Target location for AppDbContext.cs and entity configurations. Currently contains only .gitkeep placeholder.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Infrastructure/PropertyManager.Infrastructure.csproj</path>
+        <kind>project</kind>
+        <symbol>Infrastructure project</symbol>
+        <lines>1-18</lines>
+        <reason>Already includes Microsoft.EntityFrameworkCore (10.0.0) and Npgsql.EntityFrameworkCore.PostgreSQL (10.0.0) packages. References Application project.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/PropertyManager.Domain.csproj</path>
+        <kind>project</kind>
+        <symbol>Domain project</symbol>
+        <lines>1-9</lines>
+        <reason>Base project targeting net10.0 where entity classes will be defined. No external dependencies - pure domain layer.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Api/Program.cs</path>
+        <kind>startup</kind>
+        <symbol>Program.cs</symbol>
+        <lines>1-50</lines>
+        <reason>Main entry point where DbContext will be registered in DI container and migrations will be applied. Currently has Serilog, OpenAPI, and health check configured.</reason>
+      </artifact>
+      <artifact>
+        <path>docker-compose.yml</path>
+        <kind>infrastructure</kind>
+        <symbol>Docker Compose</symbol>
+        <lines>-</lines>
+        <reason>PostgreSQL 16 container configuration for local development database on port 5432.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <dotnet>
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" />
+        <package name="Npgsql.EntityFrameworkCore.PostgreSQL" version="10.0.0" />
+        <package name="Testcontainers.PostgreSql" version="latest" note="Needed for integration tests - add to test project" />
+        <package name="FluentAssertions" version="latest" note="Recommended for test assertions" />
+        <package name="xunit" version="latest" note="Test framework for integration tests" />
+      </dotnet>
+      <tools>
+        <tool name="dotnet-ef" version="global">EF Core CLI tools for migrations</tool>
+      </tools>
+      <infrastructure>
+        <service name="PostgreSQL" version="16">Running via Docker Compose on localhost:5432</service>
+      </infrastructure>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">All tenant data must be filtered by AccountId using EF Core global query filters</constraint>
+    <constraint source="Architecture">Soft delete pattern: set DeletedAt timestamp instead of physical delete, filter via global query filter WHERE DeletedAt IS NULL</constraint>
+    <constraint source="Architecture">All entities must have audit fields: CreatedAt set on insert, UpdatedAt set on every update (UTC timestamps)</constraint>
+    <constraint source="Architecture">Override SaveChangesAsync to auto-populate audit fields</constraint>
+    <constraint source="Architecture">Use GUIDs for all primary keys with gen_random_uuid() default in PostgreSQL</constraint>
+    <constraint source="Architecture">Clean Architecture: Domain layer has no external dependencies, Infrastructure depends on Application</constraint>
+    <constraint source="Architecture">ExpenseCategories table is global (no AccountId) - seed data, not user-editable</constraint>
+    <constraint source="Architecture">Naming: PascalCase for tables and columns (PostgreSQL will handle case sensitivity)</constraint>
+    <constraint source="Architecture">Naming: IX_{Table}_{Columns} for index names</constraint>
+    <constraint source="Story 1.1">Project structure already exists with .gitkeep placeholders - replace with actual files</constraint>
+    <constraint source="Story 1.1">EF Core packages already installed in Infrastructure project</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ICurrentUser</name>
+      <kind>interface</kind>
+      <signature>interface ICurrentUser { Guid UserId { get; } Guid AccountId { get; } string Role { get; } }</signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+      <note>Used by AppDbContext for tenant filtering. Implementation in Infrastructure layer.</note>
+    </interface>
+    <interface>
+      <name>ISoftDeletable</name>
+      <kind>interface</kind>
+      <signature>interface ISoftDeletable { DateTime? DeletedAt { get; set; } }</signature>
+      <path>backend/src/PropertyManager.Domain/Common/ISoftDeletable.cs</path>
+      <note>Marker interface for entities supporting soft delete. Applied to Properties, Expenses, Income, Receipts.</note>
+    </interface>
+    <interface>
+      <name>AuditableEntity</name>
+      <kind>base class</kind>
+      <signature>abstract class AuditableEntity { Guid Id { get; set; } DateTime CreatedAt { get; set; } DateTime UpdatedAt { get; set; } }</signature>
+      <path>backend/src/PropertyManager.Domain/Common/AuditableEntity.cs</path>
+      <note>Base class for all entities with audit tracking. Timestamps auto-populated in SaveChangesAsync override.</note>
+    </interface>
+    <interface>
+      <name>AppDbContext</name>
+      <kind>class</kind>
+      <signature>class AppDbContext : DbContext { DbSet&lt;Account&gt; Accounts; DbSet&lt;User&gt; Users; DbSet&lt;Property&gt; Properties; DbSet&lt;Expense&gt; Expenses; DbSet&lt;Income&gt; Income; DbSet&lt;Receipt&gt; Receipts; DbSet&lt;ExpenseCategory&gt; ExpenseCategories; }</signature>
+      <path>backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs</path>
+      <note>Main EF Core DbContext with global query filters for soft delete and tenant isolation.</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Integration tests use Testcontainers.PostgreSql to spin up real PostgreSQL containers, ensuring migrations and queries work against actual database. xUnit is the test framework with FluentAssertions for readable assertions. Test naming convention: Method_Scenario_ExpectedResult. Each test should be independent - create fresh container or use transaction rollback.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Infrastructure.Tests/</location>
+      <location>backend/tests/PropertyManager.Infrastructure.Tests/**/*Tests.cs</location>
+    </locations>
+    <ideas>
+      <idea ac="2.1">Migration_AppliesSuccessfully_CreatesAllTables - Verify all 7 tables (Accounts, Users, Properties, Expenses, Income, Receipts, ExpenseCategories) are created with correct columns</idea>
+      <idea ac="2.1">Tables_HaveCorrectColumnTypes - Verify UUID for PKs, DECIMAL(10,2) for amounts, TIMESTAMP for dates</idea>
+      <idea ac="2.2">ExpenseCategories_OnStartup_SeededWith15Records - Query ExpenseCategories and verify exactly 15 rows with correct names and Schedule E lines</idea>
+      <idea ac="2.3">SoftDeleteFilter_QueryingProperties_ExcludesDeleted - Create property, set DeletedAt, verify excluded from DbSet query</idea>
+      <idea ac="2.3">SoftDeleteFilter_IgnoreFilters_IncludesDeleted - Verify IgnoreQueryFilters() returns soft-deleted records</idea>
+      <idea ac="2.4">TenantFilter_QueryingWithAccountId_OnlyReturnsOwnData - Create data for two accounts, verify each sees only their own records</idea>
+      <idea ac="2.4">TenantFilter_NoCurrentUser_ThrowsException - Verify queries fail gracefully when ICurrentUser not set</idea>
+      <idea ac="2.5">PrimaryKeys_AllTables_UseGuidWithDefaultGeneration - Verify inserting without ID generates valid UUID</idea>
+      <idea ac="2.6">Indexes_ExistOnFrequentlyQueriedColumns - Verify all specified indexes exist in database schema</idea>
+    </ideas>
+  </tests>
+</story-context>
