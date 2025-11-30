@@ -144,9 +144,22 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Health check endpoint
-app.MapGet("/api/v1/health", () => new { status = "healthy", version = "1.0.0" })
-    .WithName("HealthCheck")
-    .WithTags("Health");
+// Apply database migrations in production
+if (app.Environment.IsProduction())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        Log.Information("Applying database migrations...");
+        await db.Database.MigrateAsync();
+        Log.Information("Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Log.Fatal(ex, "Failed to apply database migrations - application cannot start");
+        throw; // Prevent app from starting with failed migrations
+    }
+}
 
 app.Run();

@@ -1,0 +1,122 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE_NAME: ${{ github.repository }}-api
+  WEB_IMAGE_NAME: ${{ github.repository }}-web
+
+jobs:
+  ci:
+    name: Run CI Checks
+    uses: ./.github/workflows/ci.yml
+
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      api-image: ${{ steps.meta-api.outputs.tags }}
+      web-image: ${{ steps.meta-web.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for API image
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract metadata for Web image
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Deploy API to Render
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_API }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": false}'
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_API != '' }}
+
+      - name: Deploy Web to Render
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_WEB }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": false}'
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_WEB != '' }}
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Verify API health
+        run: |
+          if [ -n "${{ secrets.PRODUCTION_API_URL }}" ]; then
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.PRODUCTION_API_URL }}/api/v1/health")
+            if [ "$response" != "200" ]; then
+              echo "Health check failed with status: $response"
+              exit 1
+            fi
+            echo "Health check passed"
+          else
+            echo "Skipping health check - PRODUCTION_API_URL not configured"
+          fi
