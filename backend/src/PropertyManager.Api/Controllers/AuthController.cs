@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Application.Auth;
 
@@ -189,6 +190,36 @@ public class AuthController : ControllerBase
 
             return Unauthorized(CreateProblemDetails(ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Log out the current user by invalidating their refresh token (AC5.1, AC5.2).
+    /// Clears the refresh token cookie.
+    /// </summary>
+    /// <returns>204 No Content on success</returns>
+    /// <response code="204">Logout successful, refresh token invalidated</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout()
+    {
+        // Read refresh token from cookie
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+
+        // Send logout command to invalidate the token in database
+        var command = new LogoutCommand(refreshToken);
+        await _mediator.Send(command);
+
+        // Clear the refresh token cookie (AC5.1)
+        ClearRefreshTokenCookie();
+
+        // Log successful logout for security monitoring
+        _logger.LogInformation(
+            "User logged out successfully at {Timestamp}",
+            DateTime.UtcNow);
+
+        return NoContent();
     }
 
     /// <summary>

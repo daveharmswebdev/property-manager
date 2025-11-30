@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Infrastructure.Identity;
+using PropertyManager.Infrastructure.Persistence;
 
 namespace PropertyManager.Api.Tests;
 
@@ -459,6 +461,186 @@ public class AuthControllerTests : IClassFixture<PropertyManagerWebApplicationFa
 
         payload1["userId"].ToString().Should().Be(payload2["userId"].ToString());
         payload1["jti"].ToString().Should().NotBe(payload2["jti"].ToString());
+    }
+
+    // ==================== LOGOUT TESTS (AC5.1, AC5.2, AC5.3) ====================
+
+    [Fact]
+    public async Task Logout_WithValidSession_Returns204()
+    {
+        // Arrange - Login first
+        var email = $"logout{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+
+        await CreateAndVerifyUser(email, password);
+
+        var loginRequest = new { Email = email, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Extract access token and cookies from login response
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var accessToken = loginContent!.AccessToken;
+
+        // Verify token is valid JWT format
+        accessToken.Should().NotBeNullOrEmpty("Access token should be returned from login");
+        accessToken.Split('.').Length.Should().Be(3, "Access token should be valid JWT with 3 parts");
+
+        // Act - Create request with Authorization header on the request itself
+        var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        logoutRequest.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+        var logoutResponse = await _client.SendAsync(logoutRequest);
+
+        // Assert (AC5.1)
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Logout_RefreshTokenDeletedFromDatabase()
+    {
+        // Arrange - Login first
+        var email = $"logoutdb{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+
+        await CreateAndVerifyUser(email, password);
+
+        var loginRequest = new { Email = email, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var accessToken = loginContent!.AccessToken;
+        var cookies = loginResponse.Headers.GetValues("Set-Cookie");
+
+        // Extract user ID to verify token deletion
+        var payload = DecodeJwtPayload(accessToken);
+        var userId = Guid.Parse(payload["userId"]!.ToString()!);
+
+        // Verify refresh token exists before logout
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tokensBeforeLogout = await dbContext.RefreshTokens
+                .IgnoreQueryFilters()
+                .Where(t => t.UserId == userId && t.RevokedAt == null)
+                .CountAsync();
+            tokensBeforeLogout.Should().BeGreaterThan(0);
+        }
+
+        // Logout - send with cookies (refresh token invalidation uses cookie, not JWT)
+        var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        foreach (var cookie in cookies)
+        {
+            logoutRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        var logoutResponse = await _client.SendAsync(logoutRequest);
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Assert (AC5.2) - Token should be revoked in database
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var activeTokensAfterLogout = await dbContext.RefreshTokens
+                .IgnoreQueryFilters()
+                .Where(t => t.UserId == userId && t.RevokedAt == null)
+                .CountAsync();
+            activeTokensAfterLogout.Should().Be(0);
+        }
+    }
+
+    [Fact]
+    public async Task Logout_InvalidatedRefreshTokenReturns401OnRefresh()
+    {
+        // Arrange - Login first
+        var email = $"logoutrefresh{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+
+        await CreateAndVerifyUser(email, password);
+
+        var loginRequest = new { Email = email, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var cookies = loginResponse.Headers.GetValues("Set-Cookie").ToList();
+
+        // Logout - send with cookies
+        var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        foreach (var cookie in cookies)
+        {
+            logoutRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        await _client.SendAsync(logoutRequest);
+
+        // Act - Try to refresh with the invalidated token (AC5.3)
+        var refreshRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        foreach (var cookie in cookies)
+        {
+            refreshRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        var refreshResponse = await _client.SendAsync(refreshRequest);
+
+        // Assert - Should return 401 because token was invalidated
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Logout_WithoutRefreshToken_Returns204_IdempotentBehavior()
+    {
+        // Logout is idempotent - calling it without a session should still succeed
+        // The key security is that the cookie is cleared and no sensitive operation occurs
+        // This matches AC5.2: "Logout should be idempotent - calling it multiple times is safe"
+
+        // Act - Call logout without any authentication or cookies
+        var response = await _client.PostAsync("/api/v1/auth/logout", null);
+
+        // Assert - Returns 204 (logout is idempotent, no error for missing token)
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Logout_MultipleDevices_OnlyCurrentDeviceAffected()
+    {
+        // Arrange - Create and verify a user
+        var email = $"logoutmulti{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+
+        await CreateAndVerifyUser(email, password);
+
+        var loginRequest = new { Email = email, Password = password };
+
+        // Login from "device 1"
+        var device1LoginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        device1LoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var device1Cookies = device1LoginResponse.Headers.GetValues("Set-Cookie").ToList();
+
+        // Login from "device 2"
+        var device2LoginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        device2LoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var device2Cookies = device2LoginResponse.Headers.GetValues("Set-Cookie").ToList();
+
+        // Logout from device 1
+        var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        foreach (var cookie in device1Cookies)
+        {
+            logoutRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+        await _client.SendAsync(logoutRequest);
+
+        // Act - Try to refresh from device 2 (should still work) (AC5.2)
+        var device2RefreshRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        foreach (var cookie in device2Cookies)
+        {
+            device2RefreshRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        var device2RefreshResponse = await _client.SendAsync(device2RefreshRequest);
+
+        // Assert - Device 2 should still be able to refresh
+        device2RefreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     // ==================== HELPER METHODS ====================

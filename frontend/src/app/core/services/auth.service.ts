@@ -139,11 +139,25 @@ export class AuthService {
   }
 
   /**
-   * Logout - clear local state.
-   * Server-side logout will be implemented in Story 1.5.
+   * Logout - call server-side logout API and clear local state (AC5.4).
+   * Server invalidates refresh token and clears cookie.
+   * Returns Observable that completes after logout.
    */
-  logout(): void {
-    this.clearAuthState();
+  logout(): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/logout`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(() => {
+        this.clearAuthState();
+      }),
+      catchError(error => {
+        // Always clear local state even if API call fails
+        this.clearAuthState();
+        return throwError(() => error);
+      })
+    );
   }
 
   /**

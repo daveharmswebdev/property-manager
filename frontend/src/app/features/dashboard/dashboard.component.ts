@@ -1,15 +1,16 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
   template: `
     <div class="dashboard-container">
       <mat-card class="welcome-card">
@@ -22,9 +23,13 @@ import { AuthService } from '../../core/services/auth.service';
           <p>For now, you have successfully logged in!</p>
         </mat-card-content>
         <mat-card-actions>
-          <button mat-raised-button color="warn" (click)="logout()">
-            <mat-icon>logout</mat-icon>
-            Logout
+          <button mat-raised-button color="warn" (click)="logout()" [disabled]="isLoggingOut()">
+            @if (isLoggingOut()) {
+              <mat-spinner diameter="20"></mat-spinner>
+            } @else {
+              <mat-icon>logout</mat-icon>
+            }
+            {{ isLoggingOut() ? 'Logging out...' : 'Logout' }}
           </button>
         </mat-card-actions>
       </mat-card>
@@ -52,6 +57,10 @@ import { AuthService } from '../../core/services/auth.service';
       justify-content: center;
       padding: 16px;
     }
+    mat-spinner {
+      display: inline-block;
+      margin-right: 8px;
+    }
   `]
 })
 export class DashboardComponent {
@@ -59,9 +68,18 @@ export class DashboardComponent {
   private readonly router = inject(Router);
 
   readonly currentUser = this.authService.currentUser;
+  readonly isLoggingOut = signal(false);
 
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    this.isLoggingOut.set(true);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        // Even on error, redirect to login (local state is cleared)
+        this.router.navigate(['/login']);
+      }
+    });
   }
 }

@@ -1,0 +1,323 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>5</storyId>
+    <title>User Logout</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-user-logout.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>logged-in user</asA>
+    <iWant>to log out of the application</iWant>
+    <soThat>my session is terminated securely</soThat>
+    <tasks>
+      <task id="1" title="Implement Logout Command and Handler">
+        <ac>5.1, 5.2</ac>
+        <subtasks>
+          <subtask>Create LogoutCommand record in Application/Auth/Logout.cs</subtask>
+          <subtask>Create LogoutCommandHandler that reads userId from current user context</subtask>
+          <subtask>Read refresh token from request cookies</subtask>
+          <subtask>Find and delete/invalidate the refresh token from database</subtask>
+          <subtask>Return success even if token not found (idempotent)</subtask>
+          <subtask>Unit test: LogoutCommandHandler deletes refresh token</subtask>
+        </subtasks>
+      </task>
+      <task id="2" title="Add Logout Endpoint to AuthController">
+        <ac>5.1, 5.2</ac>
+        <subtasks>
+          <subtask>Implement POST /api/v1/auth/logout endpoint</subtask>
+          <subtask>Clear refresh token cookie in response with same domain/path settings</subtask>
+          <subtask>Return 204 No Content on success</subtask>
+          <subtask>Add [Authorize] attribute (requires valid access token)</subtask>
+          <subtask>Log successful logout for security monitoring</subtask>
+        </subtasks>
+      </task>
+      <task id="3" title="Update Auth Service with Logout Method">
+        <ac>5.4</ac>
+        <subtasks>
+          <subtask>Add logout() method to AuthService</subtask>
+          <subtask>Call POST /api/v1/auth/logout endpoint</subtask>
+          <subtask>Clear accessToken signal state</subtask>
+          <subtask>Clear currentUser signal state</subtask>
+          <subtask>Clear any other cached authentication data</subtask>
+          <subtask>Unit test: AuthService.logout() clears state</subtask>
+        </subtasks>
+      </task>
+      <task id="4" title="Add Logout Button to Application Shell">
+        <ac>5.4, 5.5</ac>
+        <subtasks>
+          <subtask>Add logout button/link to sidebar footer (desktop view)</subtask>
+          <subtask>Wire button click to AuthService.logout()</subtask>
+          <subtask>Navigate to /login after successful logout</subtask>
+          <subtask>Show brief loading state during logout</subtask>
+          <subtask>Component test: Logout button triggers logout flow</subtask>
+        </subtasks>
+      </task>
+      <task id="5" title="Integration Tests">
+        <ac>5.1, 5.2, 5.3</ac>
+        <subtasks>
+          <subtask>Test: Logout with valid session returns 204</subtask>
+          <subtask>Test: Refresh token is deleted from database after logout</subtask>
+          <subtask>Test: Using invalidated refresh token returns 401</subtask>
+          <subtask>Test: Logout without valid session returns 401</subtask>
+          <subtask>Test: Multiple device logout (one device logout doesn't affect other)</subtask>
+        </subtasks>
+      </task>
+      <task id="6" title="Update Postman Collection and Manual Verification">
+        <ac>all</ac>
+        <subtasks>
+          <subtask>Add Logout request to Postman collection</subtask>
+          <subtask>Complete smoke test checklist for logout flow</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC5.1" title="POST /api/v1/auth/logout endpoint implementation">
+      <item>Reads refresh token from HttpOnly cookie</item>
+      <item>Clears the refresh token cookie from the response</item>
+      <item>Returns 204 No Content on success</item>
+      <item>Returns 401 Unauthorized if no valid session exists</item>
+    </criterion>
+    <criterion id="AC5.2" title="Server-side token invalidation">
+      <item>Refresh token is invalidated/deleted in the database</item>
+      <item>Token cannot be reused after logout</item>
+      <item>Only the current device's session is invalidated (not other devices)</item>
+    </criterion>
+    <criterion id="AC5.3" title="Post-logout behavior">
+      <item>Subsequent API calls with the old access token return 401 Unauthorized (once token expires)</item>
+      <item>Attempting to use the invalidated refresh token returns 401 Unauthorized</item>
+      <item>No sensitive data remains accessible</item>
+    </criterion>
+    <criterion id="AC5.4" title="Frontend logout flow">
+      <item>Logout button visible in sidebar footer (desktop) or user menu</item>
+      <item>Clicking logout calls the logout API endpoint</item>
+      <item>Access token is cleared from memory (AuthService signal state)</item>
+      <item>User is redirected to /login page</item>
+      <item>Any cached user data is cleared</item>
+    </criterion>
+    <criterion id="AC5.5" title="UI/UX requirements">
+      <item>Logout action does not require confirmation dialog (low-risk action)</item>
+      <item>Brief loading indicator during logout API call</item>
+      <item>Redirect to login happens after API response (not before)</item>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Authentication Endpoints</section>
+        <snippet>POST /api/v1/auth/logout endpoint spec. JWT stored in HttpOnly cookie. Logout should clear cookie and invalidate refresh token server-side.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Security Architecture</section>
+        <snippet>Session management via JWT + refresh tokens. User registers/logs in receives JWT. API validates JWT on every request. HttpOnly cookie storage for XSS protection.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>User Account and Access (FR4)</section>
+        <snippet>FR4: Users can log out and sessions are terminated securely.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 1.5: User Logout</section>
+        <snippet>As a logged-in user, I want to log out so my session is terminated securely. API: POST /api/v1/auth/logout. Clear HttpOnly cookie and invalidate refresh token in database.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>backend/src/PropertyManager.Api/Controllers/AuthController.cs</path>
+        <kind>controller</kind>
+        <symbol>AuthController</symbol>
+        <lines>1-321</lines>
+        <reason>Add logout endpoint here. Already has Login, Register, Refresh, VerifyEmail. Has ClearRefreshTokenCookie() helper method (line 214-223) and RefreshTokenCookieName constant.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Application/Auth/Login.cs</path>
+        <kind>command-handler</kind>
+        <symbol>LoginCommandHandler</symbol>
+        <lines>1-113</lines>
+        <reason>Pattern reference for creating LogoutCommand and LogoutCommandHandler. Shows use of IIdentityService, IJwtService, IAppDbContext.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/Entities/RefreshToken.cs</path>
+        <kind>entity</kind>
+        <symbol>RefreshToken</symbol>
+        <lines>1-48</lines>
+        <reason>Entity for refresh tokens. Has UserId, AccountId, TokenHash, ExpiresAt, RevokedAt, DeviceInfo, IsValid property. Logout should set RevokedAt or delete the record.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+        <kind>interface</kind>
+        <symbol>ICurrentUser</symbol>
+        <lines>1-15</lines>
+        <reason>Interface for accessing current user context. Use to get UserId for token lookup during logout.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs</path>
+        <kind>db-context</kind>
+        <symbol>AppDbContext</symbol>
+        <lines>1-161</lines>
+        <reason>Has RefreshTokens DbSet (line 39). Used to query and delete refresh tokens.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/core/services/auth.service.ts</path>
+        <kind>service</kind>
+        <symbol>AuthService</symbol>
+        <lines>1-216</lines>
+        <reason>Extend with server-side logout call. Has logout() stub (line 145-147) that currently only clears local state. Has clearAuthState() helper.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/app.ts</path>
+        <kind>component</kind>
+        <symbol>App</symbol>
+        <lines>1-13</lines>
+        <reason>Root component. Logout button may be added here or in a shell/layout component.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/tests/PropertyManager.Api.Tests/PropertyManagerWebApplicationFactory.cs</path>
+        <kind>test-fixture</kind>
+        <symbol>PropertyManagerWebApplicationFactory</symbol>
+        <lines>1-91</lines>
+        <reason>WebApplicationFactory for integration tests. Use for logout integration tests.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/tests/PropertyManager.Api.Tests/AuthControllerTests.cs</path>
+        <kind>test</kind>
+        <symbol>AuthControllerTests</symbol>
+        <reason>Existing auth tests. Add logout tests following same patterns.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>@angular/core</package>
+        <version>^20.3.0</version>
+      </node>
+      <node>
+        <package>@angular/router</package>
+        <version>^20.3.0</version>
+      </node>
+      <node>
+        <package>@angular/material</package>
+        <version>^20.2.14</version>
+      </node>
+      <node>
+        <package>@ngrx/signals</package>
+        <version>^20.1.0</version>
+      </node>
+      <node>
+        <package>rxjs</package>
+        <version>~7.8.0</version>
+      </node>
+      <node>
+        <package>vitest</package>
+        <version>^3.2.4</version>
+      </node>
+      <dotnet>
+        <package>MediatR</package>
+        <note>CQRS command handling</note>
+      </dotnet>
+      <dotnet>
+        <package>FluentValidation</package>
+        <note>Request validation</note>
+      </dotnet>
+      <dotnet>
+        <package>Microsoft.AspNetCore.Authorization</package>
+        <note>For [Authorize] attribute</note>
+      </dotnet>
+      <dotnet>
+        <package>Microsoft.EntityFrameworkCore</package>
+        <note>Database operations</note>
+      </dotnet>
+      <dotnet>
+        <package>Testcontainers.PostgreSql</package>
+        <note>Integration test database</note>
+      </dotnet>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Follow Clean Architecture: Command in Application layer, endpoint in Api layer, entity operations via DbContext</constraint>
+    <constraint type="pattern">Use MediatR CQRS pattern for LogoutCommand/LogoutCommandHandler</constraint>
+    <constraint type="security">Logout should be idempotent - calling it multiple times is safe</constraint>
+    <constraint type="security">Only invalidates the current device's refresh token, not all sessions</constraint>
+    <constraint type="security">Access token remains valid until expiry (60 minutes) - this is expected JWT behavior</constraint>
+    <constraint type="security">HttpOnly cookie must be cleared with matching domain/path/secure settings</constraint>
+    <constraint type="cookie">RefreshTokenCookieName = "refreshToken", Path = "/api/v1/auth"</constraint>
+    <constraint type="testing">All tests must use PropertyManagerWebApplicationFactory with real PostgreSQL via Testcontainers</constraint>
+    <constraint type="frontend">Use Angular signals for state management (_accessToken, _currentUser signals)</constraint>
+    <constraint type="frontend">Use withCredentials: true for API calls that involve cookies</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/v1/auth/logout</name>
+      <kind>REST endpoint</kind>
+      <signature>
+        Request: (uses refresh token from HttpOnly cookie)
+        Response: 204 No Content
+        Requires: [Authorize] attribute
+      </signature>
+      <path>backend/src/PropertyManager.Api/Controllers/AuthController.cs</path>
+    </interface>
+    <interface>
+      <name>ICurrentUser</name>
+      <kind>interface</kind>
+      <signature>
+        Guid UserId { get; }
+        Guid AccountId { get; }
+        string Role { get; }
+        bool IsAuthenticated { get; }
+      </signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+    </interface>
+    <interface>
+      <name>ClearRefreshTokenCookie</name>
+      <kind>method</kind>
+      <signature>private void ClearRefreshTokenCookie() - clears HttpOnly cookie with matching settings</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/AuthController.cs:214-223</path>
+    </interface>
+    <interface>
+      <name>AuthService.logout()</name>
+      <kind>Angular service method</kind>
+      <signature>
+        Current: logout(): void - clears local state only
+        Target: logout(): Observable&lt;void&gt; - call API then clear local state
+      </signature>
+      <path>frontend/src/app/core/services/auth.service.ts:145-147</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend uses xUnit with WebApplicationFactory pattern and Testcontainers for real PostgreSQL integration tests. Frontend uses Vitest for unit/component tests. All tests follow the pattern Method_Scenario_ExpectedResult for naming. Integration tests verify full API flow including database state changes. Cookie handling tested via HttpClient with CookieContainer.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>backend/tests/PropertyManager.Application.Tests/</location>
+      <location>frontend/src/app/**/*.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC5.1">Test: POST /api/v1/auth/logout with valid session returns 204 No Content</idea>
+      <idea ac="AC5.1">Test: POST /api/v1/auth/logout without [Authorize] token returns 401</idea>
+      <idea ac="AC5.1">Test: Response clears refreshToken cookie with correct options</idea>
+      <idea ac="AC5.2">Test: Refresh token record is deleted/revoked in database after logout</idea>
+      <idea ac="AC5.2">Test: Logout only affects current device's token (query by token hash, not user ID)</idea>
+      <idea ac="AC5.3">Test: POST /api/v1/auth/refresh with invalidated token returns 401</idea>
+      <idea ac="AC5.3">Test: After logout, protected endpoints reject the old access token (after expiry)</idea>
+      <idea ac="AC5.4">Test: AuthService.logout() calls API endpoint with credentials</idea>
+      <idea ac="AC5.4">Test: AuthService.logout() clears accessToken and currentUser signals</idea>
+      <idea ac="AC5.5">Test: Logout button triggers logout flow and navigates to /login</idea>
+    </ideas>
+  </tests>
+</story-context>
