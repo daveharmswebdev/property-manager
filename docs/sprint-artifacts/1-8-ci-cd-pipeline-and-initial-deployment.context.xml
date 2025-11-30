@@ -1,0 +1,342 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>8</storyId>
+    <title>CI/CD Pipeline and Initial Deployment</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-8-ci-cd-pipeline-and-initial-deployment.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>automated CI/CD with deployment to Render</iWant>
+    <soThat>every merge to main automatically deploys a working application</soThat>
+    <tasks>
+      <task id="1" ac="8.1">Create GitHub Actions CI Workflow
+        <subtask>Create `.github/workflows/ci.yml` for PR checks</subtask>
+        <subtask>Configure .NET SDK 10 setup and restore</subtask>
+        <subtask>Add `dotnet build` step for backend</subtask>
+        <subtask>Add `dotnet test` step with test results</subtask>
+        <subtask>Configure Node.js 22 setup</subtask>
+        <subtask>Add `npm ci &amp;&amp; ng build` step for frontend</subtask>
+        <subtask>Add `npm test` step for frontend tests</subtask>
+        <subtask>Add Docker build verification step</subtask>
+        <subtask>Configure branch protection to require CI pass</subtask>
+      </task>
+      <task id="2" ac="8.2">Create GitHub Actions CD Workflow
+        <subtask>Create `.github/workflows/cd.yml` for main branch</subtask>
+        <subtask>Trigger on push to main after CI passes</subtask>
+        <subtask>Build and tag Docker images with commit SHA</subtask>
+        <subtask>Push images to container registry (Docker Hub or Render)</subtask>
+        <subtask>Trigger Render deployment via webhook or API</subtask>
+      </task>
+      <task id="3" ac="8.8">Backend Dockerfile Optimization
+        <subtask>Review existing backend Dockerfile</subtask>
+        <subtask>Implement multi-stage build (SDK build, runtime deploy)</subtask>
+        <subtask>Optimize layer caching for faster builds</subtask>
+        <subtask>Set proper EXPOSE and ENTRYPOINT</subtask>
+        <subtask>Add health check instruction</subtask>
+        <subtask>Test Docker build locally</subtask>
+      </task>
+      <task id="4" ac="8.8">Frontend Dockerfile with Nginx
+        <subtask>Create/update frontend Dockerfile with nginx</subtask>
+        <subtask>Implement multi-stage build (node build, nginx serve)</subtask>
+        <subtask>Create nginx.conf for SPA routing</subtask>
+        <subtask>Configure nginx for API proxy or CORS handling</subtask>
+        <subtask>Optimize for production (gzip, caching headers)</subtask>
+        <subtask>Test Docker build locally</subtask>
+      </task>
+      <task id="5" ac="8.4">Implement Health Check Endpoint
+        <subtask>Add `GET /api/v1/health` endpoint</subtask>
+        <subtask>Return `{ status: "healthy", version: "X.X.X" }`</subtask>
+        <subtask>Add `GET /api/v1/health/ready` for database check</subtask>
+        <subtask>Include database connectivity verification</subtask>
+        <subtask>Add health check to Swagger documentation</subtask>
+        <subtask>Write unit test for health endpoint</subtask>
+      </task>
+      <task id="6" ac="8.3">Configure EF Core Auto-Migrations
+        <subtask>Add migration execution in Program.cs for production</subtask>
+        <subtask>Wrap in try-catch with proper logging</subtask>
+        <subtask>Ensure app fails to start if migrations fail</subtask>
+        <subtask>Test migration behavior locally with fresh database</subtask>
+        <subtask>Document migration rollback procedure</subtask>
+      </task>
+      <task id="7" ac="8.2,8.6,8.7">Render Service Configuration
+        <subtask>Create Render Web Service for API</subtask>
+        <subtask>Create Render Static Site for frontend</subtask>
+        <subtask>Create Render PostgreSQL database</subtask>
+        <subtask>Configure environment variables</subtask>
+        <subtask>Configure health check path for API</subtask>
+        <subtask>Enable auto-deploy from GitHub</subtask>
+        <subtask>Configure rollback settings</subtask>
+      </task>
+      <task id="8" ac="8.8">Docker Compose Production Profile
+        <subtask>Add production profile to docker-compose.yml</subtask>
+        <subtask>Configure production environment variables</subtask>
+        <subtask>Add health check configuration</subtask>
+        <subtask>Document local production testing procedure</subtask>
+      </task>
+      <task id="9" ac="8.5">Production Smoke Testing
+        <subtask>Deploy initial version to Render</subtask>
+        <subtask>Verify production URL loads login page</subtask>
+        <subtask>Verify Forest Green theme applied</subtask>
+        <subtask>Test user registration flow</subtask>
+        <subtask>Verify email verification (if email configured)</subtask>
+        <subtask>Test login flow</subtask>
+        <subtask>Test logout flow</subtask>
+        <subtask>Test password reset flow</subtask>
+        <subtask>Verify all navigation works</subtask>
+        <subtask>Document any production-specific issues</subtask>
+      </task>
+      <task id="10" ac="all">Documentation and Runbooks
+        <subtask>Update README with deployment instructions</subtask>
+        <subtask>Document environment variable requirements</subtask>
+        <subtask>Create deployment runbook</subtask>
+        <subtask>Document rollback procedure</subtask>
+        <subtask>Add troubleshooting guide for common issues</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC8.1" title="PR Trigger CI Pipeline">
+      <requirement>PR opened against main branch triggers CI</requirement>
+      <requirement>CI runs: `dotnet build`, `dotnet test`</requirement>
+      <requirement>CI runs: `ng build`, `ng test`</requirement>
+      <requirement>Docker images build successfully</requirement>
+      <requirement>PR cannot merge if CI fails</requirement>
+    </criterion>
+    <criterion id="AC8.2" title="Merge to Main Deploys">
+      <requirement>Merge to main triggers deployment</requirement>
+      <requirement>All CI checks pass first</requirement>
+      <requirement>Docker images pushed to container registry</requirement>
+      <requirement>Render deploys new version automatically</requirement>
+    </criterion>
+    <criterion id="AC8.3" title="Database Migrations on Startup">
+      <requirement>EF Core migrations run automatically on application startup</requirement>
+      <requirement>Production database schema updated without manual intervention</requirement>
+      <requirement>Migration failures prevent app from starting (fail-safe)</requirement>
+    </criterion>
+    <criterion id="AC8.4" title="Health Check Endpoint">
+      <requirement>`GET /api/v1/health` returns 200 OK with status "healthy"</requirement>
+      <requirement>Response includes application version</requirement>
+      <requirement>Render uses health check for deployment verification</requirement>
+    </criterion>
+    <criterion id="AC8.5" title="Production Verification">
+      <requirement>Production URL loads login page with Forest Green theme</requirement>
+      <requirement>API health check returns 200 OK</requirement>
+      <requirement>Can register a new account and log in successfully</requirement>
+      <requirement>All authentication flows functional in production</requirement>
+    </criterion>
+    <criterion id="AC8.6" title="Deployment Rollback">
+      <requirement>Failed deployments trigger automatic rollback</requirement>
+      <requirement>Render health checks determine deployment success</requirement>
+      <requirement>Previous working version restored if new deployment fails</requirement>
+    </criterion>
+    <criterion id="AC8.7" title="Environment Configuration">
+      <requirement>Environment variables configured in Render</requirement>
+      <requirement>`ConnectionStrings__Default` for PostgreSQL</requirement>
+      <requirement>`Jwt__Secret` for JWT signing</requirement>
+      <requirement>`Email__*` for email provider settings</requirement>
+      <requirement>Secrets not exposed in logs or source code</requirement>
+    </criterion>
+    <criterion id="AC8.8" title="Docker Build Configuration">
+      <requirement>Backend Dockerfile produces optimized production image</requirement>
+      <requirement>Frontend Dockerfile with nginx serves static files</requirement>
+      <requirement>Multi-stage builds for minimal image size</requirement>
+      <requirement>Images tagged with git commit SHA</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>CI/CD Pipeline and Deployment Architecture</section>
+        <snippet>Docker-based deployment for local/production parity. PR triggers CI: dotnet build, dotnet test, npm run build, npm test. Merge to main triggers deployment to Render with automatic EF migrations on startup.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>AC8: CI/CD Pipeline, Docker Configuration, Dependencies</section>
+        <snippet>GitHub Actions for CI/CD, Docker-based deployment to Render. Backend Dockerfile uses multi-stage build with .NET SDK 10. Frontend Dockerfile uses Node 22 + nginx. Automatic migrations on production startup.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>Environment Variables</section>
+        <snippet>ConnectionStrings__Default (PostgreSQL), Jwt__Secret (256-bit), Jwt__Issuer, Jwt__Audience, Email__Provider, Email__*, ASPNETCORE_ENVIRONMENT. Database credentials in environment variables, never in source.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>Database Migrations</section>
+        <snippet>Automatic on production startup: if (app.Environment.IsProduction()) { db.Database.Migrate(); }. Same migrations run locally (dotnet ef database update) and in production.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>backend/src/PropertyManager.Api/Program.cs</path>
+        <kind>entrypoint</kind>
+        <symbol>Program</symbol>
+        <lines>1-153</lines>
+        <reason>Main application entry point. Currently has basic health endpoint at /api/v1/health. Needs auto-migration code for production startup (AC8.3) and enhanced health check with version (AC8.4).</reason>
+      </file>
+      <file>
+        <path>backend/Dockerfile</path>
+        <kind>dockerfile</kind>
+        <symbol>Backend Dockerfile</symbol>
+        <lines>1-17</lines>
+        <reason>Existing multi-stage Dockerfile. Uses .NET SDK 10 for build, aspnet:10.0 for runtime. May need optimization for layer caching and health check instruction (AC8.8).</reason>
+      </file>
+      <file>
+        <path>frontend/Dockerfile</path>
+        <kind>dockerfile</kind>
+        <symbol>Frontend Dockerfile</symbol>
+        <lines>1-13</lines>
+        <reason>Existing multi-stage Dockerfile with Node 22 and nginx. Already configured for SPA routing. May need gzip/caching optimization (AC8.8).</reason>
+      </file>
+      <file>
+        <path>frontend/nginx.conf</path>
+        <kind>config</kind>
+        <symbol>nginx configuration</symbol>
+        <lines>1-29</lines>
+        <reason>Existing nginx config for SPA routing and API proxying. May need production optimizations (gzip, caching headers).</reason>
+      </file>
+      <file>
+        <path>docker-compose.yml</path>
+        <kind>config</kind>
+        <symbol>Docker Compose</symbol>
+        <lines>1-43</lines>
+        <reason>Local development compose file. Needs production profile added (AC8.8). Currently configured for dev with api, web, db, and mailhog services.</reason>
+      </file>
+      <file>
+        <path>backend/PropertyManager.sln</path>
+        <kind>solution</kind>
+        <symbol>Solution file</symbol>
+        <lines>all</lines>
+        <reason>Solution file for CI build commands. Contains 6 projects: Domain, Application, Infrastructure, Api (src) and Api.Tests, Infrastructure.Tests (tests).</reason>
+      </file>
+      <file>
+        <path>frontend/package.json</path>
+        <kind>manifest</kind>
+        <symbol>Package manifest</symbol>
+        <lines>1-50</lines>
+        <reason>Frontend dependencies and scripts. Contains build, test commands for CI. Uses Angular 20, Vitest for testing.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs</path>
+        <kind>dbcontext</kind>
+        <symbol>AppDbContext</symbol>
+        <lines>all</lines>
+        <reason>EF Core DbContext. Migrations should be applied via this context on production startup.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <backend framework=".NET 10">
+        <package name="Microsoft.AspNetCore.Authentication.JwtBearer" version="10.x" />
+        <package name="Microsoft.AspNetCore.Identity.EntityFrameworkCore" version="10.x" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" />
+        <package name="Npgsql.EntityFrameworkCore.PostgreSQL" version="10.x" />
+        <package name="MediatR" version="12.x" />
+        <package name="FluentValidation.AspNetCore" version="11.x" />
+        <package name="Serilog.AspNetCore" version="8.x" />
+        <package name="NSwag.AspNetCore" version="14.x" />
+      </backend>
+      <frontend framework="Angular 20">
+        <package name="@angular/core" version="^20.3.0" />
+        <package name="@angular/material" version="^20.2.14" />
+        <package name="@ngrx/signals" version="^20.1.0" />
+        <package name="vitest" version="^3.2.4" devDependency="true" />
+        <package name="typescript" version="~5.9.2" devDependency="true" />
+      </frontend>
+      <infrastructure>
+        <tool name="Docker" purpose="Containerization" />
+        <tool name="PostgreSQL" version="16" purpose="Database" />
+        <tool name="nginx" purpose="Frontend static serving" />
+        <tool name="GitHub Actions" purpose="CI/CD pipeline" />
+        <tool name="Render" purpose="Cloud hosting" />
+      </infrastructure>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">Stateless API design for horizontal scaling - no session state on server</constraint>
+    <constraint source="Architecture">JWT stored in HttpOnly cookie with Secure and SameSite flags</constraint>
+    <constraint source="Architecture">All tenant data filtered by AccountId using EF Core global query filters</constraint>
+    <constraint source="Architecture">Database migrations run automatically on production startup</constraint>
+    <constraint source="Tech Spec">Health check endpoint returns 200 OK for Render deployment verification</constraint>
+    <constraint source="Tech Spec">Secrets (JWT Secret, DB connection) must be in environment variables, never in source code</constraint>
+    <constraint source="Tech Spec">Docker images use multi-stage builds for minimal size</constraint>
+    <constraint source="Tech Spec">CI must run all tests before merge allowed</constraint>
+    <constraint source="Security">HTTPS everywhere (TLS 1.2+) - Render enforces</constraint>
+    <constraint source="Security">CORS restricted to application domain</constraint>
+    <constraint source="DevNotes">Files to CREATE: .github/workflows/ci.yml, .github/workflows/cd.yml</constraint>
+    <constraint source="DevNotes">Files to MODIFY: Program.cs (auto-migration), Dockerfiles (optimization), docker-compose.yml (prod profile)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Health Check - Basic</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/health -> { status: "healthy", version: "X.X.X" }</signature>
+      <path>backend/src/PropertyManager.Api/Program.cs:148-150</path>
+      <note>Existing basic implementation. Needs version from assembly and proper controller structure.</note>
+    </interface>
+    <interface>
+      <name>Health Check - Ready</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/health/ready -> { status: "ready" } | 503 { status: "not ready" }</signature>
+      <path>NEW - HealthController.cs</path>
+      <note>New endpoint needed. Checks database connectivity via AppDbContext.Database.CanConnectAsync()</note>
+    </interface>
+    <interface>
+      <name>EF Core Migrate</name>
+      <kind>Database operation</kind>
+      <signature>AppDbContext.Database.MigrateAsync()</signature>
+      <path>backend/src/PropertyManager.Api/Program.cs</path>
+      <note>Add to Program.cs startup for production environment. Wrap in try-catch, fail-fast on error.</note>
+    </interface>
+    <interface>
+      <name>GitHub Actions CI</name>
+      <kind>CI workflow</kind>
+      <signature>on: pull_request branches: [main]</signature>
+      <path>.github/workflows/ci.yml</path>
+      <note>New file. Jobs: backend (dotnet build/test), frontend (npm ci/build/test), docker (build verification)</note>
+    </interface>
+    <interface>
+      <name>GitHub Actions CD</name>
+      <kind>CD workflow</kind>
+      <signature>on: push branches: [main]</signature>
+      <path>.github/workflows/cd.yml</path>
+      <note>New file. Triggers deployment to Render after CI passes.</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows a pyramid approach: xUnit for .NET unit/integration tests, Vitest for Angular component/service tests, Playwright for E2E.
+      Backend tests are in backend/tests/ with PropertyManager.Api.Tests and PropertyManager.Infrastructure.Tests projects.
+      Frontend tests use Vitest (configured in package.json as "test": "ng test").
+      CI must run all tests: dotnet test for backend, npm test for frontend.
+      Currently 45 backend tests and 40 frontend tests passing per Story 1.7 completion.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>backend/tests/PropertyManager.Infrastructure.Tests/</location>
+      <location>frontend/src/**/*.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC8.1">CI workflow test: Verify GitHub Actions workflow syntax is valid using act or workflow-validator</idea>
+      <idea ac="AC8.3">Integration test: Verify migrations apply successfully to fresh database container</idea>
+      <idea ac="AC8.4">Unit test: HealthController returns 200 with status "healthy" and version string</idea>
+      <idea ac="AC8.4">Integration test: /api/v1/health/ready returns 503 when database unavailable</idea>
+      <idea ac="AC8.5">E2E smoke test: Full authentication flow works in production-like environment</idea>
+      <idea ac="AC8.8">Docker build test: Both Dockerfiles build successfully and produce working images</idea>
+      <idea ac="AC8.8">Container test: docker-compose up starts all services and they communicate correctly</idea>
+    </ideas>
+  </tests>
+</story-context>
