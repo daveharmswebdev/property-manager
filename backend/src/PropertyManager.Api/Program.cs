@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -30,6 +31,11 @@ builder.Services.AddControllers();
 // Configure EF Core with PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? "Host=localhost;Database=propertymanager;Username=postgres;Password=localdev";
+
+// Convert Render's PostgreSQL URI format to .NET format if needed
+// Render provides: postgres://user:password@host:port/database
+// Npgsql expects: Host=host;Port=port;Database=database;Username=user;Password=password
+connectionString = ConvertPostgresConnectionString(connectionString);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -163,3 +169,31 @@ if (app.Environment.IsProduction())
 }
 
 app.Run();
+
+// Helper function to convert PostgreSQL connection string formats
+static string ConvertPostgresConnectionString(string connectionString)
+{
+    // If it's already in .NET format (contains "Host="), return as-is
+    if (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase))
+    {
+        return connectionString;
+    }
+
+    // Parse Render's URI format: postgres://user:password@host:port/database
+    var pattern = @"^postgres(?:ql)?://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)$";
+    var match = Regex.Match(connectionString, pattern);
+
+    if (match.Success)
+    {
+        var user = match.Groups[1].Value;
+        var password = match.Groups[2].Value;
+        var host = match.Groups[3].Value;
+        var port = match.Groups[4].Value;
+        var database = match.Groups[5].Value;
+
+        return $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+    }
+
+    // If pattern doesn't match, return original and let it fail with a clear error
+    return connectionString;
+}
