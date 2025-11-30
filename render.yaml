@@ -47,7 +47,6 @@ services:
     runtime: static
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist/property-manager/browser
-    region: oregon
     plan: free
     headers:
       - path: /*
