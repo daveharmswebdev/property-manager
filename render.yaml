@@ -28,7 +28,7 @@ services:
         value: "60"
       - key: Email__Provider
         value: Smtp
-      - key: Email__FromAddress
+      - key: Email__FromEmail
         sync: false
       - key: Email__FromName
         value: Property Manager
@@ -36,6 +36,8 @@ services:
         sync: false
       - key: Email__SmtpPort
         sync: false
+      - key: Email__EnableSsl
+        value: "true"
       - key: Email__SmtpUsername
         sync: false
       - key: Email__SmtpPassword
