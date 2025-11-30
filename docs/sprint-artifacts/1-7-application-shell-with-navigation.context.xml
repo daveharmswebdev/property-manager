@@ -1,0 +1,280 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>7</storyId>
+    <title>Application Shell with Navigation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-7-application-shell-with-navigation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>logged-in user</asA>
+    <iWant>to see the main application layout with navigation</iWant>
+    <soThat>I can access different sections of the app</soThat>
+    <tasks>
+      <task id="1" ac="7.4">Angular Material Theme Configuration
+        <subtask>Create custom Forest Green theme in src/styles/theme.scss</subtask>
+        <subtask>Configure primary palette (#66BB6A, #4CAF50)</subtask>
+        <subtask>Configure accent palette (#FFA726 warm orange)</subtask>
+        <subtask>Apply softer elevation shadows (per UX spec)</subtask>
+        <subtask>Configure typography with system fonts</subtask>
+        <subtask>Import theme in root styles</subtask>
+      </task>
+      <task id="2" ac="7.1,7.3">Create Shell Layout Component
+        <subtask>Create ShellComponent as main layout wrapper</subtask>
+        <subtask>Implement mat-sidenav-container with dark sidebar</subtask>
+        <subtask>Create navigation list with all menu items</subtask>
+        <subtask>Style active nav item with highlight + left border</subtask>
+        <subtask>Add router outlet for content area</subtask>
+        <subtask>Style content area with light background</subtask>
+      </task>
+      <task id="3" ac="7.1,7.2">Implement Sidebar Navigation
+        <subtask>Create SidebarNavComponent with navigation links</subtask>
+        <subtask>Add icons for each nav item using mat-icon</subtask>
+        <subtask>Implement active state detection using routerLinkActive</subtask>
+        <subtask>Add Receipts badge placeholder (count=0)</subtask>
+        <subtask>Add user profile section in footer</subtask>
+        <subtask>Display user email from auth state</subtask>
+        <subtask>Add logout button with icon</subtask>
+        <subtask>Wire logout to auth service</subtask>
+      </task>
+      <task id="4" ac="7.5">Mobile Bottom Navigation
+        <subtask>Create BottomNavComponent for mobile view</subtask>
+        <subtask>Implement bottom tab bar with 5 items</subtask>
+        <subtask>Show only on mobile via CSS/breakpoint</subtask>
+        <subtask>Hide sidebar on mobile</subtask>
+        <subtask>Add FAB placeholder for future quick actions</subtask>
+        <subtask>Ensure touch-friendly tap targets (min 44px)</subtask>
+      </task>
+      <task id="5" ac="7.6,7.7">Route Configuration
+        <subtask>Update app.routes.ts with all routes</subtask>
+        <subtask>Configure redirect from / to /dashboard</subtask>
+        <subtask>Create placeholder components for each route</subtask>
+        <subtask>Apply authGuard to all protected routes</subtask>
+        <subtask>Configure public routes (login, register, forgot, reset, verify)</subtask>
+      </task>
+      <task id="6" ac="7.6,7.8">Auth Guard Enhancement
+        <subtask>Review existing auth.guard.ts</subtask>
+        <subtask>Ensure redirect to /login for unauthenticated users</subtask>
+        <subtask>Store intended URL for post-login redirect</subtask>
+        <subtask>Implement loading state while checking auth</subtask>
+        <subtask>Prevent flash of content on protected routes</subtask>
+      </task>
+      <task id="7" ac="7.3">Placeholder Dashboard Component
+        <subtask>Create DashboardComponent with placeholder content</subtask>
+        <subtask>Display "Dashboard coming soon" message</subtask>
+        <subtask>Apply proper styling consistent with theme</subtask>
+        <subtask>Prepare structure for future stats bar and property list</subtask>
+      </task>
+      <task id="8" ac="7.1,7.5">Responsive Design Implementation
+        <subtask>Define breakpoints: Desktop ≥1024px, Tablet 768-1023px, Mobile &lt;768px</subtask>
+        <subtask>Implement sidebar visibility rules</subtask>
+        <subtask>Implement bottom nav visibility rules</subtask>
+        <subtask>Test layout at all breakpoints</subtask>
+        <subtask>Ensure smooth transitions between breakpoints</subtask>
+      </task>
+      <task id="9" ac="All">Integration Testing
+        <subtask>Test authenticated user sees shell with navigation</subtask>
+        <subtask>Test unauthenticated user redirected to login</subtask>
+        <subtask>Test navigation between routes works</subtask>
+        <subtask>Test logout clears session and redirects</subtask>
+        <subtask>Test mobile responsive layout</subtask>
+        <subtask>Manual smoke test checklist completion</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC7.1" title="Dark Sidebar Navigation (Desktop ≥1024px)">
+      <requirement>Sidebar visible on left side with dark theme</requirement>
+      <requirement>Forest Green primary color (#66BB6A) for accents and active states</requirement>
+      <requirement>Navigation items displayed as list: Dashboard (active by default), Properties, Expenses, Income, Receipts (with placeholder badge), Reports, Settings</requirement>
+      <requirement>Active nav item has background highlight + left border accent</requirement>
+      <requirement>Clicking nav item navigates to corresponding route</requirement>
+    </criterion>
+    <criterion id="AC7.2" title="User Profile Section">
+      <requirement>User email or name displayed in sidebar footer</requirement>
+      <requirement>Logout option visible and accessible</requirement>
+      <requirement>Clicking logout triggers the logout flow (from Story 1.5)</requirement>
+    </criterion>
+    <criterion id="AC7.3" title="Main Content Area">
+      <requirement>Light background (#FAFAFA off-white per UX spec)</requirement>
+      <requirement>Content area displays placeholder "Dashboard coming soon" initially</requirement>
+      <requirement>Responsive content area that adjusts to sidebar</requirement>
+    </criterion>
+    <criterion id="AC7.4" title="Forest Green Theme Application">
+      <requirement>Custom Angular Material theme with Forest Green (#66BB6A) as primary</requirement>
+      <requirement>Primary Dark: #4CAF50 for hover/emphasis</requirement>
+      <requirement>Accent: Warm Orange #FFA726</requirement>
+      <requirement>Typography using system fonts as per UX spec</requirement>
+      <requirement>Softer elevation shadows for friendly feel</requirement>
+    </criterion>
+    <criterion id="AC7.5" title="Mobile Responsive Navigation (&lt;768px)">
+      <requirement>Bottom tab navigation bar instead of sidebar</requirement>
+      <requirement>Nav items: Dashboard, Properties, Expenses, Income, Receipts</requirement>
+      <requirement>FAB (Floating Action Button) for quick actions (placeholder)</requirement>
+      <requirement>Sidebar hidden on mobile</requirement>
+    </criterion>
+    <criterion id="AC7.6" title="Auth Guard Protection">
+      <requirement>All routes except /login, /register, /forgot-password, /reset-password, /verify-email protected</requirement>
+      <requirement>Unauthenticated users redirected to /login</requirement>
+      <requirement>After login, user redirected to /dashboard</requirement>
+    </criterion>
+    <criterion id="AC7.7" title="Route Structure">
+      <requirement>/ redirects to /dashboard</requirement>
+      <requirement>/dashboard - Main dashboard view</requirement>
+      <requirement>/properties - Properties list (placeholder)</requirement>
+      <requirement>/expenses - Expenses view (placeholder)</requirement>
+      <requirement>/income - Income view (placeholder)</requirement>
+      <requirement>/receipts - Receipts queue (placeholder)</requirement>
+      <requirement>/reports - Tax reports (placeholder)</requirement>
+      <requirement>/settings - User settings (placeholder)</requirement>
+    </criterion>
+    <criterion id="AC7.8" title="Loading and Error States">
+      <requirement>Skeleton screen shown while checking auth status</requirement>
+      <requirement>Graceful handling if user data fetch fails</requirement>
+      <requirement>No flash of unauthenticated content on protected routes</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>Section 3.1 Color System</section>
+        <snippet>Forest Green (#66BB6A) primary, Deep Green (#4CAF50) dark, Mint (#A5D6A7) light, Warm Orange (#FFA726) accent, Off-White (#FAFAFA) background</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>Section 4 Design Direction</section>
+        <snippet>Direction 3 - Compact List View with Dark Sidebar. Dark sidebar feels "app-like" and professional. Desktop-optimized for 80% desktop workflow.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>Section 8.1 Responsive Strategy</section>
+        <snippet>Desktop ≥1024px (sidebar + content), Tablet 768-1023px (collapsible sidebar), Mobile &lt;768px (bottom nav, stacked layouts)</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>Section 6.2 Angular Material Components</section>
+        <snippet>mat-sidenav (dark sidebar), mat-list (nav items), mat-button, mat-icon, mat-badge (receipt count)</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture">
+        <section>Frontend Structure</section>
+        <snippet>Feature-based Angular structure: core/ (auth service, guards, interceptors), shared/ (components), features/ (dashboard, properties, etc.)</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture">
+        <section>Security Architecture</section>
+        <snippet>JWT stored in HttpOnly cookie, auth guard protects routes, role-based access (Owner/Contributor)</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec">
+        <section>AC7: Application Shell</section>
+        <snippet>Dark sidebar navigation on desktop, bottom tab on mobile, Forest Green theme, auth guard protection for all protected routes</snippet>
+      </doc>
+      <doc path="docs/prd.md" title="PRD">
+        <section>User Experience Principles</section>
+        <snippet>"Obvious, not clever" - UI immediately understandable. Friendly, colorful, big buttons. Clear labels. Visible navigation.</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epics">
+        <section>Story 1.7</section>
+        <snippet>Navigation items: Dashboard, Properties, Expenses, Income, Receipts (badge), Reports, Settings. FAB for mobile quick actions.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="frontend/src/app/core/services/auth.service.ts" kind="service" symbol="AuthService" lines="1-245">
+        <reason>Provides currentUser signal, isAuthenticated computed, logout() method - all required for sidebar user profile and logout button</reason>
+      </artifact>
+      <artifact path="frontend/src/app/core/auth/auth.guard.ts" kind="guard" symbol="authGuard, guestGuard" lines="1-65">
+        <reason>Existing auth guard with return URL support - needs enhancement for loading state to prevent flash of content</reason>
+      </artifact>
+      <artifact path="frontend/src/app/app.routes.ts" kind="routes" symbol="routes" lines="1-68">
+        <reason>Current route config with dashboard, auth routes - needs expansion for properties, expenses, income, receipts, reports, settings</reason>
+      </artifact>
+      <artifact path="frontend/src/app/app.ts" kind="component" symbol="App" lines="1-12">
+        <reason>Root component - currently just router-outlet, needs to conditionally render shell for authenticated routes</reason>
+      </artifact>
+      <artifact path="frontend/src/app/app.html" kind="template" lines="1">
+        <reason>Root template - needs shell component wrapping for authenticated views</reason>
+      </artifact>
+      <artifact path="frontend/src/app/features/dashboard/dashboard.component.ts" kind="component" symbol="DashboardComponent" lines="1-85">
+        <reason>Existing dashboard placeholder with logout - logout will move to sidebar, dashboard will show placeholder content</reason>
+      </artifact>
+      <artifact path="frontend/src/styles.scss" kind="styles" lines="1-40">
+        <reason>Root styles with Angular Material theme - currently uses azure palette, needs Forest Green custom theme</reason>
+      </artifact>
+      <artifact path="frontend/src/app/app.config.ts" kind="config" symbol="appConfig" lines="1-17">
+        <reason>App providers including router, HTTP client with auth interceptor - may need animation providers for transitions</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="angular">
+        <package name="@angular/core" version="^20.3.0" />
+        <package name="@angular/material" version="^20.2.14" />
+        <package name="@angular/cdk" version="^20.2.14" />
+        <package name="@angular/router" version="^20.3.0" />
+        <package name="@angular/forms" version="^20.3.0" />
+        <package name="@angular/animations" version="^20.3.14" />
+        <package name="@ngrx/signals" version="^20.1.0" />
+        <package name="rxjs" version="~7.8.0" />
+      </ecosystem>
+      <ecosystem name="testing">
+        <package name="vitest" version="^3.2.4" />
+        <package name="jsdom" version="^27.2.0" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">JWT stored in HttpOnly cookie - do not store in localStorage</constraint>
+    <constraint source="Architecture">Stateless API design - no server-side session state</constraint>
+    <constraint source="UX Design">Desktop-first (80% usage), mobile adaptations for 20%</constraint>
+    <constraint source="UX Design">Use Angular Material components with custom theming, not custom components</constraint>
+    <constraint source="Tech Spec">Use mat-sidenav-container for shell layout</constraint>
+    <constraint source="Dev Notes">REUSE existing auth.service.ts for user state and logout - do NOT recreate</constraint>
+    <constraint source="Dev Notes">REUSE existing auth.guard.ts - enhance for loading state only</constraint>
+    <constraint source="Dev Notes">Angular 20+ standalone components with signal-based state</constraint>
+    <constraint source="Architecture">Feature-based folder structure: core/, shared/, features/</constraint>
+    <constraint source="Architecture">Naming: kebab-case files, PascalCase classes, camelCase properties</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="AuthService" kind="Angular Service" path="frontend/src/app/core/services/auth.service.ts">
+      <signature>currentUser: Signal&lt;User | null&gt;</signature>
+      <signature>isAuthenticated: Signal&lt;boolean&gt;</signature>
+      <signature>logout(): Observable&lt;void&gt;</signature>
+      <signature>initializeAuth(): Observable&lt;LoginResponse | null&gt;</signature>
+    </interface>
+    <interface name="User" kind="TypeScript Interface" path="frontend/src/app/core/services/auth.service.ts">
+      <signature>{ userId: string; accountId: string; role: string; }</signature>
+    </interface>
+    <interface name="authGuard" kind="Angular CanActivateFn" path="frontend/src/app/core/auth/auth.guard.ts">
+      <signature>CanActivateFn - redirects to /login with returnUrl if unauthenticated</signature>
+    </interface>
+    <interface name="Routes" kind="Angular Routes" path="frontend/src/app/app.routes.ts">
+      <signature>Routes array with path, loadComponent, canActivate configuration</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Angular component tests use Vitest with @testing-library/angular patterns. Tests focus on user behavior, not implementation details. Mock HTTP calls and auth service state. Use data-testid attributes for test selectors. E2E tests use Playwright for critical user flows. Manual smoke test checklist required per story.
+    </standards>
+    <locations>
+      <location>frontend/src/app/**/*.spec.ts - Component and service unit tests</location>
+      <location>frontend/e2e/ - Playwright E2E tests</location>
+    </locations>
+    <ideas>
+      <idea ac="AC7.1">Test sidebar renders with all 7 nav items on desktop viewport</idea>
+      <idea ac="AC7.1">Test active nav item has correct styling when route matches</idea>
+      <idea ac="AC7.2">Test user email displays from auth service currentUser signal</idea>
+      <idea ac="AC7.2">Test logout button calls authService.logout() and redirects to /login</idea>
+      <idea ac="AC7.3">Test content area has #FAFAFA background</idea>
+      <idea ac="AC7.4">Test Forest Green theme CSS variables are applied</idea>
+      <idea ac="AC7.5">Test bottom nav renders on mobile viewport (&lt;768px)</idea>
+      <idea ac="AC7.5">Test sidebar hidden on mobile viewport</idea>
+      <idea ac="AC7.6">Test unauthenticated user redirected to /login</idea>
+      <idea ac="AC7.6">Test authenticated user can access /dashboard</idea>
+      <idea ac="AC7.7">Test all routes resolve to correct placeholder components</idea>
+      <idea ac="AC7.8">Test loading skeleton shown while auth initializing</idea>
+      <idea ac="AC7.8">Test no flash of protected content before auth check completes</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -51,6 +51,7 @@ export class AuthService {
   // Signals for state management (AC4.5)
   private readonly _accessToken = signal<string | null>(null);
   private readonly _currentUser = signal<User | null>(null);
+  private readonly _isInitializing = signal<boolean>(true); // AC7.8 - Loading state
 
   // Token refresh tracking
   private refreshTokenInProgress$ = new BehaviorSubject<boolean>(false);
@@ -59,6 +60,7 @@ export class AuthService {
   readonly accessToken = this._accessToken.asReadonly();
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this._accessToken() !== null);
+  readonly isInitializing = this._isInitializing.asReadonly(); // AC7.8 - Exposed for guards/components
 
   register(request: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.baseUrl}/register`, request);
@@ -219,8 +221,11 @@ export class AuthService {
   /**
    * Initialize auth state from storage (for page refresh persistence).
    * Since access token is in memory only, this will attempt to refresh.
+   * Sets isInitializing to false when complete (AC7.8).
    */
   initializeAuth(): Observable<LoginResponse | null> {
+    this._isInitializing.set(true);
+
     // Try to refresh the token on app initialization
     // This handles the case where the user refreshes the page
     return this.http.post<LoginResponse>(
@@ -234,12 +239,22 @@ export class AuthService {
         if (user) {
           this._currentUser.set(user);
         }
+        this._isInitializing.set(false);
       }),
       catchError(() => {
         // Refresh failed - user needs to login
         this.clearAuthState();
+        this._isInitializing.set(false);
         return of(null);
       })
     );
+  }
+
+  /**
+   * Mark initialization as complete without attempting refresh.
+   * Used when we know the user is not authenticated.
+   */
+  markInitialized(): void {
+    this._isInitializing.set(false);
   }
 }

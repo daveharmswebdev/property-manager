@@ -43,7 +43,7 @@ development_status:
   1-4-user-login-and-jwt-authentication: done
   1-5-user-logout: done
   1-6-password-reset-flow: done
-  1-7-application-shell-with-navigation: drafted
+  1-7-application-shell-with-navigation: done
   1-8-ci-cd-pipeline-and-initial-deployment: backlog
   epic-1-retrospective: optional
 

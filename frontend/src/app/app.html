@@ -1,1 +1,9 @@
-<router-outlet />
+<!-- Loading skeleton while auth initializes (AC7.8) -->
+@if (isInitializing()) {
+  <div class="auth-loading-container">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading...</p>
+  </div>
+} @else {
+  <router-outlet />
+}
