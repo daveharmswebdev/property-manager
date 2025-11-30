@@ -9,7 +9,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     region: oregon
-    plan: free
+    plan: starter
     healthCheckPath: /api/v1/health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
@@ -47,7 +47,7 @@ services:
     runtime: static
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist/property-manager/browser
-    plan: free
+    plan: starter
     headers:
       - path: /*
         name: X-Frame-Options
@@ -68,5 +68,5 @@ databases:
     databaseName: propertymanager
     user: propertymanager
     region: oregon
-    plan: free
+    plan: starter
     ipAllowList: []
