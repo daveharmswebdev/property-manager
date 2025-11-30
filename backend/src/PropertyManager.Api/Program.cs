@@ -179,8 +179,9 @@ static string ConvertPostgresConnectionString(string connectionString)
         return connectionString;
     }
 
-    // Parse Render's URI format: postgres://user:password@host:port/database
-    var pattern = @"^postgres(?:ql)?://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)$";
+    // Parse Render's URI format: postgres://user:password@host[:port]/database
+    // Port is optional - Render often omits it
+    var pattern = @"^postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/(.+)$";
     var match = Regex.Match(connectionString, pattern);
 
     if (match.Success)
@@ -188,7 +189,7 @@ static string ConvertPostgresConnectionString(string connectionString)
         var user = match.Groups[1].Value;
         var password = match.Groups[2].Value;
         var host = match.Groups[3].Value;
-        var port = match.Groups[4].Value;
+        var port = match.Groups[4].Success ? match.Groups[4].Value : "5432";
         var database = match.Groups[5].Value;
 
         return $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true";
