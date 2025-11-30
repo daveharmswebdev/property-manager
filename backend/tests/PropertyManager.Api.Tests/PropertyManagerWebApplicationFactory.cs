@@ -81,10 +81,17 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 public class FakeEmailService : IEmailService
 {
     public List<(string Email, string Token)> SentVerificationEmails { get; } = [];
+    public List<(string Email, string Token)> SentPasswordResetEmails { get; } = [];
 
     public Task SendVerificationEmailAsync(string email, string token, CancellationToken cancellationToken = default)
     {
         SentVerificationEmails.Add((email, token));
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetEmailAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        SentPasswordResetEmails.Add((email, token));
         return Task.CompletedTask;
     }
 }

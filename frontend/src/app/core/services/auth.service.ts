@@ -201,6 +201,22 @@ export class AuthService {
   }
 
   /**
+   * Request a password reset email (AC6.7).
+   * Always returns success to prevent email enumeration.
+   */
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/forgot-password`, { email });
+  }
+
+  /**
+   * Reset password using token from email (AC6.8).
+   * On success, user must re-authenticate.
+   */
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/reset-password`, { token, newPassword });
+  }
+
+  /**
    * Initialize auth state from storage (for page refresh persistence).
    * Since access token is in memory only, this will attempt to refresh.
    */

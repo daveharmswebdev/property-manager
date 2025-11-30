@@ -17,6 +17,8 @@ public class AuthController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<RegisterCommand> _registerValidator;
     private readonly IValidator<LoginCommand> _loginValidator;
+    private readonly IValidator<ForgotPasswordCommand> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordCommand> _resetPasswordValidator;
     private readonly ILogger<AuthController> _logger;
 
     // Cookie name for refresh token
@@ -26,11 +28,15 @@ public class AuthController : ControllerBase
         IMediator mediator,
         IValidator<RegisterCommand> registerValidator,
         IValidator<LoginCommand> loginValidator,
+        IValidator<ForgotPasswordCommand> forgotPasswordValidator,
+        IValidator<ResetPasswordCommand> resetPasswordValidator,
         ILogger<AuthController> logger)
     {
         _mediator = mediator;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
+        _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
         _logger = logger;
     }
 
@@ -223,6 +229,77 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Request a password reset email (AC6.1).
+    /// Always returns 204 No Content to prevent email enumeration.
+    /// </summary>
+    /// <param name="request">Email address to send reset link</param>
+    /// <returns>204 No Content (always)</returns>
+    /// <response code="204">Request processed (email sent if account exists)</response>
+    /// <response code="400">If validation fails</response>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+
+        // Validate command
+        var validationResult = await _forgotPasswordValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        // Send command - always succeeds to prevent email enumeration (AC6.1)
+        await _mediator.Send(command);
+
+        // Log password reset request for security monitoring
+        _logger.LogInformation(
+            "Password reset requested for email {Email} at {Timestamp}",
+            request.Email,
+            DateTime.UtcNow);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reset password using token from email (AC6.3).
+    /// Validates token and updates password.
+    /// Invalidates all existing sessions (AC6.4).
+    /// </summary>
+    /// <param name="request">Reset token and new password</param>
+    /// <returns>204 No Content on success</returns>
+    /// <response code="204">Password reset successful</response>
+    /// <response code="400">If token is invalid/expired or password validation fails</response>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var command = new ResetPasswordCommand(request.Token, request.NewPassword);
+
+        // Validate command
+        var validationResult = await _resetPasswordValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        var result = await _mediator.Send(command);
+
+        if (result.Success)
+        {
+            _logger.LogInformation("Password reset completed successfully at {Timestamp}", DateTime.UtcNow);
+            return NoContent();
+        }
+
+        // Return error with generic message (AC6.5)
+        return BadRequest(CreateProblemDetails(result.ErrorMessage ?? "This reset link is invalid or expired"));
+    }
+
+    /// <summary>
     /// Sets the refresh token as an HttpOnly cookie with security flags (AC4.1).
     /// </summary>
     private void SetRefreshTokenCookie(string refreshToken)
@@ -348,4 +425,19 @@ public record LoginResponse(
 public record RefreshResponse(
     string AccessToken,
     int ExpiresIn
+);
+
+/// <summary>
+/// Request model for password reset request (AC6.1).
+/// </summary>
+public record ForgotPasswordRequest(
+    string Email
+);
+
+/// <summary>
+/// Request model for password reset (AC6.3).
+/// </summary>
+public record ResetPasswordRequest(
+    string Token,
+    string NewPassword
 );

@@ -112,4 +112,65 @@ This link will expire in 24 hours.
 
 If you did not create an account, you can safely ignore this email.";
     }
+
+    /// <summary>
+    /// Sends a password reset email (AC6.6).
+    /// </summary>
+    public async Task SendPasswordResetEmailAsync(
+        string email,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var resetUrl = $"{_settings.BaseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
+
+        var subject = "Reset your password - Property Manager";
+        var htmlBody = GeneratePasswordResetEmailHtml(resetUrl);
+        var textBody = GeneratePasswordResetEmailText(resetUrl);
+
+        await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
+
+        _logger.LogInformation("Password reset email sent to {Email}", email);
+    }
+
+    private static string GeneratePasswordResetEmailHtml(string resetUrl)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Reset your password</title>
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"">
+    <div style=""background-color: #66BB6A; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;"">
+        <h1 style=""color: white; margin: 0;"">Property Manager</h1>
+    </div>
+    <div style=""background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;"">
+        <h2 style=""color: #333; margin-top: 0;"">Reset your password</h2>
+        <p>We received a request to reset your password. Click the button below to create a new password.</p>
+        <div style=""text-align: center; margin: 30px 0;"">
+            <a href=""{resetUrl}"" style=""background-color: #66BB6A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;"">Reset Password</a>
+        </div>
+        <p style=""color: #666; font-size: 14px;"">This link will expire in 1 hour.</p>
+        <p style=""color: #d9534f; font-size: 14px;""><strong>Security notice:</strong> If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+        <hr style=""border: none; border-top: 1px solid #ddd; margin: 20px 0;"">
+        <p style=""color: #999; font-size: 12px;"">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style=""color: #999; font-size: 12px; word-break: break-all;"">{resetUrl}</p>
+    </div>
+</body>
+</html>";
+    }
+
+    private static string GeneratePasswordResetEmailText(string resetUrl)
+    {
+        return $@"Property Manager - Reset your password
+
+We received a request to reset your password. Click the link below to create a new password.
+
+Reset your password: {resetUrl}
+
+This link will expire in 1 hour.
+
+SECURITY NOTICE: If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.";
+    }
 }

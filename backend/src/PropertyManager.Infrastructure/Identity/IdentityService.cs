@@ -157,4 +157,88 @@ public class IdentityService : IIdentityService
 
         return (true, user.Id, user.AccountId, user.Role, null);
     }
+
+    public async Task<Guid?> GetUserIdByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.NormalizedEmail == email.ToUpperInvariant())
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return user == Guid.Empty ? null : user;
+    }
+
+    public async Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new InvalidOperationException($"User with ID {userId} not found");
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+        // Encode the token with user ID for reset endpoint (same pattern as email verification)
+        // Format: userId:token (both URL encoded)
+        var combinedToken = $"{userId}:{HttpUtility.UrlEncode(token)}";
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(combinedToken));
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> ResetPasswordAsync(
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        // Generic error message for all failure cases (AC6.5)
+        const string invalidTokenError = "This reset link is invalid or expired";
+
+        try
+        {
+            // Decode the token
+            var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(token));
+            var parts = decoded.Split(':', 2);
+
+            if (parts.Length != 2 || !Guid.TryParse(parts[0], out var userId))
+            {
+                return (false, invalidTokenError);
+            }
+
+            var actualToken = HttpUtility.UrlDecode(parts[1]);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+
+            if (user == null)
+            {
+                return (false, invalidTokenError);
+            }
+
+            // Reset the password using Identity
+            var result = await _userManager.ResetPasswordAsync(user, actualToken, newPassword);
+
+            if (result.Succeeded)
+            {
+                return (true, null);
+            }
+
+            // Check for specific error types but return generic message
+            var hasPasswordError = result.Errors.Any(e =>
+                e.Code.Contains("Password", StringComparison.OrdinalIgnoreCase));
+
+            if (hasPasswordError)
+            {
+                // Return password validation errors (not security sensitive)
+                var passwordErrors = result.Errors
+                    .Where(e => e.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                    .Select(e => e.Description);
+                return (false, string.Join(". ", passwordErrors));
+            }
+
+            // Token invalid or expired - return generic message (AC6.5)
+            return (false, invalidTokenError);
+        }
+        catch (FormatException)
+        {
+            return (false, invalidTokenError);
+        }
+    }
 }

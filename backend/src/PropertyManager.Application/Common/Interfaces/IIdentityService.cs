@@ -44,4 +44,28 @@ public interface IIdentityService
         string email,
         string password,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets user ID by email address (case-insensitive lookup).
+    /// Used for password reset flow where we need the user ID but don't want to reveal if user exists.
+    /// </summary>
+    /// <returns>UserId if found, null otherwise.</returns>
+    Task<Guid?> GetUserIdByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a password reset token for the user.
+    /// Token is cryptographically secure and valid for 1 hour (AC6.2).
+    /// </summary>
+    /// <returns>Encoded token containing userId and reset token.</returns>
+    Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resets user password using the provided token.
+    /// Validates token is not expired or used (AC6.3, AC6.5).
+    /// </summary>
+    /// <returns>Tuple of (Success, ErrorMessage).</returns>
+    Task<(bool Success, string? ErrorMessage)> ResetPasswordAsync(
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default);
 }

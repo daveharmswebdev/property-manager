@@ -13,4 +13,13 @@ public interface IEmailService
         string email,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a password reset email with the provided token (AC6.6).
+    /// Link format: {frontend_url}/reset-password?token={token}
+    /// </summary>
+    Task SendPasswordResetEmailAsync(
+        string email,
+        string token,
+        CancellationToken cancellationToken = default);
 }

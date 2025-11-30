@@ -643,6 +643,221 @@ public class AuthControllerTests : IClassFixture<PropertyManagerWebApplicationFa
         device2RefreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // ==================== PASSWORD RESET TESTS (AC6.1, AC6.3, AC6.4, AC6.5) ====================
+
+    [Fact]
+    public async Task ForgotPassword_WithValidEmail_Returns204()
+    {
+        // Arrange - Create and verify a user
+        var email = $"forgot{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+
+        await CreateAndVerifyUser(email, password);
+
+        var request = new { Email = email };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", request);
+
+        // Assert (AC6.1 - always returns 204)
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify password reset email was sent
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentEmail = fakeEmailService.SentPasswordResetEmails.FirstOrDefault(e => e.Email == email);
+        sentEmail.Should().NotBeNull("Password reset email should have been sent");
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WithNonexistentEmail_Returns204_NoEmailSent()
+    {
+        // Arrange
+        var nonexistentEmail = $"nonexistent{Guid.NewGuid():N}@example.com";
+        var request = new { Email = nonexistentEmail };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", request);
+
+        // Assert (AC6.1 - returns 204 even for non-existent email to prevent enumeration)
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify NO email was sent (user doesn't exist)
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var emailExists = fakeEmailService.SentPasswordResetEmails.Any(e => e.Email == nonexistentEmail);
+        emailExists.Should().BeFalse("No email should be sent for non-existent user");
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WithInvalidEmail_Returns400()
+    {
+        // Arrange
+        var request = new { Email = "not-an-email" };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithValidToken_Returns204()
+    {
+        // Arrange - Create, verify user, then request password reset
+        var email = $"reset{Guid.NewGuid():N}@example.com";
+        var oldPassword = "Test@123456";
+        var newPassword = "NewPass@789012";
+
+        await CreateAndVerifyUser(email, oldPassword);
+
+        // Request password reset
+        await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = email });
+
+        // Get reset token
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentEmail = fakeEmailService.SentPasswordResetEmails.FirstOrDefault(e => e.Email == email);
+        sentEmail.Should().NotBeNull();
+        var token = sentEmail!.Token;
+
+        var resetRequest = new { Token = token, NewPassword = newPassword };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+
+        // Assert (AC6.3)
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify can login with new password
+        var loginRequest = new { Email = email, Password = newPassword };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithInvalidToken_Returns400()
+    {
+        // Arrange
+        var invalidToken = Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{Guid.NewGuid()}:invalidtoken"));
+
+        var request = new { Token = invalidToken, NewPassword = "NewPass@789012" };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", request);
+
+        // Assert (AC6.5 - generic error message)
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("invalid or expired");
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithWeakPassword_Returns400()
+    {
+        // Arrange - Create, verify user, then request password reset
+        var email = $"resetweak{Guid.NewGuid():N}@example.com";
+        var oldPassword = "Test@123456";
+
+        await CreateAndVerifyUser(email, oldPassword);
+
+        // Request password reset
+        await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = email });
+
+        // Get reset token
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentEmail = fakeEmailService.SentPasswordResetEmails.FirstOrDefault(e => e.Email == email);
+        var token = sentEmail!.Token;
+
+        var resetRequest = new { Token = token, NewPassword = "weak" }; // Too short, no requirements
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Password");
+    }
+
+    [Fact]
+    public async Task ResetPassword_InvalidatesAllSessions()
+    {
+        // Arrange - Create, verify user, login, then reset password
+        var email = $"resetsession{Guid.NewGuid():N}@example.com";
+        var oldPassword = "Test@123456";
+        var newPassword = "NewPass@789012";
+
+        await CreateAndVerifyUser(email, oldPassword);
+
+        // Login to create a session
+        var loginRequest = new { Email = email, Password = oldPassword };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var cookies = loginResponse.Headers.GetValues("Set-Cookie").ToList();
+
+        // Request password reset
+        await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = email });
+
+        // Get reset token
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentEmail = fakeEmailService.SentPasswordResetEmails.FirstOrDefault(e => e.Email == email);
+        var token = sentEmail!.Token;
+
+        // Reset password
+        var resetRequest = new { Token = token, NewPassword = newPassword };
+        var resetResponse = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+        resetResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Act - Try to use the old refresh token (AC6.4)
+        var refreshRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        foreach (var cookie in cookies)
+        {
+            refreshRequest.Headers.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        var refreshResponse = await _client.SendAsync(refreshRequest);
+
+        // Assert - Old session should be invalidated
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ResetPassword_TokenCanOnlyBeUsedOnce()
+    {
+        // Arrange
+        var email = $"resetonce{Guid.NewGuid():N}@example.com";
+        var oldPassword = "Test@123456";
+        var newPassword1 = "NewPass@789012";
+        var newPassword2 = "AnotherPass@345678";
+
+        await CreateAndVerifyUser(email, oldPassword);
+
+        // Request password reset
+        await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = email });
+
+        // Get reset token
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentEmail = fakeEmailService.SentPasswordResetEmails.FirstOrDefault(e => e.Email == email);
+        var token = sentEmail!.Token;
+
+        // First reset should succeed
+        var firstResetRequest = new { Token = token, NewPassword = newPassword1 };
+        var firstResetResponse = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", firstResetRequest);
+        firstResetResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Act - Try to use the same token again
+        var secondResetRequest = new { Token = token, NewPassword = newPassword2 };
+        var secondResetResponse = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", secondResetRequest);
+
+        // Assert - Token should be invalid after first use
+        secondResetResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await secondResetResponse.Content.ReadAsStringAsync();
+        content.Should().Contain("invalid or expired");
+    }
+
     // ==================== HELPER METHODS ====================
 
     private async Task CreateAndVerifyUser(string email, string password)
