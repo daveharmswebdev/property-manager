@@ -36,6 +36,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Income> Income => Set<Income>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +78,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         modelBuilder.Entity<Receipt>()
             .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
                                  && e.DeletedAt == null);
+
+        // Apply tenant filter to RefreshToken (no soft delete, just tenant isolation)
+        modelBuilder.Entity<RefreshToken>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 
     private void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)

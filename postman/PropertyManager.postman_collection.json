@@ -70,8 +70,33 @@
               "raw": "{{baseUrl}}/api/v1/auth/login",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "login"]
-            }
-          }
+            },
+            "description": "Login with email and password. Returns JWT access token in response body and sets refresh token as HttpOnly cookie. Email must be verified before login is allowed. Access token expires in 60 minutes."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Refresh the access token using the refresh token cookie. Call this when the access token expires (401 response). Returns a new access token. Refresh token is valid for 7 days."
+          },
+          "response": []
         }
       ]
     },
@@ -91,6 +116,13 @@
           }
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "default"
     }
   ]
 }

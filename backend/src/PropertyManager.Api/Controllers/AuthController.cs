@@ -6,7 +6,7 @@ using PropertyManager.Application.Auth;
 namespace PropertyManager.Api.Controllers;
 
 /// <summary>
-/// Authentication endpoints for registration and email verification.
+/// Authentication endpoints for registration, login, and token refresh.
 /// </summary>
 [ApiController]
 [Route("api/v1/auth")]
@@ -15,13 +15,22 @@ public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<RegisterCommand> _registerValidator;
+    private readonly IValidator<LoginCommand> _loginValidator;
+    private readonly ILogger<AuthController> _logger;
+
+    // Cookie name for refresh token
+    private const string RefreshTokenCookieName = "refreshToken";
 
     public AuthController(
         IMediator mediator,
-        IValidator<RegisterCommand> registerValidator)
+        IValidator<RegisterCommand> registerValidator,
+        IValidator<LoginCommand> loginValidator,
+        ILogger<AuthController> logger)
     {
         _mediator = mediator;
         _registerValidator = registerValidator;
+        _loginValidator = loginValidator;
+        _logger = logger;
     }
 
 /// <summary>
@@ -91,6 +100,126 @@ public class AuthController : ControllerBase
         }
 
         return BadRequest(CreateProblemDetails(result.ErrorMessage ?? "Invalid verification link"));
+    }
+
+    /// <summary>
+    /// Log in with email and password.
+    /// Returns JWT access token in response body and refresh token as HttpOnly cookie (AC4.1).
+    /// </summary>
+    /// <param name="request">Login credentials</param>
+    /// <returns>Access token and expiration</returns>
+    /// <response code="200">Login successful, returns JWT access token</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If credentials are invalid or email not verified</response>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var command = new LoginCommand(request.Email, request.Password);
+
+        // Validate command
+        var validationResult = await _loginValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        try
+        {
+            var result = await _mediator.Send(command);
+
+            // Set refresh token as HttpOnly cookie (AC4.1)
+            SetRefreshTokenCookie(result.RefreshToken);
+
+            var response = new LoginResponse(result.AccessToken, result.ExpiresIn);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Log failed login attempt for security monitoring (AC4.3)
+            _logger.LogWarning(
+                "Failed login attempt for email {Email}: {Error}",
+                request.Email,
+                ex.Message);
+
+            return Unauthorized(CreateProblemDetails(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Refresh access token using the refresh token from HttpOnly cookie (AC4.6).
+    /// </summary>
+    /// <returns>New access token</returns>
+    /// <response code="200">Token refreshed successfully</response>
+    /// <response code="401">If refresh token is invalid or expired</response>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(RefreshResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh()
+    {
+        // Read refresh token from cookie
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Unauthorized(CreateProblemDetails("No refresh token provided"));
+        }
+
+        try
+        {
+            var command = new RefreshTokenCommand(refreshToken);
+            var result = await _mediator.Send(command);
+
+            // If a new refresh token was issued (rotation), update the cookie
+            if (!string.IsNullOrWhiteSpace(result.NewRefreshToken))
+            {
+                SetRefreshTokenCookie(result.NewRefreshToken);
+            }
+
+            var response = new RefreshResponse(result.AccessToken, result.ExpiresIn);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Clear the invalid refresh token cookie
+            ClearRefreshTokenCookie();
+
+            return Unauthorized(CreateProblemDetails(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Sets the refresh token as an HttpOnly cookie with security flags (AC4.1).
+    /// </summary>
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,  // Prevents XSS attacks
+            Secure = true,    // Only sent over HTTPS
+            SameSite = SameSiteMode.Strict,  // Prevents CSRF attacks
+            Expires = DateTime.UtcNow.AddDays(7),  // 7 day expiry per AC4.6
+            Path = "/api/v1/auth"  // Restrict to auth endpoints
+        };
+
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, cookieOptions);
+    }
+
+    /// <summary>
+    /// Clears the refresh token cookie.
+    /// </summary>
+    private void ClearRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/api/v1/auth"
+        });
     }
 
     private ProblemDetails CreateProblemDetails(string detail)
@@ -164,4 +293,28 @@ public record RegisterResponse(
 /// </summary>
 public record VerifyEmailRequest(
     string Token
+);
+
+/// <summary>
+/// Request model for user login.
+/// </summary>
+public record LoginRequest(
+    string Email,
+    string Password
+);
+
+/// <summary>
+/// Response model for successful login (AC4.1).
+/// </summary>
+public record LoginResponse(
+    string AccessToken,
+    int ExpiresIn
+);
+
+/// <summary>
+/// Response model for successful token refresh.
+/// </summary>
+public record RefreshResponse(
+    string AccessToken,
+    int ExpiresIn
 );

@@ -1,0 +1,176 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>User Login and JWT Authentication</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-4-user-login-and-jwt-authentication.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a registered user</asA>
+    <iWant>to log in with my email and password</iWant>
+    <soThat>I can access my protected data</soThat>
+    <tasks>
+      <task id="1" ac="4.1,4.2,4.3,4.4">Implement Login Command and Handler</task>
+      <task id="2" ac="4.2">Implement JWT Token Generation Service</task>
+      <task id="3" ac="4.6">Implement Refresh Token Flow</task>
+      <task id="4" ac="4.1,4.3,4.4,4.7">Add Login Endpoint to AuthController</task>
+      <task id="5" ac="4.1,4.2">Configure JWT Authentication Middleware</task>
+      <task id="6" ac="4.8">Create Frontend Login Page</task>
+      <task id="7" ac="4.5,4.6">Implement Auth Interceptor for Token Handling</task>
+      <task id="8" ac="4.5">Implement Auth Guard for Protected Routes</task>
+      <task id="9" ac="4.5,4.6,4.8">Update Auth Service with Login/Refresh Logic</task>
+      <task id="10" ac="4.1-4.7">Integration Tests</task>
+      <task id="11">Update Postman Collection and Manual Verification</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC4.1">POST /api/v1/auth/login with valid credentials returns JWT access token in response body and refresh token as HttpOnly cookie with Secure and SameSite=Strict flags, returns 200 OK</criterion>
+    <criterion id="AC4.2">JWT token contains required claims: userId (GUID), accountId (tenant GUID), role (Owner/Contributor), exp (60 minutes from issue)</criterion>
+    <criterion id="AC4.3">Invalid credentials handling: Wrong email/password returns 401, generic error message "Invalid email or password", failed attempts logged</criterion>
+    <criterion id="AC4.4">Unverified email: Login attempt returns 401 with message "Please verify your email before logging in"</criterion>
+    <criterion id="AC4.5">Session persistence: JWT in memory (signal state), refresh token in HttpOnly cookie, new tabs maintain auth via refresh, persists across page refreshes</criterion>
+    <criterion id="AC4.6">Token refresh flow: POST /api/v1/auth/refresh requests new JWT when access token expires, refresh token via cookie, expired refresh token (>7 days) requires re-login</criterion>
+    <criterion id="AC4.7">Multiple concurrent sessions: Desktop and phone can have separate active JWT/refresh token pairs, logging out one device does not invalidate other</criterion>
+    <criterion id="AC4.8">Frontend login flow: /login route, email/password fields, loading spinner on submit, redirect to /dashboard on success, error display on failure</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Property Manager Architecture" section="Security Architecture">
+        JWT stored in HttpOnly cookie prevents XSS attacks. JWT contains userId, accountId, role, exp claims. Use JwtBearerDefaults.AuthenticationScheme with TokenValidationParameters.
+      </doc>
+      <doc path="docs/architecture.md" title="Property Manager Architecture" section="Authentication Flow">
+        User logs in receives JWT stored in HttpOnly cookie. API validates JWT on every request. Role checked via [Authorize(Roles = "Owner")] where needed.
+      </doc>
+      <doc path="docs/architecture.md" title="Property Manager Architecture" section="API Contracts">
+        POST /api/v1/auth/login returns JWT. POST /api/v1/auth/refresh refreshes token. Response format: { accessToken, expiresIn } plus HttpOnly cookie.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="AC4: User Login">
+        Complete acceptance criteria for login flow including JWT claims, refresh token handling, multiple sessions, and frontend requirements.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Workflows and Sequencing">
+        Login flow sequence: validate credentials, generate JWT, generate refresh token, store refresh token in DB, return response with Set-Cookie.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Token Refresh Flow">
+        API call with expired JWT returns 401, POST /refresh with cookie, validate refresh token, generate new JWT, rotate refresh token optionally.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Security">
+        JWT config: ValidateIssuer, ValidateAudience, ValidateLifetime, ValidateIssuerSigningKey, ClockSkew=Zero. Access token 60 min, refresh token 7 days.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Spec" section="7.3 Feedback Patterns">
+        Loading spinner on button during action. Success snackbar 3s auto-dismiss. Error display below form.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Spec" section="7.4 Form Patterns">
+        Labels above input, asterisk for required, validation on blur, error inline below field in red.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="backend/src/PropertyManager.Api/Controllers/AuthController.cs" kind="controller" symbol="AuthController" lines="1-168" reason="Existing auth controller to extend with login/refresh endpoints. Uses MediatR pattern, FluentValidation, returns ProblemDetails for errors."/>
+      <file path="backend/src/PropertyManager.Application/Common/Interfaces/IIdentityService.cs" kind="interface" symbol="IIdentityService" lines="1-37" reason="Identity abstraction interface. Needs extension for login validation methods (ValidateCredentials, CheckEmailVerified)."/>
+      <file path="backend/src/PropertyManager.Infrastructure/Identity/ApplicationUser.cs" kind="entity" symbol="ApplicationUser" lines="1-34" reason="ASP.NET Identity user with AccountId, Role properties needed for JWT claims generation."/>
+      <file path="backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs" kind="context" symbol="AppDbContext" lines="1-155" reason="EF Core DbContext with Identity integration. Will need RefreshToken DbSet added for refresh token storage."/>
+      <file path="frontend/src/app/core/services/auth.service.ts" kind="service" symbol="AuthService" lines="1-47" reason="Existing auth service with register/verifyEmail. Extend with login(), refreshToken(), isAuthenticated signal, currentUser signal."/>
+      <file path="frontend/src/app/features/auth/login/login.component.ts" kind="component" symbol="LoginComponent" lines="1-53" reason="Placeholder login component. Implement full form with email/password fields, loading state, error handling."/>
+      <file path="backend/tests/PropertyManager.Api.Tests/AuthControllerTests.cs" kind="test" symbol="AuthControllerTests" lines="1-200" reason="Existing integration tests using PropertyManagerWebApplicationFactory. Pattern to follow for login tests."/>
+    </code>
+
+    <dependencies>
+      <backend>
+        <package name="Microsoft.AspNetCore.Authentication.JwtBearer" version="10.0.0" purpose="JWT authentication middleware"/>
+        <package name="FluentValidation.AspNetCore" version="11.3.1" purpose="Request validation"/>
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling"/>
+        <package name="Serilog.AspNetCore" version="10.0.0" purpose="Structured logging"/>
+        <package name="Microsoft.AspNetCore.Identity.EntityFrameworkCore" version="via AppDbContext" purpose="Identity user management"/>
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" purpose="Angular framework"/>
+        <package name="@angular/material" version="^20.2.14" purpose="UI components"/>
+        <package name="@angular/forms" version="^20.3.0" purpose="Reactive forms"/>
+        <package name="@angular/router" version="^20.3.0" purpose="Navigation and guards"/>
+        <package name="@ngrx/signals" version="^20.1.0" purpose="Signal-based state management"/>
+        <package name="rxjs" version="~7.8.0" purpose="Reactive extensions"/>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">Clean Architecture: Command/Handler in Application layer, JWT service in Infrastructure layer, endpoints in API layer</constraint>
+    <constraint category="architecture">CQRS pattern: LoginCommand, LoginCommandHandler, RefreshTokenCommand, RefreshTokenCommandHandler</constraint>
+    <constraint category="security">JWT stored in HttpOnly cookie prevents XSS. SameSite=Strict prevents CSRF</constraint>
+    <constraint category="security">Generic error message "Invalid email or password" prevents user enumeration</constraint>
+    <constraint category="security">Failed login attempts logged for security monitoring</constraint>
+    <constraint category="security">Access token 60 minutes, refresh token 7 days validity</constraint>
+    <constraint category="pattern">Use FluentValidation for request validation (LoginCommandValidator)</constraint>
+    <constraint category="pattern">Use MediatR for command handling</constraint>
+    <constraint category="pattern">Return RFC 7807 Problem Details for errors</constraint>
+    <constraint category="frontend">Store JWT in memory (signal), not localStorage</constraint>
+    <constraint category="frontend">Use Angular signals for state management</constraint>
+    <constraint category="frontend">Follow component patterns from register.component.ts</constraint>
+    <constraint category="testing">Integration tests using PropertyManagerWebApplicationFactory pattern</constraint>
+    <constraint category="testing">Unit tests for handlers and validators</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="POST /api/v1/auth/login" kind="REST endpoint">
+      <request>{ "email": "string", "password": "string" }</request>
+      <response status="200">{ "accessToken": "jwt...", "expiresIn": 3600 } + Set-Cookie: refreshToken=...; HttpOnly; Secure; SameSite=Strict</response>
+      <response status="401">"Invalid email or password" or "Please verify your email before logging in"</response>
+      <response status="400">ValidationProblemDetails</response>
+    </interface>
+    <interface name="POST /api/v1/auth/refresh" kind="REST endpoint">
+      <request>Cookie: refreshToken=...</request>
+      <response status="200">{ "accessToken": "jwt...", "expiresIn": 3600 }</response>
+      <response status="401">Invalid or expired refresh token</response>
+    </interface>
+    <interface name="IJwtService" kind="C# interface">
+      <method>Task&lt;string&gt; GenerateAccessToken(ApplicationUser user, Guid accountId)</method>
+      <method>string GenerateRefreshToken()</method>
+      <method>ClaimsPrincipal? ValidateToken(string token)</method>
+    </interface>
+    <interface name="IIdentityService (extended)" kind="C# interface">
+      <method>Task&lt;(bool Success, ApplicationUser? User, string? Error)&gt; ValidateCredentialsAsync(string email, string password)</method>
+    </interface>
+    <interface name="AuthService (Angular)" kind="TypeScript service">
+      <method>login(email: string, password: string): Observable&lt;LoginResponse&gt;</method>
+      <method>refreshToken(): Observable&lt;LoginResponse&gt;</method>
+      <property>isAuthenticated: Signal&lt;boolean&gt;</property>
+      <property>currentUser: Signal&lt;User | null&gt;</property>
+      <property>accessToken: Signal&lt;string | null&gt;</property>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend: xUnit for unit/integration tests. Use PropertyManagerWebApplicationFactory with Testcontainers PostgreSQL.
+      Test naming: Method_Scenario_ExpectedResult. Use FluentAssertions. Mock email service with FakeEmailService.
+      Frontend: Vitest for unit/component tests. @testing-library/angular patterns.
+      E2E: Playwright for critical user flows. Manual: Postman collection + smoke test checklist.
+    </standards>
+    <locations>
+      <location path="backend/tests/PropertyManager.Api.Tests/" pattern="*Tests.cs" purpose="Integration tests"/>
+      <location path="backend/tests/PropertyManager.Application.Tests/" pattern="*Tests.cs" purpose="Handler unit tests"/>
+      <location path="frontend/src/**/*.spec.ts" pattern="*.spec.ts" purpose="Component/service tests"/>
+      <location path="postman/PropertyManager.postman_collection.json" purpose="API manual testing"/>
+    </locations>
+    <ideas>
+      <idea ac="AC4.1">Test: Login with valid credentials returns 200 with JWT and Set-Cookie header</idea>
+      <idea ac="AC4.2">Test: Decode JWT and verify claims (userId, accountId, role, exp)</idea>
+      <idea ac="AC4.3">Test: Login with wrong password returns 401 "Invalid email or password"</idea>
+      <idea ac="AC4.3">Test: Login with non-existent email returns 401 "Invalid email or password"</idea>
+      <idea ac="AC4.4">Test: Login with unverified email returns 401 "Please verify your email"</idea>
+      <idea ac="AC4.6">Test: POST /refresh with valid cookie returns new access token</idea>
+      <idea ac="AC4.6">Test: POST /refresh with expired refresh token returns 401</idea>
+      <idea ac="AC4.7">Test: Two login sessions create independent refresh tokens</idea>
+      <idea ac="AC4.8">Test: LoginComponent form validation, loading state, error display</idea>
+      <idea ac="AC4.8">Test: AuthInterceptor adds Bearer token to requests</idea>
+      <idea ac="AC4.8">Test: AuthInterceptor handles 401 and attempts refresh</idea>
+      <idea ac="AC4.5">Test: AuthGuard redirects unauthenticated users to /login</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, inject, computed, signal } from '@angular/core';
+import { Observable, tap, catchError, throwError, BehaviorSubject, of } from 'rxjs';
 
 export interface RegisterRequest {
   email: string;
@@ -14,6 +14,11 @@ export interface RegisterResponse {
 
 export interface VerifyEmailRequest {
   token: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  expiresIn: number;
 }
 
 export interface ValidationError {
@@ -32,10 +37,28 @@ export interface ApiError {
   traceId: string;
 }
 
+export interface User {
+  userId: string;
+  accountId: string;
+  role: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/auth';
+
+  // Signals for state management (AC4.5)
+  private readonly _accessToken = signal<string | null>(null);
+  private readonly _currentUser = signal<User | null>(null);
+
+  // Token refresh tracking
+  private refreshTokenInProgress$ = new BehaviorSubject<boolean>(false);
+
+  // Public readonly signals
+  readonly accessToken = this._accessToken.asReadonly();
+  readonly currentUser = this._currentUser.asReadonly();
+  readonly isAuthenticated = computed(() => this._accessToken() !== null);
 
   register(request: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.baseUrl}/register`, request);
@@ -43,5 +66,150 @@ export class AuthService {
 
   verifyEmail(token: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/verify-email`, { token });
+  }
+
+  /**
+   * Login with email and password (AC4.8).
+   * Stores access token in memory (signal) on success.
+   * Refresh token is stored as HttpOnly cookie by the server.
+   */
+  login(email: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(
+      `${this.baseUrl}/login`,
+      { email, password },
+      { withCredentials: true } // Include cookies for refresh token
+    ).pipe(
+      tap(response => {
+        this._accessToken.set(response.accessToken);
+        // Decode JWT to extract user info
+        const user = this.decodeToken(response.accessToken);
+        if (user) {
+          this._currentUser.set(user);
+        }
+      })
+    );
+  }
+
+  /**
+   * Refresh access token using refresh token cookie (AC4.6).
+   * Called automatically by interceptor when access token expires.
+   */
+  refreshToken(): Observable<LoginResponse> {
+    // Prevent multiple simultaneous refresh requests
+    if (this.refreshTokenInProgress$.value) {
+      return throwError(() => new Error('Token refresh already in progress'));
+    }
+
+    this.refreshTokenInProgress$.next(true);
+
+    return this.http.post<LoginResponse>(
+      `${this.baseUrl}/refresh`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(response => {
+        this._accessToken.set(response.accessToken);
+        const user = this.decodeToken(response.accessToken);
+        if (user) {
+          this._currentUser.set(user);
+        }
+        this.refreshTokenInProgress$.next(false);
+      }),
+      catchError(error => {
+        this.refreshTokenInProgress$.next(false);
+        // Clear auth state on refresh failure
+        this.clearAuthState();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Check if token refresh is in progress.
+   */
+  get isRefreshingToken(): boolean {
+    return this.refreshTokenInProgress$.value;
+  }
+
+  /**
+   * Get the refresh token in progress observable for interceptor coordination.
+   */
+  get refreshTokenInProgress(): BehaviorSubject<boolean> {
+    return this.refreshTokenInProgress$;
+  }
+
+  /**
+   * Logout - clear local state.
+   * Server-side logout will be implemented in Story 1.5.
+   */
+  logout(): void {
+    this.clearAuthState();
+  }
+
+  /**
+   * Clear authentication state.
+   */
+  private clearAuthState(): void {
+    this._accessToken.set(null);
+    this._currentUser.set(null);
+  }
+
+  /**
+   * Check if access token is expired.
+   */
+  isTokenExpired(): boolean {
+    const token = this._accessToken();
+    if (!token) return true;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convert to milliseconds
+      return Date.now() >= exp;
+    } catch {
+      return true;
+    }
+  }
+
+  /**
+   * Decode JWT token to extract user information.
+   */
+  private decodeToken(token: string): User | null {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        userId: payload.userId,
+        accountId: payload.accountId,
+        role: payload.role,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Initialize auth state from storage (for page refresh persistence).
+   * Since access token is in memory only, this will attempt to refresh.
+   */
+  initializeAuth(): Observable<LoginResponse | null> {
+    // Try to refresh the token on app initialization
+    // This handles the case where the user refreshes the page
+    return this.http.post<LoginResponse>(
+      `${this.baseUrl}/refresh`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(response => {
+        this._accessToken.set(response.accessToken);
+        const user = this.decodeToken(response.accessToken);
+        if (user) {
+          this._currentUser.set(user);
+        }
+      }),
+      catchError(() => {
+        // Refresh failed - user needs to login
+        this.clearAuthState();
+        return of(null);
+      })
+    );
   }
 }

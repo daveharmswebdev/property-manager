@@ -34,4 +34,14 @@ public interface IIdentityService
     Task<(bool Success, string? ErrorMessage)> VerifyEmailAsync(
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates user credentials for login.
+    /// Checks email exists, password is correct, and email is verified.
+    /// </summary>
+    /// <returns>Tuple of (Success, UserId, AccountId, Role, ErrorMessage).</returns>
+    Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? ErrorMessage)> ValidateCredentialsAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default);
 }

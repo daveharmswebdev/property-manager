@@ -123,4 +123,38 @@ public class IdentityService : IIdentityService
             return (false, "Invalid verification link");
         }
     }
+
+    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? ErrorMessage)> ValidateCredentialsAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        // Find user by email (ignore query filters to search all users)
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToUpperInvariant(), cancellationToken);
+
+        // Generic error message for security (prevents user enumeration) per AC4.3
+        const string invalidCredentialsError = "Invalid email or password";
+
+        if (user == null)
+        {
+            return (false, null, null, null, invalidCredentialsError);
+        }
+
+        // Check if email is verified per AC4.4
+        if (!user.EmailConfirmed)
+        {
+            return (false, null, null, null, "Please verify your email before logging in");
+        }
+
+        // Validate password
+        var passwordValid = await _userManager.CheckPasswordAsync(user, password);
+        if (!passwordValid)
+        {
+            return (false, null, null, null, invalidCredentialsError);
+        }
+
+        return (true, user.Id, user.AccountId, user.Role, null);
+    }
 }
