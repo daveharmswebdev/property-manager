@@ -58,10 +58,10 @@ public class ReceiptConfiguration : IEntityTypeConfiguration<Receipt>
             .HasForeignKey(e => e.PropertyId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasOne(e => e.CreatedByUser)
-            .WithMany(u => u.CreatedReceipts)
-            .HasForeignKey(e => e.CreatedByUserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        // Note: CreatedByUserId references ApplicationUser (Identity)
+        // No navigation property - just the FK for data integrity
+        builder.HasIndex(e => e.CreatedByUserId)
+            .HasDatabaseName("IX_Receipts_CreatedByUserId");
 
         // Note: Expense relationship is configured in ExpenseConfiguration
     }

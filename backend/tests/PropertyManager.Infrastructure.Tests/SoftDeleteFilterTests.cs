@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
 
 namespace PropertyManager.Infrastructure.Tests;
 
@@ -97,10 +98,14 @@ public class SoftDeleteFilterTests
         context.Accounts.Add(account);
         await context.SaveChangesAsync();
 
-        var user = new User
+        var userEmail = $"multi-delete-{Guid.NewGuid()}@example.com";
+        var user = new ApplicationUser
         {
             AccountId = account.Id,
-            Email = $"multi-delete-{Guid.NewGuid()}@example.com",
+            Email = userEmail,
+            UserName = userEmail,
+            NormalizedEmail = userEmail.ToUpperInvariant(),
+            NormalizedUserName = userEmail.ToUpperInvariant(),
             PasswordHash = "hash",
             Role = "Owner"
         };

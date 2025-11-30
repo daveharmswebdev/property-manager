@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
 
 namespace PropertyManager.Infrastructure.Tests;
 
@@ -82,10 +83,13 @@ public class DatabaseSchemaTests
         context.Accounts.Add(account);
         await context.SaveChangesAsync();
 
-        var user = new User
+        var user = new ApplicationUser
         {
             AccountId = account.Id,
             Email = $"update-test-{Guid.NewGuid()}@example.com",
+            UserName = $"update-test-{Guid.NewGuid()}@example.com",
+            NormalizedEmail = $"UPDATE-TEST-{Guid.NewGuid()}@EXAMPLE.COM",
+            NormalizedUserName = $"UPDATE-TEST-{Guid.NewGuid()}@EXAMPLE.COM",
             PasswordHash = "hash",
             Role = "Owner"
         };

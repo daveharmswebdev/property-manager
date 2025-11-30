@@ -26,7 +26,30 @@
               "raw": "{{baseUrl}}/api/v1/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "register"]
-            }
+            },
+            "description": "Register a new user account. Creates an Account and User record. Password must be at least 8 characters with uppercase, lowercase, number, and special character."
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<base64-encoded-verification-token>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "verify-email"]
+            },
+            "description": "Verify a user's email address using the token from the verification email. Returns 204 on success. Token expires after 24 hours."
           }
         },
         {

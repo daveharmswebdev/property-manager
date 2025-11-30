@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
 
 namespace PropertyManager.Infrastructure.Tests;
 
@@ -64,17 +65,25 @@ public class TenantIsolationTests
         setupContext.Accounts.AddRange(account1, account2);
         await setupContext.SaveChangesAsync();
 
-        var user1 = new User
+        var email1 = $"user1-{Guid.NewGuid()}@account1.com";
+        var email2 = $"user2-{Guid.NewGuid()}@account2.com";
+        var user1 = new ApplicationUser
         {
             AccountId = account1.Id,
-            Email = $"user1-{Guid.NewGuid()}@account1.com",
+            Email = email1,
+            UserName = email1,
+            NormalizedEmail = email1.ToUpperInvariant(),
+            NormalizedUserName = email1.ToUpperInvariant(),
             PasswordHash = "hash",
             Role = "Owner"
         };
-        var user2 = new User
+        var user2 = new ApplicationUser
         {
             AccountId = account2.Id,
-            Email = $"user2-{Guid.NewGuid()}@account2.com",
+            Email = email2,
+            UserName = email2,
+            NormalizedEmail = email2.ToUpperInvariant(),
+            NormalizedUserName = email2.ToUpperInvariant(),
             PasswordHash = "hash",
             Role = "Owner"
         };
@@ -101,17 +110,25 @@ public class TenantIsolationTests
         setupContext.Accounts.AddRange(account1, account2);
         await setupContext.SaveChangesAsync();
 
-        var user1 = new User
+        var financeEmail1 = $"finance1-{Guid.NewGuid()}@example.com";
+        var financeEmail2 = $"finance2-{Guid.NewGuid()}@example.com";
+        var user1 = new ApplicationUser
         {
             AccountId = account1.Id,
-            Email = $"finance1-{Guid.NewGuid()}@example.com",
+            Email = financeEmail1,
+            UserName = financeEmail1,
+            NormalizedEmail = financeEmail1.ToUpperInvariant(),
+            NormalizedUserName = financeEmail1.ToUpperInvariant(),
             PasswordHash = "hash",
             Role = "Owner"
         };
-        var user2 = new User
+        var user2 = new ApplicationUser
         {
             AccountId = account2.Id,
-            Email = $"finance2-{Guid.NewGuid()}@example.com",
+            Email = financeEmail2,
+            UserName = financeEmail2,
+            NormalizedEmail = financeEmail2.ToUpperInvariant(),
+            NormalizedUserName = financeEmail2.ToUpperInvariant(),
             PasswordHash = "hash",
             Role = "Owner"
         };

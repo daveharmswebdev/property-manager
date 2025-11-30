@@ -1,0 +1,326 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>User Registration with Email Verification</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-3-user-registration-with-email-verification.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>new user</asA>
+    <iWant>to register an account with my email and password</iWant>
+    <soThat>I can access the application securely</soThat>
+    <tasks>
+      <task id="1" title="Configure ASP.NET Core Identity" ac="3.1, 3.2">
+        <subtask>Install Microsoft.AspNetCore.Identity.EntityFrameworkCore package</subtask>
+        <subtask>Create custom ApplicationUser class extending IdentityUser&lt;Guid&gt; with AccountId FK</subtask>
+        <subtask>Configure Identity in Program.cs with password requirements</subtask>
+        <subtask>Update AppDbContext to inherit from IdentityDbContext&lt;ApplicationUser, IdentityRole&lt;Guid&gt;, Guid&gt;</subtask>
+        <subtask>Create EF Core migration for Identity tables</subtask>
+      </task>
+      <task id="2" title="Create Registration Command and Handler" ac="3.1, 3.2, 3.3">
+        <subtask>Create RegisterCommand record in Application/Auth/Register.cs</subtask>
+        <subtask>Create RegisterCommandValidator with FluentValidation rules for password</subtask>
+        <subtask>Create RegisterCommandHandler that validates email uniqueness, creates Account entity, creates User via Identity UserManager, generates email verification token, returns userId</subtask>
+        <subtask>Write unit tests for RegisterCommandHandler</subtask>
+      </task>
+      <task id="3" title="Create Email Service Infrastructure" ac="3.4">
+        <subtask>Create IEmailService interface in Application/Common/Interfaces/</subtask>
+        <subtask>Create EmailSettings options class for configuration</subtask>
+        <subtask>Create SmtpEmailService implementation in Infrastructure/Email/</subtask>
+        <subtask>Create email template for verification email (HTML)</subtask>
+        <subtask>Register email service in DI container</subtask>
+        <subtask>Configure MailHog for local development</subtask>
+      </task>
+      <task id="4" title="Create Auth Controller with Register Endpoint" ac="3.1, 3.3, 3.4">
+        <subtask>Create AuthController in Api/Controllers/</subtask>
+        <subtask>Implement POST /api/v1/auth/register endpoint</subtask>
+        <subtask>Map to RegisterCommand via MediatR</subtask>
+        <subtask>Return 201 Created with userId on success</subtask>
+        <subtask>Handle validation errors with Problem Details response</subtask>
+      </task>
+      <task id="5" title="Implement Email Verification Endpoint" ac="3.5, 3.6">
+        <subtask>Create VerifyEmailCommand record in Application/Auth/VerifyEmail.cs</subtask>
+        <subtask>Create VerifyEmailCommandHandler that validates token via UserManager.ConfirmEmailAsync, handles token expiration (24 hours), returns appropriate error for invalid/expired/used tokens</subtask>
+        <subtask>Implement POST /api/v1/auth/verify-email endpoint in AuthController</subtask>
+        <subtask>Write unit tests for VerifyEmailCommandHandler</subtask>
+      </task>
+      <task id="6" title="Create Frontend Registration Page" ac="3.1, 3.2, 3.4">
+        <subtask>Create RegisterComponent in features/auth/register/</subtask>
+        <subtask>Create registration form with fields: email, password, confirmPassword, accountName</subtask>
+        <subtask>Implement client-side password validation with error messages</subtask>
+        <subtask>Display validation errors from API response</subtask>
+        <subtask>Show success message after registration</subtask>
+        <subtask>Add route /register to app routes</subtask>
+      </task>
+      <task id="7" title="Create Email Verification Page" ac="3.5, 3.6">
+        <subtask>Create VerifyEmailComponent in features/auth/verify-email/</subtask>
+        <subtask>Read token from URL query parameter</subtask>
+        <subtask>Call verify-email API on component load</subtask>
+        <subtask>Display success message and redirect to login</subtask>
+        <subtask>Display appropriate error messages for invalid tokens</subtask>
+        <subtask>Add route /verify-email to app routes</subtask>
+      </task>
+      <task id="8" title="Integration Tests" ac="3.1-3.6">
+        <subtask>Add PropertyManager.Api.Tests project with WebApplicationFactory</subtask>
+        <subtask>Create AuthControllerTests class</subtask>
+        <subtask>Test: Register with valid data returns 201</subtask>
+        <subtask>Test: Register with weak password returns 400 with validation errors</subtask>
+        <subtask>Test: Register with duplicate email returns 400</subtask>
+        <subtask>Test: Verify email with valid token returns 204</subtask>
+        <subtask>Test: Verify email with invalid token returns 400</subtask>
+      </task>
+      <task id="9" title="Update Postman Collection and Manual Verification">
+        <subtask>Add Register request to Postman collection</subtask>
+        <subtask>Add Verify Email request to Postman collection</subtask>
+        <subtask>Complete smoke test checklist for registration flow</subtask>
+        <subtask>Verify MailHog receives verification email locally</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC3.1">POST /api/v1/auth/register with valid email, password, and account name creates: A new Account record with the provided name, A new User record with role "Owner" linked to the Account, Returns 201 Created with { userId: "guid" }</criterion>
+    <criterion id="AC3.2">Password validation enforces security requirements: Minimum 8 characters, At least 1 uppercase letter, At least 1 lowercase letter, At least 1 number, At least 1 special character (!@#$%^&amp;*()_+-=[]{}|;':",./), Invalid passwords return 400 with specific validation error messages</criterion>
+    <criterion id="AC3.3">Registration with an existing email address returns 400 Bad Request with error message "An account with this email already exists"</criterion>
+    <criterion id="AC3.4">Upon successful registration: A verification email is sent to the provided email address, Email contains a clickable verification link with a unique token, Token is valid for 24 hours, User sees message "Please check your email to verify your account"</criterion>
+    <criterion id="AC3.5">POST /api/v1/auth/verify-email with valid token: Marks the user's EmailConfirmed as true, Returns 204 No Content, Redirects user to login page with message "Email verified! You can now log in."</criterion>
+    <criterion id="AC3.6">Email verification edge cases: Expired token (>24 hours) returns 400 "Verification link has expired. Please request a new one.", Already used token returns 400 "This verification link has already been used", Invalid/malformed token returns 400 "Invalid verification link"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Authentication Flow</section>
+        <snippet>User registers/logs in → receives JWT (stored in HttpOnly cookie). JWT contains: userId, accountId, role, exp. Use ASP.NET Core Identity for password hashing (PBKDF2 with 100k iterations).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Security Architecture</section>
+        <snippet>Passwords hashed with ASP.NET Core Identity (PBKDF2). JWT tokens with appropriate expiration. Input validation on all endpoints (FluentValidation). CORS restricted to application domain.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>API Contracts - Authentication Endpoints</section>
+        <snippet>POST /api/v1/auth/register creates Account + owner user. POST /api/v1/auth/verify-email confirms email address. Response format uses RFC 7807 Problem Details for errors.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>AC3: User Registration</section>
+        <snippet>Defines detailed acceptance criteria for registration including password requirements, email verification flow, and error handling for duplicate emails and expired tokens.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>APIs and Interfaces</section>
+        <snippet>POST /api/v1/auth/register: Request { email, password, name }, Response 201 { userId }. POST /api/v1/auth/verify-email: Request { token }, Response 204 No Content.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Workflows and Sequencing - Registration Flow</section>
+        <snippet>Sequence diagram showing: User → Frontend → API (Validate, Check email unique, Create Account, Create User, Generate verify token, Send email) → 201 response.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Functional Requirements FR1, FR2</section>
+        <snippet>FR1: Users can register a new account with email and password. FR2: Users receive email verification after registration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Form Patterns (Section 7.4)</section>
+        <snippet>Labels above input, Required indicator asterisk, Validation timing on blur, Error display inline below field in red text, Form layout single column on mobile.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Feedback Patterns (Section 7.3)</section>
+        <snippet>Success snackbar bottom-center "Expense saved ✓" 3 seconds auto-dismiss. Error snackbar red manual dismiss. Loading spinner on button.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 1.3</section>
+        <snippet>User Registration with Email Verification story definition with acceptance criteria for registration, email verification, and error handling.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/Entities/User.cs</path>
+        <kind>entity</kind>
+        <symbol>User</symbol>
+        <lines>1-21</lines>
+        <reason>Existing User entity with Email, PasswordHash, EmailVerified, AccountId, Role fields. Note: Story Dev Notes recommend creating separate ApplicationUser for Identity rather than modifying this entity.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/Entities/Account.cs</path>
+        <kind>entity</kind>
+        <symbol>Account</symbol>
+        <lines>1-18</lines>
+        <reason>Tenant boundary entity. Registration creates new Account with User linked via AccountId.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs</path>
+        <kind>dbcontext</kind>
+        <symbol>AppDbContext</symbol>
+        <lines>1-135</lines>
+        <reason>Current DbContext inherits from DbContext. Will need to change to IdentityDbContext&lt;ApplicationUser, IdentityRole&lt;Guid&gt;, Guid&gt; for Identity integration.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+        <kind>interface</kind>
+        <symbol>ICurrentUser</symbol>
+        <lines>1-14</lines>
+        <reason>Interface for accessing current user context. Already exists and can be reused. Will need CurrentUserService implementation.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Api/Program.cs</path>
+        <kind>startup</kind>
+        <symbol>Program</symbol>
+        <lines>1-59</lines>
+        <reason>Application entry point. Needs Identity configuration, JWT authentication, and auth middleware added.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Api/PropertyManager.Api.csproj</path>
+        <kind>project</kind>
+        <symbol>Api.csproj</symbol>
+        <lines>1-25</lines>
+        <reason>API project file. Needs Microsoft.AspNetCore.Identity.EntityFrameworkCore, FluentValidation.AspNetCore, MediatR packages added.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Infrastructure/Persistence/Configurations/UserConfiguration.cs</path>
+        <kind>configuration</kind>
+        <symbol>UserConfiguration</symbol>
+        <reason>EF Core configuration for User entity. May need updates for Identity integration.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/app.routes.ts</path>
+        <kind>routing</kind>
+        <symbol>routes</symbol>
+        <reason>Angular routes configuration. Needs /register and /verify-email routes added.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/package.json</path>
+        <kind>dependencies</kind>
+        <symbol>package.json</symbol>
+        <lines>1-49</lines>
+        <reason>Frontend dependencies. Angular 20, @angular/material, @ngrx/signals already installed.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <backend platform=".NET 10">
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" />
+        <package name="Npgsql.EntityFrameworkCore.PostgreSQL" version="10.0.0" installed="true" />
+        <package name="Serilog.AspNetCore" version="10.0.0" installed="true" />
+        <package name="NSwag.AspNetCore" version="14.6.3" installed="true" />
+        <package name="Microsoft.AspNetCore.Identity.EntityFrameworkCore" version="10.x" required="true" note="INSTALL: Required for ASP.NET Core Identity" />
+        <package name="FluentValidation.AspNetCore" version="11.x" required="true" note="INSTALL: Required for request validation" />
+        <package name="MediatR" version="12.x" required="true" note="INSTALL: Required for CQRS command/query handling" />
+      </backend>
+      <frontend platform="Angular 20">
+        <package name="@angular/core" version="^20.3.0" installed="true" />
+        <package name="@angular/material" version="^20.2.14" installed="true" />
+        <package name="@angular/forms" version="^20.3.0" installed="true" />
+        <package name="@ngrx/signals" version="^20.1.0" installed="true" />
+        <package name="rxjs" version="~7.8.0" installed="true" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Clean Architecture: Auth commands/handlers in Application/Auth/, Email service interface in Application/Common/Interfaces/, Implementation in Infrastructure/Email/</constraint>
+    <constraint type="architecture">CQRS pattern: Use MediatR for RegisterCommand and VerifyEmailCommand handlers</constraint>
+    <constraint type="security">JWT stored in HttpOnly cookie (not localStorage) for XSS protection</constraint>
+    <constraint type="security">Password hashed with ASP.NET Core Identity (PBKDF2 with 100k iterations minimum)</constraint>
+    <constraint type="security">Email verification token valid for 24 hours only</constraint>
+    <constraint type="api">Use RFC 7807 Problem Details for error responses with traceId</constraint>
+    <constraint type="api">Base URL: /api/v1/ - versioned API</constraint>
+    <constraint type="database">Account-based multi-tenancy: All tenant data filtered by AccountId using EF Core global query filters</constraint>
+    <constraint type="database">Use GUIDs for all primary keys</constraint>
+    <constraint type="testing">Unit tests for handlers with xUnit, Integration tests with WebApplicationFactory + Testcontainers</constraint>
+    <constraint type="frontend">Angular Material components with Forest Green theme (primary: #66BB6A)</constraint>
+    <constraint type="frontend">Form validation on blur, error messages below fields (per UX doc Section 7.4)</constraint>
+    <constraint type="identity">Recommended: Create separate ApplicationUser : IdentityUser&lt;Guid&gt; with AccountId property, keep domain User as DTO/projection</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/v1/auth/register</name>
+      <kind>REST endpoint</kind>
+      <signature>Request: { email: string, password: string, name: string } → Response: 201 { userId: guid } | 400 ProblemDetails</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/AuthController.cs (to be created)</path>
+    </interface>
+    <interface>
+      <name>POST /api/v1/auth/verify-email</name>
+      <kind>REST endpoint</kind>
+      <signature>Request: { token: string } → Response: 204 No Content | 400 ProblemDetails</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/AuthController.cs (to be created)</path>
+    </interface>
+    <interface>
+      <name>IEmailService</name>
+      <kind>interface</kind>
+      <signature>Task SendVerificationEmailAsync(string email, string token, CancellationToken ct = default)</signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/IEmailService.cs (to be created)</path>
+    </interface>
+    <interface>
+      <name>RegisterCommand</name>
+      <kind>MediatR command</kind>
+      <signature>record RegisterCommand(string Email, string Password, string AccountName) : IRequest&lt;Guid&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Auth/Register.cs (to be created)</path>
+    </interface>
+    <interface>
+      <name>VerifyEmailCommand</name>
+      <kind>MediatR command</kind>
+      <signature>record VerifyEmailCommand(string Token) : IRequest&lt;Unit&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Auth/VerifyEmail.cs (to be created)</path>
+    </interface>
+    <interface>
+      <name>ApplicationUser</name>
+      <kind>Identity user class</kind>
+      <signature>class ApplicationUser : IdentityUser&lt;Guid&gt; { Guid AccountId; Account Account; }</signature>
+      <path>backend/src/PropertyManager.Infrastructure/Identity/ApplicationUser.cs (to be created)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use xUnit for .NET unit and integration tests. Use FluentAssertions for assertions. Test naming convention: Method_Scenario_ExpectedResult. Integration tests use WebApplicationFactory with Testcontainers.PostgreSql (pattern already established in Story 1.2). Frontend uses Vitest with Testing Library for component tests. Manual smoke tests with Postman collection and MailHog verification.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/ (unit tests - to be created)</location>
+      <location>backend/tests/PropertyManager.Api.Tests/ (integration tests - to be created)</location>
+      <location>backend/tests/PropertyManager.Infrastructure.Tests/ (existing - Testcontainers pattern)</location>
+      <location>frontend/src/app/features/auth/**/*.spec.ts (component tests - to be created)</location>
+      <location>postman/PropertyManager.postman_collection.json (API manual tests)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC3.1">Unit: RegisterCommandHandler creates Account and User with correct AccountId linkage</idea>
+      <idea ac="AC3.1">Integration: POST /api/v1/auth/register returns 201 with userId for valid request</idea>
+      <idea ac="AC3.2">Unit: RegisterCommandValidator rejects passwords missing uppercase, number, special char</idea>
+      <idea ac="AC3.2">Unit: RegisterCommandValidator accepts valid password meeting all requirements</idea>
+      <idea ac="AC3.2">Integration: POST /api/v1/auth/register returns 400 with specific field errors for weak password</idea>
+      <idea ac="AC3.3">Unit: RegisterCommandHandler throws ValidationException for duplicate email</idea>
+      <idea ac="AC3.3">Integration: POST /api/v1/auth/register returns 400 "An account with this email already exists"</idea>
+      <idea ac="AC3.4">Unit: RegisterCommandHandler generates verification token and calls IEmailService</idea>
+      <idea ac="AC3.4">Integration: Registration triggers email to MailHog with verification link</idea>
+      <idea ac="AC3.5">Unit: VerifyEmailCommandHandler marks EmailConfirmed true for valid token</idea>
+      <idea ac="AC3.5">Integration: POST /api/v1/auth/verify-email returns 204 for valid token</idea>
+      <idea ac="AC3.6">Unit: VerifyEmailCommandHandler throws for expired token (>24 hours)</idea>
+      <idea ac="AC3.6">Unit: VerifyEmailCommandHandler throws for already-used token</idea>
+      <idea ac="AC3.6">Integration: POST /api/v1/auth/verify-email returns 400 with appropriate message for each error case</idea>
+      <idea ac="AC3.1,3.2">Component: RegisterComponent shows validation errors on blur for invalid password</idea>
+      <idea ac="AC3.4">Component: RegisterComponent shows success message after registration</idea>
+      <idea ac="AC3.5,3.6">Component: VerifyEmailComponent displays appropriate messages for success/error states</idea>
+    </ideas>
+  </tests>
+</story-context>

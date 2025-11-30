@@ -1,4 +1,9 @@
+using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Infrastructure.Email;
+using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
 using Serilog;
 
@@ -25,6 +30,54 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+// Register Application layer interfaces
+builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+
+// Configure Email settings
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection(EmailSettings.SectionName));
+
+// Configure MediatR
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(PropertyManager.Application.Auth.RegisterCommand).Assembly);
+});
+
+// Configure FluentValidation
+builder.Services.AddValidatorsFromAssembly(typeof(PropertyManager.Application.Auth.RegisterCommand).Assembly);
+
+// Configure ASP.NET Core Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+{
+    // Password requirements per AC3.2
+    options.Password.RequiredLength = 8;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireDigit = true;
+    options.Password.RequireNonAlphanumeric = true;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
+
+    // Sign-in settings
+    options.SignIn.RequireConfirmedEmail = true;
+
+    // Lockout settings (optional, for security)
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
+
+// Configure token lifespan for email verification (24 hours per AC3.4)
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromHours(24);
+});
 
 // Configure NSwag/OpenAPI
 builder.Services.AddOpenApiDocument(config =>

@@ -1,14 +1,20 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Common;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
+
+// Note: AppDbContext implements IAppDbContext for Application layer dependency inversion
 
 namespace PropertyManager.Infrastructure.Persistence;
 
 /// <summary>
-/// Main EF Core DbContext with global query filters for soft delete and tenant isolation.
+/// Main EF Core DbContext with ASP.NET Core Identity integration,
+/// global query filters for soft delete and tenant isolation.
 /// </summary>
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IAppDbContext
 {
     private readonly ICurrentUser? _currentUser;
 
@@ -25,7 +31,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Account> Accounts => Set<Account>();
-    public DbSet<User> Users => Set<User>();
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Income> Income => Set<Income>();
@@ -48,9 +53,9 @@ public class AppDbContext : DbContext
 
     private void ConfigureTenantFilters(ModelBuilder modelBuilder)
     {
-        // Apply tenant filter to User
+        // Apply tenant filter to ApplicationUser (Identity user)
         // When CurrentAccountId is null (no user or unauthenticated), no filter is applied
-        modelBuilder.Entity<User>()
+        modelBuilder.Entity<ApplicationUser>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
 
         // Apply tenant filter to Property (combined with soft delete)
@@ -129,6 +134,21 @@ public class AppDbContext : DbContext
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CreatedAt = utcNow;
+            }
+        }
+
+        // Handle ApplicationUser entity (Identity user with custom audit fields)
+        foreach (var entry in ChangeTracker.Entries<ApplicationUser>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = utcNow;
+                    entry.Entity.UpdatedAt = utcNow;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = utcNow;
+                    break;
             }
         }
     }

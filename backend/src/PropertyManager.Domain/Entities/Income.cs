@@ -19,5 +19,5 @@ public class Income : AuditableEntity, ITenantEntity, ISoftDeletable
     // Navigation properties
     public Account Account { get; set; } = null!;
     public Property Property { get; set; } = null!;
-    public User CreatedByUser { get; set; } = null!;
+    // Note: CreatedByUserId references ApplicationUser (Identity) - navigation configured in Infrastructure
 }

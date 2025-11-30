@@ -23,5 +23,5 @@ public class Receipt : AuditableEntity, ITenantEntity, ISoftDeletable
     public Account Account { get; set; } = null!;
     public Property? Property { get; set; }
     public Expense? Expense { get; set; }
-    public User CreatedByUser { get; set; } = null!;
+    // Note: CreatedByUserId references ApplicationUser (Identity) - navigation configured in Infrastructure
 }

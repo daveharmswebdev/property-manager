@@ -61,9 +61,9 @@ public class IncomeConfiguration : IEntityTypeConfiguration<Income>
             .HasForeignKey(e => e.PropertyId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(e => e.CreatedByUser)
-            .WithMany(u => u.CreatedIncome)
-            .HasForeignKey(e => e.CreatedByUserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        // Note: CreatedByUserId references ApplicationUser (Identity)
+        // No navigation property - just the FK for data integrity
+        builder.HasIndex(e => e.CreatedByUserId)
+            .HasDatabaseName("IX_Income_CreatedByUserId");
     }
 }

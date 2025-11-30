@@ -22,5 +22,5 @@ public class Expense : AuditableEntity, ITenantEntity, ISoftDeletable
     public Property Property { get; set; } = null!;
     public ExpenseCategory Category { get; set; } = null!;
     public Receipt? Receipt { get; set; }
-    public User CreatedByUser { get; set; } = null!;
+    // Note: CreatedByUserId references ApplicationUser (Identity) - navigation configured in Infrastructure
 }

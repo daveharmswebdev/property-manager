@@ -10,7 +10,7 @@ public class Account
     public DateTime CreatedAt { get; set; }
 
     // Navigation properties
-    public ICollection<User> Users { get; set; } = new List<User>();
+    // Note: Users are managed via ApplicationUser (Identity) in Infrastructure layer
     public ICollection<Property> Properties { get; set; } = new List<Property>();
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
     public ICollection<Income> Income { get; set; } = new List<Income>();
