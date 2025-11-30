@@ -47,7 +47,6 @@ services:
     runtime: static
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist/property-manager/browser
-    plan: starter
     headers:
       - path: /*
         name: X-Frame-Options
@@ -68,5 +67,5 @@ databases:
     databaseName: propertymanager
     user: propertymanager
     region: oregon
-    plan: starter
+    plan: basic-256mb
     ipAllowList: []
