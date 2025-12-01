@@ -44,8 +44,8 @@ development_status:
   1-5-user-logout: done
   1-6-password-reset-flow: done
   1-7-application-shell-with-navigation: done
-  1-8-ci-cd-pipeline-and-initial-deployment: review
-  epic-1-retrospective: optional
+  1-8-ci-cd-pipeline-and-initial-deployment: done
+  epic-1-retrospective: completed
 
   # Epic 2: Property Management
   epic-2: backlog
