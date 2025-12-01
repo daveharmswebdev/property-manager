@@ -54,7 +54,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: API_URL
-        value: https://property-manager-api-d2zl.onrender.com
+        value: https://api.upkeep-io.dev
 
 databases:
   - name: property-manager-db
