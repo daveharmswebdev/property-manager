@@ -31,6 +31,28 @@ public class PropertiesController : ControllerBase
     }
 
     /// <summary>
+    /// Get all properties for the current user (AC-2.1.4).
+    /// </summary>
+    /// <returns>List of properties with summary information</returns>
+    /// <response code="200">Returns the list of properties</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet]
+    [ProducesResponseType(typeof(GetAllPropertiesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetAllProperties()
+    {
+        var query = new GetAllPropertiesQuery();
+        var response = await _mediator.Send(query);
+
+        _logger.LogInformation(
+            "Retrieved {Count} properties at {Timestamp}",
+            response.TotalCount,
+            DateTime.UtcNow);
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Create a new property (AC-2.1.3).
     /// </summary>
     /// <param name="request">Property details</param>
