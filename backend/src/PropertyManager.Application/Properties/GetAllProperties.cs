@@ -1,0 +1,70 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using PropertyManager.Application.Common.Interfaces;
+
+namespace PropertyManager.Application.Properties;
+
+/// <summary>
+/// Query to get all properties for the current user's account.
+/// </summary>
+public record GetAllPropertiesQuery : IRequest<GetAllPropertiesResponse>;
+
+/// <summary>
+/// Response containing list of properties.
+/// </summary>
+public record GetAllPropertiesResponse(
+    IReadOnlyList<PropertySummaryDto> Items,
+    int TotalCount
+);
+
+/// <summary>
+/// Summary DTO for property list display (AC-2.1.4).
+/// </summary>
+public record PropertySummaryDto(
+    Guid Id,
+    string Name,
+    string Street,
+    string City,
+    string State,
+    string ZipCode,
+    decimal ExpenseTotal,
+    decimal IncomeTotal
+);
+
+/// <summary>
+/// Handler for GetAllPropertiesQuery.
+/// Returns all properties for the current user's account.
+/// </summary>
+public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuery, GetAllPropertiesResponse>
+{
+    private readonly IAppDbContext _dbContext;
+    private readonly ICurrentUser _currentUser;
+
+    public GetAllPropertiesQueryHandler(
+        IAppDbContext dbContext,
+        ICurrentUser currentUser)
+    {
+        _dbContext = dbContext;
+        _currentUser = currentUser;
+    }
+
+    public async Task<GetAllPropertiesResponse> Handle(GetAllPropertiesQuery request, CancellationToken cancellationToken)
+    {
+        var properties = await _dbContext.Properties
+            .Where(p => p.AccountId == _currentUser.AccountId && p.DeletedAt == null)
+            .OrderBy(p => p.Name)
+            .Select(p => new PropertySummaryDto(
+                p.Id,
+                p.Name,
+                p.Street,
+                p.City,
+                p.State,
+                p.ZipCode,
+                0m, // ExpenseTotal placeholder until Epic 3
+                0m  // IncomeTotal placeholder until Epic 4
+            ))
+            .ToListAsync(cancellationToken);
+
+        return new GetAllPropertiesResponse(properties, properties.Count);
+    }
+}

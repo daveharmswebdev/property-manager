@@ -25,7 +25,21 @@ public class PropertyConfiguration : IEntityTypeConfiguration<Property>
             .HasMaxLength(255)
             .IsRequired();
 
-        builder.Property(e => e.Address);
+        builder.Property(e => e.Street)
+            .HasMaxLength(255)
+            .IsRequired();
+
+        builder.Property(e => e.City)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(e => e.State)
+            .HasMaxLength(2)
+            .IsRequired();
+
+        builder.Property(e => e.ZipCode)
+            .HasMaxLength(5)
+            .IsRequired();
 
         builder.Property(e => e.CreatedAt)
             .IsRequired();

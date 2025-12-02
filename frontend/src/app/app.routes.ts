@@ -61,12 +61,19 @@ export const routes: Routes = [
             (m) => m.DashboardComponent
           ),
       },
-      // Properties (AC7.7)
+      // Properties (AC7.7, AC-2.1.1)
       {
         path: 'properties',
         loadComponent: () =>
           import('./features/properties/properties.component').then(
             (m) => m.PropertiesComponent
+          ),
+      },
+      {
+        path: 'properties/new',
+        loadComponent: () =>
+          import('./features/properties/property-form/property-form.component').then(
+            (m) => m.PropertyFormComponent
           ),
       },
       // Expenses (AC7.7)
