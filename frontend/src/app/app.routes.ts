@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   // Public auth routes (only for guests) (AC7.6)
@@ -17,6 +17,7 @@ export const routes: Routes = [
       import('./features/auth/verify-email/verify-email.component').then(
         (m) => m.VerifyEmailComponent
       ),
+    canActivate: [publicGuard],
   },
   {
     path: 'login',
@@ -40,7 +41,7 @@ export const routes: Routes = [
       import('./features/auth/reset-password/reset-password.component').then(
         (m) => m.ResetPasswordComponent
       ),
-    canActivate: [guestGuard],
+    canActivate: [publicGuard],
   },
 
   // Protected routes wrapped in Shell layout (AC7.6, AC7.7)

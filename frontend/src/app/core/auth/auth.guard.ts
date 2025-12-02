@@ -89,3 +89,16 @@ export const guestGuard: CanActivateFn = () => {
   // Not initializing and not authenticated - allow access
   return true;
 };
+
+/**
+ * Public Guard for routes that should be accessible to both authenticated and unauthenticated users.
+ * (e.g., email verification, password reset)
+ *
+ * Always allows access regardless of authentication state.
+ * Does not redirect or block access based on auth status.
+ */
+export const publicGuard: CanActivateFn = () => {
+  // Always allow access - this guard exists for semantic clarity
+  // and to distinguish public routes from guest-only or protected routes
+  return true;
+};
