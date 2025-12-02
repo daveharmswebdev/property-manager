@@ -262,6 +262,130 @@ public class PropertiesControllerTests : IClassFixture<PropertyManagerWebApplica
         return (loginContent!.AccessToken, Guid.Empty);
     }
 
+    [Fact]
+    public async Task GetAllProperties_WithoutAuth_Returns401()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/properties");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetAllProperties_WithNoProperties_ReturnsEmptyList()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+
+        // Act
+        var response = await GetWithAuthAsync("/api/v1/properties", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<GetAllPropertiesResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().BeEmpty();
+        content.TotalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAllProperties_WithProperties_ReturnsPropertyList()
+    {
+        // Arrange
+        var email = $"property-list-test-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property first
+        var createRequest = new
+        {
+            Name = "Test Property for List",
+            Street = "123 Test Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+
+        // Act
+        var response = await GetWithAuthAsync("/api/v1/properties", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<GetAllPropertiesResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().HaveCount(1);
+        content.TotalCount.Should().Be(1);
+
+        var property = content.Items[0];
+        property.Name.Should().Be("Test Property for List");
+        property.City.Should().Be("Austin");
+        property.State.Should().Be("TX");
+        property.ExpenseTotal.Should().Be(0);
+        property.IncomeTotal.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAllProperties_WithYearParameter_Returns200()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+
+        // Act
+        var response = await GetWithAuthAsync("/api/v1/properties?year=2024", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<GetAllPropertiesResponse>();
+        content.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GetAllProperties_OnlyReturnsOwnProperties()
+    {
+        // Arrange - Create properties with two different users
+        var email1 = $"user1-{Guid.NewGuid():N}@example.com";
+        var email2 = $"user2-{Guid.NewGuid():N}@example.com";
+        var (accessToken1, _) = await RegisterAndLoginAsync(email1);
+        var (accessToken2, _) = await RegisterAndLoginAsync(email2);
+
+        // User 1 creates a property
+        var createRequest1 = new
+        {
+            Name = "User1 Property",
+            Street = "123 User1 Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest1, accessToken1);
+
+        // User 2 creates a property
+        var createRequest2 = new
+        {
+            Name = "User2 Property",
+            Street = "456 User2 Street",
+            City = "Dallas",
+            State = "TX",
+            ZipCode = "75201"
+        };
+        await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest2, accessToken2);
+
+        // Act - User 1 gets their properties
+        var response = await GetWithAuthAsync("/api/v1/properties", accessToken1);
+
+        // Assert - Should only see User1's property
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<GetAllPropertiesResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().HaveCount(1);
+        content.Items[0].Name.Should().Be("User1 Property");
+    }
+
     private async Task<HttpResponseMessage> PostAsJsonWithAuthAsync<T>(string url, T content, string accessToken)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -269,7 +393,27 @@ public class PropertiesControllerTests : IClassFixture<PropertyManagerWebApplica
         request.Content = JsonContent.Create(content);
         return await _client.SendAsync(request);
     }
+
+    private async Task<HttpResponseMessage> GetWithAuthAsync(string url, string accessToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+        return await _client.SendAsync(request);
+    }
 }
 
 public record CreatePropertyResponse(Guid Id);
 public record LoginResponse(string AccessToken, int ExpiresIn);
+
+public record GetAllPropertiesResponse(IReadOnlyList<PropertySummaryDto> Items, int TotalCount);
+
+public record PropertySummaryDto(
+    Guid Id,
+    string Name,
+    string Street,
+    string City,
+    string State,
+    string ZipCode,
+    decimal ExpenseTotal,
+    decimal IncomeTotal
+);

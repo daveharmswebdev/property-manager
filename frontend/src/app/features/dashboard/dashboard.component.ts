@@ -1,19 +1,22 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatListModule } from '@angular/material/list';
 import { AuthService } from '../../core/services/auth.service';
-import { PropertyService, PropertySummaryDto } from '../properties/services/property.service';
+import { PropertyStore } from '../properties/stores/property.store';
+import { StatsBarComponent } from '../../shared/components/stats-bar/stats-bar.component';
+import { PropertyRowComponent } from '../../shared/components/property-row/property-row.component';
 
 /**
- * Dashboard Component (AC7.3, AC-2.1.1, AC-2.1.4)
+ * Dashboard Component (AC-2.2.1, AC-2.2.2, AC-2.2.3, AC-2.2.4)
  *
- * Shows property overview with Add Property button.
- * Displays list of properties or empty state when no properties exist.
+ * Main dashboard showing:
+ * - Stats bar with financial summary (expenses, income, net income)
+ * - List of properties or empty state
+ * - Add Property button
  */
 @Component({
   selector: 'app-dashboard',
@@ -25,7 +28,8 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatListModule
+    StatsBarComponent,
+    PropertyRowComponent,
   ],
   template: `
     <div class="dashboard-container">
@@ -41,26 +45,32 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
         </button>
       </header>
 
+      <!-- Stats Bar (AC-2.2.1) -->
+      <app-stats-bar
+        [expenseTotal]="propertyStore.totalExpenses()"
+        [incomeTotal]="propertyStore.totalIncome()">
+      </app-stats-bar>
+
       <!-- Loading State -->
-      @if (loading()) {
+      @if (propertyStore.isLoading()) {
         <div class="loading-container">
           <mat-spinner diameter="40"></mat-spinner>
         </div>
       }
 
       <!-- Error State -->
-      @if (error()) {
+      @if (propertyStore.error()) {
         <mat-card class="error-card">
           <mat-icon>error_outline</mat-icon>
-          <p>{{ error() }}</p>
+          <p>{{ propertyStore.error() }}</p>
           <button mat-button color="primary" (click)="loadProperties()">Try Again</button>
         </mat-card>
       }
 
       <!-- Properties List or Empty State -->
-      @if (!loading() && !error()) {
+      @if (!propertyStore.isLoading() && !propertyStore.error()) {
         <div class="dashboard-content">
-          @if (properties().length === 0) {
+          @if (propertyStore.isEmpty()) {
             <!-- Empty State (AC-2.2.3) -->
             <mat-card class="empty-state-card">
               <mat-icon class="placeholder-icon">home_work</mat-icon>
@@ -72,25 +82,25 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
               </button>
             </mat-card>
           } @else {
-            <!-- Properties List (AC-2.1.4, AC-2.2.2) -->
+            <!-- Properties List (AC-2.2.2, AC-2.2.4) -->
             <mat-card class="properties-list-card">
               <mat-card-header>
                 <mat-card-title>Your Properties</mat-card-title>
-                <mat-card-subtitle>{{ properties().length }} {{ properties().length === 1 ? 'property' : 'properties' }}</mat-card-subtitle>
+                <mat-card-subtitle>{{ propertyStore.totalCount() }} {{ propertyStore.totalCount() === 1 ? 'property' : 'properties' }}</mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
-                <mat-list>
-                  @for (property of properties(); track property.id) {
-                    <mat-list-item class="property-item" [routerLink]="['/properties', property.id]">
-                      <mat-icon matListItemIcon>home</mat-icon>
-                      <div matListItemTitle>{{ property.name }}</div>
-                      <div matListItemLine>{{ property.city }}, {{ property.state }}</div>
-                      <div matListItemMeta class="expense-total">
-                        {{ property.expenseTotal | currency }}
-                      </div>
-                    </mat-list-item>
+                <div class="property-list">
+                  @for (property of propertyStore.properties(); track property.id) {
+                    <app-property-row
+                      [id]="property.id"
+                      [name]="property.name"
+                      [city]="property.city"
+                      [state]="property.state"
+                      [expenseTotal]="property.expenseTotal"
+                      (rowClick)="navigateToProperty($event)">
+                    </app-property-row>
                   }
-                </mat-list>
+                </div>
               </mat-card-content>
             </mat-card>
           }
@@ -146,7 +156,7 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
         font-size: 48px;
         width: 48px;
         height: 48px;
-        color: var(--pm-error);
+        color: var(--pm-error, #c62828);
       }
 
       p {
@@ -197,22 +207,16 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
       width: 100%;
 
       mat-card-header {
-        margin-bottom: 16px;
+        margin-bottom: 8px;
       }
 
-      .property-item {
-        cursor: pointer;
-        border-radius: 8px;
-        margin-bottom: 4px;
+      mat-card-content {
+        padding: 0;
+      }
 
-        &:hover {
-          background-color: var(--pm-surface-hover, rgba(0, 0, 0, 0.04));
-        }
-
-        .expense-total {
-          color: var(--pm-text-secondary);
-          font-weight: 500;
-        }
+      .property-list {
+        display: flex;
+        flex-direction: column;
       }
     }
 
@@ -238,31 +242,20 @@ import { PropertyService, PropertySummaryDto } from '../properties/services/prop
 })
 export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
-  private readonly propertyService = inject(PropertyService);
+  private readonly router = inject(Router);
+  readonly propertyStore = inject(PropertyStore);
 
   readonly currentUser = this.authService.currentUser;
-  readonly properties = signal<PropertySummaryDto[]>([]);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadProperties();
   }
 
   loadProperties(): void {
-    this.loading.set(true);
-    this.error.set(null);
+    this.propertyStore.loadProperties(undefined);
+  }
 
-    this.propertyService.getProperties().subscribe({
-      next: (response) => {
-        this.properties.set(response.items);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set('Failed to load properties. Please try again.');
-        this.loading.set(false);
-        console.error('Error loading properties:', err);
-      }
-    });
+  navigateToProperty(propertyId: string): void {
+    this.router.navigate(['/properties', propertyId]);
   }
 }

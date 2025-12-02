@@ -31,22 +31,24 @@ public class PropertiesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all properties for the current user (AC-2.1.4).
+    /// Get all properties for the current user (AC-2.1.4, AC-2.2.6).
     /// </summary>
+    /// <param name="year">Optional tax year filter for expense/income totals</param>
     /// <returns>List of properties with summary information</returns>
     /// <response code="200">Returns the list of properties</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
     [ProducesResponseType(typeof(GetAllPropertiesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllProperties()
+    public async Task<IActionResult> GetAllProperties([FromQuery] int? year = null)
     {
-        var query = new GetAllPropertiesQuery();
+        var query = new GetAllPropertiesQuery(year);
         var response = await _mediator.Send(query);
 
         _logger.LogInformation(
-            "Retrieved {Count} properties at {Timestamp}",
+            "Retrieved {Count} properties for year {Year} at {Timestamp}",
             response.TotalCount,
+            year?.ToString() ?? "all",
             DateTime.UtcNow);
 
         return Ok(response);
