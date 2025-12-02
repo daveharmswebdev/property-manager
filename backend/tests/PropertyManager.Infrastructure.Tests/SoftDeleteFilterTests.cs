@@ -32,7 +32,10 @@ public class SoftDeleteFilterTests
         {
             AccountId = account.Id,
             Name = "Deletable Property",
-            Address = "123 Test St"
+            Street = "123 Test St",
+            City = "Test City",
+            State = "TX",
+            ZipCode = "12345"
         };
         context.Properties.Add(property);
         await context.SaveChangesAsync();
@@ -66,7 +69,10 @@ public class SoftDeleteFilterTests
         {
             AccountId = account.Id,
             Name = "Another Deletable Property",
-            Address = "456 Test Ave"
+            Street = "456 Test Ave",
+            City = "Test City",
+            State = "CA",
+            ZipCode = "90210"
         };
         context.Properties.Add(property);
         await context.SaveChangesAsync();
@@ -115,7 +121,11 @@ public class SoftDeleteFilterTests
         var property = new Property
         {
             AccountId = account.Id,
-            Name = "Multi-Delete Property"
+            Name = "Multi-Delete Property",
+            Street = "789 Multi St",
+            City = "Test City",
+            State = "NY",
+            ZipCode = "10001"
         };
         context.Properties.Add(property);
         await context.SaveChangesAsync();

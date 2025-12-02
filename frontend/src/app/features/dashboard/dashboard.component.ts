@@ -1,49 +1,45 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../core/services/auth.service';
 
 /**
- * Dashboard Component (AC7.3)
+ * Dashboard Component (AC7.3, AC-2.1.1)
  *
- * Placeholder dashboard displaying "Dashboard coming soon" message.
- * Structure prepared for future stats bar and property list.
+ * Shows property overview with Add Property button.
+ * Displays empty state when no properties exist.
  */
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, RouterLink, MatCardModule, MatIconModule, MatButtonModule],
   template: `
     <div class="dashboard-container">
       <!-- Welcome Section -->
       <header class="dashboard-header">
-        <h1>Welcome back!</h1>
-        <p class="subtitle">Here's your property management overview.</p>
+        <div class="header-content">
+          <h1>Welcome back!</h1>
+          <p class="subtitle">Here's your property management overview.</p>
+        </div>
+        <button mat-raised-button color="primary" routerLink="/properties/new">
+          <mat-icon>add</mat-icon>
+          Add Property
+        </button>
       </header>
 
-      <!-- Placeholder Content (AC7.3) -->
+      <!-- Empty State (AC-2.1.1) -->
       <div class="dashboard-content">
-        <mat-card class="coming-soon-card">
-          <mat-icon class="placeholder-icon">dashboard</mat-icon>
-          <h2>Dashboard coming soon</h2>
-          <p>
-            Your property stats, recent activity, and quick actions will appear here.
-          </p>
-          <div class="feature-preview">
-            <div class="feature-item">
-              <mat-icon>home_work</mat-icon>
-              <span>Property Overview</span>
-            </div>
-            <div class="feature-item">
-              <mat-icon>trending_up</mat-icon>
-              <span>Income Summary</span>
-            </div>
-            <div class="feature-item">
-              <mat-icon>receipt_long</mat-icon>
-              <span>Expense Tracking</span>
-            </div>
-          </div>
+        <mat-card class="empty-state-card">
+          <mat-icon class="placeholder-icon">home_work</mat-icon>
+          <h2>No properties yet</h2>
+          <p>Add your first property to get started.</p>
+          <button mat-raised-button color="primary" routerLink="/properties/new">
+            <mat-icon>add</mat-icon>
+            Add Property
+          </button>
         </mat-card>
       </div>
     </div>
@@ -55,19 +51,28 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 24px;
 
-      h1 {
-        color: var(--pm-text-primary);
-        font-size: 28px;
-        font-weight: 600;
-        margin: 0 0 8px 0;
+      .header-content {
+        h1 {
+          color: var(--pm-text-primary);
+          font-size: 28px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+          color: var(--pm-text-secondary);
+          font-size: 16px;
+          margin: 0;
+        }
       }
 
-      .subtitle {
-        color: var(--pm-text-secondary);
-        font-size: 16px;
-        margin: 0;
+      button mat-icon {
+        margin-right: 8px;
       }
     }
 
@@ -76,10 +81,10 @@ import { AuthService } from '../../core/services/auth.service';
       justify-content: center;
     }
 
-    .coming-soon-card {
+    .empty-state-card {
       text-align: center;
       padding: 48px;
-      max-width: 500px;
+      max-width: 400px;
       width: 100%;
 
       .placeholder-icon {
@@ -100,60 +105,31 @@ import { AuthService } from '../../core/services/auth.service';
       p {
         color: var(--pm-text-secondary);
         font-size: 16px;
-        margin: 0 0 32px 0;
+        margin: 0 0 24px 0;
         line-height: 1.5;
       }
-    }
 
-    .feature-preview {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-
-    .feature-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 16px;
-      border-radius: 8px;
-      background-color: rgba(102, 187, 106, 0.08);
-      min-width: 100px;
-
-      mat-icon {
-        color: var(--pm-primary);
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
-
-      span {
-        font-size: 12px;
-        color: var(--pm-text-secondary);
-        font-weight: 500;
+      button mat-icon {
+        margin-right: 8px;
       }
     }
 
     @media (max-width: 767px) {
       .dashboard-header {
-        h1 {
+        flex-direction: column;
+        gap: 16px;
+
+        .header-content h1 {
           font-size: 24px;
+        }
+
+        button {
+          width: 100%;
         }
       }
 
-      .coming-soon-card {
+      .empty-state-card {
         padding: 32px 24px;
-      }
-
-      .feature-preview {
-        gap: 12px;
-      }
-
-      .feature-item {
-        min-width: 80px;
-        padding: 12px;
       }
     }
   `]

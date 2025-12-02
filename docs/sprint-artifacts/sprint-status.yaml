@@ -1,4 +1,4 @@
-# generated: 2025-11-29
+# generated: 2025-12-02
 # project: property-manager
 # project_key: property-manager
 # tracking_system: file-system
@@ -28,7 +28,7 @@
 # - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
 
-generated: 2025-11-29
+generated: 2025-12-02
 project: property-manager
 project_key: property-manager
 tracking_system: file-system
@@ -48,8 +48,8 @@ development_status:
   epic-1-retrospective: completed
 
   # Epic 2: Property Management
-  epic-2: backlog
-  2-1-create-property: backlog
+  epic-2: contexted
+  2-1-create-property: done
   2-2-view-properties-list-with-dashboard-stats: backlog
   2-3-view-property-detail-page: backlog
   2-4-edit-property: backlog

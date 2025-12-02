@@ -2,6 +2,7 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
@@ -28,6 +29,7 @@ describe('DashboardComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
@@ -41,9 +43,9 @@ describe('DashboardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should display "Dashboard coming soon" placeholder (AC7.3)', () => {
-    const heading = fixture.debugElement.query(By.css('h2'));
-    expect(heading.nativeElement.textContent).toContain('Dashboard coming soon');
+  it('should display empty state with "No properties yet" (AC-2.1.1)', () => {
+    const heading = fixture.debugElement.query(By.css('.empty-state-card h2'));
+    expect(heading.nativeElement.textContent).toContain('No properties yet');
   });
 
   it('should display welcome header', () => {
@@ -51,13 +53,18 @@ describe('DashboardComponent', () => {
     expect(header.nativeElement.textContent).toContain('Welcome back');
   });
 
-  it('should have feature preview items', () => {
-    const featureItems = fixture.debugElement.queryAll(By.css('.feature-item'));
-    expect(featureItems.length).toBe(3);
+  it('should have Add Property button in header (AC-2.1.1)', () => {
+    const button = fixture.debugElement.query(By.css('.dashboard-header button'));
+    expect(button.nativeElement.textContent).toContain('Add Property');
   });
 
-  it('should have mat-card for coming soon content', () => {
-    const card = fixture.debugElement.query(By.css('.coming-soon-card'));
+  it('should have Add Property button in empty state (AC-2.1.1)', () => {
+    const button = fixture.debugElement.query(By.css('.empty-state-card button'));
+    expect(button.nativeElement.textContent).toContain('Add Property');
+  });
+
+  it('should have mat-card for empty state content', () => {
+    const card = fixture.debugElement.query(By.css('.empty-state-card'));
     expect(card).toBeTruthy();
   });
 });
