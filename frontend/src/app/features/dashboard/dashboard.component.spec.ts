@@ -9,7 +9,7 @@ import { signal } from '@angular/core';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService, User } from '../../core/services/auth.service';
 import { PropertyService, GetAllPropertiesResponse, PropertySummaryDto } from '../properties/services/property.service';
-import { of, throwError } from 'rxjs';
+import { of, throwError, NEVER } from 'rxjs';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -157,8 +157,8 @@ describe('DashboardComponent', () => {
 
   describe('loading state', () => {
     it('should show loading spinner while fetching', () => {
-      // Don't trigger detectChanges yet to catch loading state
-      component.loading.set(true);
+      // Mock to return observable that never emits, keeping loading state
+      mockPropertyService.getProperties.mockReturnValue(NEVER);
       fixture.detectChanges();
       const spinner = fixture.debugElement.query(By.css('mat-spinner'));
       expect(spinner).toBeTruthy();
