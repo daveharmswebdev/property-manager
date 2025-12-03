@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { PropertyStore } from './stores/property.store';
+import { PropertyRowComponent } from '../../shared/components/property-row/property-row.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ErrorCardComponent } from '../../shared/components/error-card/error-card.component';
+import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 
 /**
  * Properties list component (AC-2.1.1)
@@ -12,7 +17,17 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-properties',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatCardModule, MatIconModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    PropertyRowComponent,
+    EmptyStateComponent,
+    ErrorCardComponent,
+    LoadingSpinnerComponent,
+  ],
   template: `
     <div class="properties-container">
       <header class="properties-header">
@@ -23,17 +38,52 @@ import { MatButtonModule } from '@angular/material/button';
         </button>
       </header>
 
-      <div class="properties-content">
-        <mat-card class="empty-state-card">
-          <mat-icon class="placeholder-icon">home_work</mat-icon>
-          <h2>No properties yet</h2>
-          <p>Add your first property to get started.</p>
-          <button mat-raised-button color="primary" routerLink="/properties/new">
-            <mat-icon>add</mat-icon>
-            Add Property
-          </button>
-        </mat-card>
-      </div>
+      <!-- Loading State -->
+      @if (propertyStore.isLoading()) {
+        <app-loading-spinner />
+      }
+
+      <!-- Error State -->
+      @if (propertyStore.error()) {
+        <app-error-card
+          [message]="propertyStore.error()!"
+          (retry)="loadProperties()" />
+      }
+
+      <!-- Properties List or Empty State -->
+      @if (!propertyStore.isLoading() && !propertyStore.error()) {
+        <div class="properties-content">
+          @if (propertyStore.isEmpty()) {
+            <app-empty-state
+              icon="home_work"
+              title="No properties yet"
+              message="Add your first property to get started."
+              actionLabel="Add Property"
+              actionRoute="/properties/new"
+              actionIcon="add" />
+          } @else {
+            <mat-card class="properties-list-card">
+              <mat-card-header>
+                <mat-card-title>Your Properties</mat-card-title>
+                <mat-card-subtitle>{{ propertyStore.totalCount() }} {{ propertyStore.totalCount() === 1 ? 'property' : 'properties' }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="property-list">
+                  @for (property of propertyStore.properties(); track property.id) {
+                    <app-property-row
+                      [id]="property.id"
+                      [name]="property.name"
+                      [city]="property.city"
+                      [state]="property.state"
+                      [expenseTotal]="property.expenseTotal"
+                      (rowClick)="navigateToProperty($event)" />
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -55,10 +105,8 @@ import { MatButtonModule } from '@angular/material/button';
         margin: 0;
       }
 
-      button {
-        mat-icon {
-          margin-right: 8px;
-        }
+      button mat-icon {
+        margin-right: 8px;
       }
     }
 
@@ -67,32 +115,20 @@ import { MatButtonModule } from '@angular/material/button';
       justify-content: center;
     }
 
-    .empty-state-card {
-      text-align: center;
-      padding: 48px;
-      max-width: 400px;
+    .properties-list-card {
       width: 100%;
 
-      .placeholder-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: var(--pm-primary);
-        margin-bottom: 16px;
+      mat-card-header {
+        margin-bottom: 8px;
       }
 
-      h2 {
-        color: var(--pm-text-primary);
-        margin: 0 0 8px 0;
+      mat-card-content {
+        padding: 0;
       }
 
-      p {
-        color: var(--pm-text-secondary);
-        margin: 0 0 24px 0;
-      }
-
-      button mat-icon {
-        margin-right: 8px;
+      .property-list {
+        display: flex;
+        flex-direction: column;
       }
     }
 
@@ -113,4 +149,19 @@ import { MatButtonModule } from '@angular/material/button';
     }
   `]
 })
-export class PropertiesComponent {}
+export class PropertiesComponent implements OnInit {
+  private readonly router = inject(Router);
+  readonly propertyStore = inject(PropertyStore);
+
+  ngOnInit(): void {
+    this.loadProperties();
+  }
+
+  loadProperties(): void {
+    this.propertyStore.loadProperties(undefined);
+  }
+
+  navigateToProperty(propertyId: string): void {
+    this.router.navigate(['/properties', propertyId]);
+  }
+}

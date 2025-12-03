@@ -11,6 +11,7 @@ import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import {
   PropertyService,
   PropertySummaryDto,
+  PropertyDetailDto,
 } from '../services/property.service';
 
 /**
@@ -21,6 +22,10 @@ interface PropertyState {
   isLoading: boolean;
   error: string | null;
   selectedYear: number | null;
+  // Property detail state (AC-2.3.2)
+  selectedProperty: PropertyDetailDto | null;
+  isLoadingDetail: boolean;
+  detailError: string | null;
 }
 
 /**
@@ -31,6 +36,10 @@ const initialState: PropertyState = {
   isLoading: false,
   error: null,
   selectedYear: null,
+  // Property detail initial state
+  selectedProperty: null,
+  isLoadingDetail: false,
+  detailError: null,
 };
 
 /**
@@ -89,6 +98,24 @@ export const PropertyStore = signalStore(
     hasProperties: computed(
       () => !store.isLoading() && store.properties().length > 0
     ),
+
+    /**
+     * Net income for selected property (income - expenses) (AC-2.3.2)
+     */
+    selectedPropertyNetIncome: computed(() => {
+      const property = store.selectedProperty();
+      if (!property) return 0;
+      return property.incomeTotal - property.expenseTotal;
+    }),
+
+    /**
+     * Full formatted address for selected property
+     */
+    selectedPropertyFullAddress: computed(() => {
+      const property = store.selectedProperty();
+      if (!property) return '';
+      return `${property.street}, ${property.city}, ${property.state} ${property.zipCode}`;
+    }),
   })),
   withMethods((store, propertyService = inject(PropertyService)) => ({
     /**
@@ -144,6 +171,60 @@ export const PropertyStore = signalStore(
      */
     setSelectedYear(year: number | null): void {
       patchState(store, { selectedYear: year });
+    },
+
+    /**
+     * Load a single property by ID (AC-2.3.2, AC-2.3.5)
+     * @param id Property GUID
+     */
+    loadPropertyById: rxMethod<string>(
+      pipe(
+        tap(() =>
+          patchState(store, {
+            isLoadingDetail: true,
+            detailError: null,
+            selectedProperty: null,
+          })
+        ),
+        switchMap((id) =>
+          propertyService.getPropertyById(id).pipe(
+            tap((property) =>
+              patchState(store, {
+                selectedProperty: property,
+                isLoadingDetail: false,
+              })
+            ),
+            catchError((error) => {
+              const errorMessage = error.status === 404
+                ? 'Property not found'
+                : 'Failed to load property. Please try again.';
+              patchState(store, {
+                isLoadingDetail: false,
+                detailError: errorMessage,
+              });
+              console.error('Error loading property:', error);
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Clear selected property
+     */
+    clearSelectedProperty(): void {
+      patchState(store, {
+        selectedProperty: null,
+        detailError: null,
+      });
+    },
+
+    /**
+     * Clear the detail error state
+     */
+    clearDetailError(): void {
+      patchState(store, { detailError: null });
     },
   }))
 );

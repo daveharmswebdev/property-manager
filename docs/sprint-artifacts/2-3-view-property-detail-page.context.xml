@@ -1,0 +1,309 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>3</storyId>
+    <title>View Property Detail Page</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-3-view-property-detail-page.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>view details for a single property</iWant>
+    <soThat>I can see all information and activity for that property</soThat>
+    <tasks>
+      <task id="1" title="Create GetPropertyById Query and Handler" ac="2.3.2, 2.3.5">
+        <subtask>Create GetPropertyByIdQuery.cs in Application/Properties</subtask>
+        <subtask>Create GetPropertyByIdHandler.cs implementing IRequestHandler</subtask>
+        <subtask>Create PropertyDetailDto.cs with all required fields</subtask>
+        <subtask>Handler queries property by Id AND AccountId (tenant isolation)</subtask>
+        <subtask>Include expense/income totals (return 0 for now)</subtask>
+        <subtask>Throw NotFoundException if property not found</subtask>
+        <subtask>Write unit tests for GetPropertyByIdHandler (6+ tests)</subtask>
+      </task>
+      <task id="2" title="Add GET by ID Endpoint to PropertiesController" ac="2.3.5, 2.3.6">
+        <subtask>Add GET /api/v1/properties/{id} endpoint returning PropertyDetailDto</subtask>
+        <subtask>Return 200 OK with property detail on success</subtask>
+        <subtask>Return 404 Not Found when property doesn't exist or wrong account</subtask>
+        <subtask>Add endpoint to Swagger documentation</subtask>
+        <subtask>Write integration tests for GET by ID endpoint (4+ tests)</subtask>
+      </task>
+      <task id="3" title="Update PropertyService with getPropertyById" ac="2.3.5">
+        <subtask>Add getPropertyById(id: string) method to PropertyService</subtask>
+        <subtask>Handle 404 response appropriately</subtask>
+        <subtask>Return Observable of PropertyDetailDto</subtask>
+      </task>
+      <task id="4" title="Create PropertyDetailComponent" ac="2.3.2, 2.3.3, 2.3.4">
+        <subtask>Create features/properties/property-detail/property-detail.component.ts</subtask>
+        <subtask>Display property name as page title</subtask>
+        <subtask>Display full address (street, city, state, ZIP)</subtask>
+        <subtask>Display YTD stats (expenses, income, net)</subtask>
+        <subtask>Create Recent Expenses section with empty state</subtask>
+        <subtask>Create Recent Income section with empty state</subtask>
+        <subtask>Add action buttons (Add Expense, Add Income, Edit, Delete)</subtask>
+        <subtask>Disable Add Expense and Add Income with tooltips</subtask>
+        <subtask>Wire Edit button to navigate to edit route</subtask>
+        <subtask>Wire Delete button to show confirmation</subtask>
+        <subtask>Style with Forest Green theme</subtask>
+        <subtask>Write component tests (15+ tests)</subtask>
+      </task>
+      <task id="5" title="Create NotFoundComponent for 404 handling" ac="2.3.6">
+        <subtask>Create shared/components/not-found/not-found.component.ts</subtask>
+        <subtask>Display Property not found message</subtask>
+        <subtask>Include Back to Dashboard link</subtask>
+        <subtask>Style consistently with app theme</subtask>
+        <subtask>Write component tests (3+ tests)</subtask>
+      </task>
+      <task id="6" title="Add Property Detail Route" ac="2.3.1">
+        <subtask>Add route /properties/:id to properties.routes.ts</subtask>
+        <subtask>Configure route to use PropertyDetailComponent</subtask>
+        <subtask>Handle invalid GUID format (redirect to 404)</subtask>
+      </task>
+      <task id="7" title="Update PropertyStore for single property loading" ac="2.3.2">
+        <subtask>Add selectedProperty signal to PropertyStore</subtask>
+        <subtask>Add loadPropertyById(id: string) method</subtask>
+        <subtask>Handle loading and error states for single property</subtask>
+        <subtask>Write store tests (5+ tests)</subtask>
+      </task>
+      <task id="8" title="Wire Dashboard Property Row Navigation" ac="2.3.1">
+        <subtask>Update PropertyRowComponent click handler if needed</subtask>
+        <subtask>Ensure DashboardComponent navigates to /properties/:id on row click</subtask>
+        <subtask>Verify browser back navigation works</subtask>
+      </task>
+      <task id="9" title="Run Tests and Validate">
+        <subtask>Backend unit tests pass</subtask>
+        <subtask>Backend integration tests pass</subtask>
+        <subtask>Frontend component tests pass</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Backend builds successfully</subtask>
+        <subtask>Manual smoke test checklist completed</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.3.1" title="Property row navigation">
+      <requirement>Dashboard PropertyRowComponent click navigates to /properties/:id</requirement>
+      <requirement>URL uses property GUID as route parameter</requirement>
+      <requirement>Browser back button returns to dashboard</requirement>
+    </criterion>
+    <criterion id="AC-2.3.2" title="Property detail displays all information">
+      <requirement>Property name displayed as page title/header</requirement>
+      <requirement>Full address displayed (street, city, state, ZIP)</requirement>
+      <requirement>YTD Expenses total displayed ($0.00 placeholder until Epic 3)</requirement>
+      <requirement>YTD Income total displayed ($0.00 placeholder until Epic 4)</requirement>
+      <requirement>Net Income displayed (Income - Expenses, $0.00 until Epic 4)</requirement>
+    </criterion>
+    <criterion id="AC-2.3.3" title="Recent activity empty states">
+      <requirement>Recent Expenses section with empty state: No expenses yet</requirement>
+      <requirement>Recent Income section with empty state: No income recorded yet</requirement>
+      <requirement>Sections styled consistently with Forest Green theme</requirement>
+    </criterion>
+    <criterion id="AC-2.3.4" title="Action buttons visible and functional">
+      <requirement>Add Expense button visible (disabled until Epic 3, tooltip: Coming soon)</requirement>
+      <requirement>Add Income button visible (disabled until Epic 4, tooltip: Coming soon)</requirement>
+      <requirement>Edit button navigates to /properties/:id/edit</requirement>
+      <requirement>Delete button triggers delete confirmation flow (Story 2.5)</requirement>
+    </criterion>
+    <criterion id="AC-2.3.5" title="API returns property detail">
+      <requirement>GET /api/v1/properties/{id} returns PropertyDetailDto</requirement>
+      <requirement>Response includes: id, name, address fields, expenseTotal, incomeTotal, createdAt, updatedAt</requirement>
+      <requirement>Response includes empty arrays for recentExpenses, recentIncome</requirement>
+      <requirement>Returns 404 if property doesn't exist or belongs to different account</requirement>
+    </criterion>
+    <criterion id="AC-2.3.6" title="404 handling">
+      <requirement>Accessing invalid GUID shows Property not found page</requirement>
+      <requirement>Accessing another account's property shows Property not found (no data leakage)</requirement>
+      <requirement>404 page includes link to return to Dashboard</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification">
+        <section>Data Models - PropertyDetailDto</section>
+        <snippet>PropertyDetailDto extends PropertySummaryDto with createdAt, updatedAt, recentExpenses[], recentIncome[]. Includes expenseTotal and incomeTotal (YTD, $0 until Epic 3/4).</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification">
+        <section>APIs - GET /properties/{id}</section>
+        <snippet>GET /api/v1/properties/{id} returns PropertyDetailDto. Returns 200 OK on success, 404 Not Found if property doesn't exist or belongs to different account.</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification">
+        <section>Acceptance Criteria - Story 2.3</section>
+        <snippet>AC-2.3.1 through AC-2.3.5: Navigation, detail display, empty states, action buttons, 404 handling.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture Document">
+        <section>API Contracts - Response Formats</section>
+        <snippet>Single Resource returns JSON directly (not wrapped). 404 Not Found uses RFC 7807 Problem Details format with type, title, status, detail, traceId.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture Document">
+        <section>Frontend Structure</section>
+        <snippet>Feature-based structure: features/properties/ contains property components, routes, and stores. Shared components in shared/components/.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture Document">
+        <section>Error Handling Pattern</section>
+        <snippet>NotFoundException thrown in handlers maps to 404 via global exception middleware. ProblemDetails format for all error responses.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>4.4 Property Detail Layout</section>
+        <snippet>Property detail shows name as title, full address, YTD totals, Recent Expenses/Income sections, action buttons (Add Expense, Add Income, Edit, Delete).</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification">
+        <section>7.5 Empty States</section>
+        <snippet>No expenses: "No expenses yet for this property" with Add Expense button. Friendly, helpful, action-oriented tone.</snippet>
+      </doc>
+      <doc path="docs/prd.md" title="PRD">
+        <section>FR11</section>
+        <snippet>Users can view a single property's detail page with expense/income totals and recent activity.</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown">
+        <section>Story 2.3: View Property Detail Page</section>
+        <snippet>Navigate to /properties/:id, display name, address, YTD totals, Recent Expenses/Income sections with empty states, Edit/Delete buttons. 404 for invalid property.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file path="backend/src/PropertyManager.Api/Controllers/PropertiesController.cs" kind="controller" symbol="PropertiesController" lines="1-137" reason="Existing controller to extend with GET /{id} endpoint. Has MediatR, FluentValidation, and logging patterns."/>
+      <file path="backend/src/PropertyManager.Application/Properties/GetAllProperties.cs" kind="query-handler" symbol="GetAllPropertiesQuery, GetAllPropertiesQueryHandler, PropertySummaryDto" lines="1-71" reason="Pattern for property queries. PropertySummaryDto to extend for PropertyDetailDto."/>
+      <file path="backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs" kind="interface" symbol="ICurrentUser" lines="1-14" reason="Interface for tenant isolation - AccountId property used in queries."/>
+      <file path="frontend/src/app/features/properties/stores/property.store.ts" kind="store" symbol="PropertyStore" lines="1-149" reason="Extend with selectedProperty signal and loadPropertyById method."/>
+      <file path="frontend/src/app/features/properties/services/property.service.ts" kind="service" symbol="PropertyService, PropertySummaryDto" lines="1-51" reason="Add getPropertyById method. Define PropertyDetailDto interface."/>
+      <file path="frontend/src/app/features/dashboard/dashboard.component.ts" kind="component" symbol="DashboardComponent" lines="1-261" reason="Shows PropertyRowComponent usage and navigation pattern - navigateToProperty method at line 258."/>
+      <file path="frontend/src/app/shared/components/property-row/property-row.component.ts" kind="component" symbol="PropertyRowComponent" lines="1-233" reason="Emits rowClick event for navigation. Already wired to dashboard."/>
+      <file path="frontend/src/app/shared/components/stats-bar/stats-bar.component.ts" kind="component" symbol="StatsBarComponent" reason="Reusable for property-level stats display if needed."/>
+      <file path="frontend/src/app/app.routes.ts" kind="routes" symbol="routes" lines="1-133" reason="Add /properties/:id route. Routes within Shell layout, protected by authGuard."/>
+    </code>
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="13.1.0" use="CQRS pattern - GetPropertyByIdQuery/Handler"/>
+        <package name="FluentValidation" version="12.1.0" use="Request validation if needed"/>
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" use="Database queries"/>
+        <framework name=".NET" version="10.0" />
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" use="Component framework"/>
+        <package name="@angular/router" version="^20.3.0" use="Route params, navigation"/>
+        <package name="@angular/material" version="^20.2.14" use="UI components (mat-card, mat-button, mat-icon)"/>
+        <package name="@ngrx/signals" version="^20.1.0" use="State management"/>
+        <package name="rxjs" version="~7.8.0" use="Reactive patterns"/>
+        <package name="vitest" version="^3.2.4" use="Unit testing"/>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">Clean Architecture: Commands/Queries in Application layer, Controller in Api layer, DTOs returned from handlers</constraint>
+    <constraint category="multi-tenancy">All queries must filter by ICurrentUser.AccountId for tenant isolation</constraint>
+    <constraint category="soft-delete">Global query filter on DeletedAt == null; soft deletes via DeletedAt timestamp</constraint>
+    <constraint category="error-handling">NotFoundException thrown for missing resources; global middleware converts to RFC 7807 ProblemDetails 404</constraint>
+    <constraint category="api-pattern">GET single resource returns DTO directly (not wrapped); 200 OK for success, 404 for not found</constraint>
+    <constraint category="frontend-routing">Routes in Shell layout children; protected by authGuard; lazy-loaded components</constraint>
+    <constraint category="state-management">Use @ngrx/signals signalStore pattern; rxMethod for async operations</constraint>
+    <constraint category="testing">Backend: xUnit for unit tests (handlers) and integration tests (controllers). Frontend: Vitest for component tests</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="GET /api/v1/properties/{id}" kind="REST endpoint">
+      <signature>GET /api/v1/properties/{id} -> PropertyDetailDto | 404 ProblemDetails</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/PropertiesController.cs</path>
+    </interface>
+    <interface name="PropertyDetailDto" kind="DTO">
+      <signature>
+        interface PropertyDetailDto {
+          id: string; name: string; street: string; city: string; state: string; zipCode: string;
+          expenseTotal: number; incomeTotal: number; createdAt: string; updatedAt: string;
+          recentExpenses: ExpenseSummaryDto[]; recentIncome: IncomeSummaryDto[];
+        }
+      </signature>
+      <path>backend/src/PropertyManager.Application/Properties/GetPropertyById.cs (to create)</path>
+    </interface>
+    <interface name="GetPropertyByIdQuery" kind="MediatR query">
+      <signature>record GetPropertyByIdQuery(Guid Id) : IRequest&lt;PropertyDetailDto&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Properties/GetPropertyById.cs (to create)</path>
+    </interface>
+    <interface name="PropertyService.getPropertyById" kind="Angular service method">
+      <signature>getPropertyById(id: string): Observable&lt;PropertyDetailDto&gt;</signature>
+      <path>frontend/src/app/features/properties/services/property.service.ts</path>
+    </interface>
+    <interface name="PropertyStore.loadPropertyById" kind="signalStore method">
+      <signature>loadPropertyById: rxMethod&lt;string&gt;</signature>
+      <path>frontend/src/app/features/properties/stores/property.store.ts</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      <backend>
+        <standard>Use xUnit with FluentAssertions for readable assertions</standard>
+        <standard>Use MockQueryable.Moq for mocking DbContext and DbSets</standard>
+        <standard>Mock IAppDbContext and ICurrentUser for handler tests</standard>
+        <standard>Test multi-tenant isolation by creating properties with different AccountIds</standard>
+        <standard>Test soft delete exclusion by setting DeletedAt on properties</standard>
+        <standard>Naming: {MethodName}_{Scenario}_{ExpectedResult}</standard>
+        <standard>Arrange-Act-Assert pattern with clear comments</standard>
+      </backend>
+      <frontend>
+        <standard>Use Vitest with TestBed for Angular component/store tests</standard>
+        <standard>Mock services using vi.fn() and provide via TestBed.configureTestingModule</standard>
+        <standard>Test computed signals by loading data first, then asserting computed values</standard>
+        <standard>Use setTimeout with await for async rxMethod operations</standard>
+        <standard>Test error handling with throwError from rxjs</standard>
+        <standard>Group tests using describe blocks: initial state, computed signals, methods</standard>
+      </frontend>
+    </standards>
+    <locations>
+      <backend>
+        <location>backend/tests/PropertyManager.Application.Tests/Properties/GetPropertyByIdHandlerTests.cs (to create)</location>
+        <location>backend/tests/PropertyManager.Api.Tests/Controllers/PropertiesControllerTests.cs (integration tests)</location>
+      </backend>
+      <frontend>
+        <location>frontend/src/app/features/properties/stores/property.store.spec.ts (extend)</location>
+        <location>frontend/src/app/features/properties/services/property.service.spec.ts (extend or create)</location>
+        <location>frontend/src/app/features/properties/property-detail/property-detail.component.spec.ts (to create)</location>
+        <location>frontend/src/app/shared/components/not-found/not-found.component.spec.ts (to create)</location>
+      </frontend>
+    </locations>
+    <ideas>
+      <backend-unit>
+        <test ac="2.3.5">Handle_ValidPropertyId_ReturnsPropertyDetailDto</test>
+        <test ac="2.3.5">Handle_PropertyNotFound_ThrowsNotFoundException</test>
+        <test ac="2.3.6">Handle_PropertyBelongsToDifferentAccount_ThrowsNotFoundException</test>
+        <test ac="2.3.5">Handle_DeletedProperty_ThrowsNotFoundException</test>
+        <test ac="2.3.5">Handle_ReturnsExpenseAndIncomeTotalsAsZero</test>
+        <test ac="2.3.5">Handle_ReturnsEmptyRecentExpensesAndIncomeArrays</test>
+      </backend-unit>
+      <backend-integration>
+        <test ac="2.3.5">GetById_ValidId_Returns200WithPropertyDetail</test>
+        <test ac="2.3.6">GetById_InvalidGuid_Returns404</test>
+        <test ac="2.3.6">GetById_OtherAccountProperty_Returns404</test>
+        <test ac="2.3.5">GetById_Unauthenticated_Returns401</test>
+      </backend-integration>
+      <frontend-store>
+        <test ac="2.3.2">loadPropertyById_Success_SetsSelectedProperty</test>
+        <test ac="2.3.2">loadPropertyById_SetsLoadingState</test>
+        <test ac="2.3.6">loadPropertyById_NotFound_SetsError</test>
+        <test ac="2.3.2">selectedProperty_InitiallyNull</test>
+        <test ac="2.3.2">clearSelectedProperty_ResetsToNull</test>
+      </frontend-store>
+      <frontend-component>
+        <test ac="2.3.2">renders_PropertyName_AsPageTitle</test>
+        <test ac="2.3.2">renders_FullAddress_AllFields</test>
+        <test ac="2.3.2">renders_YTDExpensesTotal</test>
+        <test ac="2.3.2">renders_YTDIncomeTotal</test>
+        <test ac="2.3.2">renders_NetIncome</test>
+        <test ac="2.3.3">renders_EmptyState_ForRecentExpenses</test>
+        <test ac="2.3.3">renders_EmptyState_ForRecentIncome</test>
+        <test ac="2.3.4">renders_AddExpenseButton_Disabled</test>
+        <test ac="2.3.4">renders_AddIncomeButton_Disabled</test>
+        <test ac="2.3.4">editButton_Navigates_ToEditRoute</test>
+        <test ac="2.3.4">deleteButton_Shows_ConfirmationDialog</test>
+        <test ac="2.3.6">renders_NotFoundPage_WhenPropertyNotFound</test>
+        <test ac="2.3.1">loadsPropertyById_OnInit_FromRouteParam</test>
+      </frontend-component>
+      <not-found-component>
+        <test ac="2.3.6">renders_PropertyNotFoundMessage</test>
+        <test ac="2.3.6">renders_BackToDashboardLink</test>
+        <test ac="2.3.6">backLink_NavigatesToDashboard</test>
+      </not-found-component>
+    </ideas>
+  </tests>
+</story-context>

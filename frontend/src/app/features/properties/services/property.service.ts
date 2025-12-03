@@ -30,6 +30,35 @@ export interface GetAllPropertiesResponse {
   totalCount: number;
 }
 
+export interface ExpenseSummaryDto {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+}
+
+export interface IncomeSummaryDto {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+}
+
+export interface PropertyDetailDto {
+  id: string;
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  expenseTotal: number;
+  incomeTotal: number;
+  createdAt: string;
+  updatedAt: string;
+  recentExpenses: ExpenseSummaryDto[];
+  recentIncome: IncomeSummaryDto[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class PropertyService {
   private readonly http = inject(HttpClient);
@@ -47,5 +76,14 @@ export class PropertyService {
   getProperties(year?: number): Observable<GetAllPropertiesResponse> {
     const params = year ? { year: year.toString() } : undefined;
     return this.http.get<GetAllPropertiesResponse>(this.baseUrl, { params });
+  }
+
+  /**
+   * Get a single property by ID (AC-2.3.5).
+   * @param id Property GUID
+   * @returns Observable with property detail or 404 error
+   */
+  getPropertyById(id: string): Observable<PropertyDetailDto> {
+    return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`);
   }
 }

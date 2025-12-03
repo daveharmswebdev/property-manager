@@ -4,11 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 import { PropertyStore } from '../properties/stores/property.store';
 import { StatsBarComponent } from '../../shared/components/stats-bar/stats-bar.component';
 import { PropertyRowComponent } from '../../shared/components/property-row/property-row.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ErrorCardComponent } from '../../shared/components/error-card/error-card.component';
+import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 
 /**
  * Dashboard Component (AC-2.2.1, AC-2.2.2, AC-2.2.3, AC-2.2.4)
@@ -27,9 +29,11 @@ import { PropertyRowComponent } from '../../shared/components/property-row/prope
     MatCardModule,
     MatIconModule,
     MatButtonModule,
-    MatProgressSpinnerModule,
     StatsBarComponent,
     PropertyRowComponent,
+    EmptyStateComponent,
+    ErrorCardComponent,
+    LoadingSpinnerComponent,
   ],
   template: `
     <div class="dashboard-container">
@@ -53,18 +57,14 @@ import { PropertyRowComponent } from '../../shared/components/property-row/prope
 
       <!-- Loading State -->
       @if (propertyStore.isLoading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
+        <app-loading-spinner />
       }
 
       <!-- Error State -->
       @if (propertyStore.error()) {
-        <mat-card class="error-card">
-          <mat-icon>error_outline</mat-icon>
-          <p>{{ propertyStore.error() }}</p>
-          <button mat-button color="primary" (click)="loadProperties()">Try Again</button>
-        </mat-card>
+        <app-error-card
+          [message]="propertyStore.error()!"
+          (retry)="loadProperties()" />
       }
 
       <!-- Properties List or Empty State -->
@@ -72,15 +72,13 @@ import { PropertyRowComponent } from '../../shared/components/property-row/prope
         <div class="dashboard-content">
           @if (propertyStore.isEmpty()) {
             <!-- Empty State (AC-2.2.3) -->
-            <mat-card class="empty-state-card">
-              <mat-icon class="placeholder-icon">home_work</mat-icon>
-              <h2>No properties yet</h2>
-              <p>Add your first property to get started.</p>
-              <button mat-raised-button color="primary" routerLink="/properties/new">
-                <mat-icon>add</mat-icon>
-                Add Property
-              </button>
-            </mat-card>
+            <app-empty-state
+              icon="home_work"
+              title="No properties yet"
+              message="Add your first property to get started."
+              actionLabel="Add Property"
+              actionRoute="/properties/new"
+              actionIcon="add" />
           } @else {
             <!-- Properties List (AC-2.2.2, AC-2.2.4) -->
             <mat-card class="properties-list-card">
@@ -140,67 +138,9 @@ import { PropertyRowComponent } from '../../shared/components/property-row/prope
       }
     }
 
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      padding: 48px;
-    }
-
-    .error-card {
-      text-align: center;
-      padding: 24px;
-      max-width: 400px;
-      margin: 0 auto;
-
-      mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: var(--pm-error, #c62828);
-      }
-
-      p {
-        margin: 16px 0;
-        color: var(--pm-text-secondary);
-      }
-    }
-
     .dashboard-content {
       display: flex;
       justify-content: center;
-    }
-
-    .empty-state-card {
-      text-align: center;
-      padding: 48px;
-      max-width: 400px;
-      width: 100%;
-
-      .placeholder-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: var(--pm-primary);
-        margin-bottom: 16px;
-      }
-
-      h2 {
-        color: var(--pm-text-primary);
-        font-size: 24px;
-        font-weight: 500;
-        margin: 0 0 12px 0;
-      }
-
-      p {
-        color: var(--pm-text-secondary);
-        font-size: 16px;
-        margin: 0 0 24px 0;
-        line-height: 1.5;
-      }
-
-      button mat-icon {
-        margin-right: 8px;
-      }
     }
 
     .properties-list-card {
@@ -232,10 +172,6 @@ import { PropertyRowComponent } from '../../shared/components/property-row/prope
         button {
           width: 100%;
         }
-      }
-
-      .empty-state-card {
-        padding: 32px 24px;
       }
     }
   `]

@@ -55,6 +55,49 @@ public class PropertiesController : ControllerBase
     }
 
     /// <summary>
+    /// Get a single property by ID (AC-2.3.2, AC-2.3.5, AC-2.3.6).
+    /// </summary>
+    /// <param name="id">Property GUID</param>
+    /// <returns>Property detail information</returns>
+    /// <response code="200">Returns the property detail</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If property not found or belongs to different account</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(PropertyDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPropertyById(Guid id)
+    {
+        var query = new GetPropertyByIdQuery(id);
+        var property = await _mediator.Send(query);
+
+        if (property == null)
+        {
+            _logger.LogWarning(
+                "Property not found: {PropertyId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Property '{id}' does not exist",
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+
+        _logger.LogInformation(
+            "Retrieved property: {PropertyId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
+
+        return Ok(property);
+    }
+
+    /// <summary>
     /// Create a new property (AC-2.1.3).
     /// </summary>
     /// <param name="request">Property details</param>
