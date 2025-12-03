@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Application.Properties;
+using PropertyManager.Domain.Exceptions;
 
 namespace PropertyManager.Api.Controllers;
 
@@ -18,15 +19,18 @@ public class PropertiesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreatePropertyCommand> _createValidator;
+    private readonly IValidator<UpdatePropertyCommand> _updateValidator;
     private readonly ILogger<PropertiesController> _logger;
 
     public PropertiesController(
         IMediator mediator,
         IValidator<CreatePropertyCommand> createValidator,
+        IValidator<UpdatePropertyCommand> updateValidator,
         ILogger<PropertiesController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -141,6 +145,69 @@ public class PropertiesController : ControllerBase
             response);
     }
 
+    /// <summary>
+    /// Update an existing property (AC-2.4.2, AC-2.4.5).
+    /// </summary>
+    /// <param name="id">Property GUID</param>
+    /// <param name="request">Updated property details</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Property updated successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If property not found or belongs to different account</response>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProperty(Guid id, [FromBody] UpdatePropertyRequest request)
+    {
+        var command = new UpdatePropertyCommand(
+            id,
+            request.Name,
+            request.Street,
+            request.City,
+            request.State,
+            request.ZipCode);
+
+        // Validate command
+        var validationResult = await _updateValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        try
+        {
+            await _mediator.Send(command);
+
+            _logger.LogInformation(
+                "Property updated: {PropertyId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            _logger.LogWarning(
+                "Property not found for update: {PropertyId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Property '{id}' does not exist",
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -176,4 +243,15 @@ public record CreatePropertyRequest(
 /// </summary>
 public record CreatePropertyResponse(
     Guid Id
+);
+
+/// <summary>
+/// Request model for updating a property (AC-2.4.5).
+/// </summary>
+public record UpdatePropertyRequest(
+    string Name,
+    string Street,
+    string City,
+    string State,
+    string ZipCode
 );

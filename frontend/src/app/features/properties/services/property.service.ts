@@ -86,4 +86,14 @@ export class PropertyService {
   getPropertyById(id: string): Observable<PropertyDetailDto> {
     return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`);
   }
+
+  /**
+   * Update an existing property (AC-2.4.2, AC-2.4.5).
+   * @param id Property GUID
+   * @param request Updated property details
+   * @returns Observable<void> (204 No Content response)
+   */
+  updateProperty(id: string, request: CreatePropertyRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${id}`, request);
+  }
 }

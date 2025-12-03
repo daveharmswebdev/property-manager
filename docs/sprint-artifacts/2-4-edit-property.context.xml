@@ -1,0 +1,266 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>4</storyId>
+    <title>Edit Property</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-4-edit-property.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>edit an existing property's details</iWant>
+    <soThat>I can correct mistakes or update information</soThat>
+    <tasks>
+      <task id="1" title="Create UpdateProperty Command and Handler" acs="2.4.2,2.4.5">
+        <subtask>Create UpdatePropertyCommand.cs in Application/Properties with Id and property fields</subtask>
+        <subtask>Create UpdatePropertyHandler.cs implementing IRequestHandler</subtask>
+        <subtask>Handler validates property exists and belongs to user's account</subtask>
+        <subtask>Handler updates all editable fields and sets UpdatedAt</subtask>
+        <subtask>Throw NotFoundException if property not found (returns 404)</subtask>
+        <subtask>Create UpdatePropertyValidator.cs with FluentValidation rules</subtask>
+        <subtask>Write unit tests for UpdatePropertyHandler (8+ tests)</subtask>
+      </task>
+      <task id="2" title="Add PUT Endpoint to PropertiesController" acs="2.4.5">
+        <subtask>Add PUT /api/v1/properties/{id} endpoint accepting UpdatePropertyCommand</subtask>
+        <subtask>Return 204 No Content on successful update</subtask>
+        <subtask>Return 404 Not Found when property doesn't exist or wrong account</subtask>
+        <subtask>Return 400 Bad Request with validation errors</subtask>
+        <subtask>Update Swagger documentation</subtask>
+        <subtask>Write integration tests for PUT endpoint (5+ tests)</subtask>
+      </task>
+      <task id="3" title="Update PropertyService with updateProperty method" acs="2.4.2">
+        <subtask>Add updateProperty(id: string, property: UpdatePropertyRequest) method</subtask>
+        <subtask>Returns Observable&lt;void&gt; (204 response)</subtask>
+        <subtask>Handle 404 and 400 error responses appropriately</subtask>
+      </task>
+      <task id="4" title="Create PropertyEditComponent" acs="2.4.1,2.4.2,2.4.3,2.4.4">
+        <subtask>Create features/properties/property-edit/property-edit.component.ts</subtask>
+        <subtask>Reuse PropertyFormComponent for form rendering (or create shared form)</subtask>
+        <subtask>Load property data on init using property ID from route</subtask>
+        <subtask>Pre-populate form with current property values</subtask>
+        <subtask>Display "Edit Property" title</subtask>
+        <subtask>Implement save flow: validate, call API, show snackbar, redirect</subtask>
+        <subtask>Implement cancel flow with unsaved changes check</subtask>
+        <subtask>Style consistently with app theme</subtask>
+        <subtask>Write component tests (15+ tests)</subtask>
+      </task>
+      <task id="5" title="Create UnsavedChangesGuard" acs="2.4.3">
+        <subtask>Create core/guards/unsaved-changes.guard.ts implementing CanDeactivate</subtask>
+        <subtask>Check if component has unsaved changes before navigation</subtask>
+        <subtask>Show confirmation dialog using Angular Material mat-dialog</subtask>
+        <subtask>Return Observable&lt;boolean&gt; based on user choice</subtask>
+        <subtask>Write guard tests (5+ tests)</subtask>
+      </task>
+      <task id="6" title="Create ConfirmDialogComponent for unsaved changes" acs="2.4.3">
+        <subtask>Create shared/components/confirm-dialog/confirm-dialog.component.ts</subtask>
+        <subtask>Accept title, message, confirmText, cancelText as inputs via MAT_DIALOG_DATA</subtask>
+        <subtask>Return boolean result on close</subtask>
+        <subtask>Style with Forest Green theme</subtask>
+        <subtask>Write component tests (5+ tests)</subtask>
+      </task>
+      <task id="7" title="Update PropertyStore for update operations" acs="2.4.2">
+        <subtask>Add updateProperty(id: string, property: UpdatePropertyRequest) method to store</subtask>
+        <subtask>Handle loading and error states during update</subtask>
+        <subtask>Update local state optimistically or refresh after update</subtask>
+        <subtask>Write store tests (5+ tests)</subtask>
+      </task>
+      <task id="8" title="Configure Edit Route with Guard" acs="2.4.1,2.4.3">
+        <subtask>Update /properties/:id/edit route in app.routes.ts</subtask>
+        <subtask>Associate PropertyEditComponent with the route</subtask>
+        <subtask>Apply UnsavedChangesGuard to the route</subtask>
+        <subtask>Verify navigation from property detail [Edit] button works</subtask>
+      </task>
+      <task id="9" title="Run Tests and Validate">
+        <subtask>Backend unit tests pass (all existing + new)</subtask>
+        <subtask>Backend integration tests pass (all existing + new)</subtask>
+        <subtask>Frontend component tests pass (all existing + new)</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Backend builds successfully</subtask>
+        <subtask>Manual smoke test checklist completed</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.4.1" title="Edit button navigates to edit form with pre-filled values">
+      <requirement>From property detail page, clicking [Edit] navigates to /properties/:id/edit</requirement>
+      <requirement>Form fields pre-populated with current property values (name, street, city, state, ZIP)</requirement>
+      <requirement>Form title shows "Edit Property" or "Edit [Property Name]"</requirement>
+      <requirement>URL uses property GUID as route parameter</requirement>
+    </criterion>
+    <criterion id="AC-2.4.2" title="Successful save updates property and provides feedback">
+      <requirement>When I modify fields and click "Save", property is updated in database</requirement>
+      <requirement>UpdatedAt timestamp is set to current UTC time</requirement>
+      <requirement>Snackbar shows "Property updated" with success styling</requirement>
+      <requirement>User redirected back to property detail page (/properties/:id)</requirement>
+      <requirement>Property detail page reflects updated values immediately</requirement>
+    </criterion>
+    <criterion id="AC-2.4.3" title="Cancel with unsaved changes shows confirmation dialog">
+      <requirement>When I click "Cancel" with unsaved changes, confirmation dialog appears</requirement>
+      <requirement>Dialog text: "You have unsaved changes. Discard changes?"</requirement>
+      <requirement>Dialog has [Cancel] and [Discard] buttons</requirement>
+      <requirement>Clicking [Cancel] returns to form with changes preserved</requirement>
+      <requirement>Clicking [Discard] navigates back to property detail without saving</requirement>
+      <requirement>Browser back button triggers same confirmation if changes exist</requirement>
+    </criterion>
+    <criterion id="AC-2.4.4" title="Form validation enforces required fields">
+      <requirement>Name, street, city, state, ZIP are all required</requirement>
+      <requirement>Validation errors shown inline below fields on blur</requirement>
+      <requirement>Save button disabled until form is valid</requirement>
+      <requirement>State must be valid 2-letter US state code</requirement>
+      <requirement>ZIP must be 5-digit format</requirement>
+    </criterion>
+    <criterion id="AC-2.4.5" title="API endpoint updates property with proper authorization">
+      <requirement>PUT /api/v1/properties/{id} updates property in database</requirement>
+      <requirement>Returns 204 No Content on success</requirement>
+      <requirement>Returns 404 Not Found if property doesn't exist or belongs to different account</requirement>
+      <requirement>Returns 400 Bad Request with validation errors if invalid data</requirement>
+      <requirement>Only property owner's account can update (tenant isolation)</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification" section="Story 2.4: Edit Property">
+        AC-2.4.1: Edit button navigates to /properties/:id/edit with pre-filled form. AC-2.4.2: Saving updates shows snackbar "Property updated". AC-2.4.3: Cancel with unsaved changes shows confirmation dialog. AC-2.4.4: UpdatedAt timestamp updated on save.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification" section="APIs and Interfaces">
+        PUT /api/v1/properties/{id} with CreatePropertyRequest body returns 204 No Content on success. Standard error responses: 400 Bad Request for validation, 404 Not Found for missing/unauthorized.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="CQRS Pattern">
+        Commands use IRequest pattern with handlers. UpdatePropertyCommand should follow CreatePropertyCommand pattern. MediatR for command dispatch. FluentValidation for request validation.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Error Handling Pattern">
+        NotFoundException thrown when property not found (middleware converts to 404). ValidationException for invalid data (converts to 400). RFC 7807 ProblemDetails format for errors.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Frontend Structure">
+        Feature-based folders: features/properties/ for property components. stores/ for @ngrx/signals state. services/ for API clients. shared/components/ for reusable UI.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Form Patterns">
+        Labels above inputs. Required indicator asterisk. Validation on blur. Error display inline below field in red. Single column mobile, 2-column desktop. Primary action right-aligned. Cancel/secondary left of primary.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Confirmation Patterns">
+        Unsaved changes on leave form: Browser prompt "You have unsaved changes". CanDeactivate guard pattern. Modal confirmation for destructive/important actions.
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 2.4: Edit Property">
+        Edit button navigates to /properties/:id/edit with pre-filled form. Reuse property form component from Story 2.1. Unsaved changes guard on route navigation.
+      </doc>
+    </docs>
+    <code>
+      <file path="backend/src/PropertyManager.Api/Controllers/PropertiesController.cs" kind="controller" symbol="PropertiesController" reason="Add PUT endpoint here following GET/POST pattern. Inject UpdatePropertyCommand validator.">
+        <lines>1-180</lines>
+      </file>
+      <file path="backend/src/PropertyManager.Application/Properties/CreateProperty.cs" kind="command" symbol="CreatePropertyCommand, CreatePropertyCommandValidator, CreatePropertyCommandHandler" reason="Use as template for UpdateProperty. Same fields, add Id parameter. Similar validator rules.">
+        <lines>1-83</lines>
+      </file>
+      <file path="backend/src/PropertyManager.Application/Properties/GetPropertyById.cs" kind="query" symbol="GetPropertyByIdQuery" reason="Reference for property lookup pattern with NotFoundException handling."/>
+      <file path="backend/src/PropertyManager.Domain/Entities/Property.cs" kind="entity" symbol="Property" reason="Entity to update. Has UpdatedAt field to set on save."/>
+      <file path="frontend/src/app/features/properties/services/property.service.ts" kind="service" symbol="PropertyService" lines="1-90" reason="Add updateProperty(id, request) method. Returns Observable&lt;void&gt; for 204 response."/>
+      <file path="frontend/src/app/features/properties/stores/property.store.ts" kind="store" symbol="PropertyStore" lines="1-231" reason="Add updateProperty method with loading/error states. Extend withMethods section."/>
+      <file path="frontend/src/app/features/properties/property-detail/property-detail.component.ts" kind="component" symbol="PropertyDetailComponent" lines="88" reason="Edit button already routes to /properties/:id/edit. Reference for styling patterns."/>
+      <file path="frontend/src/app/features/properties/property-form/property-form.component.ts" kind="component" symbol="PropertyFormComponent" reason="Currently used for create. Needs to detect edit mode (route param :id), load property, pre-fill form."/>
+      <file path="frontend/src/app/app.routes.ts" kind="routes" symbol="routes" lines="87-94" reason="Route for /properties/:id/edit already exists but needs guard. Apply UnsavedChangesGuard."/>
+    </code>
+    <dependencies>
+      <backend>
+        <package name="Microsoft.EntityFrameworkCore" version="10.x">ORM for database operations</package>
+        <package name="FluentValidation" version="11.x">Request validation (UpdatePropertyValidator)</package>
+        <package name="MediatR" version="12.x">CQRS command handling</package>
+        <package name="Microsoft.AspNetCore.Mvc" version="10.x">Controllers, ProblemDetails</package>
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0">Core framework</package>
+        <package name="@angular/forms" version="^20.3.0">Reactive forms for property edit form</package>
+        <package name="@angular/material" version="^20.2.14">mat-form-field, mat-button, mat-dialog, mat-snack-bar</package>
+        <package name="@angular/router" version="^20.3.0">CanDeactivate guard, route params</package>
+        <package name="@ngrx/signals" version="^20.1.0">Signal-based state management</package>
+        <package name="rxjs" version="~7.8.0">Observable patterns for API calls</package>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Backend Clean Architecture: Command/Handler in Application layer, Controller in Api layer</constraint>
+    <constraint type="architecture">Multi-tenant filtering via ICurrentUser.AccountId - property must belong to user's account</constraint>
+    <constraint type="security">NotFoundException for property not found OR wrong account (don't leak existence)</constraint>
+    <constraint type="api">PUT returns 204 No Content (no response body on success)</constraint>
+    <constraint type="api">400 Bad Request with ProblemDetails for validation errors</constraint>
+    <constraint type="api">404 Not Found with ProblemDetails for missing resources</constraint>
+    <constraint type="frontend">Use existing PropertyFormComponent - extend for edit mode, not create new</constraint>
+    <constraint type="frontend">CanDeactivate guard for unsaved changes protection</constraint>
+    <constraint type="frontend">mat-dialog for confirmation dialogs (ConfirmDialogComponent)</constraint>
+    <constraint type="frontend">Signal-based state with @ngrx/signals pattern</constraint>
+    <constraint type="ux">Snackbar feedback: "Property updated" on success</constraint>
+    <constraint type="ux">Form validation on blur, inline error messages</constraint>
+    <constraint type="validation">State: 2-letter US state code</constraint>
+    <constraint type="validation">ZIP: 5-digit format (regex: ^\d{5}$)</constraint>
+    <constraint type="testing">Unit tests: xUnit for backend, Vitest for frontend</constraint>
+    <constraint type="testing">Integration tests for API endpoints</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="PUT /api/v1/properties/{id}" kind="REST endpoint">
+      <signature>PUT /api/v1/properties/{id} with body { name, street, city, state, zipCode }</signature>
+      <response code="204">No Content on success</response>
+      <response code="400">ValidationProblemDetails with field errors</response>
+      <response code="404">ProblemDetails "Resource not found"</response>
+      <response code="401">ProblemDetails if not authenticated</response>
+    </interface>
+    <interface name="UpdatePropertyCommand" kind="CQRS command" path="backend/src/PropertyManager.Application/Properties/UpdateProperty.cs">
+      <signature>record UpdatePropertyCommand(Guid Id, string Name, string Street, string City, string State, string ZipCode) : IRequest</signature>
+    </interface>
+    <interface name="UpdatePropertyValidator" kind="FluentValidation" path="backend/src/PropertyManager.Application/Properties/UpdateProperty.cs">
+      <signature>class UpdatePropertyValidator : AbstractValidator&lt;UpdatePropertyCommand&gt;</signature>
+    </interface>
+    <interface name="PropertyService.updateProperty" kind="Angular service" path="frontend/src/app/features/properties/services/property.service.ts">
+      <signature>updateProperty(id: string, request: CreatePropertyRequest): Observable&lt;void&gt;</signature>
+    </interface>
+    <interface name="PropertyStore.updateProperty" kind="ngrx/signals store method" path="frontend/src/app/features/properties/stores/property.store.ts">
+      <signature>updateProperty: rxMethod&lt;{ id: string; request: CreatePropertyRequest }&gt;</signature>
+    </interface>
+    <interface name="CanDeactivate guard" kind="Angular route guard" path="frontend/src/app/core/guards/unsaved-changes.guard.ts">
+      <signature>unsavedChangesGuard: CanDeactivateFn&lt;HasUnsavedChanges&gt;</signature>
+    </interface>
+    <interface name="ConfirmDialogComponent" kind="Angular component" path="frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.ts">
+      <signature>data: { title: string; message: string; confirmText: string; cancelText: string }</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend: xUnit with FluentAssertions. Test naming: Method_Scenario_ExpectedResult. Use Testcontainers for integration tests with real PostgreSQL. Mock ICurrentUser for unit tests.
+      Frontend: Vitest with @angular/core/testing. Use Testing Library patterns. Mock services with vi.fn(). Test user behavior, not implementation.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Properties/UpdatePropertyHandlerTests.cs</location>
+      <location>backend/tests/PropertyManager.Api.Tests/Controllers/PropertiesControllerTests.cs</location>
+      <location>frontend/src/app/features/properties/property-edit/property-edit.component.spec.ts</location>
+      <location>frontend/src/app/features/properties/stores/property.store.spec.ts</location>
+      <location>frontend/src/app/core/guards/unsaved-changes.guard.spec.ts</location>
+      <location>frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.4.1">Test PropertyEditComponent loads property by ID and pre-populates form</idea>
+      <idea ac="AC-2.4.1">Test form title shows "Edit Property"</idea>
+      <idea ac="AC-2.4.2">Test UpdatePropertyHandler updates property and sets UpdatedAt</idea>
+      <idea ac="AC-2.4.2">Test PUT endpoint returns 204 on success</idea>
+      <idea ac="AC-2.4.2">Test snackbar shows "Property updated" after save</idea>
+      <idea ac="AC-2.4.2">Test redirect to property detail after save</idea>
+      <idea ac="AC-2.4.3">Test UnsavedChangesGuard blocks navigation with dirty form</idea>
+      <idea ac="AC-2.4.3">Test ConfirmDialogComponent returns true/false based on button click</idea>
+      <idea ac="AC-2.4.3">Test cancel returns to form when user clicks Cancel</idea>
+      <idea ac="AC-2.4.3">Test discard navigates away without saving</idea>
+      <idea ac="AC-2.4.4">Test validation errors show inline on blur</idea>
+      <idea ac="AC-2.4.4">Test Save button disabled when form invalid</idea>
+      <idea ac="AC-2.4.4">Test state validation rejects invalid codes</idea>
+      <idea ac="AC-2.4.4">Test ZIP validation rejects non-5-digit values</idea>
+      <idea ac="AC-2.4.5">Test UpdatePropertyHandler throws NotFoundException for missing property</idea>
+      <idea ac="AC-2.4.5">Test UpdatePropertyHandler throws NotFoundException for wrong account</idea>
+      <idea ac="AC-2.4.5">Test PUT endpoint returns 400 with validation errors</idea>
+      <idea ac="AC-2.4.5">Test PUT endpoint returns 404 for non-existent property</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -12,6 +12,7 @@ import {
   PropertyService,
   PropertySummaryDto,
   PropertyDetailDto,
+  CreatePropertyRequest,
 } from '../services/property.service';
 
 /**
@@ -26,6 +27,9 @@ interface PropertyState {
   selectedProperty: PropertyDetailDto | null;
   isLoadingDetail: boolean;
   detailError: string | null;
+  // Property update state (AC-2.4.2)
+  isUpdating: boolean;
+  updateError: string | null;
 }
 
 /**
@@ -40,6 +44,9 @@ const initialState: PropertyState = {
   selectedProperty: null,
   isLoadingDetail: false,
   detailError: null,
+  // Property update initial state
+  isUpdating: false,
+  updateError: null,
 };
 
 /**
@@ -225,6 +232,51 @@ export const PropertyStore = signalStore(
      */
     clearDetailError(): void {
       patchState(store, { detailError: null });
+    },
+
+    /**
+     * Update an existing property (AC-2.4.2)
+     * @param params Object containing id and request with updated property data
+     */
+    updateProperty: rxMethod<{ id: string; request: CreatePropertyRequest }>(
+      pipe(
+        tap(() =>
+          patchState(store, {
+            isUpdating: true,
+            updateError: null,
+          })
+        ),
+        switchMap(({ id, request }) =>
+          propertyService.updateProperty(id, request).pipe(
+            tap(() => {
+              // Update succeeded - refresh the selected property to get updated data
+              patchState(store, {
+                isUpdating: false,
+              });
+            }),
+            catchError((error) => {
+              const errorMessage = error.status === 404
+                ? 'Property not found'
+                : error.status === 400
+                ? 'Invalid property data'
+                : 'Failed to update property. Please try again.';
+              patchState(store, {
+                isUpdating: false,
+                updateError: errorMessage,
+              });
+              console.error('Error updating property:', error);
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Clear the update error state
+     */
+    clearUpdateError(): void {
+      patchState(store, { updateError: null });
     },
   }))
 );

@@ -531,6 +531,304 @@ public class PropertiesControllerTests : IClassFixture<PropertyManagerWebApplica
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
         return await _client.SendAsync(request);
     }
+
+    private async Task<HttpResponseMessage> PutAsJsonWithAuthAsync<T>(string url, T content, string accessToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url);
+        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+        request.Content = JsonContent.Create(content);
+        return await _client.SendAsync(request);
+    }
+
+    // =====================================================
+    // PUT /api/v1/properties/{id} Tests (AC-2.4.5)
+    // =====================================================
+
+    [Fact]
+    public async Task UpdateProperty_WithoutAuth_Returns401()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        var request = new
+        {
+            Name = "Updated Property",
+            Street = "123 Updated Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/v1/properties/{propertyId}", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UpdateProperty_ValidData_Returns204()
+    {
+        // Arrange
+        var email = $"update-test-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property first
+        var createRequest = new
+        {
+            Name = "Original Property Name",
+            Street = "123 Original Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Update request
+        var updateRequest = new
+        {
+            Name = "Updated Property Name",
+            Street = "456 Updated Street",
+            City = "Dallas",
+            State = "CA",
+            ZipCode = "90210"
+        };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent!.Id}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task UpdateProperty_ValidData_UpdatesAllFields()
+    {
+        // Arrange
+        var email = $"update-fields-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Original Name",
+            Street = "Original Street",
+            City = "Original City",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Update request
+        var updateRequest = new
+        {
+            Name = "New Name",
+            Street = "New Street",
+            City = "New City",
+            State = "CA",
+            ZipCode = "90210"
+        };
+
+        // Act
+        await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent!.Id}", updateRequest, accessToken);
+
+        // Fetch the updated property
+        var getResponse = await GetWithAuthAsync($"/api/v1/properties/{createContent.Id}", accessToken);
+        var updatedProperty = await getResponse.Content.ReadFromJsonAsync<PropertyDetailDto>();
+
+        // Assert
+        updatedProperty.Should().NotBeNull();
+        updatedProperty!.Name.Should().Be("New Name");
+        updatedProperty.Street.Should().Be("New Street");
+        updatedProperty.City.Should().Be("New City");
+        updatedProperty.State.Should().Be("CA");
+        updatedProperty.ZipCode.Should().Be("90210");
+    }
+
+    [Fact]
+    public async Task UpdateProperty_UpdatesUpdatedAtTimestamp()
+    {
+        // Arrange
+        var email = $"update-timestamp-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Timestamp Test",
+            Street = "123 Time Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Get original timestamps
+        var originalResponse = await GetWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+        var original = await originalResponse.Content.ReadFromJsonAsync<PropertyDetailDto>();
+        var originalUpdatedAt = original!.UpdatedAt;
+
+        // Wait a moment to ensure timestamp difference
+        await Task.Delay(100);
+
+        // Update
+        var updateRequest = new
+        {
+            Name = "Updated Timestamp Test",
+            Street = "123 Time Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent.Id}", updateRequest, accessToken);
+
+        // Act
+        var updatedResponse = await GetWithAuthAsync($"/api/v1/properties/{createContent.Id}", accessToken);
+        var updated = await updatedResponse.Content.ReadFromJsonAsync<PropertyDetailDto>();
+
+        // Assert
+        updated!.UpdatedAt.Should().BeAfter(originalUpdatedAt);
+        updated.CreatedAt.Should().Be(original.CreatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateProperty_NonExistentProperty_Returns404()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+        var nonExistentId = Guid.NewGuid();
+
+        var updateRequest = new
+        {
+            Name = "Update Non-Existent",
+            Street = "123 Ghost Street",
+            City = "Nowhere",
+            State = "TX",
+            ZipCode = "00000"
+        };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/properties/{nonExistentId}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateProperty_OtherAccountProperty_Returns404()
+    {
+        // Arrange
+        var email1 = $"user1-update-{Guid.NewGuid():N}@example.com";
+        var email2 = $"user2-update-{Guid.NewGuid():N}@example.com";
+        var (accessToken1, _) = await RegisterAndLoginAsync(email1);
+        var (accessToken2, _) = await RegisterAndLoginAsync(email2);
+
+        // User 1 creates a property
+        var createRequest = new
+        {
+            Name = "User1 Property",
+            Street = "123 User1 Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken1);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // User 2 tries to update User 1's property
+        var updateRequest = new
+        {
+            Name = "Hacked Property",
+            Street = "123 Hacker Street",
+            City = "Hackerville",
+            State = "TX",
+            ZipCode = "00000"
+        };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent!.Id}", updateRequest, accessToken2);
+
+        // Assert - Should return 404 (not 403) to prevent data leakage
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateProperty_InvalidState_Returns400()
+    {
+        // Arrange
+        var email = $"update-invalid-state-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Test Property",
+            Street = "123 Test Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Update with invalid state
+        var updateRequest = new
+        {
+            Name = "Updated Property",
+            Street = "123 Test Street",
+            City = "Austin",
+            State = "Texas", // Invalid - should be 2 chars
+            ZipCode = "78701"
+        };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent!.Id}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("State");
+    }
+
+    [Fact]
+    public async Task UpdateProperty_InvalidZipCode_Returns400()
+    {
+        // Arrange
+        var email = $"update-invalid-zip-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Test Property",
+            Street = "123 Test Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Update with invalid ZIP
+        var updateRequest = new
+        {
+            Name = "Updated Property",
+            Street = "123 Test Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "ABCDE" // Invalid - should be 5 digits
+        };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/properties/{createContent!.Id}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("ZipCode");
+    }
 }
 
 public record CreatePropertyResponse(Guid Id);

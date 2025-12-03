@@ -52,7 +52,7 @@ development_status:
   2-1-create-property: done
   2-2-view-properties-list-with-dashboard-stats: done
   2-3-view-property-detail-page: done
-  2-4-edit-property: backlog
+  2-4-edit-property: done
   2-5-delete-property: backlog
   epic-2-retrospective: optional
 
