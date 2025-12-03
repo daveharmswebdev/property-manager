@@ -1,0 +1,306 @@
+<story-context id="2-2-view-properties-list-with-dashboard-stats" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2</storyId>
+    <title>View Properties List with Dashboard Stats</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-2-view-properties-list-with-dashboard-stats.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>see all my properties on the dashboard with expense totals</iWant>
+    <soThat>I can quickly understand my portfolio at a glance</soThat>
+    <tasks>
+      <task id="1" ac="2.2.2, 2.2.4, 2.2.6">
+        <title>Create GetAllProperties Query and Handler</title>
+        <subtasks>
+          <subtask>Create GetAllPropertiesQuery.cs in Application/Properties</subtask>
+          <subtask>Create GetAllPropertiesHandler.cs implementing IRequestHandler</subtask>
+          <subtask>Create PropertySummaryDto.cs with all required fields</subtask>
+          <subtask>Handler queries properties filtered by AccountId from ICurrentUser</subtask>
+          <subtask>Include expense/income totals (return 0 for now)</subtask>
+          <subtask>Support optional year query parameter</subtask>
+          <subtask>Write unit tests for GetAllPropertiesHandler</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.2.6">
+        <title>Add GET Endpoint to PropertiesController</title>
+        <subtasks>
+          <subtask>Add GET /api/v1/properties endpoint returning { items, totalCount }</subtask>
+          <subtask>Add optional [FromQuery] int? year parameter</subtask>
+          <subtask>Return 200 OK with property list</subtask>
+          <subtask>Add endpoint to Swagger documentation</subtask>
+          <subtask>Write integration tests for GET endpoint</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.2.1">
+        <title>Create StatsBarComponent</title>
+        <subtasks>
+          <subtask>Create shared/components/stats-bar/ component</subtask>
+          <subtask>Display three stat cards: Total Expenses, Total Income, Net Income</subtask>
+          <subtask>Accept inputs for expense total, income total (calculate net)</subtask>
+          <subtask>Format values as currency ($X,XXX.XX)</subtask>
+          <subtask>Style with Forest Green theme</subtask>
+          <subtask>Write component tests</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.2.2, 2.2.5">
+        <title>Create PropertyRowComponent</title>
+        <subtasks>
+          <subtask>Create shared/components/property-row/ component</subtask>
+          <subtask>Display property name, city/state, expense total</subtask>
+          <subtask>Emit click event for navigation</subtask>
+          <subtask>Include disabled [+] button with tooltip</subtask>
+          <subtask>Style for scannable list view</subtask>
+          <subtask>Write component tests</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.2.2, 2.2.4">
+        <title>Create PropertyStore with @ngrx/signals</title>
+        <subtasks>
+          <subtask>Create features/properties/stores/property.store.ts</subtask>
+          <subtask>Define signals: properties, isLoading, error</subtask>
+          <subtask>Implement loadProperties() method calling API</subtask>
+          <subtask>Implement computed signals for totals</subtask>
+          <subtask>Handle loading and error states</subtask>
+          <subtask>Write store tests</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="2.2.1, 2.2.2, 2.2.3, 2.2.4">
+        <title>Update DashboardComponent</title>
+        <subtasks>
+          <subtask>Inject PropertyStore</subtask>
+          <subtask>Call loadProperties() on init</subtask>
+          <subtask>Add StatsBarComponent to template</subtask>
+          <subtask>Render PropertyRowComponent list</subtask>
+          <subtask>Implement empty state with message and Add Property button</subtask>
+          <subtask>Add click handler to navigate to property detail</subtask>
+          <subtask>Update component tests</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="2.2.6">
+        <title>Create Property Service</title>
+        <subtasks>
+          <subtask>Create/update features/properties/services/property.service.ts</subtask>
+          <subtask>Implement getAll(year?: number) method</subtask>
+          <subtask>Handle API response transformation</subtask>
+          <subtask>Handle errors gracefully</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="all">
+        <title>Run Tests and Validate</title>
+        <subtasks>
+          <subtask>Backend unit tests pass</subtask>
+          <subtask>Backend integration tests pass</subtask>
+          <subtask>Frontend component tests pass</subtask>
+          <subtask>Frontend builds successfully</subtask>
+          <subtask>Backend builds successfully</subtask>
+          <subtask>Manual smoke test checklist completed</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.2.1">
+      <title>Dashboard displays stats bar with financial summary</title>
+      <requirements>
+        <req>Shows "Total Expenses YTD: $0.00" (placeholder until Epic 3)</req>
+        <req>Shows "Total Income YTD: $0.00" (placeholder until Epic 4)</req>
+        <req>Shows "Net Income YTD: $0.00" (calculated: income - expenses)</req>
+        <req>Stats respect selected tax year (default: current year)</req>
+      </requirements>
+    </criterion>
+    <criterion id="AC-2.2.2">
+      <title>Dashboard displays list of all properties</title>
+      <requirements>
+        <req>Each property row shows: Property name, Address (city, state format), YTD expense total</req>
+        <req>Properties sorted by name (alphabetical)</req>
+        <req>Clickable rows navigate to property detail page</req>
+      </requirements>
+    </criterion>
+    <criterion id="AC-2.2.3">
+      <title>Empty state displays when no properties exist</title>
+      <requirements>
+        <req>Message: "No properties yet. Add your first property to get started."</req>
+        <req>"Add Property" button navigates to /properties/new</req>
+        <req>Empty state uses consistent Forest Green theme styling</req>
+      </requirements>
+    </criterion>
+    <criterion id="AC-2.2.4">
+      <title>All properties visible without pagination</title>
+      <requirements>
+        <req>List view designed for 14+ properties (target: 14 per PRD)</req>
+        <req>Scannable list format (not card grid on desktop)</req>
+        <req>All properties load in single API call</req>
+      </requirements>
+    </criterion>
+    <criterion id="AC-2.2.5">
+      <title>Each property row has quick-add expense button</title>
+      <requirements>
+        <req>[+] button visible on each property row</req>
+        <req>Button is disabled (not yet implemented - Epic 3)</req>
+        <req>Tooltip: "Add expense (coming soon)"</req>
+      </requirements>
+    </criterion>
+    <criterion id="AC-2.2.6">
+      <title>API returns properties with expense/income totals</title>
+      <requirements>
+        <req>GET /api/v1/properties returns { items: PropertySummaryDto[], totalCount: number }</req>
+        <req>Each PropertySummaryDto includes: id, name, street, city, state, zipCode, expenseTotal, incomeTotal</req>
+        <req>Results filtered by AccountId (multi-tenant isolation)</req>
+        <req>Optional ?year= query parameter for tax year filtering</req>
+      </requirements>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.2: View Properties List with Dashboard Stats</section>
+        <snippet>Defines PropertySummaryDto with expense/income totals, GET /api/v1/properties endpoint with optional year parameter, and dashboard layout with stats bar and property list.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>API Contracts, Frontend Structure</section>
+        <snippet>Collection responses use { items, totalCount } format. Frontend uses feature-based structure with shared/components for reusable UI. @ngrx/signals for state management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>StatsBarComponent, PropertyRowComponent, Dashboard Layout</section>
+        <snippet>Stats bar shows three cards (Expenses, Income, Net). PropertyRowComponent displays name, city/state, expense total, and [+] action button. Forest Green theme (#66BB6A primary).</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR41, FR42, FR47, FR48</section>
+        <snippet>Dashboard displays property cards with individual expense totals. Click-through navigation to property detail. Tax year selector with all totals respecting filter.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>backend/src/PropertyManager.Application/Properties/GetAllProperties.cs</path>
+        <kind>query-handler</kind>
+        <symbol>GetAllPropertiesQuery, GetAllPropertiesResponse, PropertySummaryDto, GetAllPropertiesQueryHandler</symbol>
+        <lines>1-70</lines>
+        <reason>EXISTING - Already implements properties list query with AccountId filter and placeholder totals. Needs year parameter support.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Properties/CreateProperty.cs</path>
+        <kind>command-handler</kind>
+        <symbol>CreatePropertyCommand, CreatePropertyCommandHandler</symbol>
+        <lines>1-82</lines>
+        <reason>Reference pattern for CQRS command handlers with FluentValidation.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Api/Controllers/PropertiesController.cs</path>
+        <kind>controller</kind>
+        <symbol>PropertiesController, GetAllProperties, CreateProperty</symbol>
+        <lines>1-135</lines>
+        <reason>EXISTING - Has GET /api/v1/properties endpoint. Needs year query parameter added.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/services/property.service.ts</path>
+        <kind>service</kind>
+        <symbol>PropertyService, PropertySummaryDto, GetAllPropertiesResponse</symbol>
+        <lines>1-45</lines>
+        <reason>EXISTING - Has getProperties() method. Needs optional year parameter support.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/dashboard/dashboard.component.ts</path>
+        <kind>component</kind>
+        <symbol>DashboardComponent</symbol>
+        <lines>1-268</lines>
+        <reason>EXISTING - Has property list, empty state, loading/error states. Needs StatsBarComponent, PropertyRowComponent integration, and PropertyStore.</reason>
+      </file>
+      <file>
+        <path>backend/tests/PropertyManager.Api.Tests/PropertiesControllerTests.cs</path>
+        <kind>test</kind>
+        <symbol>PropertiesControllerTests</symbol>
+        <reason>Reference for integration test patterns. Add tests for GET endpoint with year parameter.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="12.x">CQRS pattern implementation</package>
+        <package name="FluentValidation" version="11.x">Request validation</package>
+        <package name="Microsoft.EntityFrameworkCore" version="10.x">ORM and database access</package>
+        <package name="xUnit">Unit and integration testing</package>
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0">Angular framework</package>
+        <package name="@angular/material" version="^20.2.14">UI components (mat-card, mat-list, mat-button, mat-icon, mat-tooltip)</package>
+        <package name="@ngrx/signals" version="^20.1.0">State management for PropertyStore</package>
+        <package name="vitest" version="^3.2.4">Component testing</package>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Backend Clean Architecture: Application layer for queries/handlers, API layer for controllers</constraint>
+    <constraint type="architecture">Frontend: Shared components in shared/components/, feature stores in features/properties/stores/</constraint>
+    <constraint type="data">Multi-tenant filtering via AccountId from ICurrentUser - all queries must include this filter</constraint>
+    <constraint type="data">Soft deletes: Query must filter DeletedAt == null</constraint>
+    <constraint type="api">Standard response format: { items: [], totalCount: n } for collections</constraint>
+    <constraint type="api">Base URL: /api/v1/ with JWT authentication required</constraint>
+    <constraint type="ui">Forest Green theme (#66BB6A primary) for consistent styling</constraint>
+    <constraint type="ui">List view design (not card grid) for desktop - scannable for 14+ properties</constraint>
+    <constraint type="testing">Unit tests for handlers, integration tests for API endpoints, component tests with Vitest</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/properties</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/properties?year={int?} => { items: PropertySummaryDto[], totalCount: number }</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/PropertiesController.cs:39-53</path>
+    </interface>
+    <interface>
+      <name>PropertySummaryDto</name>
+      <kind>DTO record</kind>
+      <signature>record PropertySummaryDto(Guid Id, string Name, string Street, string City, string State, string ZipCode, decimal ExpenseTotal, decimal IncomeTotal)</signature>
+      <path>backend/src/PropertyManager.Application/Properties/GetAllProperties.cs:23-32</path>
+    </interface>
+    <interface>
+      <name>ICurrentUser</name>
+      <kind>interface</kind>
+      <signature>interface ICurrentUser { Guid AccountId, Guid UserId, string Email }</signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+    </interface>
+    <interface>
+      <name>PropertyService.getProperties()</name>
+      <kind>Angular service method</kind>
+      <signature>getProperties(year?: number): Observable&lt;GetAllPropertiesResponse&gt;</signature>
+      <path>frontend/src/app/features/properties/services/property.service.ts:42-44</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Backend uses xUnit with Moq for unit tests, WebApplicationFactory for integration tests. Frontend uses Vitest with Angular TestBed for component tests. Test naming: Method_Scenario_ExpectedResult pattern.</standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Properties/ - Unit tests for handlers</location>
+      <location>backend/tests/PropertyManager.Api.Tests/ - Integration tests for controllers</location>
+      <location>frontend/src/app/shared/components/**/*.spec.ts - Component tests</location>
+      <location>frontend/src/app/features/dashboard/dashboard.component.spec.ts - Dashboard tests</location>
+      <location>frontend/src/app/features/properties/stores/*.spec.ts - Store tests</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.2.1">StatsBarComponent renders three stat cards with $0.00 values, calculates net income correctly</idea>
+      <idea ac="AC-2.2.2">PropertyRowComponent renders property name, city/state, expense total; emits click event</idea>
+      <idea ac="AC-2.2.2">GetAllPropertiesHandler returns properties sorted by name alphabetically</idea>
+      <idea ac="AC-2.2.3">DashboardComponent shows empty state when properties array is empty</idea>
+      <idea ac="AC-2.2.4">GetAllPropertiesHandler returns all properties without pagination</idea>
+      <idea ac="AC-2.2.5">PropertyRowComponent shows disabled [+] button with tooltip</idea>
+      <idea ac="AC-2.2.6">PropertiesController GET returns { items, totalCount } format</idea>
+      <idea ac="AC-2.2.6">GetAllPropertiesHandler filters by AccountId (multi-tenant isolation test)</idea>
+      <idea ac="AC-2.2.6">PropertyService.getProperties() passes year parameter to API when provided</idea>
+    </ideas>
+  </tests>
+</story-context>

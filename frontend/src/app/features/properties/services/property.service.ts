@@ -39,7 +39,13 @@ export class PropertyService {
     return this.http.post<CreatePropertyResponse>(this.baseUrl, request);
   }
 
-  getProperties(): Observable<GetAllPropertiesResponse> {
-    return this.http.get<GetAllPropertiesResponse>(this.baseUrl);
+  /**
+   * Get all properties for the current user.
+   * @param year Optional tax year filter for expense/income totals
+   * @returns Observable with properties list and total count
+   */
+  getProperties(year?: number): Observable<GetAllPropertiesResponse> {
+    const params = year ? { year: year.toString() } : undefined;
+    return this.http.get<GetAllPropertiesResponse>(this.baseUrl, { params });
   }
 }

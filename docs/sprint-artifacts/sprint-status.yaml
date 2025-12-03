@@ -50,7 +50,7 @@ development_status:
   # Epic 2: Property Management
   epic-2: contexted
   2-1-create-property: done
-  2-2-view-properties-list-with-dashboard-stats: backlog
+  2-2-view-properties-list-with-dashboard-stats: done
   2-3-view-property-detail-page: backlog
   2-4-edit-property: backlog
   2-5-delete-property: backlog

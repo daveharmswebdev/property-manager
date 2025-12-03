@@ -7,7 +7,8 @@ namespace PropertyManager.Application.Properties;
 /// <summary>
 /// Query to get all properties for the current user's account.
 /// </summary>
-public record GetAllPropertiesQuery : IRequest<GetAllPropertiesResponse>;
+/// <param name="Year">Optional tax year filter for expense/income totals (defaults to current year)</param>
+public record GetAllPropertiesQuery(int? Year = null) : IRequest<GetAllPropertiesResponse>;
 
 /// <summary>
 /// Response containing list of properties.
