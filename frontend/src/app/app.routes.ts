@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   // Public auth routes (only for guests) (AC7.6)
@@ -84,13 +85,14 @@ export const routes: Routes = [
             (m) => m.PropertyDetailComponent
           ),
       },
-      // Property Edit (AC-2.4.1 - placeholder route)
+      // Property Edit (AC-2.4.1, AC-2.4.3)
       {
         path: 'properties/:id/edit',
         loadComponent: () =>
-          import('./features/properties/property-form/property-form.component').then(
-            (m) => m.PropertyFormComponent
+          import('./features/properties/property-edit/property-edit.component').then(
+            (m) => m.PropertyEditComponent
           ),
+        canDeactivate: [unsavedChangesGuard],
       },
       // Expenses (AC7.7)
       {
