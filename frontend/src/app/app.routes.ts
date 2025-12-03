@@ -76,6 +76,22 @@ export const routes: Routes = [
             (m) => m.PropertyFormComponent
           ),
       },
+      // Property Detail (AC-2.3.1)
+      {
+        path: 'properties/:id',
+        loadComponent: () =>
+          import('./features/properties/property-detail/property-detail.component').then(
+            (m) => m.PropertyDetailComponent
+          ),
+      },
+      // Property Edit (AC-2.4.1 - placeholder route)
+      {
+        path: 'properties/:id/edit',
+        loadComponent: () =>
+          import('./features/properties/property-form/property-form.component').then(
+            (m) => m.PropertyFormComponent
+          ),
+      },
       // Expenses (AC7.7)
       {
         path: 'expenses',

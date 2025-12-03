@@ -386,6 +386,137 @@ public class PropertiesControllerTests : IClassFixture<PropertyManagerWebApplica
         content.Items[0].Name.Should().Be("User1 Property");
     }
 
+    [Fact]
+    public async Task GetPropertyById_WithoutAuth_Returns401()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/properties/{propertyId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetPropertyById_ValidId_Returns200WithPropertyDetail()
+    {
+        // Arrange
+        var email = $"property-detail-test-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property first
+        var createRequest = new
+        {
+            Name = "Detail Test Property",
+            Street = "123 Detail Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Act
+        var response = await GetWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<PropertyDetailDto>();
+        content.Should().NotBeNull();
+        content!.Id.Should().Be(createContent.Id);
+        content.Name.Should().Be("Detail Test Property");
+        content.Street.Should().Be("123 Detail Street");
+        content.City.Should().Be("Austin");
+        content.State.Should().Be("TX");
+        content.ZipCode.Should().Be("78701");
+        content.ExpenseTotal.Should().Be(0);
+        content.IncomeTotal.Should().Be(0);
+        content.RecentExpenses.Should().BeEmpty();
+        content.RecentIncome.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetPropertyById_InvalidGuid_Returns404()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var response = await GetWithAuthAsync($"/api/v1/properties/{nonExistentId}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetPropertyById_OtherAccountProperty_Returns404()
+    {
+        // Arrange - Create property with user 1, try to access with user 2
+        var email1 = $"user1-detail-{Guid.NewGuid():N}@example.com";
+        var email2 = $"user2-detail-{Guid.NewGuid():N}@example.com";
+        var (accessToken1, _) = await RegisterAndLoginAsync(email1);
+        var (accessToken2, _) = await RegisterAndLoginAsync(email2);
+
+        // User 1 creates a property
+        var createRequest = new
+        {
+            Name = "User1 Detail Property",
+            Street = "123 User1 Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken1);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Act - User 2 tries to access User 1's property
+        var response = await GetWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken2);
+
+        // Assert - Should return 404 (not 403) to prevent data leakage
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetPropertyById_ReturnsTimestamps()
+    {
+        // Arrange
+        var email = $"timestamp-detail-test-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        var beforeCreate = DateTime.UtcNow;
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Timestamp Detail Property",
+            Street = "123 Time Street",
+            City = "Houston",
+            State = "TX",
+            ZipCode = "77001"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        var afterCreate = DateTime.UtcNow;
+
+        // Act
+        var response = await GetWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<PropertyDetailDto>();
+        content.Should().NotBeNull();
+        content!.CreatedAt.Should().BeAfter(beforeCreate.AddSeconds(-1));
+        content.CreatedAt.Should().BeBefore(afterCreate.AddSeconds(1));
+        content.UpdatedAt.Should().BeAfter(beforeCreate.AddSeconds(-1));
+        content.UpdatedAt.Should().BeBefore(afterCreate.AddSeconds(1));
+    }
+
     private async Task<HttpResponseMessage> PostAsJsonWithAuthAsync<T>(string url, T content, string accessToken)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -416,4 +547,33 @@ public record PropertySummaryDto(
     string ZipCode,
     decimal ExpenseTotal,
     decimal IncomeTotal
+);
+
+public record PropertyDetailDto(
+    Guid Id,
+    string Name,
+    string Street,
+    string City,
+    string State,
+    string ZipCode,
+    decimal ExpenseTotal,
+    decimal IncomeTotal,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<ExpenseSummaryDto> RecentExpenses,
+    IReadOnlyList<IncomeSummaryDto> RecentIncome
+);
+
+public record ExpenseSummaryDto(
+    Guid Id,
+    string Description,
+    decimal Amount,
+    DateTime Date
+);
+
+public record IncomeSummaryDto(
+    Guid Id,
+    string Description,
+    decimal Amount,
+    DateTime Date
 );
