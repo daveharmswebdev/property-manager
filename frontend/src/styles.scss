@@ -299,3 +299,13 @@ a {
 .mat-elevation-z1 { box-shadow: var(--pm-shadow-1) !important; }
 .mat-elevation-z2, .mat-elevation-z3, .mat-elevation-z4 { box-shadow: var(--pm-shadow-2) !important; }
 .mat-elevation-z5, .mat-elevation-z6, .mat-elevation-z7, .mat-elevation-z8 { box-shadow: var(--pm-shadow-3) !important; }
+
+// Confirmation dialog panel - remove default Material padding so component controls it
+.confirm-dialog-panel {
+  .mat-mdc-dialog-container {
+    .mdc-dialog__surface {
+      padding: 0;
+      overflow: hidden;
+    }
+  }
+}
