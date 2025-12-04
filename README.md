@@ -107,13 +107,48 @@ npm run generate-api
 cd backend
 dotnet test
 
-# Frontend tests
+# Frontend unit tests
 cd frontend
 npm test
 
-# E2E tests
-npm run e2e
+# Frontend E2E tests (requires full stack running)
+npm run test:e2e
 ```
+
+### E2E Testing
+
+E2E tests use Playwright and require the full stack running (API, database, MailHog).
+
+```bash
+# Start infrastructure
+docker compose up -d db mailhog
+
+# Start backend (in another terminal)
+cd backend
+dotnet run --project src/PropertyManager.Api
+
+# Run E2E tests (in another terminal)
+cd frontend
+npm run test:e2e
+
+# Run with UI mode (for debugging)
+npm run test:e2e:ui
+
+# View HTML report after test run
+npm run test:e2e:report
+```
+
+#### E2E Test Structure
+
+```
+frontend/e2e/
+  fixtures/     # Custom Playwright fixtures
+  helpers/      # MailHog API, auth helpers
+  pages/        # Page Object Model classes
+  tests/        # Test specifications
+```
+
+E2E tests run automatically in CI on pull requests after unit tests pass. Failed tests produce HTML reports and trace files uploaded as GitHub artifacts.
 
 ### Database Migrations
 

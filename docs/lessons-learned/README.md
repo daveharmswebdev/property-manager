@@ -8,6 +8,8 @@ This section contains practical insights from actual implementation. These lesso
 
 **"I'm styling Angular Material dialogs"** → [Frontend Styling Patterns](frontend-styling-patterns.md)
 
+**"My E2E tests are flaky/failing"** → [E2E Testing with Playwright](e2e-testing-playwright.md)
+
 ## All Lessons Documents
 
 ### 1. [Frontend Styling Patterns](frontend-styling-patterns.md)
@@ -16,6 +18,14 @@ Angular Material and CSS patterns including:
 - Icon + text alignment in headers
 - Reusable confirmation dialog patterns
 - CSS architecture principles
+
+### 2. [E2E Testing with Playwright](e2e-testing-playwright.md)
+Playwright E2E testing patterns including:
+- Email verification token extraction (quoted-printable encoding)
+- Parallel test execution and shared state race conditions
+- Async component behavior (setTimeout delays)
+- Angular Material dropdown selection
+- CI environment differences and debugging
 
 ---
 
