@@ -39,7 +39,8 @@ test.describe('Auth Critical Path', () => {
     // Step 5: Verify email by navigating to verification URL
     await page.goto(`/verify-email?token=${token}`);
 
-    // Step 6: Wait for verification and redirect to login
+    // Step 6: Wait for verification success, then redirect (component has 3s delay)
+    await page.locator('.success-icon, mat-icon:has-text("check_circle")').waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForURL('/login', { timeout: 10000 });
 
     // Step 7: Login with verified account

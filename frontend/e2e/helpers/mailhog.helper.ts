@@ -46,8 +46,15 @@ export class MailHogHelper {
     );
   }
 
+  private decodeQuotedPrintable(str: string): string {
+    // Decode quoted-printable encoding (e.g., =3D becomes =, =20 becomes space)
+    return str
+      .replace(/=\r?\n/g, '') // Remove soft line breaks
+      .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  }
+
   extractVerificationToken(message: MailHogMessage): string | null {
-    const body = message.Content.Body;
+    const body = this.decodeQuotedPrintable(message.Content.Body);
     const tokenMatch = body.match(/[?&]token=([a-zA-Z0-9_-]+)/);
     return tokenMatch ? tokenMatch[1] : null;
   }

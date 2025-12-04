@@ -30,8 +30,9 @@ export class AuthHelper {
     // Get verification token from MailHog
     const token = await this.mailhog.getVerificationToken(testUser.email);
 
-    // Verify email
+    // Verify email - wait for success state then redirect (component has 3s delay)
     await this.page.goto(`/verify-email?token=${token}`);
+    await this.page.locator('.success-icon, mat-icon:has-text("check_circle")').waitFor({ state: 'visible', timeout: 10000 });
     await this.page.waitForURL('/login', { timeout: 10000 });
 
     // Login
