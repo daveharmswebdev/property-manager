@@ -48,7 +48,9 @@ describe('ConfirmDialogComponent', () => {
   });
 
   it('should display the message from dialog data', () => {
-    const content = fixture.debugElement.query(By.css('mat-dialog-content p'));
+    const content = fixture.debugElement.query(
+      By.css('mat-dialog-content .primary-message')
+    );
     expect(content.nativeElement.textContent).toContain(
       'Are you sure you want to proceed?'
     );
@@ -94,6 +96,18 @@ describe('ConfirmDialogComponent', () => {
     );
     expect(actionButtons.length).toBe(2);
   });
+
+  it('should not display icon when not provided', () => {
+    const icon = fixture.debugElement.query(By.css('.header-icon'));
+    expect(icon).toBeNull();
+  });
+
+  it('should not display secondary message when not provided', () => {
+    const secondaryMessage = fixture.debugElement.query(
+      By.css('.secondary-message')
+    );
+    expect(secondaryMessage).toBeNull();
+  });
 });
 
 describe('ConfirmDialogComponent with unsaved changes data', () => {
@@ -130,7 +144,9 @@ describe('ConfirmDialogComponent with unsaved changes data', () => {
   });
 
   it('should display discard message (AC-2.4.3)', () => {
-    const content = fixture.debugElement.query(By.css('mat-dialog-content p'));
+    const content = fixture.debugElement.query(
+      By.css('mat-dialog-content .primary-message')
+    );
     expect(content.nativeElement.textContent).toContain(
       'You have unsaved changes. Discard changes?'
     );
@@ -149,5 +165,69 @@ describe('ConfirmDialogComponent with unsaved changes data', () => {
       (b) => !b.nativeElement.getAttribute('color')
     );
     expect(cancelButton?.nativeElement.textContent.trim()).toBe('Cancel');
+  });
+});
+
+describe('ConfirmDialogComponent with icon and secondary message', () => {
+  let fixture: ComponentFixture<ConfirmDialogComponent>;
+  let dialogRefSpy: { close: ReturnType<typeof vi.fn> };
+
+  const deleteDialogData: ConfirmDialogData = {
+    title: 'Delete Property?',
+    message: 'This will remove the property from your active portfolio.',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    icon: 'warning',
+    iconColor: 'warn',
+    secondaryMessage:
+      'Historical expense and income records will be preserved for tax purposes.',
+    confirmIcon: 'delete',
+  };
+
+  beforeEach(async () => {
+    dialogRefSpy = {
+      close: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ConfirmDialogComponent, NoopAnimationsModule],
+      providers: [
+        { provide: MatDialogRef, useValue: dialogRefSpy },
+        { provide: MAT_DIALOG_DATA, useValue: deleteDialogData },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ConfirmDialogComponent);
+    fixture.detectChanges();
+  });
+
+  it('should display warning icon when provided', () => {
+    const icon = fixture.debugElement.query(By.css('.header-icon'));
+    expect(icon).toBeTruthy();
+    expect(icon.nativeElement.textContent.trim()).toBe('warning');
+  });
+
+  it('should apply warn color class to icon', () => {
+    const icon = fixture.debugElement.query(By.css('.header-icon'));
+    expect(icon.nativeElement.classList).toContain('icon-warn');
+  });
+
+  it('should display secondary message when provided', () => {
+    const secondaryMessage = fixture.debugElement.query(
+      By.css('.secondary-message')
+    );
+    expect(secondaryMessage).toBeTruthy();
+    expect(secondaryMessage.nativeElement.textContent).toContain(
+      'Historical expense and income records will be preserved for tax purposes.'
+    );
+  });
+
+  it('should display icon on confirm button when provided', () => {
+    const confirmButton = fixture.debugElement.query(
+      By.css('button[color="warn"]')
+    );
+    const buttonIcon = confirmButton.query(By.css('mat-icon'));
+    expect(buttonIcon).toBeTruthy();
+    expect(buttonIcon.nativeElement.textContent.trim()).toBe('delete');
   });
 });

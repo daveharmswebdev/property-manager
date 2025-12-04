@@ -8,7 +8,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PropertyStore } from '../stores/property.store';
-import { DeletePropertyDialogComponent, DeletePropertyDialogData } from '../delete-property-dialog/delete-property-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -508,14 +511,23 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     const property = this.propertyStore.selectedProperty();
     if (!property) return;
 
-    const dialogData: DeletePropertyDialogData = {
-      propertyName: property.name,
+    const dialogData: ConfirmDialogData = {
+      title: `Delete ${property.name}?`,
+      message: 'This will remove the property from your active portfolio.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+      secondaryMessage:
+        'Historical expense and income records will be preserved for tax purposes.',
+      confirmIcon: 'delete',
     };
 
-    const dialogRef = this.dialog.open(DeletePropertyDialogComponent, {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: dialogData,
       width: '450px',
       disableClose: true,
+      panelClass: 'confirm-dialog-panel',
     });
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
