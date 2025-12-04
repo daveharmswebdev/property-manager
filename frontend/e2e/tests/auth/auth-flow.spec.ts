@@ -1,9 +1,8 @@
 import { test, expect } from '../../fixtures/test-fixtures';
 
 test.describe('Auth Critical Path', () => {
-  test.beforeEach(async ({ mailhog }) => {
-    await mailhog.deleteAllMessages();
-  });
+  // Note: Don't delete all messages in beforeEach - causes race conditions with parallel tests
+  // Each test uses unique email addresses (timestamp-based), so filtering works correctly
 
   test('complete registration, email verification, and login flow', async ({
     page,

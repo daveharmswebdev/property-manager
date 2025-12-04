@@ -55,7 +55,8 @@ export class MailHogHelper {
 
   extractVerificationToken(message: MailHogMessage): string | null {
     const body = this.decodeQuotedPrintable(message.Content.Body);
-    const tokenMatch = body.match(/[?&]token=([a-zA-Z0-9_-]+)/);
+    // Match token value including URL-encoded characters (%XX)
+    const tokenMatch = body.match(/[?&]token=([a-zA-Z0-9_%-]+)/);
     return tokenMatch ? tokenMatch[1] : null;
   }
 

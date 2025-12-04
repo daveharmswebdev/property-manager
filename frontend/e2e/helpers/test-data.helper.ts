@@ -28,7 +28,7 @@ export class TestDataHelper {
       name: `Test Property ${timestamp}`,
       street: `${Math.floor(Math.random() * 9999)} Test Street`,
       city: 'Austin',
-      state: 'TX',
+      state: 'Texas', // Use full state name to match dropdown options
       zipCode: '78701',
     };
   }

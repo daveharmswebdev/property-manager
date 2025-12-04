@@ -14,7 +14,8 @@ export class AuthHelper {
   async registerAndLogin(user?: TestUser): Promise<TestUser> {
     const testUser = user || TestDataHelper.generateTestUser();
 
-    await this.mailhog.deleteAllMessages();
+    // Note: Don't delete all messages here - causes race conditions with parallel tests
+    // Each test uses unique email addresses, so we can filter by email
 
     // Register
     await this.page.goto('/register');
