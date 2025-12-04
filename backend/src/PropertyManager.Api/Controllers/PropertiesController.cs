@@ -208,6 +208,51 @@ public class PropertiesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete a property (soft delete) (AC-2.5.2).
+    /// </summary>
+    /// <param name="id">Property GUID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Property deleted successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If property not found or belongs to different account</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProperty(Guid id)
+    {
+        try
+        {
+            var command = new DeletePropertyCommand(id);
+            await _mediator.Send(command);
+
+            _logger.LogInformation(
+                "Property deleted: {PropertyId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            _logger.LogWarning(
+                "Property not found for deletion: {PropertyId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Property '{id}' does not exist",
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors

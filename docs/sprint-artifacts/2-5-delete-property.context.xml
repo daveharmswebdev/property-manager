@@ -1,0 +1,233 @@
+<story-context id="2-5-delete-property" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>5</storyId>
+    <title>Delete Property</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-5-delete-property.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>delete a property I no longer manage</iWant>
+    <soThat>it doesn't clutter my portfolio</soThat>
+    <tasks>
+      <task id="1" ac="2.5.2, 2.5.3">Create DeleteProperty Command and Handler
+        <subtask>Create DeletePropertyCommand.cs in Application/Properties with PropertyId</subtask>
+        <subtask>Create DeletePropertyHandler.cs implementing IRequestHandler</subtask>
+        <subtask>Handler validates property exists and belongs to user's account</subtask>
+        <subtask>Handler sets DeletedAt timestamp on Property entity</subtask>
+        <subtask>Handler does NOT cascade delete to Expenses, Income, or Receipts (preserved for tax records)</subtask>
+        <subtask>Throw NotFoundException if property not found (returns 404)</subtask>
+        <subtask>Write unit tests for DeletePropertyHandler (5+ tests)</subtask>
+      </task>
+      <task id="2" ac="2.5.2, 2.5.5">Add DELETE Endpoint to PropertiesController
+        <subtask>Add DELETE /api/v1/properties/{id} endpoint accepting property ID</subtask>
+        <subtask>Return 204 No Content on successful deletion</subtask>
+        <subtask>Return 404 Not Found when property doesn't exist or wrong account</subtask>
+        <subtask>Return 401 Unauthorized if no valid JWT</subtask>
+        <subtask>Update Swagger documentation</subtask>
+        <subtask>Write integration tests for DELETE endpoint (5+ tests)</subtask>
+      </task>
+      <task id="3" ac="2.5.2">Add deleteProperty method to PropertyService
+        <subtask>Add deleteProperty(id: string) method to property.service.ts</subtask>
+        <subtask>Returns Observable&lt;void&gt; (204 response)</subtask>
+        <subtask>Handle 404 error responses appropriately</subtask>
+      </task>
+      <task id="4" ac="2.5.2, 2.5.4, 2.5.5">Add delete functionality to PropertyStore
+        <subtask>Add deleteProperty(id: string) rxMethod to property.store.ts</subtask>
+        <subtask>Add isDeleting signal for loading state</subtask>
+        <subtask>Add deleteError signal for error state</subtask>
+        <subtask>On success: Remove property from local state, show snackbar, navigate to dashboard</subtask>
+        <subtask>On error: Set deleteError, show error snackbar</subtask>
+        <subtask>Write unit tests for delete functionality</subtask>
+      </task>
+      <task id="5" ac="2.5.1">Add delete button and confirmation to PropertyDetailComponent
+        <subtask>Add [Delete] button to property detail page template</subtask>
+        <subtask>Style button as destructive (red, mat-warn)</subtask>
+        <subtask>Wire click handler to show confirmation dialog</subtask>
+        <subtask>Pass property name to dialog for personalized message</subtask>
+      </task>
+      <task id="6" ac="2.5.1">Create DeletePropertyDialogComponent
+        <subtask>Create features/properties/delete-property-dialog/delete-property-dialog.component.ts</subtask>
+        <subtask>Accept property name via MAT_DIALOG_DATA injection</subtask>
+        <subtask>Display confirmation message with property name</subtask>
+        <subtask>Display warning about data loss</subtask>
+        <subtask>[Cancel] button closes dialog with false result</subtask>
+        <subtask>[Delete] button closes dialog with true result</subtask>
+        <subtask>Style Delete button as destructive (mat-warn)</subtask>
+        <subtask>Write unit tests for DeletePropertyDialogComponent</subtask>
+      </task>
+      <task id="7" ac="2.5.1, 2.5.4, 2.5.5">Wire up delete flow in PropertyDetailComponent
+        <subtask>Import DeletePropertyDialogComponent and MatDialog</subtask>
+        <subtask>On delete click: Open DeletePropertyDialogComponent</subtask>
+        <subtask>On dialog confirm: Call propertyStore.deleteProperty(id)</subtask>
+        <subtask>On dialog cancel: Do nothing, stay on page</subtask>
+        <subtask>Handle loading state (disable button while deleting)</subtask>
+        <subtask>Write unit tests for delete flow</subtask>
+      </task>
+      <task id="8" ac="2.5.3, 2.5.5">Verify Global Query Filters and Data Preservation
+        <subtask>Verify Property entity has DeletedAt global query filter in AppDbContext</subtask>
+        <subtask>Write integration test: Delete property, then GET /properties returns filtered list</subtask>
+        <subtask>Write integration test: Delete property, then GET /properties/{id} returns 404</subtask>
+        <subtask>Write integration test: Delete property with expenses, verify expenses still exist with DeletedAt = null</subtask>
+        <subtask>Write integration test: Verify deleted property's expenses still accessible for tax reports</subtask>
+      </task>
+      <task id="9" ac="all">Run Tests and Validate
+        <subtask>Backend unit tests pass (new DeletePropertyHandler tests)</subtask>
+        <subtask>Backend integration tests pass (new DELETE endpoint tests)</subtask>
+        <subtask>Frontend component tests pass</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Backend builds successfully</subtask>
+        <subtask>Manual smoke test checklist completed</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.5.1" title="Delete button shows modal confirmation dialog">
+      <detail>Delete button visible on property detail page (/properties/:id)</detail>
+      <detail>Clicking [Delete] opens confirmation modal dialog</detail>
+      <detail>Modal title: "Delete [Property Name]?"</detail>
+      <detail>Modal message: "This will remove the property from your active portfolio. Historical expense and income records will be preserved for tax purposes."</detail>
+      <detail>Modal has [Cancel] and [Delete] buttons</detail>
+      <detail>Delete button styled as destructive (red)</detail>
+    </criterion>
+    <criterion id="AC-2.5.2" title="Confirming delete soft-deletes property">
+      <detail>When user confirms deletion, DELETE request sent to API</detail>
+      <detail>API sets DeletedAt timestamp on property record</detail>
+      <detail>Property remains in database (soft delete, not hard delete)</detail>
+      <detail>Returns 204 No Content on success</detail>
+      <detail>Returns 404 Not Found if property doesn't exist or belongs to different account</detail>
+    </criterion>
+    <criterion id="AC-2.5.3" title="Related expenses and income are preserved (NOT deleted)">
+      <detail>All Expense records linked to the property remain in database with DeletedAt = null</detail>
+      <detail>All Income records linked to the property remain in database with DeletedAt = null</detail>
+      <detail>All Receipt records linked to the property remain in database with DeletedAt = null</detail>
+      <detail>Historical financial data preserved for tax reporting purposes</detail>
+      <detail>Related records remain accessible via direct query if needed for tax reports</detail>
+    </criterion>
+    <criterion id="AC-2.5.4" title="Success feedback and navigation">
+      <detail>Snackbar shows "Property deleted" with success styling</detail>
+      <detail>User redirected to Dashboard (/dashboard)</detail>
+      <detail>Snackbar auto-dismisses after 3 seconds</detail>
+    </criterion>
+    <criterion id="AC-2.5.5" title="Deleted property excluded from all lists">
+      <detail>Property no longer appears in Dashboard property list</detail>
+      <detail>Property no longer appears in property dropdowns</detail>
+      <detail>Stats bar totals no longer include deleted property's expenses/income</detail>
+      <detail>Direct navigation to /properties/{deleted-id} returns 404 page</detail>
+      <detail>API returns 404 for any requests to deleted property</detail>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="FR10" snippet="Users can delete a property (with confirmation). FR56: Deleted items are soft-deleted with ability to restore." />
+      <doc path="docs/architecture.md" title="Architecture" section="Data Architecture" snippet="Soft deletes via DeletedAt timestamp. Global query filters enforce tenant isolation and exclude deleted records." />
+      <doc path="docs/architecture.md" title="Architecture" section="API Contracts" snippet="DELETE /api/v1/properties/{id} - Delete property (soft). Update/Delete returns 204 No Content." />
+      <doc path="docs/architecture.md" title="Architecture" section="Response Formats" snippet="Not Found (404): RFC 7807 Problem Details with type, title, status, detail, traceId." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="7.6 Confirmation Patterns" snippet="Destructive actions on important data (properties) get modal confirmation. Rule: Destructive actions on important data require modal confirmation." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="7.3 Feedback Patterns" snippet="Success: Snackbar bottom-center 'Property deleted' - 3 seconds, auto-dismiss. Loading: Spinner on button OR skeleton screen - until complete." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="Story 2.5" snippet="AC-2.5.1 through AC-2.5.5. Delete Property Flow: DELETE /api/v1/properties/{id} - Validate JWT, Validate property exists, Set DeletedAt, SaveChanges, Return 204." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="Workflows" snippet="Delete Property Flow: Modal confirmation, soft-delete property, cascade soft-delete to related Expenses/Income (NOTE: story deviates - NO cascade for this story)." />
+      <doc path="docs/epics.md" title="Epics" section="Story 2.5: Delete Property" snippet="Delete property with confirmation dialog. Soft delete pattern: Sets DeletedAt timestamp. Modal confirmation using mat-dialog." />
+    </docs>
+    <code>
+      <file path="backend/src/PropertyManager.Domain/Entities/Property.cs" kind="entity" symbol="Property" lines="1-24" reason="Property entity with DeletedAt field for soft delete. Implements ISoftDeletable interface." />
+      <file path="backend/src/PropertyManager.Application/Properties/UpdateProperty.cs" kind="command-handler" symbol="UpdatePropertyCommand, UpdatePropertyCommandHandler" lines="1-90" reason="Pattern reference for creating DeleteProperty command/handler. Shows AccountId validation, NotFoundException usage, and UpdatedAt pattern." />
+      <file path="backend/src/PropertyManager.Api/Controllers/PropertiesController.cs" kind="controller" symbol="PropertiesController" lines="1-228" reason="PropertiesController needs DELETE endpoint. Shows pattern for 204 response, 404 handling, Problem Details format, logging." />
+      <file path="backend/src/PropertyManager.Domain/Exceptions/NotFoundException.cs" kind="exception" symbol="NotFoundException" lines="1-28" reason="Existing NotFoundException to reuse for 404 responses when property not found or wrong account." />
+      <file path="frontend/src/app/features/properties/services/property.service.ts" kind="service" symbol="PropertyService" lines="1-99" reason="PropertyService needs deleteProperty method. Pattern: http.delete returning Observable&lt;void&gt;." />
+      <file path="frontend/src/app/features/properties/stores/property.store.ts" kind="store" symbol="PropertyStore" lines="1-282" reason="PropertyStore needs deleteProperty rxMethod, isDeleting, deleteError signals. Follow updateProperty pattern." />
+      <file path="frontend/src/app/features/properties/property-detail/property-detail.component.ts" kind="component" symbol="PropertyDetailComponent" lines="1-495" reason="PropertyDetailComponent has Delete button (line 92-95) with placeholder onDeleteClick(). Wire up dialog and delete flow here." />
+      <file path="frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.ts" kind="component" symbol="ConfirmDialogComponent, ConfirmDialogData" lines="1-84" reason="Reusable ConfirmDialogComponent exists. Can use for delete confirmation OR create dedicated DeletePropertyDialogComponent with more specific styling/messaging." />
+    </code>
+    <dependencies>
+      <backend>
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" />
+        <package name="FluentValidation.AspNetCore" version="11.3.1" />
+        <package name="MediatR" version="12.x" note="via PropertyManager.Application" />
+        <package name="Serilog.AspNetCore" version="10.0.0" />
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" />
+        <package name="@angular/material" version="^20.2.14" />
+        <package name="@angular/cdk" version="^20.2.14" />
+        <package name="@ngrx/signals" version="^20.1.0" />
+        <package name="rxjs" version="~7.8.0" />
+        <package name="vitest" version="^3.2.4" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Follow Clean Architecture: Command in Application/Properties, Handler in same file, Controller endpoint in Api/Controllers</constraint>
+    <constraint type="data">Soft delete ONLY the property (set DeletedAt). Do NOT cascade delete to Expenses, Income, or Receipts - preserve for tax records.</constraint>
+    <constraint type="multi-tenant">All queries must filter by AccountId. Use ICurrentUser.AccountId from JWT claims.</constraint>
+    <constraint type="api">Return 204 No Content on successful delete. Return 404 Not Found with RFC 7807 Problem Details if not found or wrong account.</constraint>
+    <constraint type="testing">Unit tests follow Method_Scenario_ExpectedResult naming. Minimum 5 unit tests and 5 integration tests for delete functionality.</constraint>
+    <constraint type="ux">Modal confirmation required for destructive action on property. Delete button styled mat-warn (red). Snackbar feedback after delete.</constraint>
+    <constraint type="frontend">Use @ngrx/signals rxMethod pattern for async operations. Add isDeleting and deleteError signals to PropertyStore.</constraint>
+    <constraint type="logging">Log property.deleted event with PropertyId, AccountId, UserId on successful deletion.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="DELETE /api/v1/properties/{id}" kind="REST endpoint" path="backend/src/PropertyManager.Api/Controllers/PropertiesController.cs">
+      <signature>
+[HttpDelete("{id:guid}")]
+[ProducesResponseType(StatusCodes.Status204NoContent)]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+public async Task&lt;IActionResult&gt; DeleteProperty(Guid id)
+      </signature>
+    </interface>
+    <interface name="DeletePropertyCommand" kind="CQRS command" path="backend/src/PropertyManager.Application/Properties/DeleteProperty.cs">
+      <signature>public record DeletePropertyCommand(Guid Id) : IRequest;</signature>
+    </interface>
+    <interface name="deleteProperty" kind="Angular service method" path="frontend/src/app/features/properties/services/property.service.ts">
+      <signature>deleteProperty(id: string): Observable&lt;void&gt;</signature>
+    </interface>
+    <interface name="deleteProperty rxMethod" kind="ngrx/signals method" path="frontend/src/app/features/properties/stores/property.store.ts">
+      <signature>deleteProperty: rxMethod&lt;string&gt;</signature>
+    </interface>
+    <interface name="DeletePropertyDialogData" kind="TypeScript interface" path="frontend/src/app/features/properties/delete-property-dialog/delete-property-dialog.component.ts">
+      <signature>
+interface DeletePropertyDialogData {
+  propertyName: string;
+}
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend tests use xUnit with FluentAssertions. Unit tests follow Method_Scenario_ExpectedResult naming convention (e.g., Handle_ValidProperty_SetsDeletedAt). Integration tests use WebApplicationFactory with in-memory or Testcontainers PostgreSQL. Frontend tests use Vitest with Angular Testing Library patterns. Component tests verify rendering, user interactions, and state changes.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Properties/ (unit tests)</location>
+      <location>backend/tests/PropertyManager.Api.Tests/ (integration tests)</location>
+      <location>frontend/src/app/features/properties/**/*.spec.ts (component tests)</location>
+      <location>frontend/src/app/features/properties/stores/property.store.spec.ts (store tests)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.5.2">Handle_ValidProperty_SetsDeletedAt - Verify DeletedAt timestamp is set on valid property</idea>
+      <idea ac="AC-2.5.2">Handle_PropertyNotFound_ThrowsNotFoundException - Property doesn't exist returns 404</idea>
+      <idea ac="AC-2.5.2">Handle_PropertyBelongsToOtherAccount_ThrowsNotFoundException - Wrong tenant returns 404</idea>
+      <idea ac="AC-2.5.2">Handle_AlreadyDeletedProperty_ThrowsNotFoundException - Already soft-deleted returns 404</idea>
+      <idea ac="AC-2.5.3">Handle_PropertyWithExpenses_DoesNotCascadeDelete - Verify expenses remain with DeletedAt=null</idea>
+      <idea ac="AC-2.5.2">Delete_ValidProperty_Returns204 - Integration test for 204 response</idea>
+      <idea ac="AC-2.5.2">Delete_NonExistentProperty_Returns404 - Integration test for 404 response</idea>
+      <idea ac="AC-2.5.2">Delete_OtherAccountProperty_Returns404 - Multi-tenant isolation test</idea>
+      <idea ac="AC-2.5.2">Delete_WithoutAuth_Returns401 - Authorization required test</idea>
+      <idea ac="AC-2.5.5">Delete_VerifyGlobalFilterExcludes - Deleted property excluded from GET list</idea>
+      <idea ac="AC-2.5.1">DeletePropertyDialogComponent_RendersPropertyName - Dialog shows correct property name</idea>
+      <idea ac="AC-2.5.1">DeletePropertyDialogComponent_ConfirmReturnsTrue - Confirm button closes with true</idea>
+      <idea ac="AC-2.5.1">DeletePropertyDialogComponent_CancelReturnsFalse - Cancel button closes with false</idea>
+      <idea ac="AC-2.5.4">PropertyDetailComponent_DeleteSuccess_NavigatesToDashboard - Verify navigation after delete</idea>
+      <idea ac="AC-2.5.4">PropertyDetailComponent_DeleteSuccess_ShowsSnackbar - Verify snackbar feedback</idea>
+    </ideas>
+  </tests>
+</story-context>

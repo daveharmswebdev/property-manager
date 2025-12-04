@@ -829,6 +829,217 @@ public class PropertiesControllerTests : IClassFixture<PropertyManagerWebApplica
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("ZipCode");
     }
+    // =====================================================
+    // DELETE /api/v1/properties/{id} Tests (AC-2.5.2, AC-2.5.3, AC-2.5.5)
+    // =====================================================
+
+    [Fact]
+    public async Task DeleteProperty_WithoutAuth_Returns401()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/properties/{propertyId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeleteProperty_ValidProperty_Returns204()
+    {
+        // Arrange
+        var email = $"delete-test-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property first
+        var createRequest = new
+        {
+            Name = "Property to Delete",
+            Street = "123 Doomed Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Act
+        var response = await DeleteWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task DeleteProperty_ValidProperty_SetsDeletedAt()
+    {
+        // Arrange
+        var email = $"delete-timestamp-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Delete Timestamp Test",
+            Street = "123 Time Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        var beforeDelete = DateTime.UtcNow;
+
+        // Act
+        await DeleteWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        var afterDelete = DateTime.UtcNow;
+
+        // Assert - verify soft delete in database
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var property = await dbContext.Properties
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == createContent.Id);
+
+        property.Should().NotBeNull();
+        property!.DeletedAt.Should().NotBeNull();
+        property.DeletedAt.Should().BeAfter(beforeDelete.AddSeconds(-1));
+        property.DeletedAt.Should().BeBefore(afterDelete.AddSeconds(1));
+    }
+
+    [Fact]
+    public async Task DeleteProperty_NonExistentProperty_Returns404()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var response = await DeleteWithAuthAsync($"/api/v1/properties/{nonExistentId}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteProperty_OtherAccountProperty_Returns404()
+    {
+        // Arrange
+        var email1 = $"user1-delete-{Guid.NewGuid():N}@example.com";
+        var email2 = $"user2-delete-{Guid.NewGuid():N}@example.com";
+        var (accessToken1, _) = await RegisterAndLoginAsync(email1);
+        var (accessToken2, _) = await RegisterAndLoginAsync(email2);
+
+        // User 1 creates a property
+        var createRequest = new
+        {
+            Name = "User1 Property",
+            Street = "123 User1 Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken1);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Act - User 2 tries to delete User 1's property
+        var response = await DeleteWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken2);
+
+        // Assert - Should return 404 (not 403) to prevent data leakage
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteProperty_AlreadyDeleted_Returns404()
+    {
+        // Arrange
+        var email = $"delete-twice-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new
+        {
+            Name = "Double Delete Test",
+            Street = "123 Ghost Street",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Delete it once
+        await DeleteWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        // Act - Try to delete again
+        var response = await DeleteWithAuthAsync($"/api/v1/properties/{createContent.Id}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteProperty_ExcludedFromGetAllProperties()
+    {
+        // Arrange (AC-2.5.5)
+        var email = $"delete-list-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create two properties
+        var createRequest1 = new { Name = "Property to Keep", Street = "123 Keep Street", City = "Austin", State = "TX", ZipCode = "78701" };
+        var createRequest2 = new { Name = "Property to Delete", Street = "456 Delete Street", City = "Austin", State = "TX", ZipCode = "78702" };
+
+        await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest1, accessToken);
+        var createResponse2 = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest2, accessToken);
+        var deleteContent = await createResponse2.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Delete one property
+        await DeleteWithAuthAsync($"/api/v1/properties/{deleteContent!.Id}", accessToken);
+
+        // Act
+        var response = await GetWithAuthAsync("/api/v1/properties", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetAllPropertiesResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().HaveCount(1);
+        content.Items[0].Name.Should().Be("Property to Keep");
+    }
+
+    [Fact]
+    public async Task DeleteProperty_GetByIdReturns404()
+    {
+        // Arrange (AC-2.5.5)
+        var email = $"delete-getbyid-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+
+        // Create a property
+        var createRequest = new { Name = "Property to Delete", Street = "123 Delete Street", City = "Austin", State = "TX", ZipCode = "78701" };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", createRequest, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreatePropertyResponse>();
+
+        // Delete it
+        await DeleteWithAuthAsync($"/api/v1/properties/{createContent!.Id}", accessToken);
+
+        // Act - Try to get deleted property
+        var response = await GetWithAuthAsync($"/api/v1/properties/{createContent.Id}", accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private async Task<HttpResponseMessage> DeleteWithAuthAsync(string url, string accessToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+        return await _client.SendAsync(request);
+    }
 }
 
 public record CreatePropertyResponse(Guid Id);

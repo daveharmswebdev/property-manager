@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PropertyStore } from '../stores/property.store';
+import { DeletePropertyDialogComponent, DeletePropertyDialogData } from '../delete-property-dialog/delete-property-dialog.component';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -89,8 +90,15 @@ import { PropertyStore } from '../stores/property.store';
               <mat-icon>edit</mat-icon>
               Edit
             </button>
-            <button mat-stroked-button color="warn" (click)="onDeleteClick()">
-              <mat-icon>delete</mat-icon>
+            <button mat-stroked-button
+                    color="warn"
+                    (click)="onDeleteClick()"
+                    [disabled]="propertyStore.isDeleting()">
+              @if (propertyStore.isDeleting()) {
+                <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+              } @else {
+                <mat-icon>delete</mat-icon>
+              }
               Delete
             </button>
           </div>
@@ -275,6 +283,11 @@ import { PropertyStore } from '../stores/property.store';
         flex-wrap: wrap;
 
         button mat-icon {
+          margin-right: 4px;
+        }
+
+        button mat-spinner {
+          display: inline-block;
           margin-right: 4px;
         }
       }
@@ -486,9 +499,29 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     this.location.back();
   }
 
+  /**
+   * Opens delete confirmation dialog (AC-2.5.1)
+   * On confirm: calls propertyStore.deleteProperty() which handles
+   * API call, success snackbar, and navigation to dashboard (AC-2.5.4)
+   */
   onDeleteClick(): void {
-    // Placeholder for delete confirmation (Story 2.5)
-    // Will implement mat-dialog confirmation in Story 2.5
-    console.log('Delete clicked - confirmation dialog will be implemented in Story 2.5');
+    const property = this.propertyStore.selectedProperty();
+    if (!property) return;
+
+    const dialogData: DeletePropertyDialogData = {
+      propertyName: property.name,
+    };
+
+    const dialogRef = this.dialog.open(DeletePropertyDialogComponent, {
+      data: dialogData,
+      width: '450px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.propertyStore.deleteProperty(property.id);
+      }
+    });
   }
 }
