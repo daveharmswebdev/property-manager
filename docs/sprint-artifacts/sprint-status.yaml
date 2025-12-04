@@ -53,7 +53,7 @@ development_status:
   2-2-view-properties-list-with-dashboard-stats: done
   2-3-view-property-detail-page: done
   2-4-edit-property: done
-  2-5-delete-property: backlog
+  2-5-delete-property: done
   epic-2-retrospective: optional
 
   # Epic 3: Expense Tracking

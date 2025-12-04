@@ -1,4 +1,5 @@
 import { computed, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   patchState,
   signalStore,
@@ -8,6 +9,7 @@ import {
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   PropertyService,
   PropertySummaryDto,
@@ -30,6 +32,9 @@ interface PropertyState {
   // Property update state (AC-2.4.2)
   isUpdating: boolean;
   updateError: string | null;
+  // Property delete state (AC-2.5.2)
+  isDeleting: boolean;
+  deleteError: string | null;
 }
 
 /**
@@ -47,6 +52,9 @@ const initialState: PropertyState = {
   // Property update initial state
   isUpdating: false,
   updateError: null,
+  // Property delete initial state
+  isDeleting: false,
+  deleteError: null,
 };
 
 /**
@@ -124,7 +132,7 @@ export const PropertyStore = signalStore(
       return `${property.street}, ${property.city}, ${property.state} ${property.zipCode}`;
     }),
   })),
-  withMethods((store, propertyService = inject(PropertyService)) => ({
+  withMethods((store, propertyService = inject(PropertyService), router = inject(Router), snackBar = inject(MatSnackBar)) => ({
     /**
      * Load properties from API
      * @param year Optional tax year filter
@@ -277,6 +285,70 @@ export const PropertyStore = signalStore(
      */
     clearUpdateError(): void {
       patchState(store, { updateError: null });
+    },
+
+    /**
+     * Delete a property (soft delete) (AC-2.5.2, AC-2.5.4)
+     * @param id Property GUID
+     */
+    deleteProperty: rxMethod<string>(
+      pipe(
+        tap(() =>
+          patchState(store, {
+            isDeleting: true,
+            deleteError: null,
+          })
+        ),
+        switchMap((id) =>
+          propertyService.deleteProperty(id).pipe(
+            tap(() => {
+              // Remove property from local state
+              const currentProperties = store.properties();
+              patchState(store, {
+                properties: currentProperties.filter(p => p.id !== id),
+                isDeleting: false,
+                selectedProperty: null,
+              });
+
+              // Show success snackbar (AC-2.5.4)
+              snackBar.open('Property deleted', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+
+              // Navigate to dashboard (AC-2.5.4)
+              router.navigate(['/dashboard']);
+            }),
+            catchError((error) => {
+              const errorMessage = error.status === 404
+                ? 'Property not found'
+                : 'Failed to delete property. Please try again.';
+              patchState(store, {
+                isDeleting: false,
+                deleteError: errorMessage,
+              });
+
+              // Show error snackbar
+              snackBar.open(errorMessage, 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+
+              console.error('Error deleting property:', error);
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Clear the delete error state
+     */
+    clearDeleteError(): void {
+      patchState(store, { deleteError: null });
     },
   }))
 );

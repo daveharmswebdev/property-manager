@@ -96,4 +96,13 @@ export class PropertyService {
   updateProperty(id: string, request: CreatePropertyRequest): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/${id}`, request);
   }
+
+  /**
+   * Delete a property (soft delete) (AC-2.5.2).
+   * @param id Property GUID
+   * @returns Observable<void> (204 No Content response)
+   */
+  deleteProperty(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

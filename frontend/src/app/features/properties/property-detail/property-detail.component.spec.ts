@@ -18,8 +18,11 @@ describe('PropertyDetailComponent', () => {
     detailError: ReturnType<typeof signal>;
     selectedPropertyNetIncome: ReturnType<typeof signal>;
     selectedPropertyFullAddress: ReturnType<typeof signal>;
+    isDeleting: ReturnType<typeof signal>;
+    deleteError: ReturnType<typeof signal>;
     loadPropertyById: ReturnType<typeof vi.fn>;
     clearSelectedProperty: ReturnType<typeof vi.fn>;
+    deleteProperty: ReturnType<typeof vi.fn>;
   };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockLocation: { back: ReturnType<typeof vi.fn> };
@@ -47,8 +50,11 @@ describe('PropertyDetailComponent', () => {
       detailError: signal<string | null>(null),
       selectedPropertyNetIncome: signal(0),
       selectedPropertyFullAddress: signal(''),
+      isDeleting: signal(false),
+      deleteError: signal<string | null>(null),
       loadPropertyById: vi.fn(),
       clearSelectedProperty: vi.fn(),
+      deleteProperty: vi.fn(),
     };
 
     mockRouter = {
@@ -290,15 +296,22 @@ describe('PropertyDetailComponent', () => {
     });
   });
 
-  describe('delete flow (AC-2.3.4)', () => {
-    it('should call onDeleteClick when delete button clicked', () => {
+  describe('delete flow (AC-2.5.1)', () => {
+    beforeEach(() => {
       mockPropertyStore.selectedProperty = signal(mockProperty);
       mockPropertyStore.selectedPropertyFullAddress = signal('123 Oak St, Austin, TX 78701');
       mockPropertyStore.selectedPropertyNetIncome = signal(1500);
+      mockPropertyStore.isDeleting = signal(false);
+      mockPropertyStore.deleteError = signal<string | null>(null);
+    });
+
+    it('should call onDeleteClick method when delete button clicked', () => {
       fixture = TestBed.createComponent(PropertyDetailComponent);
       fixture.detectChanges();
 
-      const consoleSpy = vi.spyOn(console, 'log');
+      // Mock onDeleteClick to prevent actual dialog opening
+      const onDeleteClickSpy = vi.spyOn(fixture.componentInstance, 'onDeleteClick').mockImplementation(() => {});
+
       const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button') as NodeListOf<HTMLButtonElement>;
       const deleteBtn = Array.from(buttons).find((btn) =>
         btn.textContent?.includes('Delete')
@@ -306,9 +319,37 @@ describe('PropertyDetailComponent', () => {
 
       deleteBtn!.click();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Delete clicked - confirmation dialog will be implemented in Story 2.5'
+      expect(onDeleteClickSpy).toHaveBeenCalled();
+    });
+
+    it('should disable delete button when isDeleting is true', () => {
+      mockPropertyStore.isDeleting = signal(true);
+
+      fixture = TestBed.createComponent(PropertyDetailComponent);
+      fixture.detectChanges();
+
+      const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button') as NodeListOf<HTMLButtonElement>;
+      const deleteBtn = Array.from(buttons).find((btn) =>
+        btn.textContent?.includes('Delete')
       );
+
+      expect(deleteBtn!.disabled).toBe(true);
+    });
+
+    it('should show spinner on delete button when isDeleting is true', () => {
+      mockPropertyStore.isDeleting = signal(true);
+
+      fixture = TestBed.createComponent(PropertyDetailComponent);
+      fixture.detectChanges();
+
+      const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button') as NodeListOf<HTMLButtonElement>;
+      const deleteBtn = Array.from(buttons).find((btn) =>
+        btn.textContent?.includes('Delete')
+      );
+
+      // Check for spinner inside delete button
+      const spinner = deleteBtn!.querySelector('mat-spinner');
+      expect(spinner).toBeTruthy();
     });
   });
 });
