@@ -17,6 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { CategorySelectComponent } from '../category-select/category-select.component';
 import { CreateExpenseRequest } from '../../services/expense.service';
 import { ExpenseStore } from '../../stores/expense.store';
+import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
 
 /**
  * ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8)
@@ -43,6 +44,7 @@ import { ExpenseStore } from '../../stores/expense.store';
     MatProgressSpinnerModule,
     MatIconModule,
     CategorySelectComponent,
+    CurrencyInputDirective,
   ],
   template: `
     <mat-card class="expense-form-card">
@@ -58,12 +60,9 @@ import { ExpenseStore } from '../../stores/expense.store';
               <span matPrefix>$ </span>
               <input
                 matInput
-                type="number"
+                appCurrencyInput
                 formControlName="amount"
                 placeholder="0.00"
-                step="0.01"
-                min="0.01"
-                (blur)="formatAmountOnBlur()"
               />
               @if (form.get('amount')?.hasError('required') && form.get('amount')?.touched) {
                 <mat-error>Amount is required</mat-error>
@@ -243,19 +242,6 @@ export class ExpenseFormComponent implements OnInit {
       return 'Category is required';
     }
     return null;
-  }
-
-  /**
-   * Format amount to 2 decimal places on blur
-   * e.g., "12" becomes "12.00"
-   */
-  protected formatAmountOnBlur(): void {
-    const amountControl = this.form.get('amount');
-    const value = amountControl?.value;
-    if (value !== null && value !== undefined && value !== '') {
-      const formattedValue = parseFloat(value).toFixed(2);
-      amountControl?.setValue(parseFloat(formattedValue), { emitEvent: false });
-    }
   }
 
   protected onSubmit(): void {
