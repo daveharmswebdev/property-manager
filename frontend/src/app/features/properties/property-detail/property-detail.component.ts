@@ -73,12 +73,11 @@ import {
               <p class="address">{{ propertyStore.selectedPropertyFullAddress() }}</p>
             </div>
           </div>
-          <!-- Action Buttons (AC-2.3.4) -->
+          <!-- Action Buttons (AC-2.3.4, AC-3.1.1) -->
           <div class="action-buttons">
             <button mat-stroked-button
-                    disabled
-                    matTooltip="Coming soon"
-                    matTooltipPosition="below">
+                    color="primary"
+                    [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'expenses']">
               <mat-icon>add</mat-icon>
               Add Expense
             </button>

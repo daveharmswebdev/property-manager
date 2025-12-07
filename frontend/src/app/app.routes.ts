@@ -94,6 +94,14 @@ export const routes: Routes = [
           ),
         canDeactivate: [unsavedChangesGuard],
       },
+      // Property Expense Workspace (AC-3.1.1)
+      {
+        path: 'properties/:id/expenses',
+        loadComponent: () =>
+          import('./features/expenses/expense-workspace/expense-workspace.component').then(
+            (m) => m.ExpenseWorkspaceComponent
+          ),
+      },
       // Expenses (AC7.7)
       {
         path: 'expenses',
