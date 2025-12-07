@@ -236,13 +236,13 @@ describe('PropertyDetailComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should have Add Expense button disabled', () => {
+    it('should have Add Expense button enabled (AC-3.1.1)', () => {
       const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button') as NodeListOf<HTMLButtonElement>;
       const addExpenseBtn = Array.from(buttons).find((btn) =>
         btn.textContent?.includes('Add Expense')
       );
       expect(addExpenseBtn).toBeTruthy();
-      expect(addExpenseBtn!.disabled).toBe(true);
+      expect(addExpenseBtn!.disabled).toBe(false);
     });
 
     it('should have Add Income button disabled', () => {

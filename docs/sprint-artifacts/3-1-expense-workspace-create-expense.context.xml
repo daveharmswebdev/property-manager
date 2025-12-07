@@ -1,0 +1,241 @@
+<story-context id="3-1-expense-workspace-create-expense" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>Expense Workspace - Create Expense</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-1-expense-workspace-create-expense.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>add expenses to a property with amount, date, and category</iWant>
+    <soThat>I can track what I'm spending on each rental</soThat>
+    <tasks>
+      <task id="1">Create Expense Entity and Database Configuration (AC: 3.1.1)</task>
+      <task id="2">Create CreateExpense Command and Handler (AC: 3.1.1, 3.1.2, 3.1.3, 3.1.5, 3.1.6)</task>
+      <task id="3">Create CreateExpense Validator (AC: 3.1.2, 3.1.3, 3.1.5)</task>
+      <task id="4">Create GetExpenseCategories Query (AC: 3.1.4)</task>
+      <task id="5">Create GetExpensesByProperty Query (AC: 3.1.7)</task>
+      <task id="6">Add Endpoints to ExpensesController (AC: 3.1.1, 3.1.4, 3.1.6, 3.1.7)</task>
+      <task id="7">Generate TypeScript API Client</task>
+      <task id="8">Create ExpenseService (AC: 3.1.1, 3.1.4, 3.1.6, 3.1.7)</task>
+      <task id="9">Create ExpenseStore with Signals (AC: 3.1.6, 3.1.7, 3.1.8)</task>
+      <task id="10">Create CategorySelectComponent (AC: 3.1.4)</task>
+      <task id="11">Create ExpenseFormComponent (AC: 3.1.1-3.1.5, 3.1.8)</task>
+      <task id="12">Create ExpenseRowComponent (AC: 3.1.7)</task>
+      <task id="13">Create ExpenseWorkspaceComponent (AC: 3.1.1, 3.1.6, 3.1.7)</task>
+      <task id="14">Add Routing and Navigation (AC: 3.1.1)</task>
+      <task id="15">Update Dashboard Integration (AC: 3.1.7)</task>
+      <task id="16">Run Tests and Validate</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.1.1">User can create an expense with required fields: amount, date, category, propertyId</criterion>
+    <criterion id="AC-3.1.2">Amount must be greater than $0 and display validation error if invalid</criterion>
+    <criterion id="AC-3.1.3">Date defaults to today and cannot be in the future</criterion>
+    <criterion id="AC-3.1.4">Category dropdown displays all 15 IRS Schedule E categories</criterion>
+    <criterion id="AC-3.1.5">Description field is optional with 500 character max</criterion>
+    <criterion id="AC-3.1.6">Expense is saved immediately and snackbar confirms "Expense saved"</criterion>
+    <criterion id="AC-3.1.7">New expense appears at top of expense list without page refresh</criterion>
+    <criterion id="AC-3.1.8">Form clears after successful save, ready for next entry</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>AC-3.1: Create Expense</section>
+        <snippet>Defines CreateExpenseCommand, validation rules, expense workspace UI flow, and API endpoints for POST /api/v1/expenses.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>Project Structure, API Contracts</section>
+        <snippet>Clean Architecture 4-layer structure, CQRS with MediatR, REST endpoints at /api/v1/, JWT auth required.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR12-FR22: Expense Management</section>
+        <snippet>FR12: Create expense linked to property. FR13: Required fields. FR19: Schedule E categories. FR55: Immediate persistence.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>5.2 Journey: Add Expense</section>
+        <snippet>Property-first navigation, Expense Workspace pattern with form + history, batch entry, snackbar at bottom-center, 3s auto-dismiss.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>backend/src/PropertyManager.Domain/Entities/Expense.cs</path>
+        <kind>entity</kind>
+        <symbol>Expense</symbol>
+        <lines>1-26</lines>
+        <reason>Existing Expense entity with all required fields: AccountId, PropertyId, CategoryId, Amount, Date, Description, ReceiptId, CreatedByUserId, DeletedAt. Implements ITenantEntity, ISoftDeletable.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Domain/Entities/ExpenseCategory.cs</path>
+        <kind>entity</kind>
+        <symbol>ExpenseCategory</symbol>
+        <lines>1-16</lines>
+        <reason>ExpenseCategory entity for IRS Schedule E line items. Global seed data (15 categories).</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Properties/CreateProperty.cs</path>
+        <kind>command</kind>
+        <symbol>CreatePropertyCommand, CreatePropertyCommandValidator, CreatePropertyCommandHandler</symbol>
+        <lines>1-82</lines>
+        <reason>Reference pattern for Command + Validator + Handler structure using MediatR and FluentValidation.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Common/Interfaces/IAppDbContext.cs</path>
+        <kind>interface</kind>
+        <symbol>IAppDbContext</symbol>
+        <lines>1-20</lines>
+        <reason>DbContext interface with Expenses and ExpenseCategories DbSets already defined.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Common/Interfaces/ICurrentUser.cs</path>
+        <kind>interface</kind>
+        <symbol>ICurrentUser</symbol>
+        <lines>1-14</lines>
+        <reason>Interface for current user context. Provides UserId, AccountId for multi-tenant isolation.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Domain/Exceptions/NotFoundException.cs</path>
+        <kind>exception</kind>
+        <symbol>NotFoundException</symbol>
+        <lines>1-28</lines>
+        <reason>Standard exception for 404 responses. Use for property/category not found.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Api/Controllers/PropertiesController.cs</path>
+        <kind>controller</kind>
+        <symbol>PropertiesController</symbol>
+        <lines>1-302</lines>
+        <reason>Reference pattern for REST controller with MediatR, FluentValidation, ProblemDetails responses.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/stores/property.store.ts</path>
+        <kind>store</kind>
+        <symbol>PropertyStore</symbol>
+        <lines>1-354</lines>
+        <reason>Reference pattern for @ngrx/signals store with state, computed signals, rxMethod for API calls, snackbar feedback.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/services/property.service.ts</path>
+        <kind>service</kind>
+        <symbol>PropertyService</symbol>
+        <lines>1-108</lines>
+        <reason>Reference pattern for Angular service with HttpClient, TypeScript interfaces for DTOs.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="latest">CQRS command/query handling</package>
+        <package name="FluentValidation" version="11.x">Request validation</package>
+        <package name="FluentValidation.AspNetCore" version="11.3.1">ASP.NET Core integration</package>
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0">ORM, query building</package>
+        <package name="Serilog.AspNetCore" version="10.0.0">Structured logging</package>
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0">Framework</package>
+        <package name="@angular/material" version="^20.2.14">UI components (mat-form-field, mat-select, mat-datepicker, mat-snackbar)</package>
+        <package name="@ngrx/signals" version="^20.1.0">Signal-based state management</package>
+        <package name="rxjs" version="~7.8.0">Reactive programming</package>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">Clean Architecture: Domain has zero dependencies. Application contains Commands/Queries/Handlers. Infrastructure implements interfaces.</constraint>
+    <constraint category="security">Multi-tenant isolation via EF Core global query filter on AccountId. JWT required for all expense endpoints.</constraint>
+    <constraint category="validation">FluentValidation rules: Amount > 0, max $9,999,999.99, Date not in future, Description max 500 chars, no HTML.</constraint>
+    <constraint category="api">REST endpoints under /api/v1/. Return 201 + {id} for create, 400 + Problem Details for validation errors, 404 for not found.</constraint>
+    <constraint category="state">@ngrx/signals store pattern. Signals for expenses, isLoading, error. rxMethod for API calls. Immediate local state update on create.</constraint>
+    <constraint category="ux">Expense Workspace pattern: form at top, history below. Snackbar at bottom-center, 3s auto-dismiss. Form clears after save.</constraint>
+    <constraint category="testing">Unit tests for Handler + Validator. Integration tests for API endpoints. Component tests for form validation.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/v1/expenses</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/v1/expenses
+Request: { propertyId: Guid, amount: decimal, date: DateOnly, categoryId: Guid, description?: string }
+Response: 201 Created + { id: Guid }
+Errors: 400 (validation), 404 (property/category not found), 401 (unauthorized)</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>GET /api/v1/expense-categories</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/expense-categories
+Response: 200 + { items: ExpenseCategoryDto[], totalCount: number }
+ExpenseCategoryDto: { id, name, scheduleELine, sortOrder }</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>GET /api/v1/properties/{id}/expenses</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/properties/{id}/expenses?year={year}
+Response: 200 + { items: ExpenseDto[], totalCount: number, ytdTotal: decimal }
+ExpenseDto: { id, propertyId, propertyName, categoryId, categoryName, scheduleELine, amount, date, description, createdAt }</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>CreateExpenseCommand</name>
+      <kind>CQRS Command</kind>
+      <signature>record CreateExpenseCommand(Guid PropertyId, decimal Amount, DateOnly Date, Guid CategoryId, string? Description) : IRequest&lt;Guid&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/CreateExpense.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>IAppDbContext.Expenses</name>
+      <kind>DbSet interface</kind>
+      <signature>DbSet&lt;Expense&gt; Expenses { get; } - already defined in IAppDbContext</signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/IAppDbContext.cs</path>
+    </interface>
+    <interface>
+      <name>IAppDbContext.ExpenseCategories</name>
+      <kind>DbSet interface</kind>
+      <signature>DbSet&lt;ExpenseCategory&gt; ExpenseCategories { get; } - already defined in IAppDbContext</signature>
+      <path>backend/src/PropertyManager.Application/Common/Interfaces/IAppDbContext.cs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend: xUnit with Moq for mocking. TestContainers for integration tests with real PostgreSQL.
+      Naming convention: Method_Scenario_ExpectedResult.
+      Frontend: Vitest with Testing Library for component tests. MSW for API mocking if needed.
+      E2E: Playwright configured in frontend/e2e/.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Expenses/</location>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>frontend/src/app/features/expenses/**/*.spec.ts</location>
+      <location>frontend/e2e/</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-3.1.1">Unit: CreateExpenseHandler creates expense with correct AccountId from ICurrentUser</idea>
+      <idea ac="AC-3.1.2">Unit: CreateExpenseValidator rejects amount <= 0, returns "Amount must be greater than $0"</idea>
+      <idea ac="AC-3.1.2">Unit: CreateExpenseValidator rejects amount > 9999999.99</idea>
+      <idea ac="AC-3.1.3">Unit: CreateExpenseValidator rejects future dates</idea>
+      <idea ac="AC-3.1.4">Unit: GetExpenseCategoriesHandler returns all 15 categories sorted by SortOrder</idea>
+      <idea ac="AC-3.1.5">Unit: CreateExpenseValidator rejects description > 500 chars</idea>
+      <idea ac="AC-3.1.6">Integration: POST /api/v1/expenses returns 201 with expense ID</idea>
+      <idea ac="AC-3.1.6">Integration: POST /api/v1/expenses with invalid data returns 400 with Problem Details</idea>
+      <idea ac="AC-3.1.7">Component: ExpenseWorkspaceComponent prepends new expense to list after save</idea>
+      <idea ac="AC-3.1.8">Component: ExpenseFormComponent resets form fields after successful submission</idea>
+      <idea ac="AC-3.1.4">Component: CategorySelectComponent displays all categories from ExpenseStore</idea>
+    </ideas>
+  </tests>
+</story-context>

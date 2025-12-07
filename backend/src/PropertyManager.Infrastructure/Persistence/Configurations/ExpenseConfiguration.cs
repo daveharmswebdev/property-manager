@@ -77,5 +77,15 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         // No navigation property - just the FK for data integrity
         builder.HasIndex(e => e.CreatedByUserId)
             .HasDatabaseName("IX_Expenses_CreatedByUserId");
+
+        // Performance indexes for common query patterns
+        builder.HasIndex(e => new { e.AccountId, e.Date })
+            .HasDatabaseName("IX_Expenses_AccountId_Date");
+
+        builder.HasIndex(e => new { e.AccountId, e.PropertyId })
+            .HasDatabaseName("IX_Expenses_AccountId_PropertyId");
+
+        builder.HasIndex(e => new { e.AccountId, e.CategoryId })
+            .HasDatabaseName("IX_Expenses_AccountId_CategoryId");
     }
 }
