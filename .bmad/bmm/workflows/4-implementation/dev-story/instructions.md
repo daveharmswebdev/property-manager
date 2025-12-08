@@ -142,6 +142,40 @@ Expected ready-for-dev or in-progress. Continuing anyway...
     </check>
   </step>
 
+  <step n="1.7" goal="Check git branch and optionally create feature branch">
+    <critical>Ensure development happens on a feature branch, not master</critical>
+
+    <action>Run: git branch --show-current</action>
+    <action>Store result as {{current_branch}}</action>
+
+    <check if="{{current_branch}} == 'master'">
+      <action>Generate suggested branch name: feature/{{story_key}}</action>
+      <output>⚠️ **You are on the master branch**
+
+Suggested feature branch: `feature/{{story_key}}`
+      </output>
+      <action>ASK user: "Do you want to create and switch to this feature branch? (yes/no/custom name)"</action>
+
+      <check if="user says yes">
+        <action>Run: git checkout -b feature/{{story_key}}</action>
+        <output>✅ Created and switched to branch: feature/{{story_key}}</output>
+      </check>
+
+      <check if="user provides custom name">
+        <action>Run: git checkout -b {{custom_branch_name}}</action>
+        <output>✅ Created and switched to branch: {{custom_branch_name}}</output>
+      </check>
+
+      <check if="user says no">
+        <output>⚠️ Continuing on master branch as requested. Consider creating a branch before committing.</output>
+      </check>
+    </check>
+
+    <check if="{{current_branch}} != 'master'">
+      <output>📍 Working on branch: {{current_branch}}</output>
+    </check>
+  </step>
+
   <step n="2" goal="Plan and implement task">
     <action>Review acceptance criteria and dev notes for the selected task</action>
     <action>Plan implementation steps and edge cases; write down a brief plan in Dev Agent Record → Debug Log</action>
