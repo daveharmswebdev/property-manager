@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PropertyManager.Api.Middleware;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Infrastructure.Email;
 using PropertyManager.Infrastructure.Identity;
@@ -129,6 +130,9 @@ builder.Services.AddOpenApiDocument(config =>
 });
 
 var app = builder.Build();
+
+// Register global exception handler as first middleware
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

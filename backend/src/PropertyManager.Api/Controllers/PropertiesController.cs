@@ -178,34 +178,14 @@ public class PropertiesController : ControllerBase
             return BadRequest(problemDetails);
         }
 
-        try
-        {
-            await _mediator.Send(command);
+        await _mediator.Send(command);
 
-            _logger.LogInformation(
-                "Property updated: {PropertyId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Property updated: {PropertyId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
 
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            _logger.LogWarning(
-                "Property not found for update: {PropertyId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Property '{id}' does not exist",
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -222,35 +202,15 @@ public class PropertiesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProperty(Guid id)
     {
-        try
-        {
-            var command = new DeletePropertyCommand(id);
-            await _mediator.Send(command);
+        var command = new DeletePropertyCommand(id);
+        await _mediator.Send(command);
 
-            _logger.LogInformation(
-                "Property deleted: {PropertyId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Property deleted: {PropertyId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
 
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            _logger.LogWarning(
-                "Property not found for deletion: {PropertyId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Property '{id}' does not exist",
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return NoContent();
     }
 
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
