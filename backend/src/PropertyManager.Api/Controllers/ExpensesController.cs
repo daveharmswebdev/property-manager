@@ -65,41 +65,21 @@ public class ExpensesController : ControllerBase
             return BadRequest(problemDetails);
         }
 
-        try
-        {
-            var expenseId = await _mediator.Send(command);
+        var expenseId = await _mediator.Send(command);
 
-            _logger.LogInformation(
-                "Expense created: {ExpenseId} for property {PropertyId}, amount {Amount} at {Timestamp}",
-                expenseId,
-                request.PropertyId,
-                request.Amount,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Expense created: {ExpenseId} for property {PropertyId}, amount {Amount} at {Timestamp}",
+            expenseId,
+            request.PropertyId,
+            request.Amount,
+            DateTime.UtcNow);
 
-            var response = new CreateExpenseResponse(expenseId);
+        var response = new CreateExpenseResponse(expenseId);
 
-            return CreatedAtAction(
-                nameof(CreateExpense),
-                new { id = expenseId },
-                response);
-        }
-        catch (NotFoundException ex)
-        {
-            _logger.LogWarning(
-                "Resource not found when creating expense: {Message} at {Timestamp}",
-                ex.Message,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = ex.Message,
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return CreatedAtAction(
+            nameof(CreateExpense),
+            new { id = expenseId },
+            response);
     }
 
     /// <summary>
@@ -139,37 +119,17 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExpensesByProperty(Guid id, [FromQuery] int? year = null)
     {
-        try
-        {
-            var query = new GetExpensesByPropertyQuery(id, year);
-            var response = await _mediator.Send(query);
+        var query = new GetExpensesByPropertyQuery(id, year);
+        var response = await _mediator.Send(query);
 
-            _logger.LogInformation(
-                "Retrieved {Count} expenses for property {PropertyId}, year {Year} at {Timestamp}",
-                response.TotalCount,
-                id,
-                year?.ToString() ?? "all",
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Retrieved {Count} expenses for property {PropertyId}, year {Year} at {Timestamp}",
+            response.TotalCount,
+            id,
+            year?.ToString() ?? "all",
+            DateTime.UtcNow);
 
-            return Ok(response);
-        }
-        catch (NotFoundException)
-        {
-            _logger.LogWarning(
-                "Property not found: {PropertyId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Property '{id}' does not exist",
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return Ok(response);
     }
 
     /// <summary>
@@ -186,35 +146,15 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExpense(Guid id)
     {
-        try
-        {
-            var query = new GetExpenseQuery(id);
-            var expense = await _mediator.Send(query);
+        var query = new GetExpenseQuery(id);
+        var expense = await _mediator.Send(query);
 
-            _logger.LogInformation(
-                "Retrieved expense {ExpenseId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Retrieved expense {ExpenseId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
 
-            return Ok(expense);
-        }
-        catch (NotFoundException)
-        {
-            _logger.LogWarning(
-                "Expense not found: {ExpenseId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Expense '{id}' does not exist",
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return Ok(expense);
     }
 
     /// <summary>
@@ -250,36 +190,15 @@ public class ExpensesController : ControllerBase
             return BadRequest(problemDetails);
         }
 
-        try
-        {
-            await _mediator.Send(command);
+        await _mediator.Send(command);
 
-            _logger.LogInformation(
-                "Expense updated: {ExpenseId}, amount {Amount} at {Timestamp}",
-                id,
-                request.Amount,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Expense updated: {ExpenseId}, amount {Amount} at {Timestamp}",
+            id,
+            request.Amount,
+            DateTime.UtcNow);
 
-            return NoContent();
-        }
-        catch (NotFoundException ex)
-        {
-            _logger.LogWarning(
-                "Resource not found when updating expense {ExpenseId}: {Message} at {Timestamp}",
-                id,
-                ex.Message,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = ex.Message,
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -297,35 +216,15 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteExpense(Guid id)
     {
-        try
-        {
-            var command = new DeleteExpenseCommand(id);
-            await _mediator.Send(command);
+        var command = new DeleteExpenseCommand(id);
+        await _mediator.Send(command);
 
-            _logger.LogInformation(
-                "Expense deleted: {ExpenseId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
+        _logger.LogInformation(
+            "Expense deleted: {ExpenseId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
 
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            _logger.LogWarning(
-                "Expense not found for deletion: {ExpenseId} at {Timestamp}",
-                id,
-                DateTime.UtcNow);
-
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://propertymanager.app/errors/not-found",
-                Title = "Resource not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Expense '{id}' does not exist",
-                Instance = HttpContext.Request.Path,
-                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
-            });
-        }
+        return NoContent();
     }
 
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
