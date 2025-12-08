@@ -35,7 +35,6 @@ interface ExpenseState {
   editingExpenseId: string | null;
   isUpdating: boolean;
   // Delete state (AC-3.3)
-  confirmingDeleteId: string | null;
   isDeleting: boolean;
 }
 
@@ -57,7 +56,6 @@ const initialState: ExpenseState = {
   editingExpenseId: null,
   isUpdating: false,
   // Delete state (AC-3.3)
-  confirmingDeleteId: null,
   isDeleting: false,
 };
 
@@ -122,11 +120,6 @@ export const ExpenseStore = signalStore(
      * Whether any expense is currently being edited (AC-3.2.1)
      */
     isEditing: computed(() => store.editingExpenseId() !== null),
-
-    /**
-     * Whether any expense is showing delete confirmation (AC-3.3.2)
-     */
-    isConfirmingDelete: computed(() => store.confirmingDeleteId() !== null),
   })),
   withMethods((store, expenseService = inject(ExpenseService), snackBar = inject(MatSnackBar)) => ({
     /**
@@ -428,33 +421,10 @@ export const ExpenseStore = signalStore(
     ),
 
     /**
-     * Start delete confirmation for an expense (AC-3.3.1, AC-3.3.2)
-     * @param expenseId The expense ID to show confirmation for
-     */
-    startDeleteConfirmation(expenseId: string): void {
-      // Cancel any edit mode when starting delete confirmation
-      patchState(store, {
-        confirmingDeleteId: expenseId,
-        editingExpenseId: null,
-        error: null,
-      });
-    },
-
-    /**
-     * Cancel delete confirmation (AC-3.3.2)
-     */
-    cancelDeleteConfirmation(): void {
-      patchState(store, {
-        confirmingDeleteId: null,
-      });
-    },
-
-    /**
      * Delete an expense (AC-3.3.3, AC-3.3.4, AC-3.3.5)
      * On success:
      * - Removes expense from list
      * - Updates YTD total
-     * - Clears confirmation state
      * - Shows snackbar confirmation
      */
     deleteExpense: rxMethod<string>(
@@ -482,7 +452,6 @@ export const ExpenseStore = signalStore(
                 expenses: updatedExpenses,
                 ytdTotal: newYtdTotal,
                 isDeleting: false,
-                confirmingDeleteId: null,
               });
 
               // Show success snackbar (AC-3.3.4)
@@ -500,7 +469,6 @@ export const ExpenseStore = signalStore(
 
               patchState(store, {
                 isDeleting: false,
-                confirmingDeleteId: null,
                 error: errorMessage,
               });
 
