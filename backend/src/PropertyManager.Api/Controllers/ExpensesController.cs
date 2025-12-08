@@ -282,6 +282,52 @@ public class ExpensesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete an expense (soft delete) (AC-3.3.1, AC-3.3.3).
+    /// Sets DeletedAt timestamp without physically removing the record.
+    /// </summary>
+    /// <param name="id">Expense GUID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Expense deleted successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If expense not found</response>
+    [HttpDelete("expenses/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteExpense(Guid id)
+    {
+        try
+        {
+            var command = new DeleteExpenseCommand(id);
+            await _mediator.Send(command);
+
+            _logger.LogInformation(
+                "Expense deleted: {ExpenseId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            _logger.LogWarning(
+                "Expense not found for deletion: {ExpenseId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Expense '{id}' does not exist",
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
