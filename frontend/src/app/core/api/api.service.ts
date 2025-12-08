@@ -22,6 +22,7 @@ export interface IApiClient {
     auth_Logout(): Observable<void>;
     auth_ForgotPassword(request: ForgotPasswordRequest): Observable<void>;
     auth_ResetPassword(request: ResetPasswordRequest): Observable<void>;
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
     expenses_CreateExpense(request: CreateExpenseRequest): Observable<CreateExpenseResponse>;
     expenses_GetExpenseCategories(): Observable<ExpenseCategoriesResponse>;
     expenses_GetExpensesByProperty(id: string, year?: number | null | undefined): Observable<ExpenseListDto>;
@@ -433,6 +434,78 @@ export class ApiClient implements IApiClient {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto> {
+        let url_ = this.baseUrl + "/api/v1/expenses?";
+        if (dateFrom !== undefined && dateFrom !== null)
+            url_ += "dateFrom=" + encodeURIComponent(dateFrom ? "" + dateFrom.toISOString() : "") + "&";
+        if (dateTo !== undefined && dateTo !== null)
+            url_ += "dateTo=" + encodeURIComponent(dateTo ? "" + dateTo.toISOString() : "") + "&";
+        if (categoryIds !== undefined && categoryIds !== null)
+            categoryIds && categoryIds.forEach(item => { url_ += "categoryIds=" + encodeURIComponent("" + item) + "&"; });
+        if (search !== undefined && search !== null)
+            url_ += "search=" + encodeURIComponent("" + search) + "&";
+        if (year !== undefined && year !== null)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExpenses_GetAllExpenses(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExpenses_GetAllExpenses(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfExpenseListItemDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfExpenseListItemDto>;
+        }));
+    }
+
+    protected processExpenses_GetAllExpenses(response: HttpResponseBase): Observable<PagedResultOfExpenseListItemDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfExpenseListItemDto;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1298,6 +1371,28 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
     token?: string;
     newPassword?: string;
+}
+
+export interface PagedResultOfExpenseListItemDto {
+    items?: ExpenseListItemDto[];
+    totalCount?: number;
+    page?: number;
+    pageSize?: number;
+    totalPages?: number;
+}
+
+export interface ExpenseListItemDto {
+    id?: string;
+    propertyId?: string;
+    propertyName?: string;
+    categoryId?: string;
+    categoryName?: string;
+    scheduleELine?: string | undefined;
+    amount?: number;
+    date?: Date;
+    description?: string | undefined;
+    receiptId?: string | undefined;
+    createdAt?: Date;
 }
 
 export interface CreateExpenseResponse {
