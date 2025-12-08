@@ -6,11 +6,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseStore } from '../stores/expense.store';
 import { ExpenseFormComponent } from '../components/expense-form/expense-form.component';
 import { ExpenseRowComponent } from '../components/expense-row/expense-row.component';
 import { ExpenseEditFormComponent } from '../components/expense-edit-form/expense-edit-form.component';
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2, AC-3.3)
@@ -21,7 +26,7 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
  * - Previous expenses list below
  * - YTD total
  * - Inline editing support (AC-3.2)
- * - Inline delete confirmation support (AC-3.3)
+ * - Modal delete confirmation support (AC-3.3)
  */
 @Component({
   selector: 'app-expense-workspace',
@@ -66,8 +71,8 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
           </mat-card-content>
         </mat-card>
       } @else {
-        <!-- New Expense Form (hide when editing or confirming delete) -->
-        @if (!store.isEditing() && !store.isConfirmingDelete()) {
+        <!-- New Expense Form (hide when editing) -->
+        @if (!store.isEditing()) {
           <app-expense-form
             [propertyId]="propertyId()"
             (expenseCreated)="onExpenseCreated()"
@@ -106,14 +111,11 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
                       (saved)="onEditSaved()"
                     />
                   } @else {
-                    <!-- Show normal row with edit and delete buttons (AC-3.2.1, AC-3.3.1, AC-3.3.2) -->
+                    <!-- Show normal row with edit and delete buttons (AC-3.2.1, AC-3.3.1) -->
                     <app-expense-row
                       [expense]="expense"
-                      [isConfirmingDelete]="store.confirmingDeleteId() === expense.id"
                       (edit)="onEditExpense($event)"
                       (delete)="onDeleteExpense($event)"
-                      (cancelDelete)="onCancelDeleteExpense()"
-                      (confirmDelete)="onConfirmDeleteExpense($event)"
                     />
                   }
                 }
@@ -242,6 +244,7 @@ export class ExpenseWorkspaceComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly propertyService = inject(PropertyService);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly propertyId = signal<string>('');
   protected readonly propertyName = signal<string>('');
@@ -317,24 +320,55 @@ export class ExpenseWorkspaceComponent implements OnInit {
   }
 
   /**
-   * Handle delete button click - show inline confirmation (AC-3.3.1)
+   * Handle delete button click - show modal confirmation (AC-3.3.1)
    */
   protected onDeleteExpense(expenseId: string): void {
-    this.store.startDeleteConfirmation(expenseId);
+    const expense = this.store.expenses().find((e) => e.id === expenseId);
+    if (!expense) return;
+
+    const dialogData: ConfirmDialogData = {
+      title: 'Delete Expense?',
+      message: 'This expense will be removed from your records.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+      secondaryMessage: `${this.formatDate(expense.date)} • ${expense.description} • ${expense.categoryName} • ${this.formatCurrency(expense.amount)}`,
+      confirmIcon: 'delete',
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '450px',
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.store.deleteExpense(expenseId);
+      }
+    });
   }
 
   /**
-   * Handle cancel delete confirmation (AC-3.3.2)
+   * Format date as "Nov 28, 2025"
    */
-  protected onCancelDeleteExpense(): void {
-    this.store.cancelDeleteConfirmation();
+  private formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
 
   /**
-   * Handle confirm delete (AC-3.3.3, AC-3.3.4, AC-3.3.5)
+   * Format amount as currency
    */
-  protected onConfirmDeleteExpense(expenseId: string): void {
-    this.store.deleteExpense(expenseId);
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
   }
 
   protected goBack(): void {
