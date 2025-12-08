@@ -547,26 +547,68 @@ public record GetExpensesByPropertyQuery(Guid PropertyId) : IRequest<List<Expens
 
 ### Error Handling Pattern
 
+**Global Exception Handler Middleware** (`PropertyManager.Api/Middleware/GlobalExceptionHandlerMiddleware.cs`)
+
+The API uses a centralized exception handler middleware registered as the **first middleware** in the pipeline. This eliminates the need for try-catch blocks in controllers for standard exception-to-HTTP-status mapping.
+
+**Exception Mapping:**
+
+| Exception Type | HTTP Status | ProblemDetails Type |
+|----------------|-------------|---------------------|
+| `NotFoundException` | 404 | `https://propertymanager.app/errors/not-found` |
+| `ValidationException` (FluentValidation) | 400 | `https://tools.ietf.org/html/rfc7231#section-6.5.1` |
+| `ArgumentException` | 400 | `https://propertymanager.app/errors/bad-request` |
+| `UnauthorizedAccessException` | 403 | `https://propertymanager.app/errors/forbidden` |
+| All other exceptions | 500 | `https://propertymanager.app/errors/internal-server-error` |
+
+**Response Format (RFC 7807 ProblemDetails):**
+
+```json
+{
+  "type": "https://propertymanager.app/errors/not-found",
+  "title": "Resource not found",
+  "status": 404,
+  "detail": "Property with ID 'abc-123' was not found",
+  "instance": "/api/v1/properties/abc-123",
+  "traceId": "00-abc123...",
+  "exceptionDetails": "..." // Development mode only
+}
+```
+
+**Key Principles:**
+
+1. **Controllers do NOT need try-catch blocks** for domain exceptions like `NotFoundException` - the middleware handles them automatically
+2. **Use try-catch in controllers ONLY** when you need custom behavior (e.g., returning a default value instead of 404)
+3. **Logging levels**: 5xx errors → `LogError`, 4xx errors → `LogWarning`
+4. **Stack traces**: Included only in Development environment to prevent information leakage
+
+**Controller Example (simplified - no try-catch needed):**
+
 ```csharp
-// Global exception handler middleware
-app.UseExceptionHandler(handler => {
-    handler.Run(async context => {
-        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-        context.Response.StatusCode = exception switch {
-            NotFoundException => 404,
-            ValidationException => 400,
-            UnauthorizedException => 401,
-            ForbiddenException => 403,
-            _ => 500
-        };
-        await context.Response.WriteAsJsonAsync(new ProblemDetails {
-            Type = $"https://propertymanager.app/errors/{exception.GetType().Name}",
-            Title = exception.Message,
-            Status = context.Response.StatusCode,
-            Extensions = { ["traceId"] = Activity.Current?.Id }
-        });
-    });
-});
+// Controllers just call MediatR - middleware handles exceptions
+public async Task<IActionResult> GetExpense(Guid id)
+{
+    var expense = await _mediator.Send(new GetExpenseQuery(id));
+    return Ok(expense);
+    // If NotFoundException thrown, middleware returns 404 ProblemDetails
+}
+```
+
+**When to use try-catch in controllers:**
+
+```csharp
+// ONLY use try-catch for custom exception handling
+public async Task<IActionResult> GetExpenseOrDefault(Guid id)
+{
+    try
+    {
+        return Ok(await _mediator.Send(new GetExpenseQuery(id)));
+    }
+    catch (NotFoundException)
+    {
+        return Ok(new ExpenseDto { Amount = 0 }); // Custom behavior
+    }
+}
 ```
 
 ### Logging Pattern
