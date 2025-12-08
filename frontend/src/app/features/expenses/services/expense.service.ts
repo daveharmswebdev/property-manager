@@ -65,6 +65,17 @@ export interface ExpenseListResponse {
 }
 
 /**
+ * Request model for updating an expense (AC-3.2.1)
+ * Note: PropertyId is not included - expenses cannot be moved between properties
+ */
+export interface UpdateExpenseRequest {
+  amount: number;
+  date: string; // ISO date string (YYYY-MM-DD)
+  categoryId: string;
+  description?: string;
+}
+
+/**
  * ExpenseService (AC-3.1.1, AC-3.1.4, AC-3.1.6, AC-3.1.7)
  *
  * Provides API methods for expense management.
@@ -103,5 +114,24 @@ export class ExpenseService {
       `${this.baseUrl}/properties/${propertyId}/expenses`,
       { params }
     );
+  }
+
+  /**
+   * Get a single expense by ID (AC-3.2.1, AC-3.2.2)
+   * @param expenseId Expense GUID
+   * @returns Observable with expense details
+   */
+  getExpense(expenseId: string): Observable<ExpenseDto> {
+    return this.http.get<ExpenseDto>(`${this.baseUrl}/expenses/${expenseId}`);
+  }
+
+  /**
+   * Update an existing expense (AC-3.2.1, AC-3.2.3, AC-3.2.4)
+   * @param expenseId Expense GUID
+   * @param request Updated expense details
+   * @returns Observable that completes on success
+   */
+  updateExpense(expenseId: string, request: UpdateExpenseRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/expenses/${expenseId}`, request);
   }
 }
