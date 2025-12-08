@@ -9,16 +9,18 @@ import { MatDividerModule } from '@angular/material/divider';
 import { ExpenseStore } from '../stores/expense.store';
 import { ExpenseFormComponent } from '../components/expense-form/expense-form.component';
 import { ExpenseRowComponent } from '../components/expense-row/expense-row.component';
+import { ExpenseEditFormComponent } from '../components/expense-edit-form/expense-edit-form.component';
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
 
 /**
- * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7)
+ * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2)
  *
  * Main workspace for expense management:
  * - Property name header for context
  * - New expense form at top
  * - Previous expenses list below
  * - YTD total
+ * - Inline editing support (AC-3.2)
  */
 @Component({
   selector: 'app-expense-workspace',
@@ -34,6 +36,7 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
     CurrencyPipe,
     ExpenseFormComponent,
     ExpenseRowComponent,
+    ExpenseEditFormComponent,
   ],
   template: `
     <div class="expense-workspace">
@@ -62,11 +65,13 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
           </mat-card-content>
         </mat-card>
       } @else {
-        <!-- New Expense Form -->
-        <app-expense-form
-          [propertyId]="propertyId()"
-          (expenseCreated)="onExpenseCreated()"
-        />
+        <!-- New Expense Form (hide when editing) -->
+        @if (!store.isEditing()) {
+          <app-expense-form
+            [propertyId]="propertyId()"
+            (expenseCreated)="onExpenseCreated()"
+          />
+        }
 
         <!-- Expenses List -->
         <mat-card class="expenses-list-card">
@@ -92,7 +97,20 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
             } @else {
               <div class="expenses-list">
                 @for (expense of store.expenses(); track expense.id) {
-                  <app-expense-row [expense]="expense" />
+                  <!-- Show edit form for the expense being edited (AC-3.2.2) -->
+                  @if (store.editingExpenseId() === expense.id) {
+                    <app-expense-edit-form
+                      [expense]="expense"
+                      (cancelled)="onEditCancelled()"
+                      (saved)="onEditSaved()"
+                    />
+                  } @else {
+                    <!-- Show normal row with edit button (AC-3.2.1) -->
+                    <app-expense-row
+                      [expense]="expense"
+                      (edit)="onEditExpense($event)"
+                    />
+                  }
                 }
               </div>
             }
@@ -270,6 +288,27 @@ export class ExpenseWorkspaceComponent implements OnInit {
   protected onExpenseCreated(): void {
     // Form handles the snackbar and state update
     // This callback is for any additional actions needed
+  }
+
+  /**
+   * Handle edit button click (AC-3.2.1)
+   */
+  protected onEditExpense(expenseId: string): void {
+    this.store.startEditing(expenseId);
+  }
+
+  /**
+   * Handle edit cancelled (AC-3.2.5)
+   */
+  protected onEditCancelled(): void {
+    // Store handles the state reset
+  }
+
+  /**
+   * Handle edit saved (AC-3.2.4)
+   */
+  protected onEditSaved(): void {
+    // Store handles the update and snackbar
   }
 
   protected goBack(): void {

@@ -14,10 +14,11 @@ import {
   ExpenseDto,
   ExpenseCategoryDto,
   CreateExpenseRequest,
+  UpdateExpenseRequest,
 } from '../services/expense.service';
 
 /**
- * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8)
+ * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8, AC-3.2)
  */
 interface ExpenseState {
   expenses: ExpenseDto[];
@@ -30,6 +31,9 @@ interface ExpenseState {
   isLoadingCategories: boolean;
   error: string | null;
   categoriesLoaded: boolean;
+  // Edit state (AC-3.2)
+  editingExpenseId: string | null;
+  isUpdating: boolean;
 }
 
 /**
@@ -46,6 +50,9 @@ const initialState: ExpenseState = {
   isLoadingCategories: false,
   error: null,
   categoriesLoaded: false,
+  // Edit state (AC-3.2)
+  editingExpenseId: null,
+  isUpdating: false,
 };
 
 /**
@@ -95,6 +102,20 @@ export const ExpenseStore = signalStore(
      * Whether the expense list is empty
      */
     isEmpty: computed(() => !store.isLoading() && store.expenses().length === 0),
+
+    /**
+     * The expense currently being edited (AC-3.2.2)
+     */
+    editingExpense: computed(() => {
+      const editingId = store.editingExpenseId();
+      if (!editingId) return null;
+      return store.expenses().find((e) => e.id === editingId) ?? null;
+    }),
+
+    /**
+     * Whether any expense is currently being edited (AC-3.2.1)
+     */
+    isEditing: computed(() => store.editingExpenseId() !== null),
   })),
   withMethods((store, expenseService = inject(ExpenseService), snackBar = inject(MatSnackBar)) => ({
     /**
@@ -289,5 +310,110 @@ export const ExpenseStore = signalStore(
         currentPropertyName: propertyName,
       });
     },
+
+    /**
+     * Start editing an expense (AC-3.2.1)
+     * @param expenseId The expense ID to edit
+     */
+    startEditing(expenseId: string): void {
+      patchState(store, {
+        editingExpenseId: expenseId,
+        error: null,
+      });
+    },
+
+    /**
+     * Cancel editing (AC-3.2.5)
+     */
+    cancelEditing(): void {
+      patchState(store, {
+        editingExpenseId: null,
+        error: null,
+      });
+    },
+
+    /**
+     * Update an expense (AC-3.2.3, AC-3.2.4)
+     * On success:
+     * - Updates expense in list
+     * - Updates YTD total if amount changed
+     * - Shows snackbar confirmation
+     * - Exits edit mode
+     */
+    updateExpense: rxMethod<{ expenseId: string; request: UpdateExpenseRequest }>(
+      pipe(
+        tap(() =>
+          patchState(store, {
+            isUpdating: true,
+            error: null,
+          })
+        ),
+        switchMap(({ expenseId, request }) =>
+          expenseService.updateExpense(expenseId, request).pipe(
+            tap(() => {
+              // Get the original expense to calculate YTD difference
+              const originalExpense = store.expenses().find((e) => e.id === expenseId);
+              const amountDifference = originalExpense
+                ? request.amount - originalExpense.amount
+                : 0;
+
+              // Get category details for the updated expense
+              const category = store.categories().find((c) => c.id === request.categoryId);
+
+              // Update the expense in the list (AC-3.2.4)
+              const updatedExpenses = store.expenses().map((expense) => {
+                if (expense.id !== expenseId) return expense;
+                return {
+                  ...expense,
+                  amount: request.amount,
+                  date: request.date,
+                  categoryId: request.categoryId,
+                  categoryName: category?.name || expense.categoryName,
+                  scheduleELine: category?.scheduleELine,
+                  description: request.description,
+                };
+              });
+
+              patchState(store, {
+                expenses: updatedExpenses,
+                ytdTotal: store.ytdTotal() + amountDifference,
+                isUpdating: false,
+                editingExpenseId: null,
+              });
+
+              // Show success snackbar (AC-3.2.4)
+              snackBar.open('Expense updated \u2713', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+            }),
+            catchError((error) => {
+              let errorMessage = 'Failed to update expense. Please try again.';
+              if (error.status === 400) {
+                errorMessage = 'Invalid expense data. Please check your input.';
+              } else if (error.status === 404) {
+                errorMessage = 'Expense or category not found.';
+              }
+
+              patchState(store, {
+                isUpdating: false,
+                error: errorMessage,
+              });
+
+              // Show error snackbar
+              snackBar.open(errorMessage, 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+
+              console.error('Error updating expense:', error);
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
   }))
 );

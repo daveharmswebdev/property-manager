@@ -19,15 +19,18 @@ public class ExpensesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateExpenseCommand> _createValidator;
+    private readonly IValidator<UpdateExpenseCommand> _updateValidator;
     private readonly ILogger<ExpensesController> _logger;
 
     public ExpensesController(
         IMediator mediator,
         IValidator<CreateExpenseCommand> createValidator,
+        IValidator<UpdateExpenseCommand> updateValidator,
         ILogger<ExpensesController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -169,6 +172,116 @@ public class ExpensesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get a single expense by ID (AC-3.2.1, AC-3.2.2).
+    /// </summary>
+    /// <param name="id">Expense GUID</param>
+    /// <returns>Expense details</returns>
+    /// <response code="200">Returns the expense</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If expense not found</response>
+    [HttpGet("expenses/{id:guid}")]
+    [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetExpense(Guid id)
+    {
+        try
+        {
+            var query = new GetExpenseQuery(id);
+            var expense = await _mediator.Send(query);
+
+            _logger.LogInformation(
+                "Retrieved expense {ExpenseId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return Ok(expense);
+        }
+        catch (NotFoundException)
+        {
+            _logger.LogWarning(
+                "Expense not found: {ExpenseId} at {Timestamp}",
+                id,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Expense '{id}' does not exist",
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+    }
+
+    /// <summary>
+    /// Update an existing expense (AC-3.2.1, AC-3.2.3, AC-3.2.4).
+    /// PropertyId cannot be changed - delete and recreate to move expense to different property.
+    /// </summary>
+    /// <param name="id">Expense GUID</param>
+    /// <param name="request">Updated expense details</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Expense updated successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If expense or category not found</response>
+    [HttpPut("expenses/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateExpense(Guid id, [FromBody] UpdateExpenseRequest request)
+    {
+        var command = new UpdateExpenseCommand(
+            id,
+            request.Amount,
+            request.Date,
+            request.CategoryId,
+            request.Description);
+
+        // Validate command
+        var validationResult = await _updateValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        try
+        {
+            await _mediator.Send(command);
+
+            _logger.LogInformation(
+                "Expense updated: {ExpenseId}, amount {Amount} at {Timestamp}",
+                id,
+                request.Amount,
+                DateTime.UtcNow);
+
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(
+                "Resource not found when updating expense {ExpenseId}: {Message} at {Timestamp}",
+                id,
+                ex.Message,
+                DateTime.UtcNow);
+
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://propertymanager.app/errors/not-found",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = ex.Message,
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            });
+        }
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -212,4 +325,15 @@ public record CreateExpenseResponse(
 public record ExpenseCategoriesResponse(
     List<ExpenseCategoryDto> Items,
     int TotalCount
+);
+
+/// <summary>
+/// Request model for updating an expense (AC-3.2.1).
+/// Note: PropertyId is not included - expenses cannot be moved between properties.
+/// </summary>
+public record UpdateExpenseRequest(
+    decimal Amount,
+    DateOnly Date,
+    Guid CategoryId,
+    string? Description
 );

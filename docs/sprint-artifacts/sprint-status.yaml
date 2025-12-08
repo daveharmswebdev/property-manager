@@ -59,7 +59,7 @@ development_status:
   # Epic 3: Expense Tracking
   epic-3: contexted
   3-1-expense-workspace-create-expense: done
-  3-2-edit-expense: backlog
+  3-2-edit-expense: done
   3-3-delete-expense: backlog
   3-4-view-all-expenses-with-filters: backlog
   3-5-tax-year-selector-and-dashboard-totals: backlog

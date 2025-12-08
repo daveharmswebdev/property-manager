@@ -1,0 +1,350 @@
+<story-context id="3-2-edit-expense" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>2</storyId>
+    <title>Edit Expense</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-2-edit-expense.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>edit an existing expense</iWant>
+    <soThat>I can correct mistakes in amount, date, or category</soThat>
+    <tasks>
+      <task id="1">Create UpdateExpense Command and Handler (AC: 3.2.1, 3.2.3)
+        <subtask>Create UpdateExpenseCommand.cs in Application/Expenses/ with Id, Amount, Date, CategoryId, Description</subtask>
+        <subtask>Create UpdateExpenseHandler.cs implementing IRequestHandler&lt;UpdateExpenseCommand&gt;</subtask>
+        <subtask>Validate expense exists and belongs to user's account (throw NotFoundException if not)</subtask>
+        <subtask>Validate category exists</subtask>
+        <subtask>Update entity fields (Amount, Date, CategoryId, Description)</subtask>
+        <subtask>Set UpdatedAt = DateTime.UtcNow</subtask>
+        <subtask>Preserve CreatedAt, CreatedByUserId, PropertyId</subtask>
+        <subtask>Save to database</subtask>
+        <subtask>Write unit tests for UpdateExpenseHandler (5+ tests)</subtask>
+      </task>
+      <task id="2">Create UpdateExpense Validator (AC: 3.2.1)
+        <subtask>Create UpdateExpenseValidator.cs with FluentValidation rules</subtask>
+        <subtask>Id: NotEmpty</subtask>
+        <subtask>CategoryId: NotEmpty</subtask>
+        <subtask>Amount: GreaterThan(0), LessThanOrEqualTo(9999999.99m)</subtask>
+        <subtask>Date: NotEmpty, LessThanOrEqualTo(today)</subtask>
+        <subtask>Description: MaximumLength(500), no HTML</subtask>
+        <subtask>Write unit tests for validator (6+ tests)</subtask>
+      </task>
+      <task id="3">Create GetExpense Query (AC: 3.2.1, 3.2.2)
+        <subtask>Create GetExpenseQuery.cs with ExpenseId parameter</subtask>
+        <subtask>Create GetExpenseHandler.cs returning ExpenseDto</subtask>
+        <subtask>Filter by AccountId (automatic via global query filter)</subtask>
+        <subtask>Include Category name for display</subtask>
+        <subtask>Return 404 if not found or wrong account</subtask>
+        <subtask>Write unit tests for GetExpenseHandler</subtask>
+      </task>
+      <task id="4">Add PUT Endpoint to ExpensesController (AC: 3.2.1, 3.2.3, 3.2.4)
+        <subtask>Add PUT /api/v1/expenses/{id} endpoint</subtask>
+        <subtask>Accept UpdateExpenseRequest body: { amount, date, categoryId, description }</subtask>
+        <subtask>Return 204 No Content on success</subtask>
+        <subtask>Return 400 for validation errors with Problem Details</subtask>
+        <subtask>Return 404 if expense not found</subtask>
+        <subtask>Update Swagger documentation</subtask>
+        <subtask>Write integration tests (4+ tests)</subtask>
+      </task>
+      <task id="5">Add GET Single Expense Endpoint (AC: 3.2.2)
+        <subtask>Add GET /api/v1/expenses/{id} endpoint if not already exists</subtask>
+        <subtask>Return ExpenseDto with full details</subtask>
+        <subtask>Return 404 if not found</subtask>
+        <subtask>Write integration tests</subtask>
+      </task>
+      <task id="6">Generate TypeScript API Client
+        <subtask>Run NSwag to generate updated TypeScript client</subtask>
+        <subtask>Verify UpdateExpenseRequest interface generated</subtask>
+        <subtask>Verify getExpense and updateExpense methods generated</subtask>
+      </task>
+      <task id="7">Add ExpenseService Update Methods (AC: 3.2.1)
+        <subtask>Add getExpense(id: string): Observable&lt;ExpenseDto&gt; to ExpenseService</subtask>
+        <subtask>Add updateExpense(id: string, request: UpdateExpenseRequest): Observable&lt;void&gt; to ExpenseService</subtask>
+        <subtask>Use generated NSwag client</subtask>
+      </task>
+      <task id="8">Update ExpenseStore with Edit Functionality (AC: 3.2.1, 3.2.4, 3.2.5)
+        <subtask>Add signals: editingExpenseId, editingExpense</subtask>
+        <subtask>Add rxMethod: loadExpense(id: string) - load single expense for editing</subtask>
+        <subtask>Add rxMethod: updateExpense(id: string, request: UpdateExpenseRequest)</subtask>
+        <subtask>On successful update: update expense in local state, recalculate ytdTotal if amount changed, clear editingExpense, show snackbar</subtask>
+        <subtask>Write unit tests for ExpenseStore edit operations</subtask>
+      </task>
+      <task id="9">Create ExpenseEditFormComponent (AC: 3.2.1, 3.2.2)
+        <subtask>Create expense-edit-form.component.ts in features/expenses/components/</subtask>
+        <subtask>Accept @Input expense: ExpenseDto</subtask>
+        <subtask>Pre-populate reactive form with expense values</subtask>
+        <subtask>Same validation as ExpenseFormComponent</subtask>
+        <subtask>Emit (save) event with updated values</subtask>
+        <subtask>Emit (cancel) event to close edit mode</subtask>
+        <subtask>Loading state during save</subtask>
+        <subtask>Write unit tests for form validation and events</subtask>
+      </task>
+      <task id="10">Update ExpenseRowComponent with Edit Actions (AC: 3.2.2)
+        <subtask>Add edit icon button to expense row (visible on hover/focus)</subtask>
+        <subtask>Add @Output() edit event emitter</subtask>
+        <subtask>Style edit icon with hover states</subtask>
+        <subtask>Keyboard accessible (Tab + Enter to activate)</subtask>
+        <subtask>Write unit tests for edit action visibility and event emission</subtask>
+      </task>
+      <task id="11">Implement Inline Edit in ExpenseWorkspaceComponent (AC: 3.2.1, 3.2.2, 3.2.4, 3.2.5)
+        <subtask>Track which expense is being edited (editingExpenseId signal)</subtask>
+        <subtask>Show ExpenseEditFormComponent when editing (replace ExpenseRowComponent for that row)</subtask>
+        <subtask>Handle save: call ExpenseStore.updateExpense()</subtask>
+        <subtask>Handle cancel: clear editingExpenseId</subtask>
+        <subtask>Update ytdTotal display after amount change</subtask>
+        <subtask>Write unit tests for edit flow integration</subtask>
+      </task>
+      <task id="12">Run Tests and Validate
+        <subtask>Backend unit tests pass (UpdateExpenseHandler, UpdateExpenseValidator, GetExpenseHandler)</subtask>
+        <subtask>Backend integration tests pass (PUT, GET endpoints)</subtask>
+        <subtask>Frontend component tests pass (ExpenseEditForm, ExpenseRow edit)</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Backend builds successfully</subtask>
+        <subtask>Manual smoke test checklist completed</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.2.1">User can edit amount, date, category, and description of existing expense
+      <detail>Expense form pre-populated with current values</detail>
+      <detail>All editable fields: Amount, Date, Category, Description</detail>
+      <detail>PropertyId is NOT editable (delete and recreate to change property)</detail>
+    </criterion>
+    <criterion id="AC-3.2.2">Edit actions appear on hover/focus of expense row
+      <detail>Edit icon visible on hover (desktop) or always visible (mobile)</detail>
+      <detail>Edit action opens inline edit form OR side panel with pre-filled form</detail>
+      <detail>Form shows current expense values</detail>
+    </criterion>
+    <criterion id="AC-3.2.3">UpdatedAt timestamp is set on save
+      <detail>Server-side: UpdatedAt = DateTime.UtcNow</detail>
+      <detail>Preserves original CreatedAt and CreatedByUserId</detail>
+    </criterion>
+    <criterion id="AC-3.2.4">Snackbar confirms "Expense updated" after successful save
+      <detail>Snackbar appears at bottom-center</detail>
+      <detail>Auto-dismisses after 3 seconds</detail>
+      <detail>Success styling (green)</detail>
+    </criterion>
+    <criterion id="AC-3.2.5">Totals recalculate if amount changed
+      <detail>YTD total in expense workspace updates</detail>
+      <detail>Property row total in dashboard updates (if navigated back)</detail>
+      <detail>Stats bar total updates on dashboard</detail>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>AC-3.2: Edit Expense (AC-3.2.1 through AC-3.2.5)</section>
+        <snippet>Defines UpdateExpenseCommand structure, Edit Expense Flow sequence, and API endpoint PUT /api/v1/expenses/{id} returning 204 No Content.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>Workflows and Sequencing - Edit Expense Flow</section>
+        <snippet>User hovers expense row, edit icon appears, clicks edit, inline form expands, user modifies fields, saves, backend validates ownership and updates entity with UpdatedAt timestamp.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>Data Models and Contracts - UpdateExpenseCommand</section>
+        <snippet>public record UpdateExpenseCommand(Guid Id, decimal Amount, DateOnly Date, Guid CategoryId, string? Description) : IRequest;</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>CQRS Pattern</section>
+        <snippet>Commands for write operations with MediatR handlers, validators co-located. Feature-based organization in Application layer (Application/Expenses/).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>API Contracts</section>
+        <snippet>PUT returns 204 No Content. Validation errors return 400 with Problem Details. Not found returns 404. All endpoints require JWT authentication.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>Error Handling Pattern</section>
+        <snippet>Global exception handler maps NotFoundException to 404, ValidationException to 400. All responses include traceId. Uses RFC 7807 Problem Details.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>Property Manager UX Design Specification</title>
+        <section>6.3 ExpenseRowComponent</section>
+        <snippet>States: Default, hover (show edit/delete actions). Edit icon visible on hover. Inline edit preferred for keeping user in context.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>Property Manager UX Design Specification</title>
+        <section>7.3 Feedback Patterns</section>
+        <snippet>Success: Snackbar bottom-center, 3 seconds auto-dismiss. Loading: Spinner on button. Form validation on blur.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Functional Requirements - Expense Management</section>
+        <snippet>FR15: Users can edit an existing expense. FR55: All data changes are persisted immediately.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+        <kind>controller</kind>
+        <symbol>ExpensesController</symbol>
+        <lines>1-216</lines>
+        <reason>Existing controller with CreateExpense and GetExpensesByProperty endpoints. Need to add PUT /expenses/{id} and GET /expenses/{id} endpoints here.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Domain/Entities/Expense.cs</path>
+        <kind>entity</kind>
+        <symbol>Expense</symbol>
+        <lines>1-27</lines>
+        <reason>Domain entity with Amount, Date, CategoryId, Description fields to update. Has UpdatedAt from AuditableEntity base class.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/features/expenses/stores/expense.store.ts</path>
+        <kind>store</kind>
+        <symbol>ExpenseStore</symbol>
+        <lines>1-294</lines>
+        <reason>@ngrx/signals store with existing createExpense rxMethod. Need to add editingExpenseId signal and updateExpense rxMethod.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/features/expenses/services/expense.service.ts</path>
+        <kind>service</kind>
+        <symbol>ExpenseService</symbol>
+        <lines>1-108</lines>
+        <reason>HTTP service with createExpense, getCategories, getExpensesByProperty methods. Need to add getExpense and updateExpense methods.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts</path>
+        <kind>component</kind>
+        <symbol>ExpenseRowComponent</symbol>
+        <lines>1-128</lines>
+        <reason>Displays expense in list. Need to add edit icon button on hover and @Output edit event.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/features/expenses/components/expense-form/expense-form.component.ts</path>
+        <kind>component</kind>
+        <symbol>ExpenseFormComponent</symbol>
+        <lines>1-293</lines>
+        <reason>Existing create form with validation patterns. Reference for ExpenseEditFormComponent - same validation, but pre-populated with existing values.</reason>
+      </artifact>
+      <artifact>
+        <path>frontend/src/app/features/expenses/expense-workspace/expense-workspace.component.ts</path>
+        <kind>component</kind>
+        <symbol>ExpenseWorkspaceComponent</symbol>
+        <reason>Main workspace showing form + history. Need to integrate inline edit flow - show ExpenseEditFormComponent when editing a row.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/src/PropertyManager.Application/Expenses/ExpenseDto.cs</path>
+        <kind>dto</kind>
+        <symbol>ExpenseDto</symbol>
+        <reason>Existing DTO for expense data. Will be returned by GetExpense query.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <backend framework=".NET 10">
+        <package name="FluentValidation" version="12.1.0" />
+        <package name="MediatR" version="13.1.0" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" />
+      </backend>
+      <frontend framework="Angular 20">
+        <package name="@angular/core" version="^20.3.0" />
+        <package name="@angular/material" version="^20.2.14" />
+        <package name="@angular/forms" version="^20.3.0" />
+        <package name="@ngrx/signals" version="^20.1.0" />
+        <package name="rxjs" version="~7.8.0" />
+      </frontend>
+      <testing>
+        <package name="vitest" version="^3.2.4" purpose="Frontend unit/component tests" />
+        <package name="@playwright/test" version="^1.57.0" purpose="E2E tests" />
+        <package name="xunit" purpose="Backend unit/integration tests" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Clean Architecture: Command/Handler in Application/Expenses/ folder, validator co-located</constraint>
+    <constraint type="architecture">CQRS: UpdateExpenseCommand for write, GetExpenseQuery for read - separate handlers</constraint>
+    <constraint type="security">Multi-tenant: All queries filtered by AccountId via EF Core global query filter</constraint>
+    <constraint type="security">Ownership validation: Verify expense belongs to user's account before update</constraint>
+    <constraint type="audit">Preserve CreatedAt and CreatedByUserId - only update Amount, Date, CategoryId, Description, UpdatedAt</constraint>
+    <constraint type="api">PUT /api/v1/expenses/{id} returns 204 No Content on success (per architecture.md)</constraint>
+    <constraint type="validation">FluentValidation: Amount > 0, Amount <= 9999999.99, Date not future, Description max 500 chars</constraint>
+    <constraint type="frontend">@ngrx/signals store pattern: rxMethod for async operations, patchState for state updates</constraint>
+    <constraint type="frontend">Inline edit pattern: Replace ExpenseRowComponent with ExpenseEditFormComponent during edit (no modal)</constraint>
+    <constraint type="ux">Edit on hover reveal - icon appears on desktop hover, always visible on mobile</constraint>
+    <constraint type="ux">Snackbar feedback: "Expense updated" at bottom-center, 3s auto-dismiss</constraint>
+    <constraint type="immutable">PropertyId is NOT editable - delete and recreate expense to change property</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>PUT /api/v1/expenses/{id}</name>
+      <kind>REST endpoint</kind>
+      <signature>PUT /api/v1/expenses/{id} Body: { amount: decimal, date: DateOnly, categoryId: Guid, description?: string } Response: 204 No Content</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+    </interface>
+    <interface>
+      <name>GET /api/v1/expenses/{id}</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/expenses/{id} Response: ExpenseDto { id, propertyId, propertyName, categoryId, categoryName, scheduleELine, amount, date, description, receiptId, createdAt }</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+    </interface>
+    <interface>
+      <name>UpdateExpenseCommand</name>
+      <kind>MediatR command</kind>
+      <signature>public record UpdateExpenseCommand(Guid Id, decimal Amount, DateOnly Date, Guid CategoryId, string? Description) : IRequest;</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/UpdateExpense.cs</path>
+    </interface>
+    <interface>
+      <name>GetExpenseQuery</name>
+      <kind>MediatR query</kind>
+      <signature>public record GetExpenseQuery(Guid Id) : IRequest&lt;ExpenseDto&gt;;</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/GetExpense.cs</path>
+    </interface>
+    <interface>
+      <name>ExpenseService.updateExpense</name>
+      <kind>Angular service method</kind>
+      <signature>updateExpense(id: string, request: UpdateExpenseRequest): Observable&lt;void&gt;</signature>
+      <path>frontend/src/app/features/expenses/services/expense.service.ts</path>
+    </interface>
+    <interface>
+      <name>ExpenseService.getExpense</name>
+      <kind>Angular service method</kind>
+      <signature>getExpense(id: string): Observable&lt;ExpenseDto&gt;</signature>
+      <path>frontend/src/app/features/expenses/services/expense.service.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend uses xUnit for unit and integration tests with naming convention Method_Scenario_ExpectedResult. Frontend uses Vitest for component tests with Testing Library patterns. E2E tests use Playwright. All tests should follow the existing patterns in the codebase: backend tests mock DbContext and MediatR, frontend tests use component harnesses where available.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Expenses/ - Unit tests for handlers and validators</location>
+      <location>backend/tests/PropertyManager.Api.Tests/ - Integration tests for API endpoints</location>
+      <location>frontend/src/app/features/expenses/**/*.spec.ts - Component and service tests</location>
+      <location>frontend/e2e/ - Playwright E2E tests</location>
+    </locations>
+    <ideas>
+      <idea acRef="AC-3.2.1">UpdateExpenseHandler: Handle_ValidUpdate_UpdatesExpense, Handle_AmountChanged_UpdatesAmount, Handle_WrongAccount_ThrowsNotFoundException</idea>
+      <idea acRef="AC-3.2.1">UpdateExpenseValidator: Validate_ValidRequest_Passes, Validate_NegativeAmount_Fails, Validate_FutureDate_Fails, Validate_DescriptionTooLong_Fails</idea>
+      <idea acRef="AC-3.2.1">GetExpenseHandler: Handle_ValidId_ReturnsExpense, Handle_NotFound_ThrowsNotFoundException, Handle_WrongAccount_ThrowsNotFoundException</idea>
+      <idea acRef="AC-3.2.2">ExpenseRowComponent: should show edit icon on hover, should emit edit event when icon clicked, should be keyboard accessible</idea>
+      <idea acRef="AC-3.2.3">UpdateExpenseHandler: Handle_ValidUpdate_SetsUpdatedAtTimestamp, Handle_ValidUpdate_PreservesCreatedAt</idea>
+      <idea acRef="AC-3.2.4">ExpenseStore: updateExpense success should show snackbar, updateExpense error should show error snackbar</idea>
+      <idea acRef="AC-3.2.5">ExpenseStore: updateExpense with changed amount should recalculate ytdTotal</idea>
+      <idea acRef="AC-3.2.1">Integration: PUT /expenses/{id} with valid data returns 204, PUT with invalid data returns 400, PUT with wrong id returns 404</idea>
+      <idea acRef="AC-3.2.2">ExpenseEditFormComponent: should pre-populate form with expense values, should emit save event with updated values, should emit cancel event</idea>
+    </ideas>
+  </tests>
+</story-context>
