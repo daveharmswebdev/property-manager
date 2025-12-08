@@ -1,0 +1,193 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3</storyId>
+    <title>Delete Expense</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-3-delete-expense.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>delete an expense I entered by mistake</iWant>
+    <soThat>my records are accurate</soThat>
+    <tasks>
+      <task id="1" ac="3.3.1,3.3.3">Create DeleteExpense Command and Handler
+        <subtask>Create DeleteExpenseCommand.cs in Application/Expenses/ with Id parameter</subtask>
+        <subtask>Create DeleteExpenseHandler.cs implementing IRequestHandler&lt;DeleteExpenseCommand&gt;</subtask>
+        <subtask>Validate expense exists and belongs to user's account (throw NotFoundException if not)</subtask>
+        <subtask>Set DeletedAt = DateTime.UtcNow (soft delete)</subtask>
+        <subtask>Preserve all other fields unchanged</subtask>
+        <subtask>Save to database</subtask>
+        <subtask>Write unit tests for DeleteExpenseHandler (6 tests)</subtask>
+      </task>
+      <task id="2" ac="3.3.1,3.3.3">Add DELETE Endpoint to ExpensesController
+        <subtask>Add DELETE /api/v1/expenses/{id} endpoint</subtask>
+        <subtask>Return 204 No Content on success</subtask>
+        <subtask>Return 404 if expense not found or wrong account</subtask>
+        <subtask>Log deletion with expense ID and timestamp</subtask>
+        <subtask>Update Swagger documentation</subtask>
+      </task>
+      <task id="3">Generate TypeScript API Client
+        <subtask>Run NSwag to generate updated TypeScript client</subtask>
+        <subtask>Verify deleteExpense method generated</subtask>
+      </task>
+      <task id="4" ac="3.3.1">Add ExpenseService Delete Method
+        <subtask>Add deleteExpense(id: string): Observable&lt;void&gt; to ExpenseService</subtask>
+      </task>
+      <task id="5" ac="3.3.4,3.3.5">Update ExpenseStore with Delete Functionality
+        <subtask>Add signal: deletingExpenseId to track which expense is being deleted</subtask>
+        <subtask>Add signal: isDeleting for loading state</subtask>
+        <subtask>Add signal: confirmingDeleteId for inline confirmation state</subtask>
+        <subtask>Add method: startDeleteConfirmation(expenseId: string) - shows inline confirm</subtask>
+        <subtask>Add method: cancelDeleteConfirmation() - hides inline confirm</subtask>
+        <subtask>Add rxMethod: deleteExpense(expenseId: string)</subtask>
+        <subtask>On successful delete: Remove expense from local state, Recalculate ytdTotal, Clear confirmingDeleteId, Show snackbar</subtask>
+      </task>
+      <task id="6" ac="3.3.1,3.3.2">Update ExpenseRowComponent with Delete Action
+        <subtask>Add delete icon button next to edit button (visible on hover/focus)</subtask>
+        <subtask>Add @Output() delete event emitter</subtask>
+        <subtask>Add @Input() isConfirmingDelete to show confirmation state</subtask>
+        <subtask>Add @Output() cancelDelete event emitter for cancel action</subtask>
+        <subtask>Style delete icon with hover states (warning/red color)</subtask>
+        <subtask>Always visible on mobile (same as edit)</subtask>
+        <subtask>When confirming: show inline "Delete this expense?" [Cancel] [Delete]</subtask>
+      </task>
+      <task id="7" ac="3.3.1,3.3.2,3.3.4,3.3.5">Implement Inline Delete Confirmation in ExpenseWorkspaceComponent
+        <subtask>Track which expense is showing delete confirmation via store.confirmingDeleteId</subtask>
+        <subtask>Pass isConfirmingDelete input to ExpenseRowComponent</subtask>
+        <subtask>Handle delete click: store.startDeleteConfirmation(expenseId)</subtask>
+        <subtask>Handle cancel: store.cancelDeleteConfirmation()</subtask>
+        <subtask>Handle confirm delete: store.deleteExpense(expenseId)</subtask>
+        <subtask>Update ytdTotal display after deletion</subtask>
+      </task>
+      <task id="8">Write Unit Tests
+        <subtask>Backend: DeleteExpenseHandler tests (Handle_ValidId_SetsDeletedAt, Handle_NotFound_ThrowsNotFoundException, Handle_WrongAccount_ThrowsNotFoundException)</subtask>
+        <subtask>Frontend: ExpenseRowComponent delete button and confirmation state tests</subtask>
+        <subtask>Frontend: ExpenseStore deleteExpense method tests</subtask>
+      </task>
+      <task id="9">Run Tests and Validate
+        <subtask>Backend unit tests pass</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Frontend tests pass</subtask>
+        <subtask>Backend builds successfully</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.3.1">User can delete an expense with inline confirmation - Delete icon visible on hover (desktop) or always visible (mobile) - Delete action shows inline confirmation before executing - Confirmation appears in place (not modal) for quick items</criterion>
+    <criterion id="AC-3.3.2">Confirmation shows "Delete this expense?" with [Cancel] [Delete] options - Inline confirmation replaces expense row actions temporarily - Cancel returns to normal row state - Delete executes the deletion</criterion>
+    <criterion id="AC-3.3.3">Expense is soft-deleted (DeletedAt set, not permanently removed) - Server-side: DeletedAt = DateTime.UtcNow - Expense no longer appears in lists due to global query filter - Data recoverable in database (FR56)</criterion>
+    <criterion id="AC-3.3.4">Snackbar confirms "Expense deleted" after successful deletion - Snackbar appears at bottom-center - Auto-dismisses after 3 seconds - Success styling</criterion>
+    <criterion id="AC-3.3.5">Expense disappears from list and totals recalculate - Expense removed from UI immediately - YTD total decreases by deleted expense amount - Property row total in dashboard updates (if navigated back) - Stats bar total updates on dashboard</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="FR16, FR56" snippet="FR16: Users can delete an expense (with confirmation). FR56: Deleted items are soft-deleted with ability to restore." />
+      <doc path="docs/architecture.md" title="Architecture" section="Data Architecture, API Contracts" snippet="Soft deletes via DeletedAt timestamp. DELETE /api/v1/expenses/{id} returns 204 No Content on success." />
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="7.3, 7.6" snippet="Section 7.6: Inline confirmation for quick items (not modal). Section 7.3: Snackbar at bottom-center, 3-second auto-dismiss." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" title="Epic 3 Tech Spec" section="AC-3.3, Delete Expense Flow" snippet="AC-3.3.1-3.3.5 acceptance criteria. Delete flow: Click delete icon, inline confirmation, soft-delete, snackbar, list refresh." />
+      <doc path="docs/sprint-artifacts/3-2-edit-expense.md" title="Edit Expense Story (Previous)" section="Dev Notes" snippet="ExpenseStore pattern established with signals and rxMethods. ExpenseRowComponent has edit button on hover. Snackbar pattern established." />
+    </docs>
+    <code>
+      <file path="backend/src/PropertyManager.Api/Controllers/ExpensesController.cs" kind="controller" symbol="ExpensesController" lines="all" reason="Add DELETE endpoint here. Follow existing patterns for CreateExpense and UpdateExpense. Currently has POST, GET, PUT but no DELETE." />
+      <file path="backend/src/PropertyManager.Application/Expenses/UpdateExpense.cs" kind="command-handler" symbol="UpdateExpenseCommand, UpdateExpenseCommandHandler" lines="all" reason="Pattern to follow for DeleteExpenseCommand. Shows AccountId filtering via global query filter, NotFoundException handling, soft-delete check (e.DeletedAt == null)." />
+      <file path="backend/src/PropertyManager.Domain/Entities/Expense.cs" kind="entity" symbol="Expense" lines="all" reason="Entity has DeletedAt property for soft-delete. Shows all fields that must be preserved." />
+      <file path="backend/tests/PropertyManager.Application.Tests/Expenses/UpdateExpenseHandlerTests.cs" kind="test" symbol="UpdateExpenseHandlerTests" lines="all" reason="Test patterns to follow for DeleteExpenseHandlerTests. Shows mock setup, NotFoundException assertions, global query filter simulation." />
+      <file path="frontend/src/app/features/expenses/services/expense.service.ts" kind="service" symbol="ExpenseService" lines="all" reason="Add deleteExpense method here. Has createExpense, updateExpense patterns. Uses HttpClient with /api/v1 base URL." />
+      <file path="frontend/src/app/features/expenses/stores/expense.store.ts" kind="store" symbol="ExpenseStore" lines="all" reason="Add delete state signals (confirmingDeleteId, isDeleting) and rxMethod deleteExpense. Has patterns for createExpense, updateExpense, snackbar feedback." />
+      <file path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts" kind="component" symbol="ExpenseRowComponent" lines="all" reason="Add delete button next to edit button. Add isConfirmingDelete input and inline confirmation UI. Currently has edit button on hover." />
+      <file path="frontend/src/app/features/expenses/expense-workspace/expense-workspace.component.ts" kind="component" symbol="ExpenseWorkspaceComponent" lines="all" reason="Wire up delete handlers. Pass isConfirmingDelete to ExpenseRowComponent. Handle startDeleteConfirmation, cancelDeleteConfirmation, deleteExpense." />
+    </code>
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling" />
+        <package name="FluentValidation" version="11.x" purpose="Request validation (not needed for delete - ID only)" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" purpose="ORM, global query filters" />
+        <package name="Serilog" version="4.x" purpose="Structured logging" />
+        <package name="xUnit" purpose="Unit testing framework" />
+        <package name="Moq" purpose="Mocking for tests" />
+        <package name="MockQueryable.Moq" purpose="Mock DbSet for EF Core" />
+        <package name="FluentAssertions" purpose="Test assertions" />
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" purpose="Framework" />
+        <package name="@angular/material" version="^20.2.14" purpose="UI components (MatIconModule, MatButtonModule, MatSnackBar)" />
+        <package name="@ngrx/signals" version="^20.1.0" purpose="Signal-based state management" />
+        <package name="rxjs" version="~7.8.0" purpose="Reactive programming for rxMethod" />
+        <package name="vitest" version="^3.2.4" purpose="Unit testing framework" />
+        <package name="@playwright/test" version="^1.57.0" purpose="E2E testing" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">Backend Clean Architecture: Command in Application/Expenses/, Handler implements IRequestHandler&lt;DeleteExpenseCommand&gt;</constraint>
+    <constraint category="architecture">MediatR CQRS: Delete is a write operation, use Command pattern (not Query)</constraint>
+    <constraint category="architecture">Multi-tenant: AccountId filtering via EF Core global query filter (automatic - do not manually filter)</constraint>
+    <constraint category="data">Soft delete: Set DeletedAt = DateTime.UtcNow, do NOT physically delete record</constraint>
+    <constraint category="data">Preserve all fields: Do not modify any other fields when deleting</constraint>
+    <constraint category="security">Expense not found = NotFoundException (same response for wrong account - don't leak existence)</constraint>
+    <constraint category="api">REST: DELETE /api/v1/expenses/{id} returns 204 No Content on success</constraint>
+    <constraint category="api">Error: Return 404 Not Found if expense doesn't exist or belongs to different account</constraint>
+    <constraint category="frontend">@ngrx/signals store: Use patchState for state updates, rxMethod for async operations</constraint>
+    <constraint category="frontend">Angular signals: Use input(), output() function syntax (not @Input/@Output decorators)</constraint>
+    <constraint category="ux">Inline confirmation: Not modal - show "Delete this expense?" in place within row</constraint>
+    <constraint category="ux">Snackbar: Bottom-center position, 3-second auto-dismiss, "Expense deleted" message</constraint>
+    <constraint category="ux">Delete icon: Visible on hover (desktop) or always visible (mobile) - same pattern as edit</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="DeleteExpenseCommand" kind="command" path="backend/src/PropertyManager.Application/Expenses/DeleteExpense.cs">
+      <signature>public record DeleteExpenseCommand(Guid Id) : IRequest;</signature>
+    </interface>
+    <interface name="DELETE /api/v1/expenses/{id}" kind="REST endpoint" path="backend/src/PropertyManager.Api/Controllers/ExpensesController.cs">
+      <signature>
+        Method: DELETE
+        Path: /api/v1/expenses/{id:guid}
+        Request: None (ID in path)
+        Success Response: 204 No Content
+        Error Response: 404 Not Found (ProblemDetails)
+      </signature>
+    </interface>
+    <interface name="ExpenseService.deleteExpense" kind="Angular service method" path="frontend/src/app/features/expenses/services/expense.service.ts">
+      <signature>deleteExpense(expenseId: string): Observable&lt;void&gt;</signature>
+    </interface>
+    <interface name="ExpenseStore delete signals" kind="@ngrx/signals store" path="frontend/src/app/features/expenses/stores/expense.store.ts">
+      <signature>
+        State: confirmingDeleteId: string | null, isDeleting: boolean
+        Methods: startDeleteConfirmation(expenseId: string), cancelDeleteConfirmation()
+        rxMethod: deleteExpense(expenseId: string)
+      </signature>
+    </interface>
+    <interface name="ExpenseRowComponent delete inputs/outputs" kind="Angular component" path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts">
+      <signature>
+        @Input: isConfirmingDelete = input&lt;boolean&gt;()
+        @Output: delete = output&lt;string&gt;()
+        @Output: cancelDelete = output&lt;void&gt;()
+        @Output: confirmDelete = output&lt;string&gt;()
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Backend uses xUnit with FluentAssertions and Moq. Test naming: Method_Scenario_ExpectedResult (e.g., Handle_ValidId_SetsDeletedAt). Mock IAppDbContext and ICurrentUser. Use MockQueryable.Moq for DbSet mocking. Simulate global query filter by filtering in mock setup. Frontend uses Vitest for unit/component tests. Angular Testing Library patterns. E2E uses Playwright. Each story includes manual smoke test checklist.</standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Expenses/DeleteExpenseHandlerTests.cs (to create)</location>
+      <location>frontend/src/app/features/expenses/components/expense-row/expense-row.component.spec.ts (to update)</location>
+      <location>frontend/src/app/features/expenses/stores/expense.store.spec.ts (to update or create)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-3.3.1">Test delete icon appears on hover, emits delete event with expense ID</idea>
+      <idea ac="AC-3.3.2">Test inline confirmation UI appears when isConfirmingDelete=true, Cancel emits cancelDelete, Delete emits confirmDelete</idea>
+      <idea ac="AC-3.3.3">Test Handle_ValidId_SetsDeletedAtTimestamp, Handle_ExpenseNotFound_ThrowsNotFoundException, Handle_WrongAccount_ThrowsNotFoundException (security), Handle_AlreadyDeleted_ThrowsNotFoundException</idea>
+      <idea ac="AC-3.3.4">Test snackbar.open called with "Expense deleted" message on successful delete</idea>
+      <idea ac="AC-3.3.5">Test expense removed from store.expenses(), ytdTotal decremented by deleted amount, confirmingDeleteId cleared</idea>
+      <idea ac="all">Integration: DELETE /api/v1/expenses/{id} returns 204, expense has DeletedAt set, expense not returned in subsequent GET</idea>
+    </ideas>
+  </tests>
+</story-context>
