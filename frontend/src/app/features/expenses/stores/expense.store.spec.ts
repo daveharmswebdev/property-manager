@@ -82,67 +82,8 @@ describe('ExpenseStore', () => {
       expect(store.expenses()).toEqual([]);
     });
 
-    it('should have null confirmingDeleteId initially', () => {
-      expect(store.confirmingDeleteId()).toBeNull();
-    });
-
     it('should not be deleting initially', () => {
       expect(store.isDeleting()).toBe(false);
-    });
-
-    it('should have isConfirmingDelete as false initially', () => {
-      expect(store.isConfirmingDelete()).toBe(false);
-    });
-  });
-
-  describe('startDeleteConfirmation (AC-3.3.1)', () => {
-    it('should set confirmingDeleteId', () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.confirmingDeleteId()).toBe('expense-1');
-    });
-
-    it('should set isConfirmingDelete to true', () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.isConfirmingDelete()).toBe(true);
-    });
-
-    it('should clear any editing state', async () => {
-      // Load expenses first
-      store.loadExpensesByProperty({ propertyId: 'prop-1', propertyName: 'Test' });
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      // Start editing
-      store.startEditing('expense-1');
-      expect(store.editingExpenseId()).toBe('expense-1');
-
-      // Start delete confirmation - should clear edit mode
-      store.startDeleteConfirmation('expense-2');
-      expect(store.editingExpenseId()).toBeNull();
-      expect(store.confirmingDeleteId()).toBe('expense-2');
-    });
-
-    it('should clear error state', () => {
-      // Simulate error state first (we can't directly set error, but we test the effect)
-      store.startDeleteConfirmation('expense-1');
-      expect(store.error()).toBeNull();
-    });
-  });
-
-  describe('cancelDeleteConfirmation (AC-3.3.2)', () => {
-    it('should clear confirmingDeleteId', () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.confirmingDeleteId()).toBe('expense-1');
-
-      store.cancelDeleteConfirmation();
-      expect(store.confirmingDeleteId()).toBeNull();
-    });
-
-    it('should set isConfirmingDelete to false', () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.isConfirmingDelete()).toBe(true);
-
-      store.cancelDeleteConfirmation();
-      expect(store.isConfirmingDelete()).toBe(false);
     });
   });
 
@@ -179,16 +120,6 @@ describe('ExpenseStore', () => {
       expect(store.ytdTotal()).toBe(200);
     });
 
-    it('should clear confirmingDeleteId on success', async () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.confirmingDeleteId()).toBe('expense-1');
-
-      store.deleteExpense('expense-1');
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(store.confirmingDeleteId()).toBeNull();
-    });
-
     it('should set isDeleting to false on success', async () => {
       store.deleteExpense('expense-1');
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -221,7 +152,6 @@ describe('ExpenseStore', () => {
 
       expect(store.error()).toBe('Expense not found.');
       expect(store.isDeleting()).toBe(false);
-      expect(store.confirmingDeleteId()).toBeNull();
     });
 
     it('should handle other errors with generic message', async () => {
@@ -262,20 +192,4 @@ describe('ExpenseStore', () => {
     });
   });
 
-  describe('computed isConfirmingDelete', () => {
-    it('should be false when confirmingDeleteId is null', () => {
-      expect(store.isConfirmingDelete()).toBe(false);
-    });
-
-    it('should be true when confirmingDeleteId is set', () => {
-      store.startDeleteConfirmation('expense-1');
-      expect(store.isConfirmingDelete()).toBe(true);
-    });
-
-    it('should be false after cancellation', () => {
-      store.startDeleteConfirmation('expense-1');
-      store.cancelDeleteConfirmation();
-      expect(store.isConfirmingDelete()).toBe(false);
-    });
-  });
 });

@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ExpenseDto } from '../../services/expense.service';
 
 /**
- * ExpenseRowComponent (AC-3.1.7, AC-3.2.1, AC-3.3.1, AC-3.3.2)
+ * ExpenseRowComponent (AC-3.1.7, AC-3.2.1, AC-3.3.1)
  *
  * Displays a single expense in the expense list with:
  * - Date (formatted as "Nov 28, 2025")
@@ -17,7 +17,6 @@ import { ExpenseDto } from '../../services/expense.service';
  * - Amount (formatted as currency)
  * - Edit button (appears on hover) (AC-3.2.1)
  * - Delete button (appears on hover) (AC-3.3.1)
- * - Inline delete confirmation (AC-3.3.2)
  */
 @Component({
   selector: 'app-expense-row',
@@ -32,70 +31,41 @@ import { ExpenseDto } from '../../services/expense.service';
     CurrencyPipe,
   ],
   template: `
-    <!-- Normal expense row display -->
-    @if (!isConfirmingDelete()) {
-      <div class="expense-row">
-        <div class="expense-date">
-          {{ formatDate(expense().date) }}
-        </div>
-        <div class="expense-details">
-          <div class="expense-description">
-            {{ expense().description || 'No description' }}
-          </div>
-          <mat-chip-set class="expense-category">
-            <mat-chip>{{ expense().categoryName }}</mat-chip>
-          </mat-chip-set>
-        </div>
-        <div class="expense-amount">
-          {{ expense().amount | currency }}
-        </div>
-        <!-- Edit and Delete Actions (AC-3.2.1, AC-3.3.1) -->
-        <div class="expense-actions">
-          <button
-            mat-icon-button
-            (click)="onEditClick()"
-            matTooltip="Edit expense"
-            class="edit-button"
-          >
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            (click)="onDeleteClick()"
-            matTooltip="Delete expense"
-            class="delete-button"
-          >
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
+    <div class="expense-row">
+      <div class="expense-date">
+        {{ formatDate(expense().date) }}
       </div>
-    }
-
-    <!-- Inline delete confirmation (AC-3.3.2) -->
-    @if (isConfirmingDelete()) {
-      <div class="expense-row delete-confirmation">
-        <div class="confirmation-message">
-          Delete this expense?
+      <div class="expense-details">
+        <div class="expense-description">
+          {{ expense().description || 'No description' }}
         </div>
-        <div class="confirmation-actions">
-          <button
-            mat-stroked-button
-            (click)="onCancelDelete()"
-            class="cancel-button"
-          >
-            Cancel
-          </button>
-          <button
-            mat-flat-button
-            color="warn"
-            (click)="onConfirmDelete()"
-            class="confirm-delete-button"
-          >
-            Delete
-          </button>
-        </div>
+        <mat-chip-set class="expense-category">
+          <mat-chip>{{ expense().categoryName }}</mat-chip>
+        </mat-chip-set>
       </div>
-    }
+      <div class="expense-amount">
+        {{ expense().amount | currency }}
+      </div>
+      <!-- Edit and Delete Actions (AC-3.2.1, AC-3.3.1) -->
+      <div class="expense-actions">
+        <button
+          mat-icon-button
+          (click)="onEditClick()"
+          matTooltip="Edit expense"
+          class="edit-button"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="onDeleteClick()"
+          matTooltip="Delete expense"
+          class="delete-button"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
   `,
   styles: [`
     .expense-row {
@@ -168,26 +138,6 @@ import { ExpenseDto } from '../../services/expense.service';
       color: var(--mat-sys-error);
     }
 
-    /* Delete confirmation row (AC-3.3.2) */
-    .delete-confirmation {
-      justify-content: space-between;
-      background-color: var(--mat-sys-error-container);
-    }
-
-    .confirmation-message {
-      font-weight: 500;
-      color: var(--mat-sys-on-error-container);
-    }
-
-    .confirmation-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .cancel-button {
-      color: var(--mat-sys-on-error-container);
-    }
-
     @media (max-width: 600px) {
       .expense-row {
         flex-wrap: wrap;
@@ -219,20 +169,11 @@ import { ExpenseDto } from '../../services/expense.service';
 export class ExpenseRowComponent {
   expense = input.required<ExpenseDto>();
 
-  // Input: Whether this row is showing delete confirmation (AC-3.3.2)
-  isConfirmingDelete = input<boolean>(false);
-
   // Output: Edit clicked (AC-3.2.1)
   edit = output<string>();
 
   // Output: Delete icon clicked (AC-3.3.1)
   delete = output<string>();
-
-  // Output: Cancel delete confirmation (AC-3.3.2)
-  cancelDelete = output<void>();
-
-  // Output: Confirm delete (AC-3.3.2)
-  confirmDelete = output<string>();
 
   /**
    * Format date as "Nov 28, 2025"
@@ -255,23 +196,9 @@ export class ExpenseRowComponent {
 
   /**
    * Handle delete button click (AC-3.3.1)
-   * Emits to show inline confirmation
+   * Emits to show modal confirmation
    */
   protected onDeleteClick(): void {
     this.delete.emit(this.expense().id);
-  }
-
-  /**
-   * Handle cancel delete click (AC-3.3.2)
-   */
-  protected onCancelDelete(): void {
-    this.cancelDelete.emit();
-  }
-
-  /**
-   * Handle confirm delete click (AC-3.3.2)
-   */
-  protected onConfirmDelete(): void {
-    this.confirmDelete.emit(this.expense().id);
   }
 }
