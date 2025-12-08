@@ -18,7 +18,7 @@ import {
 } from '../services/expense.service';
 
 /**
- * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8, AC-3.2)
+ * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8, AC-3.2, AC-3.3)
  */
 interface ExpenseState {
   expenses: ExpenseDto[];
@@ -34,6 +34,9 @@ interface ExpenseState {
   // Edit state (AC-3.2)
   editingExpenseId: string | null;
   isUpdating: boolean;
+  // Delete state (AC-3.3)
+  confirmingDeleteId: string | null;
+  isDeleting: boolean;
 }
 
 /**
@@ -53,6 +56,9 @@ const initialState: ExpenseState = {
   // Edit state (AC-3.2)
   editingExpenseId: null,
   isUpdating: false,
+  // Delete state (AC-3.3)
+  confirmingDeleteId: null,
+  isDeleting: false,
 };
 
 /**
@@ -116,6 +122,11 @@ export const ExpenseStore = signalStore(
      * Whether any expense is currently being edited (AC-3.2.1)
      */
     isEditing: computed(() => store.editingExpenseId() !== null),
+
+    /**
+     * Whether any expense is showing delete confirmation (AC-3.3.2)
+     */
+    isConfirmingDelete: computed(() => store.confirmingDeleteId() !== null),
   })),
   withMethods((store, expenseService = inject(ExpenseService), snackBar = inject(MatSnackBar)) => ({
     /**
@@ -413,6 +424,98 @@ export const ExpenseStore = signalStore(
             })
           )
         )
+      )
+    ),
+
+    /**
+     * Start delete confirmation for an expense (AC-3.3.1, AC-3.3.2)
+     * @param expenseId The expense ID to show confirmation for
+     */
+    startDeleteConfirmation(expenseId: string): void {
+      // Cancel any edit mode when starting delete confirmation
+      patchState(store, {
+        confirmingDeleteId: expenseId,
+        editingExpenseId: null,
+        error: null,
+      });
+    },
+
+    /**
+     * Cancel delete confirmation (AC-3.3.2)
+     */
+    cancelDeleteConfirmation(): void {
+      patchState(store, {
+        confirmingDeleteId: null,
+      });
+    },
+
+    /**
+     * Delete an expense (AC-3.3.3, AC-3.3.4, AC-3.3.5)
+     * On success:
+     * - Removes expense from list
+     * - Updates YTD total
+     * - Clears confirmation state
+     * - Shows snackbar confirmation
+     */
+    deleteExpense: rxMethod<string>(
+      pipe(
+        tap(() =>
+          patchState(store, {
+            isDeleting: true,
+            error: null,
+          })
+        ),
+        switchMap((expenseId) => {
+          // Get the expense before deleting to know the amount to subtract
+          const expenseToDelete = store.expenses().find((e) => e.id === expenseId);
+
+          return expenseService.deleteExpense(expenseId).pipe(
+            tap(() => {
+              // Remove expense from list (AC-3.3.5)
+              const updatedExpenses = store.expenses().filter((e) => e.id !== expenseId);
+
+              // Calculate new YTD total (AC-3.3.5)
+              const deletedAmount = expenseToDelete?.amount || 0;
+              const newYtdTotal = store.ytdTotal() - deletedAmount;
+
+              patchState(store, {
+                expenses: updatedExpenses,
+                ytdTotal: newYtdTotal,
+                isDeleting: false,
+                confirmingDeleteId: null,
+              });
+
+              // Show success snackbar (AC-3.3.4)
+              snackBar.open('Expense deleted', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+            }),
+            catchError((error) => {
+              let errorMessage = 'Failed to delete expense. Please try again.';
+              if (error.status === 404) {
+                errorMessage = 'Expense not found.';
+              }
+
+              patchState(store, {
+                isDeleting: false,
+                confirmingDeleteId: null,
+                error: errorMessage,
+              });
+
+              // Show error snackbar
+              snackBar.open(errorMessage, 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+
+              console.error('Error deleting expense:', error);
+              return of(null);
+            })
+          );
+        })
       )
     ),
   }))

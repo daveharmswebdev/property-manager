@@ -134,4 +134,13 @@ export class ExpenseService {
   updateExpense(expenseId: string, request: UpdateExpenseRequest): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/expenses/${expenseId}`, request);
   }
+
+  /**
+   * Delete an expense (soft delete) (AC-3.3.1, AC-3.3.3)
+   * @param expenseId Expense GUID
+   * @returns Observable that completes on success
+   */
+  deleteExpense(expenseId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/expenses/${expenseId}`);
+  }
 }

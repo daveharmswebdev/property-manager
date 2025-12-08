@@ -13,7 +13,7 @@ import { ExpenseEditFormComponent } from '../components/expense-edit-form/expens
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
 
 /**
- * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2)
+ * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2, AC-3.3)
  *
  * Main workspace for expense management:
  * - Property name header for context
@@ -21,6 +21,7 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
  * - Previous expenses list below
  * - YTD total
  * - Inline editing support (AC-3.2)
+ * - Inline delete confirmation support (AC-3.3)
  */
 @Component({
   selector: 'app-expense-workspace',
@@ -65,8 +66,8 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
           </mat-card-content>
         </mat-card>
       } @else {
-        <!-- New Expense Form (hide when editing) -->
-        @if (!store.isEditing()) {
+        <!-- New Expense Form (hide when editing or confirming delete) -->
+        @if (!store.isEditing() && !store.isConfirmingDelete()) {
           <app-expense-form
             [propertyId]="propertyId()"
             (expenseCreated)="onExpenseCreated()"
@@ -105,10 +106,14 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
                       (saved)="onEditSaved()"
                     />
                   } @else {
-                    <!-- Show normal row with edit button (AC-3.2.1) -->
+                    <!-- Show normal row with edit and delete buttons (AC-3.2.1, AC-3.3.1, AC-3.3.2) -->
                     <app-expense-row
                       [expense]="expense"
+                      [isConfirmingDelete]="store.confirmingDeleteId() === expense.id"
                       (edit)="onEditExpense($event)"
+                      (delete)="onDeleteExpense($event)"
+                      (cancelDelete)="onCancelDeleteExpense()"
+                      (confirmDelete)="onConfirmDeleteExpense($event)"
                     />
                   }
                 }
@@ -309,6 +314,27 @@ export class ExpenseWorkspaceComponent implements OnInit {
    */
   protected onEditSaved(): void {
     // Store handles the update and snackbar
+  }
+
+  /**
+   * Handle delete button click - show inline confirmation (AC-3.3.1)
+   */
+  protected onDeleteExpense(expenseId: string): void {
+    this.store.startDeleteConfirmation(expenseId);
+  }
+
+  /**
+   * Handle cancel delete confirmation (AC-3.3.2)
+   */
+  protected onCancelDeleteExpense(): void {
+    this.store.cancelDeleteConfirmation();
+  }
+
+  /**
+   * Handle confirm delete (AC-3.3.3, AC-3.3.4, AC-3.3.5)
+   */
+  protected onConfirmDeleteExpense(expenseId: string): void {
+    this.store.deleteExpense(expenseId);
   }
 
   protected goBack(): void {
