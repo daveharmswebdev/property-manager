@@ -35,6 +35,53 @@ public class ExpensesController : ControllerBase
     }
 
     /// <summary>
+    /// Get all expenses across all properties with filtering and pagination (AC-3.4.1, AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.8).
+    /// </summary>
+    /// <param name="dateFrom">Optional: Filter start date</param>
+    /// <param name="dateTo">Optional: Filter end date</param>
+    /// <param name="categoryIds">Optional: Filter by one or more category IDs (multi-select)</param>
+    /// <param name="search">Optional: Search description text (case-insensitive, partial match)</param>
+    /// <param name="year">Optional: Filter by tax year</param>
+    /// <param name="page">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 50, max: 100)</param>
+    /// <returns>Paginated list of expenses</returns>
+    /// <response code="200">Returns paginated expenses (empty list if no matches)</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("expenses")]
+    [ProducesResponseType(typeof(PagedResult<ExpenseListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetAllExpenses(
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
+        [FromQuery] List<Guid>? categoryIds = null,
+        [FromQuery] string? search = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var query = new GetAllExpensesQuery(
+            dateFrom,
+            dateTo,
+            categoryIds,
+            search,
+            year,
+            page,
+            pageSize);
+
+        var response = await _mediator.Send(query);
+
+        _logger.LogInformation(
+            "Retrieved {Count} expenses (page {Page}/{TotalPages}, total {TotalCount}) at {Timestamp}",
+            response.Items.Count,
+            response.Page,
+            response.TotalPages,
+            response.TotalCount,
+            DateTime.UtcNow);
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Create a new expense (AC-3.1.1, AC-3.1.6).
     /// </summary>
     /// <param name="request">Expense details</param>

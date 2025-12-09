@@ -61,7 +61,7 @@ development_status:
   3-1-expense-workspace-create-expense: done
   3-2-edit-expense: done
   3-3-delete-expense: done
-  3-4-view-all-expenses-with-filters: backlog
+  3-4-view-all-expenses-with-filters: done
   3-5-tax-year-selector-and-dashboard-totals: backlog
   3-6-duplicate-expense-prevention: backlog
   epic-3-retrospective: optional

@@ -65,6 +65,47 @@ export interface ExpenseListResponse {
 }
 
 /**
+ * Filter parameters for expense list (AC-3.4.3, AC-3.4.4, AC-3.4.5)
+ */
+export interface ExpenseFilters {
+  dateFrom?: string; // ISO date string (YYYY-MM-DD)
+  dateTo?: string; // ISO date string (YYYY-MM-DD)
+  categoryIds?: string[];
+  search?: string;
+  year?: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * Paginated result response (AC-3.4.8)
+ */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/**
+ * Expense list item DTO for all-expenses list (AC-3.4.2)
+ */
+export interface ExpenseListItemDto {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  categoryId: string;
+  categoryName: string;
+  scheduleELine?: string;
+  amount: number;
+  date: string;
+  description?: string;
+  receiptId?: string;
+  createdAt: string;
+}
+
+/**
  * Request model for updating an expense (AC-3.2.1)
  * Note: PropertyId is not included - expenses cannot be moved between properties
  */
@@ -142,5 +183,35 @@ export class ExpenseService {
    */
   deleteExpense(expenseId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/expenses/${expenseId}`);
+  }
+
+  /**
+   * Get all expenses across all properties with filtering and pagination (AC-3.4.1, AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.8)
+   * @param filters Filter and pagination parameters
+   * @returns Observable with paginated expense list
+   */
+  getExpenses(filters: ExpenseFilters): Observable<PagedResult<ExpenseListItemDto>> {
+    let params: Record<string, string | string[]> = {
+      page: filters.page.toString(),
+      pageSize: filters.pageSize.toString(),
+    };
+
+    if (filters.dateFrom) {
+      params['dateFrom'] = filters.dateFrom;
+    }
+    if (filters.dateTo) {
+      params['dateTo'] = filters.dateTo;
+    }
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      params['categoryIds'] = filters.categoryIds;
+    }
+    if (filters.search && filters.search.trim()) {
+      params['search'] = filters.search.trim();
+    }
+    if (filters.year) {
+      params['year'] = filters.year.toString();
+    }
+
+    return this.http.get<PagedResult<ExpenseListItemDto>>(`${this.baseUrl}/expenses`, { params });
   }
 }
