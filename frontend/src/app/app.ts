@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from './core/services/auth.service';
 
 /**
@@ -9,10 +8,13 @@ import { AuthService } from './core/services/auth.service';
  *
  * Shows loading state while auth is being initialized to prevent
  * flash of unauthenticated content on protected routes.
+ *
+ * Uses a pure CSS spinner instead of MatProgressSpinnerModule to keep
+ * Angular Material out of the initial bundle (optimizes bundle size).
  */
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

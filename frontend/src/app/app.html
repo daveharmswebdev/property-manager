@@ -1,7 +1,7 @@
 <!-- Loading skeleton while auth initializes (AC7.8) -->
 @if (isInitializing()) {
   <div class="auth-loading-container">
-    <mat-spinner diameter="48"></mat-spinner>
+    <div class="css-spinner" aria-label="Loading"></div>
     <p>Loading...</p>
   </div>
 } @else {
