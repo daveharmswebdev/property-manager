@@ -34,6 +34,7 @@ public class GetAllPropertiesHandlerTests
         // Arrange
         var properties = new List<Property>();
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -55,6 +56,7 @@ public class GetAllPropertiesHandlerTests
             CreateProperty(_otherAccountId, "Other Account Property", "Houston", "TX")
         };
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -77,6 +79,7 @@ public class GetAllPropertiesHandlerTests
             CreateProperty(_testAccountId, "Middle Property", "Houston", "TX")
         };
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -99,6 +102,7 @@ public class GetAllPropertiesHandlerTests
 
         var properties = new List<Property> { activeProperty, deletedProperty };
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -119,6 +123,7 @@ public class GetAllPropertiesHandlerTests
 
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -150,6 +155,7 @@ public class GetAllPropertiesHandlerTests
             CreateProperty(Guid.NewGuid(), "Third User Property", "El Paso", "TX")
         };
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -164,21 +170,141 @@ public class GetAllPropertiesHandlerTests
     public async Task Handle_WithYearParameter_AcceptsYearFilter()
     {
         // Arrange
-        var properties = new List<Property>
+        var property = CreateProperty(_testAccountId, "Property A", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var expenses = new List<Expense>
         {
-            CreateProperty(_testAccountId, "Property A", "Austin", "TX")
+            CreateExpense(_testAccountId, property.Id, 500m, new DateOnly(2024, 3, 15)),
+            CreateExpense(_testAccountId, property.Id, 300m, new DateOnly(2023, 6, 10))
         };
+
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
         var query = new GetAllPropertiesQuery(Year: 2024);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        // Year parameter is accepted (totals are placeholders for now - Epic 3/4 will implement)
         result.Items.Should().HaveCount(1);
-        result.Items[0].ExpenseTotal.Should().Be(0m);
+        result.Items[0].ExpenseTotal.Should().Be(500m);
         result.Items[0].IncomeTotal.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Handle_WithExpenses_ReturnsCorrectExpenseTotal()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var expenses = new List<Expense>
+        {
+            CreateExpense(_testAccountId, property.Id, 500.50m, new DateOnly(currentYear, 1, 15)),
+            CreateExpense(_testAccountId, property.Id, 300.25m, new DateOnly(currentYear, 2, 20)),
+            CreateExpense(_testAccountId, property.Id, 150.00m, new DateOnly(currentYear, 3, 10))
+        };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        var query = new GetAllPropertiesQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].ExpenseTotal.Should().Be(950.75m);
+    }
+
+    [Fact]
+    public async Task Handle_WithYearFilter_FiltersExpensesByYear()
+    {
+        // Arrange
+        var property1 = CreateProperty(_testAccountId, "Property 1", "Austin", "TX");
+        var property2 = CreateProperty(_testAccountId, "Property 2", "Dallas", "TX");
+        var properties = new List<Property> { property1, property2 };
+
+        var expenses = new List<Expense>
+        {
+            // Property 1 - 2024 expenses
+            CreateExpense(_testAccountId, property1.Id, 500m, new DateOnly(2024, 3, 15)),
+            CreateExpense(_testAccountId, property1.Id, 300m, new DateOnly(2024, 6, 10)),
+            // Property 1 - 2023 expenses (should be filtered out)
+            CreateExpense(_testAccountId, property1.Id, 1000m, new DateOnly(2023, 5, 20)),
+            // Property 2 - 2024 expenses
+            CreateExpense(_testAccountId, property2.Id, 750m, new DateOnly(2024, 8, 5)),
+            // Property 2 - 2025 expenses (should be filtered out)
+            CreateExpense(_testAccountId, property2.Id, 2000m, new DateOnly(2025, 1, 1))
+        };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        var query = new GetAllPropertiesQuery(Year: 2024);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        var p1 = result.Items.First(p => p.Name == "Property 1");
+        var p2 = result.Items.First(p => p.Name == "Property 2");
+        p1.ExpenseTotal.Should().Be(800m); // 500 + 300
+        p2.ExpenseTotal.Should().Be(750m);
+    }
+
+    [Fact]
+    public async Task Handle_WithExpenses_ExcludesSoftDeletedExpenses()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var activeExpense = CreateExpense(_testAccountId, property.Id, 500m, new DateOnly(currentYear, 3, 15));
+        var deletedExpense = CreateExpense(_testAccountId, property.Id, 300m, new DateOnly(currentYear, 6, 10));
+        deletedExpense.DeletedAt = DateTime.UtcNow;
+
+        var expenses = new List<Expense> { activeExpense, deletedExpense };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        var query = new GetAllPropertiesQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].ExpenseTotal.Should().Be(500m);
+    }
+
+    [Fact]
+    public async Task Handle_WithExpenses_OnlyIncludesCurrentAccountExpenses()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var expenses = new List<Expense>
+        {
+            CreateExpense(_testAccountId, property.Id, 500m, new DateOnly(currentYear, 3, 15)),
+            CreateExpense(_otherAccountId, property.Id, 1000m, new DateOnly(currentYear, 6, 10)) // Different account
+        };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        var query = new GetAllPropertiesQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].ExpenseTotal.Should().Be(500m);
     }
 
     [Fact]
@@ -189,6 +315,7 @@ public class GetAllPropertiesHandlerTests
             .Select(i => CreateProperty(_testAccountId, $"Property {i:D2}", "City", "TX"))
             .ToList();
         SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -219,5 +346,28 @@ public class GetAllPropertiesHandlerTests
     {
         var mockDbSet = properties.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
+    }
+
+    private void SetupExpensesDbSet(List<Expense> expenses)
+    {
+        var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
+    }
+
+    private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date)
+    {
+        return new Expense
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            PropertyId = propertyId,
+            CategoryId = Guid.NewGuid(),
+            Amount = amount,
+            Date = date,
+            Description = "Test expense",
+            CreatedByUserId = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
     }
 }
