@@ -51,6 +51,8 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
 
     public async Task<GetAllPropertiesResponse> Handle(GetAllPropertiesQuery request, CancellationToken cancellationToken)
     {
+        var year = request.Year ?? DateTime.UtcNow.Year;
+
         var properties = await _dbContext.Properties
             .Where(p => p.AccountId == _currentUser.AccountId && p.DeletedAt == null)
             .OrderBy(p => p.Name)
@@ -61,9 +63,15 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
                 p.City,
                 p.State,
                 p.ZipCode,
-                0m, // ExpenseTotal placeholder until Epic 3
+                _dbContext.Expenses
+                    .Where(e => e.PropertyId == p.Id
+                        && e.AccountId == _currentUser.AccountId
+                        && e.DeletedAt == null
+                        && e.Date.Year == year)
+                    .Sum(e => (decimal?)e.Amount) ?? 0m,
                 0m  // IncomeTotal placeholder until Epic 4
             ))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return new GetAllPropertiesResponse(properties, properties.Count);

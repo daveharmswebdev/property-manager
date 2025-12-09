@@ -69,6 +69,8 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
 
     public async Task<PropertyDetailDto?> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)
     {
+        var currentYear = DateTime.UtcNow.Year;
+
         var property = await _dbContext.Properties
             .Where(p => p.Id == request.Id && p.AccountId == _currentUser.AccountId && p.DeletedAt == null)
             .Select(p => new PropertyDetailDto(
@@ -78,13 +80,32 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                 p.City,
                 p.State,
                 p.ZipCode,
-                0m, // ExpenseTotal placeholder until Epic 3
+                _dbContext.Expenses
+                    .Where(e => e.PropertyId == p.Id
+                        && e.AccountId == _currentUser.AccountId
+                        && e.DeletedAt == null
+                        && e.Date.Year == currentYear)
+                    .Sum(e => (decimal?)e.Amount) ?? 0m,
                 0m, // IncomeTotal placeholder until Epic 4
                 p.CreatedAt,
                 p.UpdatedAt,
-                Array.Empty<ExpenseSummaryDto>(), // RecentExpenses placeholder until Epic 3
+                _dbContext.Expenses
+                    .Where(e => e.PropertyId == p.Id
+                        && e.AccountId == _currentUser.AccountId
+                        && e.DeletedAt == null
+                        && e.Date.Year == currentYear)
+                    .OrderByDescending(e => e.Date)
+                    .Take(5)
+                    .Select(e => new ExpenseSummaryDto(
+                        e.Id,
+                        e.Description ?? string.Empty,
+                        e.Amount,
+                        new DateTime(e.Date.Year, e.Date.Month, e.Date.Day)
+                    ))
+                    .ToList(),
                 Array.Empty<IncomeSummaryDto>()   // RecentIncome placeholder until Epic 4
             ))
+            .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
         return property;
