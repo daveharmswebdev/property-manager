@@ -102,7 +102,10 @@ describe('PropertyDetailComponent', () => {
   describe('initialization', () => {
     it('should load property on init using route param', () => {
       fixture.detectChanges();
-      expect(mockPropertyStore.loadPropertyById).toHaveBeenCalledWith('test-property-id');
+      // loadPropertyById now takes { id, year } object (AC-3.5.6)
+      expect(mockPropertyStore.loadPropertyById).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-property-id' })
+      );
     });
 
     it('should clear selected property on destroy', () => {

@@ -35,6 +35,32 @@ public class ExpensesController : ControllerBase
     }
 
     /// <summary>
+    /// Get expense totals for a given year with per-property breakdown (AC-3.5.2, AC-3.5.4).
+    /// </summary>
+    /// <param name="year">Tax year (defaults to current year)</param>
+    /// <returns>Total expenses and per-property breakdown</returns>
+    /// <response code="200">Returns expense totals (returns $0 if no expenses)</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("expenses/totals")]
+    [ProducesResponseType(typeof(ExpenseTotalsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetExpenseTotals([FromQuery] int? year = null)
+    {
+        var effectiveYear = year ?? DateTime.UtcNow.Year;
+        var query = new GetExpenseTotalsQuery(effectiveYear);
+        var response = await _mediator.Send(query);
+
+        _logger.LogInformation(
+            "Retrieved expense totals for year {Year}: Total={TotalExpenses}, Properties={PropertyCount} at {Timestamp}",
+            effectiveYear,
+            response.TotalExpenses,
+            response.ByProperty.Count,
+            DateTime.UtcNow);
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Get all expenses across all properties with filtering and pagination (AC-3.4.1, AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.8).
     /// </summary>
     /// <param name="dateFrom">Optional: Filter start date</param>

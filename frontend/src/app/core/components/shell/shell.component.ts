@@ -11,6 +11,7 @@ import { map } from 'rxjs';
 
 import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
+import { YearSelectorComponent } from '../../../shared/components/year-selector/year-selector.component';
 
 /**
  * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3)
@@ -34,6 +35,7 @@ import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
     MatToolbarModule,
     SidebarNavComponent,
     BottomNavComponent,
+    YearSelectorComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',

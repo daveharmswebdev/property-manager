@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, CurrencyPipe, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PropertyStore } from '../stores/property.store';
+import { YearSelectorService } from '../../../core/services/year-selector.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -483,13 +484,24 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   private readonly location = inject(Location);
   private readonly dialog = inject(MatDialog);
   readonly propertyStore = inject(PropertyStore);
+  readonly yearService = inject(YearSelectorService);
+
+  private propertyId: string | null = null;
+
+  constructor() {
+    // React to year changes and reload property detail (AC-3.5.6)
+    effect(() => {
+      const year = this.yearService.selectedYear();
+      if (this.propertyId) {
+        this.propertyStore.loadPropertyById({ id: this.propertyId, year });
+      }
+    });
+  }
 
   ngOnInit(): void {
     // Get property ID from route and load (AC-2.3.1)
-    const propertyId = this.route.snapshot.paramMap.get('id');
-    if (propertyId) {
-      this.propertyStore.loadPropertyById(propertyId);
-    }
+    this.propertyId = this.route.snapshot.paramMap.get('id');
+    // Initial load happens via effect when selectedYear signal is read
   }
 
   ngOnDestroy(): void {

@@ -32,6 +32,14 @@
   }
 }
 
+// Year selector container (AC-3.5.1)
+.year-selector-container {
+  display: flex;
+  padding: 8px 16px 16px;
+  // Align the calendar icon with the nav item icons (they have 8px margin + 16px padding)
+  padding-left: 24px;
+}
+
 // Navigation list
 .nav-list {
   padding: 8px 0;

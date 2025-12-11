@@ -9,7 +9,8 @@ namespace PropertyManager.Application.Properties;
 /// Returns null if property doesn't exist or belongs to different account (AC-2.3.6).
 /// </summary>
 /// <param name="Id">Property GUID</param>
-public record GetPropertyByIdQuery(Guid Id) : IRequest<PropertyDetailDto?>;
+/// <param name="Year">Optional tax year filter (defaults to current year) (AC-3.5.6)</param>
+public record GetPropertyByIdQuery(Guid Id, int? Year = null) : IRequest<PropertyDetailDto?>;
 
 /// <summary>
 /// Detail DTO for property view page (AC-2.3.2).
@@ -69,7 +70,10 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
 
     public async Task<PropertyDetailDto?> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)
     {
-        var currentYear = DateTime.UtcNow.Year;
+        // Use provided year or default to current year (AC-3.5.6)
+        var year = request.Year ?? DateTime.UtcNow.Year;
+        var yearStart = new DateOnly(year, 1, 1);
+        var yearEnd = new DateOnly(year, 12, 31);
 
         var property = await _dbContext.Properties
             .Where(p => p.Id == request.Id && p.AccountId == _currentUser.AccountId && p.DeletedAt == null)
@@ -84,7 +88,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                     .Where(e => e.PropertyId == p.Id
                         && e.AccountId == _currentUser.AccountId
                         && e.DeletedAt == null
-                        && e.Date.Year == currentYear)
+                        && e.Date >= yearStart && e.Date <= yearEnd)
                     .Sum(e => (decimal?)e.Amount) ?? 0m,
                 0m, // IncomeTotal placeholder until Epic 4
                 p.CreatedAt,
@@ -93,7 +97,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                     .Where(e => e.PropertyId == p.Id
                         && e.AccountId == _currentUser.AccountId
                         && e.DeletedAt == null
-                        && e.Date.Year == currentYear)
+                        && e.Date >= yearStart && e.Date <= yearEnd)
                     .OrderByDescending(e => e.Date)
                     .Take(5)
                     .Select(e => new ExpenseSummaryDto(

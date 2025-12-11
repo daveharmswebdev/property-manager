@@ -309,3 +309,17 @@ a {
     }
   }
 }
+
+// Year selector dropdown panel - ensure full year is visible
+.year-selector-panel {
+  min-width: 100px !important;
+
+  .mat-mdc-option {
+    min-width: 90px;
+
+    .mdc-list-item__primary-text {
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+  }
+}

@@ -51,6 +51,29 @@
     font-size: 18px;
     font-weight: 500;
   }
+
+  .spacer {
+    flex: 1 1 auto;
+  }
+}
+
+// Mobile header with year selector (AC-3.5.1)
+.mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--pm-sidebar-bg) !important;
+  color: var(--pm-sidebar-text) !important;
+  box-shadow: var(--pm-shadow-2);
+
+  .header-title {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .spacer {
+    flex: 1 1 auto;
+  }
 }
 
 .content-area {
@@ -60,6 +83,11 @@
   // When tablet header is visible, adjust top padding
   &.with-tablet-header {
     padding-top: 24px;
+  }
+
+  // When mobile header is visible, adjust top padding
+  &.with-mobile-header {
+    padding-top: 16px;
   }
 
   // Responsive padding adjustments

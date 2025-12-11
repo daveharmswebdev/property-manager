@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../core/services/auth.service';
+import { YearSelectorService } from '../../core/services/year-selector.service';
 import { PropertyStore } from '../properties/stores/property.store';
 import { StatsBarComponent } from '../../shared/components/stats-bar/stats-bar.component';
 import { PropertyRowComponent } from '../../shared/components/property-row/property-row.component';
@@ -180,15 +181,24 @@ export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly propertyStore = inject(PropertyStore);
+  readonly yearService = inject(YearSelectorService);
 
   readonly currentUser = this.authService.currentUser;
 
+  constructor() {
+    // React to year changes and reload properties (AC-3.5.3)
+    effect(() => {
+      const year = this.yearService.selectedYear();
+      this.propertyStore.loadProperties(year);
+    });
+  }
+
   ngOnInit(): void {
-    this.loadProperties();
+    // Initial load happens via effect when selectedYear signal is read
   }
 
   loadProperties(): void {
-    this.propertyStore.loadProperties(undefined);
+    this.propertyStore.loadProperties(this.yearService.selectedYear());
   }
 
   navigateToProperty(propertyId: string): void {

@@ -59,9 +59,10 @@ public class PropertiesController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single property by ID (AC-2.3.2, AC-2.3.5, AC-2.3.6).
+    /// Get a single property by ID (AC-2.3.2, AC-2.3.5, AC-2.3.6, AC-3.5.6).
     /// </summary>
     /// <param name="id">Property GUID</param>
+    /// <param name="year">Optional tax year filter for expense totals (defaults to current year)</param>
     /// <returns>Property detail information</returns>
     /// <response code="200">Returns the property detail</response>
     /// <response code="401">If user is not authenticated</response>
@@ -70,9 +71,9 @@ public class PropertiesController : ControllerBase
     [ProducesResponseType(typeof(PropertyDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPropertyById(Guid id)
+    public async Task<IActionResult> GetPropertyById(Guid id, [FromQuery] int? year = null)
     {
-        var query = new GetPropertyByIdQuery(id);
+        var query = new GetPropertyByIdQuery(id, year);
         var property = await _mediator.Send(query);
 
         if (property == null)

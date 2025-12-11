@@ -22,6 +22,7 @@ export interface IApiClient {
     auth_Logout(): Observable<void>;
     auth_ForgotPassword(request: ForgotPasswordRequest): Observable<void>;
     auth_ResetPassword(request: ResetPasswordRequest): Observable<void>;
+    expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto>;
     expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
     expenses_CreateExpense(request: CreateExpenseRequest): Observable<CreateExpenseResponse>;
     expenses_GetExpenseCategories(): Observable<ExpenseCategoriesResponse>;
@@ -33,7 +34,7 @@ export interface IApiClient {
     health_Ready(): Observable<ReadyResponse>;
     properties_GetAllProperties(year?: number | null | undefined): Observable<GetAllPropertiesResponse>;
     properties_CreateProperty(request: CreatePropertyRequest): Observable<CreatePropertyResponse>;
-    properties_GetPropertyById(id: string): Observable<PropertyDetailDto>;
+    properties_GetPropertyById(id: string, year?: number | null | undefined): Observable<PropertyDetailDto>;
     properties_UpdateProperty(id: string, request: UpdatePropertyRequest): Observable<void>;
     properties_DeleteProperty(id: string): Observable<void>;
 }
@@ -434,6 +435,62 @@ export class ApiClient implements IApiClient {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto> {
+        let url_ = this.baseUrl + "/api/v1/expenses/totals?";
+        if (year !== undefined && year !== null)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExpenses_GetExpenseTotals(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExpenses_GetExpenseTotals(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ExpenseTotalsDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ExpenseTotalsDto>;
+        }));
+    }
+
+    protected processExpenses_GetExpenseTotals(response: HttpResponseBase): Observable<ExpenseTotalsDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ExpenseTotalsDto;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1119,11 +1176,13 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
-    properties_GetPropertyById(id: string): Observable<PropertyDetailDto> {
-        let url_ = this.baseUrl + "/api/v1/properties/{id}";
+    properties_GetPropertyById(id: string, year?: number | null | undefined): Observable<PropertyDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/properties/{id}?";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (year !== undefined && year !== null)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -1371,6 +1430,18 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
     token?: string;
     newPassword?: string;
+}
+
+export interface ExpenseTotalsDto {
+    totalExpenses?: number;
+    year?: number;
+    byProperty?: PropertyExpenseTotal[];
+}
+
+export interface PropertyExpenseTotal {
+    propertyId?: string;
+    propertyName?: string;
+    total?: number;
 }
 
 export interface PagedResultOfExpenseListItemDto {

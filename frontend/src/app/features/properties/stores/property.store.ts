@@ -189,10 +189,10 @@ export const PropertyStore = signalStore(
     },
 
     /**
-     * Load a single property by ID (AC-2.3.2, AC-2.3.5)
-     * @param id Property GUID
+     * Load a single property by ID (AC-2.3.2, AC-2.3.5, AC-3.5.6)
+     * @param params Object containing id and optional year filter
      */
-    loadPropertyById: rxMethod<string>(
+    loadPropertyById: rxMethod<{ id: string; year?: number }>(
       pipe(
         tap(() =>
           patchState(store, {
@@ -201,8 +201,8 @@ export const PropertyStore = signalStore(
             selectedProperty: null,
           })
         ),
-        switchMap((id) =>
-          propertyService.getPropertyById(id).pipe(
+        switchMap(({ id, year }) =>
+          propertyService.getPropertyById(id, year).pipe(
             tap((property) =>
               patchState(store, {
                 selectedProperty: property,
