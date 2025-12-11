@@ -79,12 +79,14 @@ export class PropertyService {
   }
 
   /**
-   * Get a single property by ID (AC-2.3.5).
+   * Get a single property by ID (AC-2.3.5, AC-3.5.6).
    * @param id Property GUID
+   * @param year Optional tax year filter for expense/income totals
    * @returns Observable with property detail or 404 error
    */
-  getPropertyById(id: string): Observable<PropertyDetailDto> {
-    return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`);
+  getPropertyById(id: string, year?: number): Observable<PropertyDetailDto> {
+    const params = year ? { year: year.toString() } : undefined;
+    return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`, { params });
   }
 
   /**

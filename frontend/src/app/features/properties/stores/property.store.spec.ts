@@ -281,7 +281,7 @@ describe('PropertyStore', () => {
 
   describe('loadPropertyById', () => {
     it('should load property successfully', async () => {
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(store.selectedProperty()).toEqual(mockPropertyDetail);
@@ -290,17 +290,24 @@ describe('PropertyStore', () => {
     });
 
     it('should call service with property ID', async () => {
-      store.loadPropertyById('test-id');
+      store.loadPropertyById({ id: 'test-id' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id');
+      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', undefined);
+    });
+
+    it('should call service with property ID and year', async () => {
+      store.loadPropertyById({ id: 'test-id', year: 2024 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', 2024);
     });
 
     it('should handle 404 error with specific message', async () => {
       const error404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
       propertyServiceSpy.getPropertyById.mockReturnValue(throwError(() => error404));
 
-      store.loadPropertyById('non-existent-id');
+      store.loadPropertyById({ id: 'non-existent-id' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(store.detailError()).toBe('Property not found');
@@ -312,7 +319,7 @@ describe('PropertyStore', () => {
       const error500 = new HttpErrorResponse({ status: 500, statusText: 'Server Error' });
       propertyServiceSpy.getPropertyById.mockReturnValue(throwError(() => error500));
 
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(store.detailError()).toBe('Failed to load property. Please try again.');
@@ -322,14 +329,14 @@ describe('PropertyStore', () => {
     it('should set loading state while fetching', () => {
       propertyServiceSpy.getPropertyById.mockReturnValue(of(mockPropertyDetail).pipe(delay(100)));
 
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
 
       expect(store.isLoadingDetail()).toBe(true);
     });
 
     it('should clear previous property and error before loading', async () => {
       // First load a property
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
       expect(store.selectedProperty()).not.toBeNull();
 
@@ -340,7 +347,7 @@ describe('PropertyStore', () => {
         name: 'New Property',
       }).pipe(delay(50)));
 
-      store.loadPropertyById('2');
+      store.loadPropertyById({ id: '2' });
       // During loading (before response), selectedProperty should be cleared
       expect(store.selectedProperty()).toBeNull();
       expect(store.isLoadingDetail()).toBe(true);
@@ -357,7 +364,7 @@ describe('PropertyStore', () => {
     });
 
     it('should calculate net income correctly', async () => {
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       // incomeTotal (3000) - expenseTotal (1500) = 1500
@@ -371,7 +378,7 @@ describe('PropertyStore', () => {
     });
 
     it('should format address correctly', async () => {
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(store.selectedPropertyFullAddress()).toBe('123 Oak St, Austin, TX 78701');
@@ -380,7 +387,7 @@ describe('PropertyStore', () => {
 
   describe('clearSelectedProperty', () => {
     it('should clear selected property and error', async () => {
-      store.loadPropertyById('1');
+      store.loadPropertyById({ id: '1' });
       await new Promise(resolve => setTimeout(resolve, 0));
       expect(store.selectedProperty()).not.toBeNull();
 
@@ -396,7 +403,7 @@ describe('PropertyStore', () => {
       const error404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
       propertyServiceSpy.getPropertyById.mockReturnValue(throwError(() => error404));
 
-      store.loadPropertyById('non-existent-id');
+      store.loadPropertyById({ id: 'non-existent-id' });
       await new Promise(resolve => setTimeout(resolve, 0));
       expect(store.detailError()).not.toBeNull();
 
