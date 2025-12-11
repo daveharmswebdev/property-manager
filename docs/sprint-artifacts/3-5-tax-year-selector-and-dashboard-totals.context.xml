@@ -1,0 +1,429 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>5</storyId>
+    <title>Tax Year Selector and Dashboard Totals</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-09</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-5-tax-year-selector-and-dashboard-totals.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>to select which tax year I'm viewing and see accurate expense totals</iWant>
+    <soThat>I can track spending by tax year and answer "how much have we spent?"</soThat>
+    <tasks>
+      <task id="1" title="Create GetExpenseTotals Query and Handler (AC: 3.5.2, 3.5.4)">
+        <subtask>Create GetExpenseTotals.cs in Application/Expenses/</subtask>
+        <subtask>Define GetExpenseTotalsQuery(int year) : IRequest&lt;ExpenseTotalsDto&gt;</subtask>
+        <subtask>Create ExpenseTotalsDto with: TotalExpenses (decimal), Year (int), ByProperty (List&lt;PropertyExpenseTotal&gt;)</subtask>
+        <subtask>Create PropertyExpenseTotal with: PropertyId, PropertyName, Total</subtask>
+        <subtask>Handler calculates SUM(Amount) grouped by PropertyId for given year</subtask>
+        <subtask>Filter by AccountId via global query filter</subtask>
+        <subtask>Filter by date range: Jan 1 - Dec 31 of selected year</subtask>
+        <subtask>Use .AsNoTracking() for performance</subtask>
+        <subtask>Write unit tests for GetExpenseTotalsHandler</subtask>
+      </task>
+      <task id="2" title="Add GET /expenses/totals Endpoint (AC: 3.5.2, 3.5.4)">
+        <subtask>Add GET /api/v1/expenses/totals endpoint to ExpensesController</subtask>
+        <subtask>Query parameter: year (int, defaults to current year)</subtask>
+        <subtask>Return ExpenseTotalsDto with total and per-property breakdown</subtask>
+        <subtask>Response format: { totalExpenses, year, byProperty: [...] }</subtask>
+        <subtask>Update Swagger documentation</subtask>
+        <subtask>Write integration test for endpoint</subtask>
+      </task>
+      <task id="3" title="Generate TypeScript API Client">
+        <subtask>Run NSwag to generate updated TypeScript client</subtask>
+        <subtask>Verify getExpenseTotals(year: number) method generated</subtask>
+        <subtask>Verify ExpenseTotalsDto response type generated</subtask>
+      </task>
+      <task id="4" title="Create YearSelectorService for Global State (AC: 3.5.3, 3.5.5)">
+        <subtask>Create year-selector.service.ts in core/services/</subtask>
+        <subtask>Use @ngrx/signals for reactive state management</subtask>
+        <subtask>State: selectedYear (number), initialized to current year</subtask>
+        <subtask>Methods: setYear(year: number), getYear() (signal)</subtask>
+        <subtask>Compute available years: current year + 5 previous years</subtask>
+        <subtask>Provide service at root level for global access</subtask>
+      </task>
+      <task id="5" title="Create YearSelectorComponent (AC: 3.5.1)">
+        <subtask>Create year-selector/ directory in shared/components/</subtask>
+        <subtask>Create year-selector.component.ts with mat-select dropdown</subtask>
+        <subtask>Display years in descending order (newest first)</subtask>
+        <subtask>Bind to YearSelectorService for getting/setting year</subtask>
+        <subtask>Style consistent with Forest Green theme</subtask>
+        <subtask>Compact design suitable for toolbar/header placement</subtask>
+        <subtask>Mobile-responsive design</subtask>
+        <subtask>Write component tests</subtask>
+      </task>
+      <task id="6" title="Integrate Year Selector into App Shell (AC: 3.5.1, 3.5.5)">
+        <subtask>Add YearSelectorComponent to the main app layout/shell (ShellComponent)</subtask>
+        <subtask>Position in toolbar/header area - visible on ALL authenticated pages</subtask>
+        <subtask>Ensure it appears consistently on Dashboard, Properties, Property Detail, Expenses, etc.</subtask>
+        <subtask>Test on desktop: visible in sidebar header or main toolbar</subtask>
+        <subtask>Test on mobile: visible in top toolbar or accessible location</subtask>
+        <subtask>Ensure year selection is prominent and accessible from any page</subtask>
+      </task>
+      <task id="7" title="Update StatsBarComponent with Real Totals (AC: 3.5.2, 3.5.3)">
+        <subtask>Modify StatsBarComponent to inject YearSelectorService</subtask>
+        <subtask>Add API call to fetch expense totals for selected year</subtask>
+        <subtask>Display "Total Expenses YTD" with real calculated value</subtask>
+        <subtask>Show loading state while fetching</subtask>
+        <subtask>React to year changes (rxMethod or effect)</subtask>
+        <subtask>Format amount with currency: $X,XXX.XX</subtask>
+        <subtask>Write component tests</subtask>
+      </task>
+      <task id="8" title="Update PropertyRowComponent with Real Expense Totals (AC: 3.5.4)">
+        <subtask>Verify PropertyRowComponent already accepts expense total as input (it does)</subtask>
+        <subtask>Ensure display format is consistent: $X,XXX.XX</subtask>
+        <subtask>Ensure $0.00 displays correctly for properties with no expenses</subtask>
+        <subtask>No changes needed if already properly implemented</subtask>
+      </task>
+      <task id="9" title="Update Dashboard to Use Expense Totals (AC: 3.5.3, 3.5.4)">
+        <subtask>Dashboard component subscribes to year selector changes via YearSelectorService</subtask>
+        <subtask>Fetch expense totals when year changes (or on init with current year)</subtask>
+        <subtask>Pass per-property totals to PropertyRowComponents</subtask>
+        <subtask>Handle loading states</subtask>
+        <subtask>Handle error states gracefully</subtask>
+      </task>
+      <task id="10" title="Update Properties List Page to Use Year Filter (AC: 3.5.4, 3.5.8)">
+        <subtask>Modify PropertiesComponent (/properties) to inject YearSelectorService</subtask>
+        <subtask>Subscribe to year changes and reload properties with year filter</subtask>
+        <subtask>Pass year parameter to propertyStore.loadProperties(year)</subtask>
+        <subtask>Property rows display expense totals filtered by selected year</subtask>
+        <subtask>Ensure reactive update when year selector changes (no page refresh)</subtask>
+        <subtask>Test: navigate to Properties page, change year, verify totals update</subtask>
+      </task>
+      <task id="11" title="Update Property Detail Page (AC: 3.5.6, 3.5.7)">
+        <subtask>Property detail reads selected year from global state</subtask>
+        <subtask>Display expense total for selected year in header</subtask>
+        <subtask>Filter recent expenses list to selected year</subtask>
+        <subtask>Update when year selection changes</subtask>
+        <subtask>Show appropriate empty state for no expenses in year</subtask>
+      </task>
+      <task id="12" title="Write Unit Tests">
+        <subtask>Backend: GetExpenseTotalsHandlerTests (5+ tests)</subtask>
+        <subtask>Frontend: YearSelectorService tests</subtask>
+        <subtask>Frontend: YearSelectorComponent tests</subtask>
+        <subtask>Frontend: StatsBarComponent tests with real totals</subtask>
+      </task>
+      <task id="13" title="Write Integration Tests">
+        <subtask>Backend: GET /expenses/totals endpoint tests</subtask>
+        <subtask>E2E: Year selector changes update dashboard totals</subtask>
+        <subtask>E2E: Year selector changes update Properties List page totals</subtask>
+        <subtask>E2E: Navigate between pages, verify year persists</subtask>
+      </task>
+      <task id="14" title="Run Tests and Validate">
+        <subtask>All backend tests pass</subtask>
+        <subtask>All frontend tests pass</subtask>
+        <subtask>Manual verification per checklist</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.5.1" title="Year selector in app shell (visible on all pages)">
+      <requirement>Year selector dropdown placed in the app shell/layout (e.g., toolbar or header area)</requirement>
+      <requirement>Visible on ALL authenticated pages: Dashboard, Properties, Property Detail, Expenses, etc.</requirement>
+      <requirement>Defaults to current calendar year (2025)</requirement>
+      <requirement>Shows available years: current year + 5 previous years (2020-2025)</requirement>
+      <requirement>Selection is clear and accessible</requirement>
+      <requirement>Mobile-friendly dropdown styling (works in both sidebar and bottom nav contexts)</requirement>
+    </criterion>
+    <criterion id="AC-3.5.2" title="Stats bar displays 'Total Expenses YTD' with real sum">
+      <requirement>Stats bar shows actual calculated expense total (not placeholder)</requirement>
+      <requirement>Format: "$X,XXX.XX" with currency symbol and comma separators</requirement>
+      <requirement>Label: "Total Expenses YTD" or "Total Expenses {Year}"</requirement>
+      <requirement>Updates immediately when year changes</requirement>
+      <requirement>Shows $0.00 when no expenses for selected year</requirement>
+    </criterion>
+    <criterion id="AC-3.5.3" title="Changing year updates all totals and lists across all pages">
+      <requirement>Year change triggers refresh of all expense-related data on current page</requirement>
+      <requirement>Dashboard stats bar totals update</requirement>
+      <requirement>Dashboard property list expense totals update</requirement>
+      <requirement>Properties List page (/properties) expense totals update</requirement>
+      <requirement>All expense lists respect the year filter</requirement>
+      <requirement>No page refresh required - reactive update</requirement>
+    </criterion>
+    <criterion id="AC-3.5.4" title="Property lists show per-property expense totals for selected year">
+      <requirement>Each property row displays its expense total for the selected year</requirement>
+      <requirement>Applies to BOTH Dashboard property list AND Properties page (/properties)</requirement>
+      <requirement>Format: "$X,XXX.XX"</requirement>
+      <requirement>Shows $0.00 for properties with no expenses in selected year</requirement>
+      <requirement>Totals are accurate (sum of all expenses for that property in that year)</requirement>
+    </criterion>
+    <criterion id="AC-3.5.5" title="Year selection persists during navigation session">
+      <requirement>Selected year stored in application state (not localStorage for MVP)</requirement>
+      <requirement>Navigating between pages maintains the year selection</requirement>
+      <requirement>Year selection resets to current year on new session/login</requirement>
+      <requirement>State persists across Dashboard, Properties, Expenses, Property Detail, etc.</requirement>
+    </criterion>
+    <criterion id="AC-3.5.6" title="Property detail page shows expense total for selected year">
+      <requirement>Property detail page header displays expense total for selected year</requirement>
+      <requirement>Same year context as app shell selector (from global state)</requirement>
+      <requirement>Format consistent with other pages: "$X,XXX.XX"</requirement>
+      <requirement>Updates when global year selection changes</requirement>
+    </criterion>
+    <criterion id="AC-3.5.7" title="Property detail shows recent expenses list for selected year">
+      <requirement>Recent expenses section filters to selected year only</requirement>
+      <requirement>Shows most recent expenses (limit 5-10) for that property in that year</requirement>
+      <requirement>Empty state: "No expenses recorded in {year}" if no expenses</requirement>
+      <requirement>Quick-add expense button still available</requirement>
+    </criterion>
+    <criterion id="AC-3.5.8" title="Properties List page (/properties) respects year selection">
+      <requirement>Properties page reads selected year from global state</requirement>
+      <requirement>Property rows display expense totals filtered by selected year</requirement>
+      <requirement>Changing year in app shell updates the Properties List immediately</requirement>
+      <requirement>Same visual behavior as Dashboard property list</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic Technical Specification: Expense Tracking</title>
+        <section>AC-3.5: Tax Year Selector and Dashboard Totals</section>
+        <snippet>AC-3.5.1-3.5.7 define dashboard year selector, stats bar real totals, year change updates, per-property totals, and property detail year filtering. ExpenseTotalsDto defined with TotalExpenses, Year, ByProperty.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic Technical Specification: Expense Tracking</title>
+        <section>APIs and Interfaces</section>
+        <snippet>GET /api/v1/expenses/totals?year={year} returns ExpenseTotalsDto with total expenses, year, and per-property breakdown. Query parameter year (int, defaults to current year).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic Technical Specification: Expense Tracking</title>
+        <section>Data Models and Contracts</section>
+        <snippet>ExpenseTotalsDto(TotalExpenses decimal, Year int, ByProperty List&lt;PropertyExpenseTotal&gt;). PropertyExpenseTotal(PropertyId Guid, PropertyName string, Total decimal).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic Technical Specification: Expense Tracking</title>
+        <section>Workflows and Sequencing - Dashboard Totals Update Flow</section>
+        <snippet>Dashboard loads OR year selector changes -> Frontend calls GET /expenses/totals?year={year} -> Backend calculates SUM(Amount), groups by PropertyId -> Frontend updates StatsBarComponent and PropertyRowComponent totals.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Error Handling Pattern</section>
+        <snippet>Global Exception Handler Middleware eliminates try-catch in controllers. NotFoundException -> 404, ValidationException -> 400. Controllers just call MediatR - middleware handles exceptions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>Frontend Structure (Feature-Based)</section>
+        <snippet>core/services/ for global services, shared/components/ for reusable components, features/ for feature modules. StatsBarComponent in shared/components/stats-bar/.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager - Architecture</title>
+        <section>CQRS Pattern</section>
+        <snippet>Commands and queries in Application layer. Queries return DTOs directly. Handlers registered via assembly scanning. Use .AsNoTracking() for read queries.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Property Manager - Product Requirements Document</title>
+        <section>Dashboard &amp; Views (FR38-48)</section>
+        <snippet>FR38: Dashboard displays total expenses YTD. FR43: Property detail shows expense total. FR47: Users can select which tax year to view. FR48: All totals and lists respect selected tax year filter.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 3: Expense Tracking</title>
+        <section>Story 3.5</section>
+        <snippet>Story 3.5: Tax Year Selector and Dashboard Totals - Add year selector, show real expense totals on dashboard and property pages, persist year selection during session.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>backend/src/PropertyManager.Application/Expenses/GetAllExpenses.cs</path>
+        <kind>query</kind>
+        <symbol>GetAllExpensesQuery, GetAllExpensesHandler, PagedResult&lt;T&gt;</symbol>
+        <lines>1-145</lines>
+        <reason>Reference pattern for expense query with year filtering, date range filtering, pagination. Contains reusable PagedResult&lt;T&gt; type.</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+        <kind>controller</kind>
+        <symbol>ExpensesController</symbol>
+        <lines>1-332</lines>
+        <reason>Add GET /expenses/totals endpoint here. Reference patterns for query parameters, validation, logging, response types.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/shared/components/stats-bar/stats-bar.component.ts</path>
+        <kind>component</kind>
+        <symbol>StatsBarComponent</symbol>
+        <lines>1-167</lines>
+        <reason>Update to inject YearSelectorService, fetch real expense totals from API, react to year changes. Currently displays static values from inputs.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/dashboard/dashboard.component.ts</path>
+        <kind>component</kind>
+        <symbol>DashboardComponent</symbol>
+        <lines>1-198</lines>
+        <reason>Update to subscribe to YearSelectorService, pass year to loadProperties, pass per-property totals from expense totals API.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/stores/property.store.ts</path>
+        <kind>store</kind>
+        <symbol>PropertyStore</symbol>
+        <lines>1-355</lines>
+        <reason>Reference @ngrx/signals pattern. Already has selectedYear in state. loadProperties accepts year parameter. Follow this pattern for YearSelectorService.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/properties.component.ts</path>
+        <kind>component</kind>
+        <symbol>PropertiesComponent</symbol>
+        <lines>1-168</lines>
+        <reason>Update to inject YearSelectorService, subscribe to year changes, pass year to loadProperties(year).</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/properties/property-detail/property-detail.component.ts</path>
+        <kind>component</kind>
+        <symbol>PropertyDetailComponent</symbol>
+        <lines>1-539</lines>
+        <reason>Update to read selected year from global state, filter recentExpenses by year, update expense total when year changes.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/shared/components/property-row/property-row.component.ts</path>
+        <kind>component</kind>
+        <symbol>PropertyRowComponent</symbol>
+        <lines>1-234</lines>
+        <reason>Already accepts expenseTotal input. Verify display format. No changes likely needed.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/core/components/shell/shell.component.ts</path>
+        <kind>layout</kind>
+        <symbol>ShellComponent</symbol>
+        <lines>1-104</lines>
+        <reason>Year selector should be integrated into the shell template (toolbar area) to be visible on all authenticated pages.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/core/components/shell/shell.component.html</path>
+        <kind>template</kind>
+        <symbol>ShellComponent template</symbol>
+        <lines>1-43</lines>
+        <reason>Add year selector to tablet-header toolbar and/or sidebar-nav. Must be visible on all breakpoints (desktop, tablet, mobile).</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/core/services/auth.service.ts</path>
+        <kind>service</kind>
+        <symbol>AuthService</symbol>
+        <lines>all</lines>
+        <reason>Reference pattern for root-provided service. YearSelectorService should follow similar pattern.</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/app.routes.ts</path>
+        <kind>routes</kind>
+        <symbol>routes</symbol>
+        <lines>1-160</lines>
+        <reason>All authenticated routes wrapped in ShellComponent layout. Year selector in shell will be visible across Dashboard, Properties, Property Detail, Expenses, etc.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <ecosystem name="dotnet">
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling" />
+        <package name="FluentValidation" version="11.x" purpose="Request validation" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" purpose="ORM, query building" />
+        <package name="Npgsql.EntityFrameworkCore.PostgreSQL" version="10.x" purpose="PostgreSQL provider" />
+        <package name="Serilog" version="4.x" purpose="Structured logging" />
+      </ecosystem>
+      <ecosystem name="npm">
+        <package name="@angular/core" version="^20.3.0" purpose="Framework" />
+        <package name="@angular/material" version="^20.2.14" purpose="UI components (mat-select for year dropdown)" />
+        <package name="@ngrx/signals" version="^20.1.0" purpose="Signal-based state management" />
+        <package name="rxjs" version="~7.8.0" purpose="Reactive extensions" />
+        <package name="vitest" version="^3.2.4" purpose="Frontend unit tests" />
+        <package name="@playwright/test" version="^1.57.0" purpose="E2E tests" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Backend follows Clean Architecture - Query in Application/Expenses/, Controller in Api/Controllers/</constraint>
+    <constraint type="architecture">Frontend uses @ngrx/signals for state management, root-provided services for global state</constraint>
+    <constraint type="pattern">CQRS: Queries return DTOs directly, use .AsNoTracking() for read operations</constraint>
+    <constraint type="pattern">Controllers do NOT need try-catch blocks - GlobalExceptionHandlerMiddleware handles exceptions</constraint>
+    <constraint type="pattern">Return 200 OK with empty/zero totals when no data (not 404)</constraint>
+    <constraint type="pattern">Multi-tenant: AccountId filtering via EF Core global query filters (automatic)</constraint>
+    <constraint type="pattern">Year filtering: DateOnly comparisons for Jan 1 - Dec 31 of selected year</constraint>
+    <constraint type="pattern">Tax year = calendar year (not fiscal year)</constraint>
+    <constraint type="testing">Unit tests with xUnit (backend), Vitest (frontend)</constraint>
+    <constraint type="testing">Integration tests with Testcontainers for API endpoints</constraint>
+    <constraint type="testing">E2E tests with Playwright for critical user flows</constraint>
+    <constraint type="naming">Backend: PascalCase for classes/methods, _camelCase for private fields</constraint>
+    <constraint type="naming">Frontend: kebab-case for files, PascalCase for classes, camelCase for JSON</constraint>
+    <constraint type="ux">Year selector must be visible on ALL authenticated pages (app shell integration)</constraint>
+    <constraint type="ux">Reactive updates - no page refresh when year changes</constraint>
+    <constraint type="ux">Mobile-friendly dropdown design</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/expenses/totals</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/expenses/totals?year={int}</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+    </interface>
+    <interface>
+      <name>GetExpenseTotalsQuery</name>
+      <kind>CQRS query</kind>
+      <signature>public record GetExpenseTotalsQuery(int Year) : IRequest&lt;ExpenseTotalsDto&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/GetExpenseTotals.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>ExpenseTotalsDto</name>
+      <kind>DTO</kind>
+      <signature>public record ExpenseTotalsDto(decimal TotalExpenses, int Year, List&lt;PropertyExpenseTotal&gt; ByProperty)</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/GetExpenseTotals.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>PropertyExpenseTotal</name>
+      <kind>DTO</kind>
+      <signature>public record PropertyExpenseTotal(Guid PropertyId, string PropertyName, decimal Total)</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/GetExpenseTotals.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>YearSelectorService</name>
+      <kind>Angular service</kind>
+      <signature>selectedYear: Signal&lt;number&gt;, setYear(year: number): void, availableYears: Signal&lt;number[]&gt;</signature>
+      <path>frontend/src/app/core/services/year-selector.service.ts (to create)</path>
+    </interface>
+    <interface>
+      <name>YearSelectorComponent</name>
+      <kind>Angular component</kind>
+      <signature>app-year-selector - dropdown with year selection, emits changes via service</signature>
+      <path>frontend/src/app/shared/components/year-selector/year-selector.component.ts (to create)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend tests use xUnit with TestContainers for integration tests against real PostgreSQL. Unit tests mock IAppDbContext.
+      Frontend tests use Vitest with Testing Library patterns. Component tests focus on user behavior.
+      E2E tests use Playwright. Follow existing test naming: Method_Scenario_ExpectedResult.
+      Test coverage targets: 90% backend handlers, 80% frontend components.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/</location>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>frontend/src/app/**/*.spec.ts</location>
+      <location>frontend/e2e/</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-3.5.1">YearSelectorComponent: Should display year dropdown, default to current year, show 6 years (current + 5 previous), emit year change on selection</idea>
+      <idea ac="AC-3.5.2">GetExpenseTotalsHandler: Handle_CurrentYear_ReturnsTotals, Handle_NoExpenses_ReturnsZero, Handle_MultipleProperties_ReturnsPerPropertyTotals</idea>
+      <idea ac="AC-3.5.2">GET /expenses/totals endpoint: Returns totals for specified year, returns $0 when no expenses, respects account isolation</idea>
+      <idea ac="AC-3.5.3">StatsBarComponent: Should display total expenses, format amount with currency, update when year changes, show loading state</idea>
+      <idea ac="AC-3.5.4">Dashboard integration test: Property rows show correct per-property totals from expense totals API</idea>
+      <idea ac="AC-3.5.5">YearSelectorService: Should initialize with current year, update selectedYear on setYear, provide reactive signal</idea>
+      <idea ac="AC-3.5.5">E2E: Navigate between pages, verify year selection persists in app shell</idea>
+      <idea ac="AC-3.5.6">PropertyDetailComponent: Should show expense total for selected year, update when year changes</idea>
+      <idea ac="AC-3.5.7">PropertyDetailComponent: Recent expenses filtered by year, empty state when no expenses in selected year</idea>
+      <idea ac="AC-3.5.8">PropertiesComponent: Subscribe to year changes, reload with year filter, property totals update without page refresh</idea>
+    </ideas>
+  </tests>
+</story-context>
