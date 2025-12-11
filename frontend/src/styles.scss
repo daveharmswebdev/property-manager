@@ -321,5 +321,10 @@ a {
       overflow: visible !important;
       text-overflow: clip !important;
     }
+
+    // Hide checkmark - green highlight is sufficient indicator
+    .mat-pseudo-checkbox {
+      display: none !important;
+    }
   }
 }
