@@ -1,0 +1,171 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>4</storyId>
+    <title>View All Expenses with Filters</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-4-view-all-expenses-with-filters.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>to view and filter all expenses across all properties</iWant>
+    <soThat>I can find specific expenses and understand spending patterns</soThat>
+    <tasks>
+      <task id="1" acs="3.4.1,3.4.3,3.4.4,3.4.5,3.4.8">Create GetAllExpenses Query and Handler</task>
+      <task id="2" acs="3.4.2">Create ExpenseListDto for List Display</task>
+      <task id="3" acs="3.4.1,3.4.8">Add GET /expenses Endpoint to ExpensesController</task>
+      <task id="4">Generate TypeScript API Client</task>
+      <task id="5" acs="3.4.1">Create Expense List Feature Module</task>
+      <task id="6" acs="3.4.3,3.4.4,3.4.5,3.4.6">Create ExpenseFilters Component</task>
+      <task id="7" acs="3.4.1">Update ExpenseService for List Operations</task>
+      <task id="8" acs="3.4.1,3.4.3,3.4.4,3.4.5,3.4.6,3.4.8">Create ExpenseListStore for List State Management</task>
+      <task id="9" acs="3.4.2">Create ExpenseListRowComponent for Displaying Expenses</task>
+      <task id="10" acs="3.4.8">Implement Pagination Component</task>
+      <task id="11" acs="3.4.7">Implement Empty States</task>
+      <task id="12">Write Unit Tests</task>
+      <task id="13">Run Tests and Validate</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="3.4.1">User can view all expenses across all properties - Accessible from "Expenses" navigation item in sidebar, shows all expenses from all properties, respects global tax year selector, sorted by date descending</ac>
+    <ac id="3.4.2">Expense list shows: date (MMM DD, YYYY), property name, description (truncated), category tag (colored chip), amount (right-aligned $X,XXX.XX), receipt indicator icon</ac>
+    <ac id="3.4.3">User can filter by date range - Presets: This Month, This Quarter, This Year, Custom; Custom shows date pickers; Filter applied immediately</ac>
+    <ac id="3.4.4">User can filter by one or more categories (multi-select) - Multi-select dropdown with 15 IRS Schedule E categories, selected as chips, additive filtering</ac>
+    <ac id="3.4.5">User can search by description text - Real-time filter with 300ms debounce, case-insensitive partial matching, clear button</ac>
+    <ac id="3.4.6">Active filters shown as chips with "Clear all" option - Removable chips above list, individual remove, responsive wrapping</ac>
+    <ac id="3.4.7">Empty state shows "No expenses match your filters" with clear link - Different states for filtered empty vs truly empty</ac>
+    <ac id="3.4.8">List paginates when > 50 items - Server-side pagination, default 50, Previous/Next controls, total count display, &lt;500ms load time</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="AC-3.4: View All Expenses with Filters">
+        Primary reference for acceptance criteria AC-3.4.1 through AC-3.4.8. Contains GetAllExpensesQuery, ExpenseListDto, pagination, filter parameters, and API endpoint specifications.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="APIs and Interfaces">
+        GET /api/v1/expenses endpoint spec with query params: dateFrom, dateTo, categoryIds[], search, propertyId, year, page, pageSize. Response format: {items, totalCount, page, pageSize, totalPages}.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Error Handling Pattern">
+        GlobalExceptionHandlerMiddleware handles exceptions. Controllers do NOT need try-catch. NotFoundException->404, ValidationException->400. All errors use RFC 7807 ProblemDetails format.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="API Contracts">
+        Paginated Collection response: {items, totalCount, page, pageSize, totalPages}. Collection response for lists: {items, totalCount}. 200 OK for empty results, NOT 404.
+      </doc>
+      <doc path="docs/coding-standards-dotnet.md" title=".NET Coding Standards" section="Exception Handling">
+        DO NOT add try-catch blocks in controllers for standard domain exceptions. Let GlobalExceptionHandlerMiddleware handle NotFoundException, ValidationException automatically.
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Functional Requirements FR18-FR22">
+        FR18: View all expenses across properties. FR20: Filter by date range. FR21: Filter by category. FR22: Search by description text. NFR2: Pagination handles hundreds of records.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="7.10 Search &amp; Filter Patterns">
+        Search at top of list with instant filter as you type. Filter dropdowns/chips above list. "Clear all" link when filters active. No results shows friendly message with suggestion.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="7.5 Empty States">
+        No expenses: "No expenses yet for this property" with action button. No search results: "No expenses match your search" with clear filters link. Friendly, action-oriented tone.
+      </doc>
+    </docs>
+    <code>
+      <!-- Backend - Existing to Extend -->
+      <file path="backend/src/PropertyManager.Api/Controllers/ExpensesController.cs" kind="controller" reason="Add GET /api/v1/expenses endpoint following existing patterns (MediatR, FluentValidation, logging)"/>
+      <file path="backend/src/PropertyManager.Application/Expenses/GetExpensesByProperty.cs" kind="query-handler" lines="1-89" reason="Pattern reference: Query + Handler + DTO in same file, Select projection to DTO, AsNoTracking"/>
+      <file path="backend/src/PropertyManager.Application/Expenses/ExpenseDto.cs" kind="dto" reason="Existing DTO - consider ExpenseListItemDto for list display with PropertyName"/>
+      <file path="backend/src/PropertyManager.Domain/Entities/Expense.cs" kind="entity" reason="Entity for filtering queries"/>
+      <file path="backend/src/PropertyManager.Infrastructure/Persistence/Migrations/20251204212858_AddExpenseIndexes.cs" kind="migration" reason="Indexes already exist: IX_Expenses_AccountId_Date, IX_Expenses_AccountId_PropertyId, IX_Expenses_AccountId_CategoryId"/>
+
+      <!-- Frontend - Existing to Extend -->
+      <file path="frontend/src/app/features/expenses/services/expense.service.ts" kind="service" reason="Add getExpenses() method with filter params, add PagedResult interface"/>
+      <file path="frontend/src/app/features/expenses/stores/expense.store.ts" kind="store" reason="Pattern reference for @ngrx/signals - create separate expense-list.store.ts"/>
+      <file path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts" kind="component" reason="Pattern reference for expense row display, date formatting, category chip"/>
+
+      <!-- Frontend - Files to Create -->
+      <file path="frontend/src/app/features/expenses/expense-list/" kind="directory" reason="New: expense-list.component.ts/html/scss/spec.ts"/>
+      <file path="frontend/src/app/features/expenses/components/expense-filters/" kind="directory" reason="New: expense-filters.component.ts for date range, category, search"/>
+      <file path="frontend/src/app/features/expenses/components/expense-list-row/" kind="directory" reason="New: expense-list-row.component.ts (similar to expense-row but with property name)"/>
+      <file path="frontend/src/app/features/expenses/stores/expense-list.store.ts" kind="store" reason="New: Separate store for list page state management"/>
+    </code>
+    <dependencies>
+      <!-- Backend (.NET 10) -->
+      <dep name="MediatR" version="13.1.0" usage="CQRS pattern - IRequest, IRequestHandler"/>
+      <dep name="FluentValidation" version="12.1.0" usage="Request validation - AbstractValidator"/>
+      <dep name="Microsoft.EntityFrameworkCore" version="10.0.0" usage="LINQ queries, DbSet, AsNoTracking"/>
+      <dep name="MockQueryable.Moq" usage="Unit testing EF Core queries - BuildMockDbSet"/>
+      <dep name="FluentAssertions" usage="Unit test assertions - .Should().Be()"/>
+
+      <!-- Frontend (Angular 20+) -->
+      <dep name="@angular/core" version="^20.3.0" usage="Component, signal, input, output, computed, inject"/>
+      <dep name="@angular/material" version="^20.2.14" usage="MatChip, MatSelect, MatDatepicker, MatButton, MatIcon, MatSnackBar, MatPaginator"/>
+      <dep name="@ngrx/signals" version="^20.1.0" usage="signalStore, withState, withComputed, withMethods, patchState, rxMethod"/>
+      <dep name="rxjs" version="~7.8.0" usage="pipe, switchMap, tap, catchError, of, debounceTime, distinctUntilChanged"/>
+      <dep name="vitest" version="^3.2.4" usage="Unit testing - describe, it, expect, vi.fn()"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Backend Clean Architecture: Query in Application/Expenses/, Handler implements IRequestHandler, uses IAppDbContext</constraint>
+    <constraint type="architecture">Frontend Feature Module: Components in features/expenses/, store in stores/, service extends existing expense.service.ts</constraint>
+    <constraint type="security">Multi-tenant: AccountId filtering via EF Core global query filters - automatic, no manual filtering needed</constraint>
+    <constraint type="performance">Use .AsNoTracking() for read queries, project to DTO directly in query, enforce server-side pagination max 100</constraint>
+    <constraint type="exception">Controllers do NOT need try-catch - GlobalExceptionHandlerMiddleware handles NotFoundException, ValidationException</constraint>
+    <constraint type="response">Return 200 OK with empty list when no results match filters - NOT 404</constraint>
+    <constraint type="validation">FluentValidation called explicitly in controller before MediatR.Send()</constraint>
+    <constraint type="logging">Log with structured properties: ExpenseId, PropertyId, Amount, Timestamp</constraint>
+    <constraint type="frontend">@ngrx/signals store pattern: withState, withComputed, withMethods, rxMethod for async operations</constraint>
+    <constraint type="frontend">Debounce search input 300ms, use rxMethod with pipe, switchMap, tap pattern</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="GET /api/v1/expenses" kind="REST endpoint">
+      Query params: dateFrom (DateOnly), dateTo (DateOnly), categoryIds (Guid[]), search (string), year (int), page (int=1), pageSize (int=50)
+      Response: { items: ExpenseListItemDto[], totalCount: int, page: int, pageSize: int, totalPages: int }
+    </interface>
+    <interface name="GetAllExpensesQuery" kind="MediatR query">
+      record GetAllExpensesQuery(DateOnly? DateFrom, DateOnly? DateTo, List&lt;Guid&gt;? CategoryIds, string? Search, int? Year, int Page = 1, int PageSize = 50) : IRequest&lt;PagedResult&lt;ExpenseListItemDto&gt;&gt;
+    </interface>
+    <interface name="ExpenseListItemDto" kind="DTO">
+      record ExpenseListItemDto(Guid Id, Guid PropertyId, string PropertyName, Guid CategoryId, string CategoryName, string? ScheduleELine, decimal Amount, DateOnly Date, string? Description, Guid? ReceiptId, DateTime CreatedAt)
+    </interface>
+    <interface name="PagedResult&lt;T&gt;" kind="Generic response">
+      record PagedResult&lt;T&gt;(List&lt;T&gt; Items, int TotalCount, int Page, int PageSize, int TotalPages)
+    </interface>
+    <interface name="ExpenseFilters" kind="TypeScript interface">
+      interface ExpenseFilters { dateFrom?: string; dateTo?: string; categoryIds?: string[]; search?: string; year?: number; page: number; pageSize: number; }
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      <standard type="backend">
+        xUnit tests with FluentAssertions. Mock IAppDbContext with MockQueryable.Moq.BuildMockDbSet().
+        Test NotFoundException for invalid queries. Test filter combinations. Use CancellationToken.None.
+      </standard>
+      <standard type="frontend-store">
+        Vitest with Angular TestBed. Spy on service methods with vi.fn().mockReturnValue(of(...)).
+        Test loading states, error handling, snackbar calls. Use async/await with setTimeout for rxMethod.
+      </standard>
+      <standard type="frontend-component">
+        Vitest with TestBed. Test input/output signals. Test formatDate(), click handlers.
+        Prefer testing user behavior over implementation details.
+      </standard>
+    </standards>
+    <locations>
+      <location type="backend-handler">backend/tests/PropertyManager.Application.Tests/Expenses/GetAllExpensesHandlerTests.cs</location>
+      <location type="frontend-store">frontend/src/app/features/expenses/stores/expense-list.store.spec.ts</location>
+      <location type="frontend-filters">frontend/src/app/features/expenses/components/expense-filters/expense-filters.component.spec.ts</location>
+      <location type="frontend-list-row">frontend/src/app/features/expenses/components/expense-list-row/expense-list-row.component.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="3.4.1">Test query returns all expenses across all properties for current account (not filtered by propertyId)</idea>
+      <idea ac="3.4.3">Test dateFrom/dateTo filtering: verify expenses outside range excluded</idea>
+      <idea ac="3.4.4">Test categoryIds filtering: single category, multiple categories, empty array returns all</idea>
+      <idea ac="3.4.5">Test search filter: case-insensitive, partial match, empty search returns all</idea>
+      <idea ac="3.4.6">Test filter chips display: chips appear when filters active, "Clear all" clears all filters</idea>
+      <idea ac="3.4.7">Test empty states: filtered empty vs truly empty, clear filters link navigates correctly</idea>
+      <idea ac="3.4.8">Test pagination: page/pageSize params, totalPages calculation, Previous/Next controls enable/disable</idea>
+      <idea ac="3.4.8">Test performance: verify server-side pagination (not loading all records client-side)</idea>
+      <idea ac="combined">Test filter combinations: date range + category + search applied together</idea>
+    </ideas>
+  </tests>
+</story-context>

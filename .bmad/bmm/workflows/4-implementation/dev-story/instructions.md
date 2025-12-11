@@ -143,14 +143,14 @@ Expected ready-for-dev or in-progress. Continuing anyway...
   </step>
 
   <step n="1.7" goal="Check git branch and optionally create feature branch">
-    <critical>Ensure development happens on a feature branch, not master</critical>
+    <critical>Ensure development happens on a feature branch, not main</critical>
 
     <action>Run: git branch --show-current</action>
     <action>Store result as {{current_branch}}</action>
 
-    <check if="{{current_branch}} == 'master'">
+    <check if="{{current_branch}} == 'main'">
       <action>Generate suggested branch name: feature/{{story_key}}</action>
-      <output>⚠️ **You are on the master branch**
+      <output>⚠️ **You are on the main branch**
 
 Suggested feature branch: `feature/{{story_key}}`
       </output>
@@ -167,11 +167,11 @@ Suggested feature branch: `feature/{{story_key}}`
       </check>
 
       <check if="user says no">
-        <output>⚠️ Continuing on master branch as requested. Consider creating a branch before committing.</output>
+        <output>⚠️ Continuing on main branch as requested. Consider creating a branch before committing.</output>
       </check>
     </check>
 
-    <check if="{{current_branch}} != 'master'">
+    <check if="{{current_branch}} != 'main'">
       <output>📍 Working on branch: {{current_branch}}</output>
     </check>
   </step>
