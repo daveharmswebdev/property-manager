@@ -159,7 +159,7 @@ describe('PropertyDetailComponent', () => {
       expect(backButton.textContent).toContain('Go Back');
     });
 
-    it('should call location.back() when go back button clicked on error', () => {
+    it('should navigate to properties list when go back button clicked on error', () => {
       mockPropertyStore.detailError = signal('Property not found');
       fixture = TestBed.createComponent(PropertyDetailComponent);
       fixture.detectChanges();
@@ -167,7 +167,7 @@ describe('PropertyDetailComponent', () => {
       const backButton = fixture.nativeElement.querySelector('.error-card button');
       backButton.click();
 
-      expect(mockLocation.back).toHaveBeenCalled();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/properties']);
     });
   });
 
@@ -291,11 +291,11 @@ describe('PropertyDetailComponent', () => {
       expect(backButton.getAttribute('aria-label')).toBe('Go back');
     });
 
-    it('should call location.back() when back button clicked', () => {
+    it('should navigate to properties list when back button clicked', () => {
       const backButton = fixture.nativeElement.querySelector('.back-button');
       backButton.click();
 
-      expect(mockLocation.back).toHaveBeenCalled();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/properties']);
     });
   });
 
