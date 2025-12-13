@@ -1,0 +1,219 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.2</storyId>
+    <title>Edit and Delete Income Entry</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-13</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-2-edit-and-delete-income-entry.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>edit or delete income entries</iWant>
+    <soThat>I can correct mistakes in my records</soThat>
+    <tasks>
+      <task id="1" ac="4.2.2,4.2.3,4.2.4">Create UpdateIncome Command and Handler
+        <subtask>Create UpdateIncome.cs in Application/Income/</subtask>
+        <subtask>UpdateIncomeCommand(Guid Id, decimal Amount, DateOnly Date, string? Source, string? Description) : IRequest&lt;Unit&gt;</subtask>
+        <subtask>UpdateIncomeValidator with FluentValidation: Id required and must exist, Amount > 0, Date required</subtask>
+        <subtask>Handler loads existing Income, updates fields</subtask>
+        <subtask>Set UpdatedAt timestamp</subtask>
+        <subtask>Return Unit on success</subtask>
+      </task>
+      <task id="2" ac="4.2.5,4.2.6">Create DeleteIncome Command and Handler
+        <subtask>Create DeleteIncome.cs in Application/Income/</subtask>
+        <subtask>DeleteIncomeCommand(Guid Id) : IRequest&lt;Unit&gt;</subtask>
+        <subtask>Handler loads existing Income</subtask>
+        <subtask>Set DeletedAt timestamp (soft delete)</subtask>
+        <subtask>Return Unit on success</subtask>
+      </task>
+      <task id="3" ac="4.2.2">Create GetIncomeById Query and Handler
+        <subtask>Create GetIncomeById.cs in Application/Income/</subtask>
+        <subtask>GetIncomeByIdQuery(Guid Id) : IRequest&lt;IncomeDto&gt;</subtask>
+        <subtask>Handler retrieves single income entry</subtask>
+        <subtask>Throws NotFoundException if not found or different account</subtask>
+        <subtask>Returns IncomeDto with all fields</subtask>
+      </task>
+      <task id="4" ac="4.2.3,4.2.6">Add PUT and DELETE Endpoints to IncomeController
+        <subtask>Add PUT /api/v1/income/{id} endpoint</subtask>
+        <subtask>Add DELETE /api/v1/income/{id} endpoint</subtask>
+        <subtask>Add GET /api/v1/income/{id} endpoint</subtask>
+        <subtask>Update Swagger documentation</subtask>
+      </task>
+      <task id="5">Regenerate TypeScript API Client
+        <subtask>Run NSwag to regenerate API client</subtask>
+        <subtask>Verify income_Update, income_Delete, income_Get methods generated</subtask>
+        <subtask>Verify UpdateIncomeRequest type generated</subtask>
+      </task>
+      <task id="6" ac="4.2.3,4.2.6">Add Update and Delete Methods to IncomeService
+        <subtask>Add updateIncome(id: string, request: UpdateIncomeRequest): Observable&lt;void&gt;</subtask>
+        <subtask>Add deleteIncome(id: string): Observable&lt;void&gt;</subtask>
+        <subtask>Add getIncomeById(id: string): Observable&lt;IncomeDto&gt;</subtask>
+      </task>
+      <task id="7" ac="4.2.3,4.2.6">Add Edit and Delete Actions to IncomeStore
+        <subtask>Add updateIncome action to income.store.ts</subtask>
+        <subtask>Add deleteIncome action to income.store.ts</subtask>
+        <subtask>Implement optimistic updates for delete</subtask>
+        <subtask>Recalculate totals after update/delete</subtask>
+        <subtask>Handle error rollback for failed operations</subtask>
+      </task>
+      <task id="8" ac="4.2.1">Add Hover Actions to IncomeRowComponent
+        <subtask>Enable edit icon (already exists, currently disabled)</subtask>
+        <subtask>Enable delete icon (already exists, currently disabled)</subtask>
+        <subtask>Add click handlers for edit and delete icons</subtask>
+        <subtask>Emit events: (edit) and (delete) with income entry</subtask>
+        <subtask>Add keyboard accessibility (tabindex, aria-labels)</subtask>
+      </task>
+      <task id="9" ac="4.2.2,4.2.4">Create Inline Edit Form for IncomeRowComponent
+        <subtask>Add edit mode state to income-row.component.ts</subtask>
+        <subtask>Create inline edit template with form fields</subtask>
+        <subtask>Pre-populate form with current income values</subtask>
+        <subtask>Add [Save] and [Cancel] buttons</subtask>
+        <subtask>Validate amount > 0 with error message</subtask>
+        <subtask>Handle form submission</subtask>
+        <subtask>Exit edit mode on save or cancel</subtask>
+      </task>
+      <task id="10" ac="4.2.5,4.2.7">Add Delete Confirmation to IncomeRowComponent
+        <subtask>Add delete confirmation state to income-row.component.ts</subtask>
+        <subtask>Create inline confirmation template</subtask>
+        <subtask>Display: "Delete this income entry?" [Cancel] [Delete]</subtask>
+        <subtask>Handle confirm - emit delete event</subtask>
+        <subtask>Handle cancel - hide confirmation</subtask>
+      </task>
+      <task id="11" ac="4.2.3,4.2.6,4.2.7">Integrate Edit/Delete in IncomeWorkspaceComponent
+        <subtask>Handle (edit) event from IncomeRowComponent</subtask>
+        <subtask>Call store.updateIncome() on edit save</subtask>
+        <subtask>Handle (delete) event from IncomeRowComponent</subtask>
+        <subtask>Call store.deleteIncome() on delete confirm</subtask>
+        <subtask>Show snackbar on success</subtask>
+        <subtask>Update YTD total after changes</subtask>
+      </task>
+      <task id="12">Write Backend Unit Tests
+        <subtask>UpdateIncomeHandlerTests.cs: 6 test cases</subtask>
+        <subtask>DeleteIncomeHandlerTests.cs: 3 test cases</subtask>
+        <subtask>GetIncomeByIdHandlerTests.cs: 2 test cases</subtask>
+      </task>
+      <task id="13">Write Backend Integration Tests
+        <subtask>IncomeControllerTests.cs: 9 additional test cases</subtask>
+      </task>
+      <task id="14">Write Frontend Component Tests
+        <subtask>income-row.component.spec.ts: 7 additional test cases</subtask>
+        <subtask>income-workspace.component.spec.ts: 5 additional test cases</subtask>
+      </task>
+      <task id="15">Manual Verification
+        <subtask>All backend tests pass</subtask>
+        <subtask>All frontend tests pass</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Run smoke test checklist</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.2.1">Hovering over income row reveals edit and delete icons - Edit icon (pencil) appears on hover, Delete icon (trash) appears on hover, Icons positioned on right side of row (same pattern as ExpenseRowComponent), Icons accessible via keyboard navigation (tab focus)</criterion>
+    <criterion id="AC-4.2.2">Clicking edit opens inline form with pre-filled values - Click edit icon to activate edit mode, Inline form expands within the row (preferred) or side panel opens, All fields pre-populated: Amount, Date, Source, Description, Form matches create form styling and validation rules, Cancel button to discard changes, Save button to persist changes</criterion>
+    <criterion id="AC-4.2.3">Saving edit updates entry and recalculates totals - PUT /api/v1/income/{id} called with updated values, Success returns 204 No Content, Snackbar: "Income updated", Income list refreshes with updated values, UpdatedAt timestamp set server-side, YTD income total recalculates if amount changed, Property-level totals update on property detail page</criterion>
+    <criterion id="AC-4.2.4">Amount validation enforced on edit - Amount must be > $0, Validation error: "Amount must be greater than $0", Form does not submit with invalid amount, Validation on blur and on submit</criterion>
+    <criterion id="AC-4.2.5">Clicking delete shows inline confirmation - Click delete icon shows inline confirmation, Confirmation text: "Delete this income entry?", [Cancel] button dismisses confirmation, [Delete] button performs soft-delete</criterion>
+    <criterion id="AC-4.2.6">Confirming delete soft-deletes entry and recalculates totals - DELETE /api/v1/income/{id} called, Success returns 204 No Content, DeletedAt timestamp set server-side (soft delete), Snackbar: "Income deleted", Income entry disappears from list, YTD income total recalculates, Property-level totals update on property detail page</criterion>
+    <criterion id="AC-4.2.7">Cancel on either action preserves original state - Cancel on edit closes form without saving, Cancel on delete dismisses confirmation, Income entry remains unchanged, No API calls made on cancel</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="AC-4.2: Edit and Delete Income" snippet="Defines PUT and DELETE endpoints, UpdateIncomeHandler, DeleteIncomeHandler, and inline edit/delete UI patterns for income management."/>
+      <doc path="docs/architecture.md" title="Architecture" section="CQRS Pattern, Error Handling Pattern" snippet="Commands return Unit for updates/deletes. Global Exception Handler maps NotFoundException to 404, ValidationException to 400. Controllers do NOT need try-catch blocks."/>
+      <doc path="docs/architecture.md" title="Architecture" section="API Contracts" snippet="PUT returns 204 No Content, DELETE returns 204 No Content. Soft delete via DeletedAt field. Response formats follow Problem Details for errors."/>
+      <doc path="docs/prd.md" title="PRD" section="FR26, FR27" snippet="FR26: Users can edit an existing income entry. FR27: Users can delete an income entry (with confirmation)."/>
+      <doc path="docs/epics.md" title="Epics" section="Story 4.2" snippet="Edit and Delete Income Entry story definition at epic level."/>
+    </docs>
+    <code>
+      <artifact path="backend/src/PropertyManager.Application/Income/CreateIncome.cs" kind="command" symbol="CreateIncomeCommand, CreateIncomeCommandHandler" reason="Pattern reference for CQRS command with MediatR, validation, and DbContext usage"/>
+      <artifact path="backend/src/PropertyManager.Application/Income/IncomeDto.cs" kind="dto" symbol="IncomeDto" reason="Existing DTO to return from GetIncomeById query"/>
+      <artifact path="backend/src/PropertyManager.Application/Expenses/UpdateExpense.cs" kind="command" symbol="UpdateExpenseCommand, UpdateExpenseCommandHandler" lines="1-74" reason="PATTERN: Update command implementation to replicate for income"/>
+      <artifact path="backend/src/PropertyManager.Application/Expenses/DeleteExpense.cs" kind="command" symbol="DeleteExpenseCommand, DeleteExpenseCommandHandler" lines="1-55" reason="PATTERN: Soft delete command implementation to replicate for income"/>
+      <artifact path="backend/src/PropertyManager.Api/Controllers/IncomeController.cs" kind="controller" symbol="IncomeController" reason="Add PUT, DELETE, GET by ID endpoints following existing pattern"/>
+      <artifact path="frontend/src/app/features/income/services/income.service.ts" kind="service" symbol="IncomeService" reason="Add updateIncome, deleteIncome, getIncomeById methods"/>
+      <artifact path="frontend/src/app/features/income/stores/income.store.ts" kind="store" symbol="IncomeStore" reason="Add updateIncome, deleteIncome actions following expense.store.ts pattern"/>
+      <artifact path="frontend/src/app/features/income/components/income-row/income-row.component.ts" kind="component" symbol="IncomeRowComponent" reason="Enable edit/delete buttons (currently disabled), add inline edit form and delete confirmation"/>
+      <artifact path="frontend/src/app/features/income/income-workspace/income-workspace.component.ts" kind="component" symbol="IncomeWorkspaceComponent" reason="Handle (edit) and (delete) events, wire up store methods"/>
+      <artifact path="frontend/src/app/features/expenses/stores/expense.store.ts" kind="store" symbol="ExpenseStore" lines="347-488" reason="PATTERN: updateExpense and deleteExpense rxMethod implementations to replicate for income"/>
+      <artifact path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts" kind="component" symbol="ExpenseRowComponent" reason="PATTERN: Row with hover actions, edit/delete event emission"/>
+    </code>
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling"/>
+        <package name="FluentValidation" version="11.x" purpose="Request validation"/>
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" purpose="Database operations"/>
+        <package name="xUnit" purpose="Unit and integration testing"/>
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" purpose="Angular framework"/>
+        <package name="@angular/material" version="^20.2.14" purpose="UI components (mat-icon-button, mat-icon, mat-snack-bar)"/>
+        <package name="@ngrx/signals" version="^20.1.0" purpose="Signal-based state management"/>
+        <package name="rxjs" version="~7.8.0" purpose="Reactive programming"/>
+        <package name="vitest" version="^3.2.4" purpose="Frontend testing"/>
+        <package name="@playwright/test" version="^1.57.0" purpose="E2E testing"/>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">Clean Architecture layers: Controllers call MediatR, handlers access DbContext, no direct DB access from controllers</constraint>
+    <constraint category="architecture">CQRS pattern: Commands return Unit for update/delete operations</constraint>
+    <constraint category="error-handling">Global Exception Handler handles NotFoundException (404), ValidationException (400) - no try-catch in controllers</constraint>
+    <constraint category="security">AccountId filtering via EF Core global query filters enforces tenant isolation</constraint>
+    <constraint category="data">Soft delete pattern: Set DeletedAt timestamp, do not physically remove records</constraint>
+    <constraint category="validation">FluentValidation for all command validation, Amount > 0 required</constraint>
+    <constraint category="api">PUT returns 204 No Content, DELETE returns 204 No Content</constraint>
+    <constraint category="frontend">@ngrx/signals for state management, rxMethod for async operations</constraint>
+    <constraint category="frontend">Optimistic UI updates with rollback on error</constraint>
+    <constraint category="frontend">Snackbar feedback: "Income updated" on edit success, "Income deleted" on delete success</constraint>
+    <constraint category="testing">xUnit for backend tests, Vitest for frontend component tests</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="PUT /api/v1/income/{id}" kind="REST endpoint" signature="PUT /api/v1/income/{id} { amount: decimal, date: DateOnly, source?: string, description?: string } -> 204 No Content" path="backend/src/PropertyManager.Api/Controllers/IncomeController.cs"/>
+    <interface name="DELETE /api/v1/income/{id}" kind="REST endpoint" signature="DELETE /api/v1/income/{id} -> 204 No Content" path="backend/src/PropertyManager.Api/Controllers/IncomeController.cs"/>
+    <interface name="GET /api/v1/income/{id}" kind="REST endpoint" signature="GET /api/v1/income/{id} -> 200 IncomeDto" path="backend/src/PropertyManager.Api/Controllers/IncomeController.cs"/>
+    <interface name="UpdateIncomeCommand" kind="MediatR command" signature="record UpdateIncomeCommand(Guid Id, decimal Amount, DateOnly Date, string? Source, string? Description) : IRequest" path="backend/src/PropertyManager.Application/Income/UpdateIncome.cs"/>
+    <interface name="DeleteIncomeCommand" kind="MediatR command" signature="record DeleteIncomeCommand(Guid Id) : IRequest" path="backend/src/PropertyManager.Application/Income/DeleteIncome.cs"/>
+    <interface name="GetIncomeByIdQuery" kind="MediatR query" signature="record GetIncomeByIdQuery(Guid Id) : IRequest&lt;IncomeDto&gt;" path="backend/src/PropertyManager.Application/Income/GetIncomeById.cs"/>
+    <interface name="IncomeService.updateIncome" kind="Angular service method" signature="updateIncome(id: string, request: UpdateIncomeRequest): Observable&lt;void&gt;" path="frontend/src/app/features/income/services/income.service.ts"/>
+    <interface name="IncomeService.deleteIncome" kind="Angular service method" signature="deleteIncome(id: string): Observable&lt;void&gt;" path="frontend/src/app/features/income/services/income.service.ts"/>
+    <interface name="IncomeStore.updateIncome" kind="ngrx/signals method" signature="updateIncome: rxMethod&lt;{ incomeId: string; request: UpdateIncomeRequest }&gt;" path="frontend/src/app/features/income/stores/income.store.ts"/>
+    <interface name="IncomeStore.deleteIncome" kind="ngrx/signals method" signature="deleteIncome: rxMethod&lt;string&gt;" path="frontend/src/app/features/income/stores/income.store.ts"/>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend: xUnit for unit tests (handlers, validators) and integration tests (controllers with real PostgreSQL via Testcontainers). Frontend: Vitest for component tests with Testing Library patterns. E2E: Playwright for critical user flows. Test naming: Method_Scenario_ExpectedResult pattern.
+    </standards>
+    <locations>
+      <location pattern="backend/tests/PropertyManager.Application.Tests/Income/" purpose="Handler unit tests"/>
+      <location pattern="backend/tests/PropertyManager.Api.Tests/" purpose="Controller integration tests"/>
+      <location pattern="frontend/src/app/features/income/**/*.spec.ts" purpose="Component tests"/>
+      <location pattern="frontend/e2e/" purpose="E2E tests"/>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.2.1">Component test: Should enable edit and delete icons (remove disabled attribute)</idea>
+      <idea ac="AC-4.2.1">Component test: Should emit edit event when edit clicked</idea>
+      <idea ac="AC-4.2.1">Component test: Should emit delete event when delete clicked</idea>
+      <idea ac="AC-4.2.2">Component test: Should show inline edit form when editing</idea>
+      <idea ac="AC-4.2.2">Component test: Should pre-populate edit form with current values</idea>
+      <idea ac="AC-4.2.3">Unit test: UpdateIncomeHandler Handle_ValidCommand_UpdatesIncomeEntry</idea>
+      <idea ac="AC-4.2.3">Integration test: Update_ValidRequest_Returns204</idea>
+      <idea ac="AC-4.2.3">Store test: Should call store.updateIncome on edit save</idea>
+      <idea ac="AC-4.2.4">Unit test: UpdateIncomeHandler Handle_AmountZero_ThrowsValidationException</idea>
+      <idea ac="AC-4.2.4">Unit test: UpdateIncomeHandler Handle_AmountNegative_ThrowsValidationException</idea>
+      <idea ac="AC-4.2.5">Component test: Should show delete confirmation when delete clicked</idea>
+      <idea ac="AC-4.2.6">Unit test: DeleteIncomeHandler Handle_ValidCommand_SetsDeletedAt</idea>
+      <idea ac="AC-4.2.6">Integration test: Delete_ValidRequest_Returns204</idea>
+      <idea ac="AC-4.2.6">Store test: Should call store.deleteIncome on delete confirm</idea>
+      <idea ac="AC-4.2.7">Component test: Should hide confirmation on cancel</idea>
+      <idea ac="AC-4.2.7">Component test: Should close edit form on cancel without saving</idea>
+    </ideas>
+  </tests>
+</story-context>

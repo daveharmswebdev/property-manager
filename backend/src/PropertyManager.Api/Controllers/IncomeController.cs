@@ -8,7 +8,7 @@ using PropertyManager.Application.Income;
 namespace PropertyManager.Api.Controllers;
 
 /// <summary>
-/// Income management endpoints for CRUD operations (AC-4.1.1, AC-4.1.3).
+/// Income management endpoints for CRUD operations (AC-4.1.1, AC-4.1.3, AC-4.2.2, AC-4.2.3, AC-4.2.6).
 /// </summary>
 [ApiController]
 [Route("api/v1")]
@@ -18,15 +18,18 @@ public class IncomeController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateIncomeCommand> _createValidator;
+    private readonly IValidator<UpdateIncomeCommand> _updateValidator;
     private readonly ILogger<IncomeController> _logger;
 
     public IncomeController(
         IMediator mediator,
         IValidator<CreateIncomeCommand> createValidator,
+        IValidator<UpdateIncomeCommand> updateValidator,
         ILogger<IncomeController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -135,6 +138,99 @@ public class IncomeController : ControllerBase
         return Ok(new IncomeTotalResponse(total, effectiveYear));
     }
 
+    /// <summary>
+    /// Get a single income entry by ID (AC-4.2.2).
+    /// </summary>
+    /// <param name="id">Income GUID</param>
+    /// <returns>Income entry details</returns>
+    /// <response code="200">Returns the income entry</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If income not found</response>
+    [HttpGet("income/{id:guid}")]
+    [ProducesResponseType(typeof(IncomeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetIncomeById(Guid id)
+    {
+        var query = new GetIncomeByIdQuery(id);
+        var income = await _mediator.Send(query);
+
+        _logger.LogInformation(
+            "Retrieved income: {IncomeId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
+
+        return Ok(income);
+    }
+
+    /// <summary>
+    /// Update an existing income entry (AC-4.2.2, AC-4.2.3, AC-4.2.4).
+    /// </summary>
+    /// <param name="id">Income GUID</param>
+    /// <param name="request">Updated income details</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Income updated successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If income not found</response>
+    [HttpPut("income/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateIncome(Guid id, [FromBody] UpdateIncomeRequest request)
+    {
+        var command = new UpdateIncomeCommand(
+            id,
+            request.Amount,
+            request.Date,
+            request.Source,
+            request.Description);
+
+        // Validate command
+        var validationResult = await _updateValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Income updated: {IncomeId}, amount {Amount} at {Timestamp}",
+            id,
+            request.Amount,
+            DateTime.UtcNow);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete an income entry (soft delete) (AC-4.2.5, AC-4.2.6).
+    /// </summary>
+    /// <param name="id">Income GUID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Income deleted successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If income not found</response>
+    [HttpDelete("income/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteIncome(Guid id)
+    {
+        var command = new DeleteIncomeCommand(id);
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Income deleted: {IncomeId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
+
+        return NoContent();
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -178,4 +274,14 @@ public record CreateIncomeResponse(
 public record IncomeTotalResponse(
     decimal Total,
     int Year
+);
+
+/// <summary>
+/// Request model for updating an income entry (AC-4.2.2).
+/// </summary>
+public record UpdateIncomeRequest(
+    decimal Amount,
+    DateOnly Date,
+    string? Source,
+    string? Description
 );
