@@ -22,6 +22,7 @@ export interface IApiClient {
     auth_Logout(): Observable<void>;
     auth_ForgotPassword(request: ForgotPasswordRequest): Observable<void>;
     auth_ResetPassword(request: ResetPasswordRequest): Observable<void>;
+    expenses_CheckDuplicateExpense(propertyId?: string | null | undefined, amount?: number | null | undefined, date?: Date | null | undefined): Observable<DuplicateCheckResult>;
     expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto>;
     expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
     expenses_CreateExpense(request: CreateExpenseRequest): Observable<CreateExpenseResponse>;
@@ -435,6 +436,72 @@ export class ApiClient implements IApiClient {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    expenses_CheckDuplicateExpense(propertyId?: string | null | undefined, amount?: number | null | undefined, date?: Date | null | undefined): Observable<DuplicateCheckResult> {
+        let url_ = this.baseUrl + "/api/v1/expenses/check-duplicate?";
+        if (propertyId !== undefined && propertyId !== null)
+            url_ += "propertyId=" + encodeURIComponent("" + propertyId) + "&";
+        if (amount !== undefined && amount !== null)
+            url_ += "amount=" + encodeURIComponent("" + amount) + "&";
+        if (date !== undefined && date !== null)
+            url_ += "date=" + encodeURIComponent(date ? "" + date.toISOString() : "") + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExpenses_CheckDuplicateExpense(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExpenses_CheckDuplicateExpense(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DuplicateCheckResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DuplicateCheckResult>;
+        }));
+    }
+
+    protected processExpenses_CheckDuplicateExpense(response: HttpResponseBase): Observable<DuplicateCheckResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DuplicateCheckResult;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1430,6 +1497,18 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
     token?: string;
     newPassword?: string;
+}
+
+export interface DuplicateCheckResult {
+    isDuplicate?: boolean;
+    existingExpense?: DuplicateExpenseDto | undefined;
+}
+
+export interface DuplicateExpenseDto {
+    id?: string;
+    date?: Date;
+    amount?: number;
+    description?: string | undefined;
 }
 
 export interface ExpenseTotalsDto {

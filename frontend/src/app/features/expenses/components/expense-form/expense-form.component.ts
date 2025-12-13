@@ -1,4 +1,4 @@
-import { Component, inject, input, output, OnInit } from '@angular/core';
+import { Component, inject, input, output, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -14,10 +14,15 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 import { CategorySelectComponent } from '../category-select/category-select.component';
-import { CreateExpenseRequest } from '../../services/expense.service';
+import { CreateExpenseRequest, ExpenseService } from '../../services/expense.service';
 import { ExpenseStore } from '../../stores/expense.store';
 import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
+import {
+  DuplicateWarningDialogComponent,
+  DuplicateWarningDialogData,
+} from '../duplicate-warning-dialog/duplicate-warning-dialog.component';
 
 /**
  * ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8)
@@ -121,9 +126,9 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
               mat-raised-button
               color="primary"
               type="submit"
-              [disabled]="!form.valid || store.isSaving()"
+              [disabled]="!form.valid || store.isSaving() || isCheckingDuplicate()"
             >
-              @if (store.isSaving()) {
+              @if (store.isSaving() || isCheckingDuplicate()) {
                 <mat-spinner diameter="20" />
               } @else {
                 <ng-container>
@@ -210,6 +215,8 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
 export class ExpenseFormComponent implements OnInit {
   protected readonly store = inject(ExpenseStore);
   private readonly fb = inject(FormBuilder);
+  private readonly expenseService = inject(ExpenseService);
+  private readonly dialog = inject(MatDialog);
 
   // Input: Property ID
   propertyId = input.required<string>();
@@ -218,6 +225,9 @@ export class ExpenseFormComponent implements OnInit {
   expenseCreated = output<void>();
 
   protected readonly today = new Date();
+
+  // Duplicate check loading state (AC-3.6.1)
+  protected readonly isCheckingDuplicate = signal(false);
 
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
@@ -244,6 +254,16 @@ export class ExpenseFormComponent implements OnInit {
     return null;
   }
 
+  /**
+   * Handle form submission with duplicate check (AC-3.6.1, AC-3.6.2, AC-3.6.3, AC-3.6.4)
+   *
+   * Flow:
+   * 1. Validate form
+   * 2. Check for duplicate expense
+   * 3. If duplicate found, show warning dialog
+   * 4. If user confirms or no duplicate, save expense
+   * 5. Reset form only after successful save
+   */
   protected onSubmit(): void {
     if (!this.form.valid) {
       this.form.markAllAsTouched();
@@ -251,23 +271,87 @@ export class ExpenseFormComponent implements OnInit {
     }
 
     const { amount, date, categoryId, description } = this.form.value;
-
-    // Format date as ISO string (YYYY-MM-DD)
     const formattedDate = this.formatDate(date);
 
-    const request: CreateExpenseRequest = {
-      propertyId: this.propertyId(),
-      amount,
-      date: formattedDate,
-      categoryId,
-      description: description?.trim() || undefined,
+    // Start duplicate check (AC-3.6.1)
+    this.isCheckingDuplicate.set(true);
+
+    this.expenseService.checkDuplicateExpense(this.propertyId(), amount, formattedDate)
+      .subscribe({
+        next: (result) => {
+          this.isCheckingDuplicate.set(false);
+
+          if (result.isDuplicate && result.existingExpense) {
+            // Show duplicate warning dialog (AC-3.6.2)
+            this.showDuplicateWarning(result.existingExpense, {
+              propertyId: this.propertyId(),
+              amount,
+              date: formattedDate,
+              categoryId,
+              description: description?.trim() || undefined,
+            });
+          } else {
+            // No duplicate - proceed with save (AC-3.6.5)
+            this.saveExpense({
+              propertyId: this.propertyId(),
+              amount,
+              date: formattedDate,
+              categoryId,
+              description: description?.trim() || undefined,
+            });
+          }
+        },
+        error: (error) => {
+          this.isCheckingDuplicate.set(false);
+          console.error('Error checking for duplicate:', error);
+          // On error, proceed with save (don't block user if duplicate check fails)
+          this.saveExpense({
+            propertyId: this.propertyId(),
+            amount,
+            date: formattedDate,
+            categoryId,
+            description: description?.trim() || undefined,
+          });
+        },
+      });
+  }
+
+  /**
+   * Show duplicate warning dialog (AC-3.6.2, AC-3.6.3, AC-3.6.4)
+   */
+  private showDuplicateWarning(
+    existingExpense: { id: string; date: string; amount: number; description?: string },
+    pendingRequest: CreateExpenseRequest
+  ): void {
+    const dialogData: DuplicateWarningDialogData = {
+      existingExpense: {
+        id: existingExpense.id,
+        date: existingExpense.date,
+        amount: existingExpense.amount,
+        description: existingExpense.description,
+      },
     };
 
-    // Create expense via store
-    this.store.createExpense(request);
+    const dialogRef = this.dialog.open(DuplicateWarningDialogComponent, {
+      data: dialogData,
+      width: '450px',
+    });
 
-    // Reset form after submission (AC-3.1.8)
-    // The store handles success/error snackbar
+    dialogRef.afterClosed().subscribe((saveAnyway: boolean) => {
+      if (saveAnyway) {
+        // User clicked "Save Anyway" - proceed with save (AC-3.6.4)
+        this.saveExpense(pendingRequest);
+      }
+      // If user clicked "Cancel", form data is preserved (AC-3.6.3)
+      // Do nothing - form remains populated
+    });
+  }
+
+  /**
+   * Save expense and reset form (AC-3.1.6, AC-3.1.8)
+   */
+  private saveExpense(request: CreateExpenseRequest): void {
+    this.store.createExpense(request);
     this.resetForm();
     this.expenseCreated.emit();
   }

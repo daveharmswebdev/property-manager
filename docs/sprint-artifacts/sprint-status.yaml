@@ -63,7 +63,7 @@ development_status:
   3-3-delete-expense: done
   3-4-view-all-expenses-with-filters: done
   3-5-tax-year-selector-and-dashboard-totals: done
-  3-6-duplicate-expense-prevention: backlog
+  3-6-duplicate-expense-prevention: done
   epic-3-retrospective: optional
 
   # Epic 4: Income Tracking
