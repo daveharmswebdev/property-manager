@@ -1,0 +1,189 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>1</storyId>
+    <title>Income Workspace - Create Income Entry</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-13</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-1-income-workspace-create-income-entry.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>to record rental income for a property</iWant>
+    <soThat>I can track what each property earns</soThat>
+    <tasks>
+      <task id="1" ac="4.1.3">Create Income Entity and EF Core Configuration</task>
+      <task id="2" ac="4.1.3,4.1.6">Create Income DTOs and Mapping</task>
+      <task id="3" ac="4.1.3,4.1.5">Create CreateIncome Command and Handler</task>
+      <task id="4" ac="4.1.2,4.1.6">Create GetIncomeByProperty Query and Handler</task>
+      <task id="5" ac="4.1.4">Create GetIncomeTotalByProperty Query</task>
+      <task id="6" ac="4.1.1,4.1.3">Create IncomeController with Endpoints</task>
+      <task id="7">Generate TypeScript API Client</task>
+      <task id="8" ac="4.1.3,4.1.4">Create IncomeService in Frontend</task>
+      <task id="9" ac="4.1.2,4.1.4,4.1.6">Create IncomeStore with @ngrx/signals</task>
+      <task id="10" ac="4.1.2,4.1.3,4.1.5">Create IncomeFormComponent</task>
+      <task id="11" ac="4.1.6">Create IncomeRowComponent</task>
+      <task id="12" ac="4.1.1,4.1.2,4.1.4">Create IncomeWorkspaceComponent</task>
+      <task id="13" ac="4.1.1">Add [+ Add Income] Button to Property Detail</task>
+      <task id="14" ac="4.1.1">Configure Routing for Income Workspace</task>
+      <task id="15">Write Backend Unit Tests</task>
+      <task id="16">Write Backend Integration Tests</task>
+      <task id="17">Write Frontend Component Tests</task>
+      <task id="18">Manual Verification</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.1.1" title="Navigate to income workspace from property detail">
+      [+ Add Income] button appears on property detail page. Clicking navigates to /properties/:id/income. Route is protected by auth guard. 404 for non-existent or other-account properties.
+    </criterion>
+    <criterion id="AC-4.1.2" title="Income workspace displays form and income list">
+      Property name shown in header. NEW INCOME form at top with fields: Amount (required, currency input, mat-form-field), Date (required, mat-datepicker, defaults to today), Source (optional), Description (optional). Previous Income list below form. YTD income total displayed. List sorted by date descending.
+    </criterion>
+    <criterion id="AC-4.1.3" title="Valid form submission creates income entry">
+      Submitting valid form calls POST /api/v1/income. Request body: { propertyId, amount, date, source, description }. Success returns 201 with { id }. Snackbar: "Income recorded". Form clears. New income appears at top of list immediately.
+    </criterion>
+    <criterion id="AC-4.1.4" title="YTD income total updates after save">
+      Total reflects sum of all income for selected tax year. Updates immediately after successful save. Uses existing year selector from app state.
+    </criterion>
+    <criterion id="AC-4.1.5" title="Amount validation enforced">
+      Amount must be greater than $0. Validation error shown: "Amount must be greater than $0". Form does not submit with invalid amount. Validation on blur and on submit.
+    </criterion>
+    <criterion id="AC-4.1.6" title="Income list displays correctly">
+      Each income row shows: Date, Amount, Source (if present), Description (if present). Amount formatted as currency ($1,500.00). Date formatted as locale date. Hide empty source/description. Hover reveals edit/delete icons (prepared for Story 4.2).
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="AC-4.1, Data Models, APIs">
+        Authoritative acceptance criteria, Income entity definition, API contracts for income CRUD operations.
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 4.1: Income Workspace">
+        Epic-level story definition covering FR23-FR25, FR28, FR46.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Backend Structure, Frontend Structure, Error Handling">
+        Clean Architecture layers, feature-based frontend organization, global exception handler pattern.
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements" section="FR23-FR29, FR46">
+        Functional requirements for income entry, management, and property detail display.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="backend/src/PropertyManager.Domain/Entities/Income.cs" kind="entity" symbol="Income" reason="Income entity already exists - use as-is, extends AuditableEntity with ITenantEntity and ISoftDeletable interfaces">
+        <lines>1-23</lines>
+      </file>
+      <file path="backend/src/PropertyManager.Application/Expenses/CreateExpense.cs" kind="command-handler" symbol="CreateExpenseCommand, CreateExpenseCommandHandler" reason="Reference pattern for CreateIncomeCommand - same CQRS structure with PropertyId validation and AccountId from ICurrentUser">
+        <lines>1-74</lines>
+      </file>
+      <file path="backend/src/PropertyManager.Application/Expenses/GetExpensesByProperty.cs" kind="query-handler" symbol="GetExpensesByPropertyQuery" reason="Reference pattern for GetIncomeByProperty - same query structure with year filtering and AsNoTracking">
+      </file>
+      <file path="backend/src/PropertyManager.Application/Expenses/GetExpenseTotals.cs" kind="query-handler" symbol="GetExpenseTotalsQuery" reason="Reference pattern for GetIncomeTotalByProperty - aggregation query with year filtering">
+      </file>
+      <file path="backend/src/PropertyManager.Api/Controllers/ExpensesController.cs" kind="controller" symbol="ExpensesController" reason="Reference pattern for IncomeController - same attribute routing, MediatR dispatch, 201 Created responses">
+      </file>
+      <file path="frontend/src/app/features/expenses/stores/expense.store.ts" kind="store" symbol="ExpenseStore" reason="Reference pattern for IncomeStore - signalStore with withState, withComputed, withMethods, rxMethod for API calls">
+        <lines>1-490</lines>
+      </file>
+      <file path="frontend/src/app/features/expenses/services/expense.service.ts" kind="service" symbol="ExpenseService" reason="Reference pattern for IncomeService - wraps generated API client">
+      </file>
+      <file path="frontend/src/app/features/expenses/expense-workspace/expense-workspace.component.ts" kind="component" symbol="ExpenseWorkspaceComponent" reason="Reference pattern for IncomeWorkspaceComponent - same composition of form + list with store injection">
+      </file>
+      <file path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts" kind="component" symbol="ExpenseRowComponent" reason="Reference pattern for IncomeRowComponent - row display with date/amount formatting and hover actions">
+      </file>
+      <file path="frontend/src/app/features/expenses/components/expense-form/expense-form.component.ts" kind="component" symbol="ExpenseFormComponent" reason="Reference pattern for IncomeFormComponent - reactive form with validation, datepicker, submit handling">
+      </file>
+      <file path="frontend/src/app/features/properties/property-detail/property-detail.component.ts" kind="component" symbol="PropertyDetailComponent" reason="Modify to add [+ Add Income] button next to existing [+ Add Expense] button">
+      </file>
+      <file path="frontend/src/app/app.routes.ts" kind="routes" symbol="routes" reason="Add income workspace route: { path: 'properties/:id/income', component: IncomeWorkspaceComponent }">
+      </file>
+      <file path="frontend/src/app/core/services/year-selector.service.ts" kind="service" symbol="YearSelectorService" reason="Reuse for tax year filtering - inject and use selectedYear signal">
+      </file>
+    </code>
+
+    <dependencies>
+      <backend framework=".NET 10">
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling" />
+        <package name="FluentValidation" version="11.x" purpose="Request validation" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" purpose="Database ORM" />
+        <package name="Serilog" version="3.x" purpose="Structured logging" />
+      </backend>
+      <frontend framework="Angular 20">
+        <package name="@angular/core" version="^20.3.0" />
+        <package name="@angular/material" version="^20.2.14" />
+        <package name="@angular/forms" version="^20.3.0" />
+        <package name="@ngrx/signals" version="^20.1.0" />
+        <package name="rxjs" version="~7.8.0" />
+      </frontend>
+      <testing>
+        <package name="xUnit" purpose="Backend unit and integration tests" />
+        <package name="vitest" version="^3.2.4" purpose="Frontend component tests" />
+        <package name="@playwright/test" version="^1.57.0" purpose="E2E tests" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Clean Architecture: Domain has no dependencies, Application depends on Domain, Infrastructure implements interfaces, API depends on all layers</constraint>
+    <constraint type="cqrs">Use MediatR IRequest/IRequestHandler pattern for all commands and queries</constraint>
+    <constraint type="validation">Use FluentValidation for command/request validation, validators in Application layer</constraint>
+    <constraint type="error-handling">Controllers do NOT need try-catch blocks - GlobalExceptionHandlerMiddleware maps exceptions to HTTP status codes automatically</constraint>
+    <constraint type="multi-tenant">Set AccountId from ICurrentUser.AccountId in handlers. EF Core global query filters enforce tenant isolation.</constraint>
+    <constraint type="soft-delete">Use DeletedAt timestamp for soft deletes. Global query filter excludes deleted records.</constraint>
+    <constraint type="api-responses">Return 201 Created with { id } and Location header for POST. Return 204 No Content for PUT/DELETE.</constraint>
+    <constraint type="frontend-state">Use @ngrx/signals signalStore pattern with optimistic updates for create operations</constraint>
+    <constraint type="form-validation">Angular reactive forms with validators. Show errors on blur and submit. Clear form after successful save.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="POST /api/v1/income" kind="REST endpoint">
+      <signature>POST /api/v1/income</signature>
+      <request>{ "propertyId": "guid", "amount": decimal, "date": "YYYY-MM-DD", "source": "string?", "description": "string?" }</request>
+      <response status="201">{ "id": "guid" } + Location header</response>
+      <errors>400 (validation), 401 (unauthorized), 404 (property not found)</errors>
+    </interface>
+    <interface name="GET /api/v1/properties/{id}/income" kind="REST endpoint">
+      <signature>GET /api/v1/properties/{id}/income?year={int}</signature>
+      <response status="200">{ "items": IncomeDto[], "totalCount": int, "ytdTotal": decimal }</response>
+      <errors>401 (unauthorized), 404 (property not found)</errors>
+    </interface>
+    <interface name="CreateIncomeCommand" kind="MediatR command">
+      <signature>CreateIncomeCommand(Guid PropertyId, decimal Amount, DateOnly Date, string? Source, string? Description) : IRequest&lt;Guid&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Income/CreateIncome.cs</path>
+    </interface>
+    <interface name="GetIncomeByPropertyQuery" kind="MediatR query">
+      <signature>GetIncomeByPropertyQuery(Guid PropertyId, int? Year) : IRequest&lt;List&lt;IncomeDto&gt;&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Income/GetIncomeByProperty.cs</path>
+    </interface>
+    <interface name="IncomeStore" kind="Signal store">
+      <signature>signalStore({ providedIn: 'root' }, withState, withComputed, withMethods)</signature>
+      <methods>loadIncomeByProperty, createIncome, reset</methods>
+      <path>frontend/src/app/features/income/stores/income.store.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend uses xUnit with Arrange-Act-Assert pattern. Test naming: Method_Scenario_ExpectedResult. Use Testcontainers for integration tests with real PostgreSQL. Frontend uses Vitest with @testing-library patterns. Mock API calls in component tests. E2E uses Playwright for critical user flows.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Income/</location>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>frontend/src/app/features/income/**/*.spec.ts</location>
+      <location>frontend/e2e/</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.1.1">Integration: POST /income unauthorized returns 401, POST /income with valid request returns 201</idea>
+      <idea ac="AC-4.1.3">Unit: CreateIncomeHandler creates entity with correct AccountId, PropertyId validation throws NotFoundException</idea>
+      <idea ac="AC-4.1.4">Unit: GetIncomeTotalByPropertyHandler sums amounts correctly, returns 0 for empty property</idea>
+      <idea ac="AC-4.1.5">Unit: CreateIncomeValidator rejects amount=0, rejects negative amount, requires propertyId</idea>
+      <idea ac="AC-4.1.2">Component: IncomeWorkspaceComponent loads and displays income list, shows YTD total</idea>
+      <idea ac="AC-4.1.6">Component: IncomeRowComponent formats date and amount correctly, hides empty source</idea>
+      <idea ac="AC-4.1.3">Component: IncomeFormComponent clears after save, shows snackbar on success</idea>
+      <idea ac="AC-4.1.1">E2E: Navigate to income workspace, create income, verify appears in list</idea>
+    </ideas>
+  </tests>
+</story-context>
