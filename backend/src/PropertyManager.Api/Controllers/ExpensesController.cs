@@ -35,6 +35,70 @@ public class ExpensesController : ControllerBase
     }
 
     /// <summary>
+    /// Check for potential duplicate expenses (AC-3.6.1, AC-3.6.5).
+    /// Duplicate detection: same property + same amount + date within 24 hours (±1 day).
+    /// </summary>
+    /// <param name="propertyId">Property GUID</param>
+    /// <param name="amount">Expense amount (decimal)</param>
+    /// <param name="date">Expense date (DateOnly)</param>
+    /// <returns>Duplicate check result with optional existing expense details</returns>
+    /// <response code="200">Returns duplicate check result (isDuplicate: true/false)</response>
+    /// <response code="400">If required parameters are missing</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("expenses/check-duplicate")]
+    [ProducesResponseType(typeof(DuplicateCheckResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CheckDuplicateExpense(
+        [FromQuery] Guid? propertyId,
+        [FromQuery] decimal? amount,
+        [FromQuery] DateOnly? date)
+    {
+        // Validate required parameters
+        var errors = new Dictionary<string, string[]>();
+        if (!propertyId.HasValue || propertyId.Value == Guid.Empty)
+        {
+            errors.Add("propertyId", ["Property ID is required"]);
+        }
+        if (!amount.HasValue)
+        {
+            errors.Add("amount", ["Amount is required"]);
+        }
+        if (!date.HasValue)
+        {
+            errors.Add("date", ["Date is required"]);
+        }
+
+        if (errors.Count > 0)
+        {
+            var problemDetails = new ValidationProblemDetails(errors)
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "One or more validation errors occurred.",
+                Status = StatusCodes.Status400BadRequest,
+                Instance = HttpContext.Request.Path,
+                Extensions = { ["traceId"] = HttpContext.TraceIdentifier }
+            };
+            return BadRequest(problemDetails);
+        }
+
+        var query = new CheckDuplicateExpenseQuery(propertyId!.Value, amount!.Value, date!.Value);
+        var result = await _mediator.Send(query);
+
+        if (result.IsDuplicate)
+        {
+            _logger.LogInformation(
+                "Potential duplicate expense detected: PropertyId={PropertyId}, Amount={Amount}, Date={Date} at {Timestamp}",
+                propertyId,
+                amount,
+                date,
+                DateTime.UtcNow);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get expense totals for a given year with per-property breakdown (AC-3.5.2, AC-3.5.4).
     /// </summary>
     /// <param name="year">Tax year (defaults to current year)</param>

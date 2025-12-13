@@ -117,7 +117,25 @@ export interface UpdateExpenseRequest {
 }
 
 /**
- * ExpenseService (AC-3.1.1, AC-3.1.4, AC-3.1.6, AC-3.1.7)
+ * Duplicate check result (AC-3.6.1, AC-3.6.5)
+ */
+export interface DuplicateCheckResult {
+  isDuplicate: boolean;
+  existingExpense?: DuplicateExpenseDto;
+}
+
+/**
+ * Existing expense info for duplicate warning (AC-3.6.2)
+ */
+export interface DuplicateExpenseDto {
+  id: string;
+  date: string;
+  amount: number;
+  description?: string;
+}
+
+/**
+ * ExpenseService (AC-3.1.1, AC-3.1.4, AC-3.1.6, AC-3.1.7, AC-3.6.1)
  *
  * Provides API methods for expense management.
  */
@@ -183,6 +201,23 @@ export class ExpenseService {
    */
   deleteExpense(expenseId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/expenses/${expenseId}`);
+  }
+
+  /**
+   * Check for potential duplicate expenses (AC-3.6.1, AC-3.6.5)
+   * @param propertyId Property GUID
+   * @param amount Expense amount
+   * @param date Expense date (ISO string YYYY-MM-DD)
+   * @returns Observable with duplicate check result
+   */
+  checkDuplicateExpense(propertyId: string, amount: number, date: string): Observable<DuplicateCheckResult> {
+    return this.http.get<DuplicateCheckResult>(`${this.baseUrl}/expenses/check-duplicate`, {
+      params: {
+        propertyId,
+        amount: amount.toString(),
+        date,
+      },
+    });
   }
 
   /**

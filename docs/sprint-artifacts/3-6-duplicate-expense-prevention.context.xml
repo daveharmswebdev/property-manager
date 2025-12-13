@@ -1,0 +1,385 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>6</storyId>
+    <title>Duplicate Expense Prevention</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-11</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-6-duplicate-expense-prevention.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>the system to warn me about potential duplicate expenses</iWant>
+    <soThat>I don't accidentally enter the same expense twice</soThat>
+    <tasks>
+      <task id="1" title="Create CheckDuplicateExpense Query and Handler">
+        <ac>3.6.1, 3.6.5</ac>
+        <subtasks>
+          <subtask>Create CheckDuplicateExpense.cs in Application/Expenses/</subtask>
+          <subtask>Define CheckDuplicateExpenseQuery(Guid PropertyId, decimal Amount, DateOnly Date) : IRequest&lt;DuplicateCheckResult&gt;</subtask>
+          <subtask>Create DuplicateCheckResult record with: IsDuplicate (bool), ExistingExpense (optional ExpenseDto)</subtask>
+          <subtask>Handler queries expenses where: PropertyId matches, Amount matches exactly, Date within ±1 day</subtask>
+          <subtask>Filter by AccountId via global query filter</subtask>
+          <subtask>Exclude soft-deleted expenses (DeletedAt != null)</subtask>
+          <subtask>Use .AsNoTracking() for performance</subtask>
+          <subtask>Return first matching expense if found</subtask>
+        </subtasks>
+      </task>
+      <task id="2" title="Add GET /expenses/check-duplicate Endpoint">
+        <ac>3.6.1</ac>
+        <subtasks>
+          <subtask>Add GET /api/v1/expenses/check-duplicate endpoint to ExpensesController</subtask>
+          <subtask>Query parameters: propertyId (Guid), amount (decimal), date (DateOnly)</subtask>
+          <subtask>Return DuplicateCheckResult as JSON</subtask>
+          <subtask>Response format: { isDuplicate: true/false, existingExpense?: { id, date, amount, description } }</subtask>
+          <subtask>Update Swagger documentation</subtask>
+          <subtask>Handle validation errors (missing params return 400)</subtask>
+        </subtasks>
+      </task>
+      <task id="3" title="Generate TypeScript API Client">
+        <ac>N/A</ac>
+        <subtasks>
+          <subtask>Run NSwag to generate updated TypeScript client</subtask>
+          <subtask>Verify checkDuplicateExpense(propertyId, amount, date) method generated</subtask>
+          <subtask>Verify DuplicateCheckResult response type generated</subtask>
+        </subtasks>
+      </task>
+      <task id="4" title="Create DuplicateWarningDialogComponent">
+        <ac>3.6.2, 3.6.3, 3.6.4</ac>
+        <subtasks>
+          <subtask>Create duplicate-warning-dialog/ directory in features/expenses/components/</subtask>
+          <subtask>Create duplicate-warning-dialog.component.ts</subtask>
+          <subtask>Use Angular Material MatDialog with mat-dialog-content</subtask>
+          <subtask>Dialog receives existing expense data via MAT_DIALOG_DATA</subtask>
+          <subtask>Display message: "Possible duplicate: You entered a similar expense on [date] for [amount]. Save anyway?"</subtask>
+          <subtask>Show existing expense details: date formatted, amount with currency</subtask>
+          <subtask>Include description if present on existing expense</subtask>
+          <subtask>[Cancel] button returns false (dialog result)</subtask>
+          <subtask>[Save Anyway] button returns true (dialog result)</subtask>
+          <subtask>Style with Forest Green accent color</subtask>
+          <subtask>Write component tests</subtask>
+        </subtasks>
+      </task>
+      <task id="5" title="Integrate Duplicate Check into Expense Form Submission">
+        <ac>3.6.1, 3.6.2, 3.6.3, 3.6.4</ac>
+        <subtasks>
+          <subtask>Modify expense form submission flow in expense-workspace.component.ts</subtask>
+          <subtask>After form validation passes, call checkDuplicateExpense API</subtask>
+          <subtask>If isDuplicate: true, open DuplicateWarningDialogComponent</subtask>
+          <subtask>Wait for dialog result (Promise/Observable)</subtask>
+          <subtask>If dialog returns false (Cancel): stop, do not save, keep form data</subtask>
+          <subtask>If dialog returns true (Save Anyway): proceed with normal save</subtask>
+          <subtask>If isDuplicate: false: proceed with normal save (no dialog)</subtask>
+          <subtask>Handle loading state during duplicate check</subtask>
+        </subtasks>
+      </task>
+      <task id="6" title="Write Backend Unit Tests">
+        <ac>3.6.1, 3.6.5</ac>
+        <subtasks>
+          <subtask>CheckDuplicateExpenseHandlerTests.cs with 8 test cases</subtask>
+        </subtasks>
+      </task>
+      <task id="7" title="Write Backend Integration Tests">
+        <ac>3.6.1</ac>
+        <subtasks>
+          <subtask>ExpensesControllerTests.cs with 4 test cases</subtask>
+        </subtasks>
+      </task>
+      <task id="8" title="Write Frontend Component Tests">
+        <ac>3.6.2, 3.6.3, 3.6.4</ac>
+        <subtasks>
+          <subtask>DuplicateWarningDialogComponent: 5 test cases</subtask>
+          <subtask>ExpenseWorkspaceComponent updates: 5 test cases</subtask>
+        </subtasks>
+      </task>
+      <task id="9" title="Manual Verification">
+        <ac>All</ac>
+        <subtasks>
+          <subtask>Verify duplicate detection works with exact match</subtask>
+          <subtask>Verify date boundary handling (same day, day before/after)</subtask>
+          <subtask>Verify Cancel preserves form data</subtask>
+          <subtask>Verify Save Anyway creates expense</subtask>
+          <subtask>Verify no warning for dates &gt; 24 hours apart</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.6.1">
+      <title>Duplicate detection triggers when same property + amount + date within 24 hours</title>
+      <conditions>
+        <condition>When creating a new expense, system checks for existing expenses with same PropertyId, same Amount (exact match), Date within 24-hour window (same day or day before/after)</condition>
+        <condition>Check happens after form validation, before actual save</condition>
+        <condition>Check is triggered by form submission (not real-time during typing)</condition>
+      </conditions>
+    </criterion>
+    <criterion id="AC-3.6.2">
+      <title>Warning dialog displays with duplicate details</title>
+      <conditions>
+        <condition>Warning message: "Possible duplicate: You entered a similar expense on [date] for [amount]. Save anyway?"</condition>
+        <condition>Dialog shows existing expense details: date, amount, description (if any)</condition>
+        <condition>Dialog uses Angular Material mat-dialog component</condition>
+        <condition>Styling follows Forest Green theme</condition>
+      </conditions>
+    </criterion>
+    <criterion id="AC-3.6.3">
+      <title>User can cancel and return to form with data preserved</title>
+      <conditions>
+        <condition>[Cancel] button dismisses the dialog</condition>
+        <condition>Form data remains exactly as entered (not cleared)</condition>
+        <condition>User can modify the data or re-submit</condition>
+        <condition>No expense is created</condition>
+      </conditions>
+    </criterion>
+    <criterion id="AC-3.6.4">
+      <title>User can override and save despite duplicate warning</title>
+      <conditions>
+        <condition>[Save Anyway] button creates the expense (user override)</condition>
+        <condition>Expense is saved normally with all entered data</condition>
+        <condition>Snackbar confirmation: "Expense saved"</condition>
+        <condition>Form clears and is ready for next entry</condition>
+      </conditions>
+    </criterion>
+    <criterion id="AC-3.6.5">
+      <title>Amounts with dates more than 24 hours apart do not trigger warning</title>
+      <conditions>
+        <condition>Same property + same amount with date &gt; 24 hours apart: no warning</condition>
+        <condition>This allows legitimate recurring expenses (e.g., monthly utilities)</condition>
+        <condition>Edge case: expense on Dec 1 and Dec 2 = duplicate warning</condition>
+        <condition>Edge case: expense on Dec 1 and Dec 3 = no warning</condition>
+      </conditions>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>AC-3.6: Duplicate Expense Prevention</section>
+        <snippet>Duplicate detection criteria: Same propertyId + amount + date within 24 hours. Endpoint GET /api/v1/expenses/check-duplicate returns isDuplicate boolean and optional existingExpense details.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Expense Tracking</title>
+        <section>Workflows and Sequencing - Create Expense Flow</section>
+        <snippet>Frontend calls POST /api/v1/expenses/check-duplicate before save. If duplicate found, show warning dialog. User can Cancel (return to form) or Save Anyway (proceed with create).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>Error Handling Pattern - Global Exception Handler</section>
+        <snippet>Controllers do NOT need try-catch blocks for domain exceptions. Global middleware handles NotFoundException (404), ValidationException (400), etc. Return 200 OK with isDuplicate: false for no match, NOT 404.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Property Manager Architecture</title>
+        <section>CQRS Pattern</section>
+        <snippet>Commands/Queries in Application layer with MediatR handlers. Validation via FluentValidation pipeline behavior. Read queries use .AsNoTracking() for performance.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR57 - Duplicate Prevention</section>
+        <snippet>System prevents duplicate expense entries (same property, amount, date, category within short time window) with override option.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>UX Pattern Decisions - Feedback Patterns</section>
+        <snippet>Success snackbar: "Expense saved" at bottom-center, 3 seconds auto-dismiss. Confirmations use mat-dialog with Cancel and primary action buttons. Forest Green theme (#66BB6A).</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Confirmation Patterns</section>
+        <snippet>Destructive actions on quick items (single expense) get inline confirmation. Dialog pattern: clear message, Cancel button (secondary), primary action button.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+        <kind>controller</kind>
+        <symbol>ExpensesController</symbol>
+        <lines>all</lines>
+        <reason>Add new GET /expenses/check-duplicate endpoint following existing patterns (GetExpenseTotals pattern at line 44-61)</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Expenses/GetExpenseTotals.cs</path>
+        <kind>query-handler</kind>
+        <symbol>GetExpenseTotalsQuery, GetExpenseTotalsHandler</symbol>
+        <lines>all</lines>
+        <reason>Reference pattern for Query + Handler + DTO structure with date filtering and .AsNoTracking()</reason>
+      </file>
+      <file>
+        <path>backend/src/PropertyManager.Application/Expenses/ExpenseDto.cs</path>
+        <kind>dto</kind>
+        <symbol>ExpenseDto</symbol>
+        <lines>all</lines>
+        <reason>Existing DTO to reuse for existingExpense in DuplicateCheckResult response</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/expenses/expense-workspace/expense-workspace.component.ts</path>
+        <kind>component</kind>
+        <symbol>ExpenseWorkspaceComponent</symbol>
+        <lines>all</lines>
+        <reason>Integrate duplicate check into onSubmit flow - do NOT reset form until after duplicate check passes or user confirms save</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/expenses/components/expense-form/expense-form.component.ts</path>
+        <kind>component</kind>
+        <symbol>ExpenseFormComponent</symbol>
+        <lines>247-292</lines>
+        <reason>Current onSubmit() implementation - needs modification to call duplicate check before createExpense, preserve form data on cancel</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.ts</path>
+        <kind>component</kind>
+        <symbol>ConfirmDialogComponent, ConfirmDialogData</symbol>
+        <lines>all</lines>
+        <reason>Reference for dialog pattern - use MAT_DIALOG_DATA injection, dialogRef.close(true/false) pattern. DuplicateWarningDialog should use similar structure but with different styling (not warn color)</reason>
+      </file>
+      <file>
+        <path>frontend/src/app/features/expenses/stores/expense.store.ts</path>
+        <kind>store</kind>
+        <symbol>ExpenseStore</symbol>
+        <lines>all</lines>
+        <reason>May need checkDuplicateExpense method or duplicate check can be direct API call in component</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="dotnet">
+        <package name="MediatR" version="13.1.0" usage="CQRS query/handler pattern for CheckDuplicateExpenseQuery" />
+        <package name="FluentValidation" version="12.1.0" usage="Optional - can add validator for query params if needed" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.0.0" usage="Database queries with global query filters" />
+      </ecosystem>
+      <ecosystem name="node">
+        <package name="@angular/core" version="^20.3.0" usage="Component framework" />
+        <package name="@angular/material" version="^20.2.14" usage="MatDialog, MatButton, MatIcon for warning dialog" />
+        <package name="@ngrx/signals" version="^20.1.0" usage="State management in expense store" />
+        <package name="nswag" version="^14.6.3" usage="Generate TypeScript client after adding endpoint" />
+        <package name="vitest" version="^3.2.4" usage="Frontend component tests" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      <rule>Backend Clean Architecture: Query + Handler in Application/Expenses/, Controller in Api/Controllers/</rule>
+      <rule>MediatR CQRS pattern: CheckDuplicateExpenseQuery : IRequest&lt;DuplicateCheckResult&gt;</rule>
+      <rule>Global exception handler - no try-catch in controller, return 200 OK with isDuplicate: false (not 404) when no duplicate</rule>
+    </constraint>
+    <constraint type="security">
+      <rule>AccountId filtering via EF Core global query filter (automatic)</rule>
+      <rule>Exclude soft-deleted expenses (DeletedAt != null) from duplicate check</rule>
+    </constraint>
+    <constraint type="frontend">
+      <rule>Angular Material MatDialog for warning dialog</rule>
+      <rule>Forest Green theme (#66BB6A) - NOT warn color (red) for primary button since this is not destructive</rule>
+      <rule>Form data must be preserved when user cancels (do not clear until confirmed save)</rule>
+    </constraint>
+    <constraint type="api">
+      <rule>Endpoint: GET /api/v1/expenses/check-duplicate</rule>
+      <rule>Query params: propertyId (Guid), amount (decimal), date (DateOnly)</rule>
+      <rule>Return 200 OK always with { isDuplicate: boolean, existingExpense?: {...} }</rule>
+      <rule>Return 400 Bad Request for missing required parameters</rule>
+    </constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/expenses/check-duplicate</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/expenses/check-duplicate?propertyId={guid}&amp;amount={decimal}&amp;date={yyyy-MM-dd}</signature>
+      <path>backend/src/PropertyManager.Api/Controllers/ExpensesController.cs</path>
+    </interface>
+    <interface>
+      <name>CheckDuplicateExpenseQuery</name>
+      <kind>MediatR Query</kind>
+      <signature>record CheckDuplicateExpenseQuery(Guid PropertyId, decimal Amount, DateOnly Date) : IRequest&lt;DuplicateCheckResult&gt;</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/CheckDuplicateExpense.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>DuplicateCheckResult</name>
+      <kind>DTO</kind>
+      <signature>record DuplicateCheckResult(bool IsDuplicate, DuplicateExpenseDto? ExistingExpense)</signature>
+      <path>backend/src/PropertyManager.Application/Expenses/CheckDuplicateExpense.cs (to create)</path>
+    </interface>
+    <interface>
+      <name>DuplicateWarningDialogData</name>
+      <kind>TypeScript interface</kind>
+      <signature>interface DuplicateWarningDialogData { existingExpense: { id: string, date: string, amount: number, description?: string } }</signature>
+      <path>frontend/src/app/features/expenses/components/duplicate-warning-dialog/duplicate-warning-dialog.component.ts (to create)</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      <backend>
+        <pattern>xUnit with FluentAssertions for assertions</pattern>
+        <pattern>Moq + MockQueryable.Moq for mocking DbContext</pattern>
+        <pattern>Arrange-Act-Assert structure with comments separating sections</pattern>
+        <pattern>Unit tests: Mock IAppDbContext, test handler directly</pattern>
+        <pattern>Integration tests: IClassFixture&lt;PropertyManagerWebApplicationFactory&gt; for real HTTP calls</pattern>
+        <pattern>Integration tests: RegisterAndLoginAsync() helper for authenticated requests</pattern>
+        <pattern>Global query filter simulation: Filter DeletedAt != null in test setup</pattern>
+        <pattern>Naming: {Handler}Tests.cs, {Controller}Tests.cs with AC references in XML doc</pattern>
+      </backend>
+      <frontend>
+        <pattern>Vitest with Angular TestBed</pattern>
+        <pattern>vi.fn() for mocking services</pattern>
+        <pattern>Service spies injected via TestBed.configureTestingModule providers</pattern>
+        <pattern>Async tests use await new Promise(resolve => setTimeout(resolve, 0))</pattern>
+        <pattern>Test state changes, snackbar calls, service method invocations</pattern>
+        <pattern>describe() blocks organized by feature/AC</pattern>
+      </frontend>
+    </standards>
+    <locations>
+      <backend>
+        <location>backend/tests/PropertyManager.Application.Tests/Expenses/CheckDuplicateExpenseHandlerTests.cs (to create)</location>
+        <location>backend/tests/PropertyManager.Api.Tests/ExpensesControllerCheckDuplicateTests.cs (to create)</location>
+        <reference>backend/tests/PropertyManager.Application.Tests/Expenses/GetExpenseTotalsHandlerTests.cs</reference>
+        <reference>backend/tests/PropertyManager.Api.Tests/ExpensesControllerGetAllTests.cs</reference>
+      </backend>
+      <frontend>
+        <location>frontend/src/app/features/expenses/components/duplicate-warning-dialog/duplicate-warning-dialog.component.spec.ts (to create)</location>
+        <location>frontend/src/app/features/expenses/components/expense-form/expense-form.component.spec.ts (to create or update)</location>
+        <reference>frontend/src/app/features/expenses/stores/expense.store.spec.ts</reference>
+        <reference>frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts</reference>
+      </frontend>
+    </locations>
+    <ideas>
+      <backend-unit title="CheckDuplicateExpenseHandlerTests">
+        <test>Handle_WithMatchingExpense_ReturnsIsDuplicateTrue - same property, amount, date within ±1 day</test>
+        <test>Handle_NoMatchingExpense_ReturnsIsDuplicateFalse - returns false with null existingExpense</test>
+        <test>Handle_DifferentProperty_ReturnsIsDuplicateFalse - same amount/date but different property</test>
+        <test>Handle_DifferentAmount_ReturnsIsDuplicateFalse - same property/date but different amount</test>
+        <test>Handle_DateMoreThan24HoursApart_ReturnsIsDuplicateFalse - Dec 1 vs Dec 3 = no duplicate</test>
+        <test>Handle_DateExactlyOneDayApart_ReturnsIsDuplicateTrue - Dec 1 vs Dec 2 = duplicate</test>
+        <test>Handle_SameDate_ReturnsIsDuplicateTrue - exact same date = duplicate</test>
+        <test>Handle_ExcludesDeletedExpenses - soft-deleted expenses should not trigger duplicate</test>
+      </backend-unit>
+      <backend-integration title="ExpensesControllerCheckDuplicateTests">
+        <test>CheckDuplicate_WithoutAuth_Returns401</test>
+        <test>CheckDuplicate_DuplicateFound_Returns200WithIsDuplicateTrue</test>
+        <test>CheckDuplicate_NoDuplicate_Returns200WithIsDuplicateFalse</test>
+        <test>CheckDuplicate_MissingParams_Returns400</test>
+      </backend-integration>
+      <frontend-dialog title="DuplicateWarningDialogComponent">
+        <test>should display duplicate expense details (date, amount, description)</test>
+        <test>should close with true when Save Anyway clicked</test>
+        <test>should close with false when Cancel clicked</test>
+        <test>should format amount as currency</test>
+        <test>should format date in readable format</test>
+      </frontend-dialog>
+      <frontend-form title="ExpenseFormComponent duplicate flow">
+        <test>should call checkDuplicateExpense before saving (AC-3.6.1)</test>
+        <test>should open dialog when duplicate detected (AC-3.6.2)</test>
+        <test>should preserve form data when Cancel clicked (AC-3.6.3)</test>
+        <test>should clear form and save when Save Anyway clicked (AC-3.6.4)</test>
+        <test>should save directly without dialog when no duplicate (AC-3.6.5)</test>
+      </frontend-form>
+    </ideas>
+  </tests>
+</story-context>
