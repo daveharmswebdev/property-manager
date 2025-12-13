@@ -27,6 +27,10 @@ public class IncomeConfiguration : IEntityTypeConfiguration<Income>
         builder.HasIndex(e => e.PropertyId)
             .HasDatabaseName("IX_Income_PropertyId");
 
+        // Composite index for efficient property + date queries
+        builder.HasIndex(e => new { e.PropertyId, e.Date })
+            .HasDatabaseName("IX_Income_PropertyId_Date");
+
         builder.Property(e => e.Amount)
             .HasPrecision(10, 2)
             .IsRequired();

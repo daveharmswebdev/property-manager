@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Domain.Entities;
+using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
 namespace PropertyManager.Application.Common.Interfaces;
 
@@ -12,7 +13,7 @@ public interface IAppDbContext
     DbSet<Account> Accounts { get; }
     DbSet<Property> Properties { get; }
     DbSet<Expense> Expenses { get; }
-    DbSet<Income> Income { get; }
+    DbSet<IncomeEntity> Income { get; }
     DbSet<Receipt> Receipts { get; }
     DbSet<ExpenseCategory> ExpenseCategories { get; }
 

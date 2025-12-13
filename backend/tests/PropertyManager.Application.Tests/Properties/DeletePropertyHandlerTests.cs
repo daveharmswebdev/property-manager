@@ -6,6 +6,7 @@ using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Properties;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Domain.Exceptions;
+using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
 namespace PropertyManager.Application.Tests.Properties;
 
@@ -174,7 +175,7 @@ public class DeletePropertyHandlerTests
     {
         // Arrange (AC-2.5.3 - income must be preserved)
         var property = CreateProperty(_testAccountId, "Property With Income");
-        var income1 = new Income
+        var income1 = new IncomeEntity
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
@@ -184,7 +185,7 @@ public class DeletePropertyHandlerTests
             Date = DateOnly.FromDateTime(DateTime.Today),
             DeletedAt = null
         };
-        property.Income = new List<Income> { income1 };
+        property.Income = new List<IncomeEntity> { income1 };
 
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
@@ -245,7 +246,7 @@ public class DeletePropertyHandlerTests
             UpdatedAt = DateTime.UtcNow.AddDays(-10),
             DeletedAt = null,
             Expenses = new List<Expense>(),
-            Income = new List<Income>(),
+            Income = new List<IncomeEntity>(),
             Receipts = new List<Receipt>()
         };
     }

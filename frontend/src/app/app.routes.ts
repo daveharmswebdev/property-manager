@@ -102,6 +102,14 @@ export const routes: Routes = [
             (m) => m.ExpenseWorkspaceComponent
           ),
       },
+      // Property Income Workspace (AC-4.1.1)
+      {
+        path: 'properties/:id/income',
+        loadComponent: () =>
+          import('./features/income/income-workspace/income-workspace.component').then(
+            (m) => m.IncomeWorkspaceComponent
+          ),
+      },
       // Expenses (AC7.7)
       {
         path: 'expenses',

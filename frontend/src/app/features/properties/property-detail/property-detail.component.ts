@@ -83,9 +83,8 @@ import {
               Add Expense
             </button>
             <button mat-stroked-button
-                    disabled
-                    matTooltip="Coming soon"
-                    matTooltipPosition="below">
+                    color="primary"
+                    [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'income']">
               <mat-icon>add</mat-icon>
               Add Income
             </button>
