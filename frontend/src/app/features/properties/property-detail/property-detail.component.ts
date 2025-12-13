@@ -509,7 +509,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.location.back();
+    this.router.navigate(['/properties']);
   }
 
   /**
