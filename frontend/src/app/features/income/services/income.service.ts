@@ -52,7 +52,17 @@ export interface IncomeTotalResponse {
 }
 
 /**
- * IncomeService (AC-4.1.3, AC-4.1.4)
+ * Request model for updating an income entry (AC-4.2.2)
+ */
+export interface UpdateIncomeRequest {
+  amount: number;
+  date: string; // ISO date string (YYYY-MM-DD)
+  source?: string;
+  description?: string;
+}
+
+/**
+ * IncomeService (AC-4.1.3, AC-4.1.4, AC-4.2.2, AC-4.2.3, AC-4.2.6)
  *
  * Provides API methods for income management.
  */
@@ -95,5 +105,33 @@ export class IncomeService {
       `${this.baseUrl}/properties/${propertyId}/income/total`,
       { params: { year: year.toString() } }
     );
+  }
+
+  /**
+   * Get a single income entry by ID (AC-4.2.2)
+   * @param id Income GUID
+   * @returns Observable with income entry
+   */
+  getIncomeById(id: string): Observable<IncomeDto> {
+    return this.http.get<IncomeDto>(`${this.baseUrl}/income/${id}`);
+  }
+
+  /**
+   * Update an existing income entry (AC-4.2.2, AC-4.2.3)
+   * @param id Income GUID
+   * @param request Updated income details
+   * @returns Observable<void> on success
+   */
+  updateIncome(id: string, request: UpdateIncomeRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/income/${id}`, request);
+  }
+
+  /**
+   * Delete an income entry (soft delete) (AC-4.2.5, AC-4.2.6)
+   * @param id Income GUID
+   * @returns Observable<void> on success
+   */
+  deleteIncome(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/income/${id}`);
   }
 }

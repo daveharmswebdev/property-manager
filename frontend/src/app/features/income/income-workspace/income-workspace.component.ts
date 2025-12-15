@@ -10,15 +10,17 @@ import { IncomeStore } from '../stores/income.store';
 import { IncomeFormComponent } from '../components/income-form/income-form.component';
 import { IncomeRowComponent } from '../components/income-row/income-row.component';
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
+import { UpdateIncomeRequest } from '../services/income.service';
 
 /**
- * IncomeWorkspaceComponent (AC-4.1.1, AC-4.1.2, AC-4.1.4)
+ * IncomeWorkspaceComponent (AC-4.1.1, AC-4.1.2, AC-4.1.4, AC-4.2.3, AC-4.2.6)
  *
  * Main workspace for income management:
  * - Property name header for context
  * - New income form at top
  * - Previous income list below
  * - YTD income total
+ * - Edit and delete functionality (AC-4.2)
  */
 @Component({
   selector: 'app-income-workspace',
@@ -94,7 +96,12 @@ import { PropertyService, PropertyDetailDto } from '../../properties/services/pr
                 @for (income of store.incomeEntries(); track income.id) {
                   <app-income-row
                     [income]="income"
+                    [isEditing]="store.editingIncomeId() === income.id"
+                    [isSaving]="store.isUpdating()"
+                    [isDeleting]="store.isDeleting()"
                     (edit)="onEditIncome($event)"
+                    (save)="onSaveIncome($event)"
+                    (cancelEdit)="onCancelEdit()"
                     (delete)="onDeleteIncome($event)"
                   />
                 }
@@ -271,19 +278,35 @@ export class IncomeWorkspaceComponent implements OnInit {
   }
 
   /**
-   * Handle edit button click (prepared for Story 4.2)
+   * Handle edit button click (AC-4.2.1)
+   * Sets the editing income ID in store to show inline edit form
    */
   protected onEditIncome(incomeId: string): void {
-    // Will be implemented in Story 4.2
-    console.log('Edit income:', incomeId);
+    this.store.setEditingIncome(incomeId);
   }
 
   /**
-   * Handle delete button click (prepared for Story 4.2)
+   * Handle save edit (AC-4.2.3)
+   * Calls store.updateIncome with the updated data
+   */
+  protected onSaveIncome(event: { incomeId: string; request: UpdateIncomeRequest }): void {
+    this.store.updateIncome(event);
+  }
+
+  /**
+   * Handle cancel edit (AC-4.2.7)
+   * Clears the editing income ID in store
+   */
+  protected onCancelEdit(): void {
+    this.store.cancelEditing();
+  }
+
+  /**
+   * Handle delete confirmed (AC-4.2.6)
+   * Calls store.deleteIncome to soft-delete the income
    */
   protected onDeleteIncome(incomeId: string): void {
-    // Will be implemented in Story 4.2
-    console.log('Delete income:', incomeId);
+    this.store.deleteIncome(incomeId);
   }
 
   protected goBack(): void {
