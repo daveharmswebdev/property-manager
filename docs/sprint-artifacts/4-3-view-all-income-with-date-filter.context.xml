@@ -1,0 +1,276 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>3</storyId>
+    <title>View All Income with Date Filter</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-15</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-3-view-all-income-with-date-filter.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>property owner</asA>
+    <iWant>to view all income across properties and filter by date</iWant>
+    <soThat>I can see total earnings and find specific payments</soThat>
+    <tasks>
+      <task id="1" ac="4.3.1, 4.3.2, 4.3.3, 4.3.4">Create GetAllIncome Query and Handler
+        <subtask>Create GetAllIncome.cs in Application/Income/</subtask>
+        <subtask>GetAllIncomeQuery(DateOnly? DateFrom, DateOnly? DateTo, Guid? PropertyId, int? Year) : IRequest&lt;IncomeListResult&gt;</subtask>
+        <subtask>IncomeListResult { Items: List&lt;IncomeDto&gt;, TotalCount: int, TotalAmount: decimal }</subtask>
+        <subtask>Handler retrieves income for current account with filters</subtask>
+        <subtask>Apply date range filter (DateFrom to DateTo inclusive)</subtask>
+        <subtask>Apply property filter if PropertyId provided</subtask>
+        <subtask>Apply tax year filter if Year provided</subtask>
+        <subtask>Calculate TotalAmount from filtered results</subtask>
+        <subtask>Order by Date descending</subtask>
+        <subtask>Unit tests for filter combinations</subtask>
+      </task>
+      <task id="2" ac="4.3.1">Update IncomeController with GetAll Endpoint
+        <subtask>Add GET /api/v1/income endpoint with query parameters</subtask>
+        <subtask>Query params: dateFrom, dateTo, propertyId, year</subtask>
+        <subtask>Returns { items: [...], totalCount: n, totalAmount: n }</subtask>
+        <subtask>Returns 200 OK with empty items array if no matches</subtask>
+        <subtask>Update Swagger documentation</subtask>
+      </task>
+      <task id="3">Regenerate TypeScript API Client
+        <subtask>Run NSwag to regenerate API client</subtask>
+        <subtask>Verify income_GetAll method generated with filter parameters</subtask>
+        <subtask>Verify IncomeListResult type generated</subtask>
+      </task>
+      <task id="4" ac="4.3.1">Update IncomeService for GetAll
+        <subtask>Add getAllIncome(params?: IncomeFilterParams): Observable&lt;IncomeListResult&gt; method</subtask>
+        <subtask>IncomeFilterParams { dateFrom?: string, dateTo?: string, propertyId?: string, year?: number }</subtask>
+        <subtask>Build query string from filter parameters</subtask>
+        <subtask>Handle empty/null parameters correctly</subtask>
+      </task>
+      <task id="5" ac="4.3.1">Create Income List Page Route and Component
+        <subtask>Add /income route to app.routes.ts</subtask>
+        <subtask>Create IncomeListComponent in features/income/</subtask>
+        <subtask>Route protected by auth guard</subtask>
+        <subtask>Component lazy-loaded with income module</subtask>
+      </task>
+      <task id="6" ac="4.3.1, 4.3.6">Extend IncomeStore for List State
+        <subtask>Add allIncome signal for full list state</subtask>
+        <subtask>Add totalAmount computed signal</subtask>
+        <subtask>Add filters signal for current filter state</subtask>
+        <subtask>Add loadAllIncome rxMethod with filter parameters</subtask>
+        <subtask>Handle loading state with isLoadingAll signal</subtask>
+        <subtask>Update filters when year selector changes</subtask>
+      </task>
+      <task id="7" ac="4.3.2">Create IncomeListComponent UI
+        <subtask>Page title: "Income"</subtask>
+        <subtask>Filters section at top of page</subtask>
+        <subtask>Income list using mat-table or custom list</subtask>
+        <subtask>Columns: Date | Property | Source | Description | Amount</subtask>
+        <subtask>Reuse IncomeRowComponent for row display</subtask>
+        <subtask>Total income display below filters or above list</subtask>
+        <subtask>Responsive layout for mobile</subtask>
+      </task>
+      <task id="8" ac="4.3.3">Implement Date Range Filter
+        <subtask>Add mat-datepicker for "From" date input</subtask>
+        <subtask>Add mat-datepicker for "To" date input</subtask>
+        <subtask>Clear button to reset date range</subtask>
+        <subtask>Filter triggers on date selection (no submit button)</subtask>
+        <subtask>Update store filters and reload data</subtask>
+        <subtask>Default to tax year range from app state</subtask>
+      </task>
+      <task id="9" ac="4.3.4">Implement Property Filter
+        <subtask>Add mat-select dropdown for property filter</subtask>
+        <subtask>Options: "All Properties" + list of user's properties</subtask>
+        <subtask>"All Properties" is default selection</subtask>
+        <subtask>Filter triggers on selection change</subtask>
+        <subtask>Works in combination with date range filter</subtask>
+        <subtask>Inject PropertyStore to load property options</subtask>
+      </task>
+      <task id="10" ac="4.3.5">Implement Empty State
+        <subtask>Show "No income recorded for this period" when filters return empty</subtask>
+        <subtask>Include "Clear Filters" link that resets all filters</subtask>
+        <subtask>Show "No income recorded yet" when no income exists at all</subtask>
+        <subtask>Add "Add Income" link if on specific property context</subtask>
+        <subtask>Style consistently with empty states on other pages</subtask>
+      </task>
+      <task id="11" ac="4.3.3, 4.3.6">Integrate with Tax Year Selector
+        <subtask>Subscribe to AppState year selector</subtask>
+        <subtask>When year changes, update filters and reload income</subtask>
+        <subtask>Default date range respects selected tax year</subtask>
+        <subtask>Total reflects income for selected year</subtask>
+      </task>
+      <task id="12">Write Backend Unit Tests
+        <subtask>GetAllIncomeHandlerTests.cs:
+          - Handle_NoFilters_ReturnsAllIncome
+          - Handle_DateFromFilter_ReturnsIncomeAfterDate
+          - Handle_DateToFilter_ReturnsIncomeBeforeDate
+          - Handle_DateRangeFilter_ReturnsIncomeInRange
+          - Handle_PropertyFilter_ReturnsPropertyIncome
+          - Handle_YearFilter_ReturnsIncomeForYear
+          - Handle_CombinedFilters_ReturnsCorrectIncome
+          - Handle_CalculatesTotalAmount_Correctly
+          - Handle_OrdersByDateDescending</subtask>
+      </task>
+      <task id="13">Write Backend Integration Tests
+        <subtask>IncomeControllerGetAllTests.cs:
+          - GetAll_ReturnsIncomeList_WithCount
+          - GetAll_WithDateFilter_ReturnsFilteredIncome
+          - GetAll_WithPropertyFilter_ReturnsPropertyIncome
+          - GetAll_Unauthorized_Returns401</subtask>
+      </task>
+      <task id="14">Write Frontend Component Tests
+        <subtask>income-list.component.spec.ts:
+          - Should render income list
+          - Should display total amount
+          - Should filter by date range
+          - Should filter by property
+          - Should show empty state when no income
+          - Should clear filters</subtask>
+      </task>
+      <task id="15">Manual Verification
+        <subtask>All backend tests pass</subtask>
+        <subtask>All frontend tests pass</subtask>
+        <subtask>Frontend builds successfully</subtask>
+        <subtask>Smoke test completed</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.3.1">Navigation "Income" shows all income across all properties
+      - Sidebar navigation includes "Income" menu item
+      - Clicking "Income" navigates to /income route
+      - Route is protected by auth guard (requires login)
+      - Income page loads with all income entries for the current user's account</criterion>
+    <criterion id="AC-4.3.2">List displays required columns
+      - Date column: Formatted date (e.g., "Dec 15, 2025")
+      - Property name column: Property the income belongs to
+      - Source column: Shows source if provided, empty otherwise
+      - Description column: Shows description if provided, empty otherwise
+      - Amount column: Currency formatted (e.g., "$1,500.00")
+      - List sorted by date descending (newest first)
+      - Respects global tax year selector</criterion>
+    <criterion id="AC-4.3.3">Date range filter limits displayed income
+      - Date range picker with "From" and "To" date inputs
+      - Selecting date range filters income to entries within that period
+      - Total updates to reflect filtered results
+      - Filter applied immediately on selection (no submit button)
+      - Clear filter option to reset date range
+      - Default: Shows all income for selected tax year</criterion>
+    <criterion id="AC-4.3.4">Property filter limits to single property
+      - Property dropdown filter with all user's properties
+      - Selecting property filters to only that property's income
+      - "All Properties" option to show income from all properties
+      - Filter works in combination with date range filter
+      - Total updates to reflect filtered results</criterion>
+    <criterion id="AC-4.3.5">Empty state displays appropriate message
+      - When no income matches filters: "No income recorded for this period"
+      - Empty state includes clear filters link
+      - When no income exists at all: "No income recorded yet. Add your first income entry."
+      - Empty state centered and styled consistently with other pages</criterion>
+    <criterion id="AC-4.3.6">Total reflects filtered results
+      - Total income amount displayed above or below the list
+      - Total recalculates when filters change
+      - Total formatted as currency (e.g., "Total: $4,500.00")
+      - Label: "Total Income" with filtered amount</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="AC-4.3: View All Income with Filters" snippet="AC 13-18 define navigation to income list, column display, date range filtering, property filtering, empty state, and total calculation requirements." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="APIs and Interfaces" snippet="GET /api/v1/income with query params dateFrom, dateTo, propertyId, year returns { items, totalCount }." />
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Income Management (FR23-29)" snippet="FR28-FR29: Users can view income entries for a single property and filter income by date range." />
+      <doc path="docs/architecture.md" title="Architecture" section="API Contracts" snippet="Collection responses use { items: [...], totalCount: n } format. All endpoints require JWT authentication." />
+      <doc path="docs/architecture.md" title="Architecture" section="CQRS Pattern" snippet="Queries use IRequest&lt;T&gt; and handler pattern. Global query filters enforce AccountId tenant isolation." />
+      <doc path="docs/architecture.md" title="Architecture" section="Frontend Structure" snippet="Feature modules in features/ folder with stores/, services/, components/ subfolders. @ngrx/signals for state management." />
+      <doc path="docs/architecture.md" title="Architecture" section="Error Handling Pattern" snippet="Global Exception Handler middleware maps NotFoundException to 404, ValidationException to 400. Controllers do NOT need try-catch for domain exceptions." />
+    </docs>
+    <code>
+      <file path="backend/src/PropertyManager.Application/Expenses/GetAllExpenses.cs" kind="query" symbol="GetAllExpensesQuery, GetAllExpensesHandler" lines="1-145" reason="Reference pattern for GetAllIncome query with date range, year, and pagination filters. Copy this structure for income." />
+      <file path="backend/src/PropertyManager.Application/Income/IncomeDto.cs" kind="dto" symbol="IncomeDto" reason="Existing DTO for income with id, propertyId, propertyName, amount, date, source, description, createdAt." />
+      <file path="backend/src/PropertyManager.Application/Income/GetIncomeByProperty.cs" kind="query" symbol="GetIncomeByPropertyQuery, IncomeListDto" reason="Existing query returning income for single property. IncomeListDto has Items, TotalCount, YtdTotal structure to extend." />
+      <file path="backend/src/PropertyManager.Api/Controllers/IncomeController.cs" kind="controller" symbol="IncomeController" lines="1-288" reason="Add GET /api/v1/income endpoint here. Follow existing pattern from GetIncomeByProperty endpoint." />
+      <file path="frontend/src/app/features/income/services/income.service.ts" kind="service" symbol="IncomeService" lines="1-138" reason="Add getAllIncome method here following existing getIncomeByProperty pattern." />
+      <file path="frontend/src/app/features/income/stores/income.store.ts" kind="store" symbol="IncomeStore" lines="1-395" reason="Extend with allIncome state, filters, loadAllIncome method. Current store handles property-scoped income." />
+      <file path="frontend/src/app/features/expenses/stores/expense-list.store.ts" kind="store" symbol="ExpenseListStore" lines="1-482" reason="Reference pattern for list store with filters, pagination, computed filter chips. Copy this pattern for income list." />
+      <file path="frontend/src/app/features/expenses/expenses.component.ts" kind="component" symbol="ExpensesComponent" lines="1-316" reason="Reference UI pattern for expenses list page. Adapt for income list with similar structure." />
+      <file path="frontend/src/app/features/expenses/components/expense-filters/expense-filters.component.ts" kind="component" symbol="ExpenseFiltersComponent" lines="1-301" reason="Reference filter component with date range, category, search. Adapt for income filters (date range + property only)." />
+      <file path="frontend/src/app/features/income/income.component.ts" kind="component" symbol="IncomeComponent" lines="1-59" reason="Placeholder component at /income route. Replace with full income list implementation." />
+      <file path="frontend/src/app/features/income/components/income-row/income-row.component.ts" kind="component" symbol="IncomeRowComponent" reason="Existing row component for income display. Reuse for list items." />
+      <file path="frontend/src/app/app.routes.ts" kind="config" symbol="routes" lines="121-128" reason="Route already configured at /income. Component just needs implementation." />
+    </code>
+    <dependencies>
+      <backend>
+        <package name="MediatR" version="12.x" purpose="CQRS command/query handling" />
+        <package name="FluentValidation" version="11.x" purpose="Request validation" />
+        <package name="Microsoft.EntityFrameworkCore" version="10.x" purpose="Database operations with global query filters" />
+        <package name="Serilog" version="3.x" purpose="Structured logging" />
+        <package name="NSwag.AspNetCore" version="14.6.3" purpose="Swagger/OpenAPI generation" />
+      </backend>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0" purpose="Angular framework" />
+        <package name="@angular/material" version="^20.2.14" purpose="UI components (mat-datepicker, mat-select, mat-table)" />
+        <package name="@ngrx/signals" version="^20.1.0" purpose="Signal-based state management" />
+        <package name="rxjs" version="~7.8.0" purpose="Reactive programming, rxMethod for async calls" />
+        <package name="nswag" version="^14.6.3" purpose="TypeScript API client generation" />
+        <package name="vitest" version="^3.2.4" purpose="Frontend unit/component testing" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Clean Architecture: Query in Application/Income/ folder. Controller in Api/Controllers/. No business logic in controller.</constraint>
+    <constraint type="architecture">CQRS Pattern: Use IRequest&lt;T&gt; for query, handler registered via MediatR assembly scanning.</constraint>
+    <constraint type="security">AccountId filtering enforced via EF Core global query filters. All income queries automatically scoped to current account.</constraint>
+    <constraint type="api">RESTful conventions: GET /api/v1/income for list, query params for filters, response format { items, totalCount, totalAmount }.</constraint>
+    <constraint type="testing">Unit tests in PropertyManager.Application.Tests, integration tests in PropertyManager.Api.Tests.</constraint>
+    <constraint type="frontend">@ngrx/signals for state. Use rxMethod for async API calls. Computed signals for derived values.</constraint>
+    <constraint type="frontend">Angular Material components for UI. mat-datepicker for dates, mat-select for property filter.</constraint>
+    <constraint type="frontend">No pagination required (unlike expenses). Income volume is lower, show all with filtering.</constraint>
+    <constraint type="ux">Filter triggers on selection change (no submit button). Immediate feedback to user.</constraint>
+    <constraint type="ux">Empty states styled consistently with expenses page. Use mat-card with icon and message.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="GET /api/v1/income" kind="REST endpoint">
+      <signature>GET /api/v1/income?dateFrom={YYYY-MM-DD}&amp;dateTo={YYYY-MM-DD}&amp;propertyId={guid}&amp;year={int}</signature>
+      <request>Query params: dateFrom (optional), dateTo (optional), propertyId (optional), year (optional)</request>
+      <response>200 OK: { items: IncomeDto[], totalCount: number, totalAmount: number }</response>
+      <path>backend/src/PropertyManager.Api/Controllers/IncomeController.cs</path>
+    </interface>
+    <interface name="GetAllIncomeQuery" kind="MediatR query">
+      <signature>record GetAllIncomeQuery(DateOnly? DateFrom, DateOnly? DateTo, Guid? PropertyId, int? Year) : IRequest&lt;IncomeListResult&gt;</signature>
+      <response>IncomeListResult { Items: List&lt;IncomeDto&gt;, TotalCount: int, TotalAmount: decimal }</response>
+      <path>backend/src/PropertyManager.Application/Income/GetAllIncome.cs</path>
+    </interface>
+    <interface name="IncomeService.getAllIncome" kind="Angular service method">
+      <signature>getAllIncome(params?: IncomeFilterParams): Observable&lt;IncomeListResult&gt;</signature>
+      <path>frontend/src/app/features/income/services/income.service.ts</path>
+    </interface>
+    <interface name="IncomeStore.loadAllIncome" kind="ngrx/signals rxMethod">
+      <signature>loadAllIncome: rxMethod&lt;IncomeFilterParams&gt;</signature>
+      <path>frontend/src/app/features/income/stores/income.store.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Backend: xUnit for unit and integration tests. Test naming: Method_Scenario_ExpectedResult. Use in-memory or Testcontainers for database tests.
+      Frontend: Vitest for unit/component tests. Testing Library patterns for user-behavior focused tests. MSW for API mocking.
+      All tests must pass before PR merge. Smoke test checklist included in story for manual verification.
+    </standards>
+    <locations>
+      <location>backend/tests/PropertyManager.Application.Tests/Income/</location>
+      <location>backend/tests/PropertyManager.Api.Tests/</location>
+      <location>frontend/src/app/features/income/**/*.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.3.1">Handle_NoFilters_ReturnsAllIncome - Verify all income returned when no filters applied</idea>
+      <idea ac="AC-4.3.3">Handle_DateRangeFilter_ReturnsIncomeInRange - Filter by dateFrom and dateTo</idea>
+      <idea ac="AC-4.3.4">Handle_PropertyFilter_ReturnsPropertyIncome - Filter by propertyId</idea>
+      <idea ac="AC-4.3.6">Handle_CalculatesTotalAmount_Correctly - Sum of filtered income amounts</idea>
+      <idea ac="AC-4.3.2">Handle_OrdersByDateDescending - Newest income first</idea>
+      <idea ac="AC-4.3.1">GetAll_Unauthorized_Returns401 - Integration test for auth requirement</idea>
+      <idea ac="AC-4.3.5">Component shows "No income recorded" when truly empty</idea>
+      <idea ac="AC-4.3.5">Component shows "No income for this period" when filtered empty</idea>
+      <idea ac="AC-4.3.6">Total updates when filters change</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -34,6 +34,41 @@ public class IncomeController : ControllerBase
     }
 
     /// <summary>
+    /// Get all income across all properties with optional filters (AC-4.3.1, AC-4.3.2, AC-4.3.3, AC-4.3.4, AC-4.3.6).
+    /// </summary>
+    /// <param name="dateFrom">Filter income from this date (inclusive)</param>
+    /// <param name="dateTo">Filter income to this date (inclusive)</param>
+    /// <param name="propertyId">Filter to specific property</param>
+    /// <param name="year">Filter to specific tax year</param>
+    /// <returns>List of income entries with total count and amount</returns>
+    /// <response code="200">Returns the list of income entries with totals</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("income")]
+    [ProducesResponseType(typeof(IncomeListResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetAllIncome(
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
+        [FromQuery] Guid? propertyId = null,
+        [FromQuery] int? year = null)
+    {
+        var query = new GetAllIncomeQuery(dateFrom, dateTo, propertyId, year);
+        var response = await _mediator.Send(query);
+
+        _logger.LogInformation(
+            "Retrieved {Count} income entries (total: {Total}), filters: dateFrom={DateFrom}, dateTo={DateTo}, propertyId={PropertyId}, year={Year} at {Timestamp}",
+            response.TotalCount,
+            response.TotalAmount,
+            dateFrom?.ToString() ?? "null",
+            dateTo?.ToString() ?? "null",
+            propertyId?.ToString() ?? "null",
+            year?.ToString() ?? "null",
+            DateTime.UtcNow);
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Create a new income entry (AC-4.1.3).
     /// </summary>
     /// <param name="request">Income details</param>
