@@ -52,6 +52,25 @@ export interface IncomeTotalResponse {
 }
 
 /**
+ * Filter parameters for getting all income (AC-4.3.3, AC-4.3.4)
+ */
+export interface IncomeFilterParams {
+  dateFrom?: string;
+  dateTo?: string;
+  propertyId?: string;
+  year?: number;
+}
+
+/**
+ * Response model for all income (AC-4.3.1, AC-4.3.6)
+ */
+export interface AllIncomeResponse {
+  items: IncomeDto[];
+  totalCount: number;
+  totalAmount: number;
+}
+
+/**
  * Request model for updating an income entry (AC-4.2.2)
  */
 export interface UpdateIncomeRequest {
@@ -70,6 +89,32 @@ export interface UpdateIncomeRequest {
 export class IncomeService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1';
+
+  /**
+   * Get all income across all properties with optional filters (AC-4.3.1, AC-4.3.3, AC-4.3.4)
+   * @param params Filter parameters (dateFrom, dateTo, propertyId, year)
+   * @returns Observable with income list, total count, and total amount
+   */
+  getAllIncome(params?: IncomeFilterParams): Observable<AllIncomeResponse> {
+    const queryParams: Record<string, string> = {};
+
+    if (params?.dateFrom) {
+      queryParams['dateFrom'] = params.dateFrom;
+    }
+    if (params?.dateTo) {
+      queryParams['dateTo'] = params.dateTo;
+    }
+    if (params?.propertyId) {
+      queryParams['propertyId'] = params.propertyId;
+    }
+    if (params?.year) {
+      queryParams['year'] = params.year.toString();
+    }
+
+    return this.http.get<AllIncomeResponse>(`${this.baseUrl}/income`, {
+      params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+    });
+  }
 
   /**
    * Create a new income entry (AC-4.1.3)

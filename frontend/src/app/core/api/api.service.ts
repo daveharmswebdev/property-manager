@@ -33,6 +33,7 @@ export interface IApiClient {
     expenses_DeleteExpense(id: string): Observable<void>;
     health_Health(): Observable<HealthResponse>;
     health_Ready(): Observable<ReadyResponse>;
+    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult>;
     income_CreateIncome(request: CreateIncomeRequest): Observable<CreateIncomeResponse>;
     income_GetIncomeByProperty(id: string, year?: number | null | undefined): Observable<IncomeListDto>;
     income_GetIncomeTotalByProperty(id: string, year?: number | null | undefined): Observable<IncomeTotalResponse>;
@@ -1129,6 +1130,68 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult> {
+        let url_ = this.baseUrl + "/api/v1/income?";
+        if (dateFrom !== undefined && dateFrom !== null)
+            url_ += "dateFrom=" + encodeURIComponent(dateFrom ? "" + dateFrom.toISOString() : "") + "&";
+        if (dateTo !== undefined && dateTo !== null)
+            url_ += "dateTo=" + encodeURIComponent(dateTo ? "" + dateTo.toISOString() : "") + "&";
+        if (propertyId !== undefined && propertyId !== null)
+            url_ += "propertyId=" + encodeURIComponent("" + propertyId) + "&";
+        if (year !== undefined && year !== null)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processIncome_GetAllIncome(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processIncome_GetAllIncome(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IncomeListResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IncomeListResult>;
+        }));
+    }
+
+    protected processIncome_GetAllIncome(response: HttpResponseBase): Observable<IncomeListResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IncomeListResult;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     income_CreateIncome(request: CreateIncomeRequest): Observable<CreateIncomeResponse> {
         let url_ = this.baseUrl + "/api/v1/income";
         url_ = url_.replace(/[?&]$/, "");
@@ -2007,6 +2070,23 @@ export interface ReadyResponse {
     timestamp?: Date;
 }
 
+export interface IncomeListResult {
+    items?: IncomeDto[];
+    totalCount?: number;
+    totalAmount?: number;
+}
+
+export interface IncomeDto {
+    id?: string;
+    propertyId?: string;
+    propertyName?: string;
+    amount?: number;
+    date?: Date;
+    source?: string | undefined;
+    description?: string | undefined;
+    createdAt?: Date;
+}
+
 export interface CreateIncomeResponse {
     id?: string;
 }
@@ -2023,17 +2103,6 @@ export interface IncomeListDto {
     items?: IncomeDto[];
     totalCount?: number;
     ytdTotal?: number;
-}
-
-export interface IncomeDto {
-    id?: string;
-    propertyId?: string;
-    propertyName?: string;
-    amount?: number;
-    date?: Date;
-    source?: string | undefined;
-    description?: string | undefined;
-    createdAt?: Date;
 }
 
 export interface IncomeTotalResponse {
