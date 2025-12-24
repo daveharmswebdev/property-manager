@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,12 +6,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
 
 /**
- * PropertyRowComponent (AC-2.2.2, AC-2.2.5)
+ * PropertyRowComponent (AC-2.2.2, AC-2.2.5, AC-4.4.5, AC-4.4.6)
  *
  * Displays a single property row in a scannable list format:
  * - Property name
  * - Address (city, state format)
  * - YTD expense total
+ * - YTD net income with color coding
  * - Disabled [+] button for quick-add expense (Epic 3)
  *
  * Emits click event for navigation to property detail.
@@ -41,6 +42,11 @@ import { MatRippleModule } from '@angular/material/core';
       <div class="property-expense">
         <span class="expense-label">YTD Expenses</span>
         <span class="expense-value">{{ expenseTotal() | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+
+      <div class="property-net" [class.positive]="netIncome() > 0" [class.negative]="netIncome() < 0" [class.zero]="netIncome() === 0">
+        <span class="net-label">Net</span>
+        <span class="net-value">{{ formattedNetIncome() }}</span>
       </div>
 
       <button
@@ -137,6 +143,40 @@ import { MatRippleModule } from '@angular/material/core';
       color: var(--pm-text-primary);
     }
 
+    .property-net {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      min-width: 90px;
+    }
+
+    .net-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--pm-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .net-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--pm-text-primary);
+    }
+
+    .property-net.positive .net-value {
+      color: var(--pm-primary-dark);
+    }
+
+    .property-net.negative .net-value {
+      color: #c62828;
+    }
+
+    .property-net.zero .net-value {
+      color: var(--pm-text-primary);
+    }
+
     .add-expense-btn {
       opacity: 0.5;
       flex-shrink: 0;
@@ -182,6 +222,14 @@ import { MatRippleModule } from '@angular/material/core';
       .expense-value {
         font-size: 14px;
       }
+
+      .property-net {
+        min-width: 70px;
+      }
+
+      .net-value {
+        font-size: 14px;
+      }
     }
   `]
 })
@@ -211,6 +259,36 @@ export class PropertyRowComponent {
    * Default: 0
    */
   readonly expenseTotal = input<number>(0);
+
+  /**
+   * Year-to-date income total (AC-4.4.5)
+   * Default: 0
+   */
+  readonly incomeTotal = input<number>(0);
+
+  /**
+   * Computed net income: income - expenses (AC-4.4.5)
+   */
+  readonly netIncome = computed(() => this.incomeTotal() - this.expenseTotal());
+
+  /**
+   * Formatted net income with accounting format for negative values (AC-4.4.4)
+   */
+  readonly formattedNetIncome = computed(() => {
+    const value = this.netIncome();
+    const absValue = Math.abs(value);
+    const formatted = absValue.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    if (value < 0) {
+      return `(${formatted})`;
+    }
+    return formatted;
+  });
 
   /**
    * Emitted when the row is clicked for navigation

@@ -69,7 +69,12 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
                         && e.DeletedAt == null
                         && e.Date.Year == year)
                     .Sum(e => (decimal?)e.Amount) ?? 0m,
-                0m  // IncomeTotal placeholder until Epic 4
+                _dbContext.Income
+                    .Where(i => i.PropertyId == p.Id
+                        && i.AccountId == _currentUser.AccountId
+                        && i.DeletedAt == null
+                        && i.Date.Year == year)
+                    .Sum(i => (decimal?)i.Amount) ?? 0m
             ))
             .AsNoTracking()
             .ToListAsync(cancellationToken);

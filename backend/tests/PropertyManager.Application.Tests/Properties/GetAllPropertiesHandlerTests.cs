@@ -4,6 +4,7 @@ using Moq;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Properties;
 using PropertyManager.Domain.Entities;
+using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
 namespace PropertyManager.Application.Tests.Properties;
 
@@ -35,6 +36,7 @@ public class GetAllPropertiesHandlerTests
         var properties = new List<Property>();
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -57,6 +59,7 @@ public class GetAllPropertiesHandlerTests
         };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -80,6 +83,7 @@ public class GetAllPropertiesHandlerTests
         };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -103,6 +107,7 @@ public class GetAllPropertiesHandlerTests
         var properties = new List<Property> { activeProperty, deletedProperty };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -124,6 +129,7 @@ public class GetAllPropertiesHandlerTests
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -156,6 +162,7 @@ public class GetAllPropertiesHandlerTests
         };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -181,6 +188,7 @@ public class GetAllPropertiesHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery(Year: 2024);
 
         // Act
@@ -209,6 +217,7 @@ public class GetAllPropertiesHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -242,6 +251,7 @@ public class GetAllPropertiesHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery(Year: 2024);
 
         // Act
@@ -271,6 +281,7 @@ public class GetAllPropertiesHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -297,6 +308,7 @@ public class GetAllPropertiesHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -316,6 +328,7 @@ public class GetAllPropertiesHandlerTests
             .ToList();
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -352,6 +365,12 @@ public class GetAllPropertiesHandlerTests
     {
         var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
+    }
+
+    private void SetupIncomeDbSet(List<IncomeEntity> income)
+    {
+        var mockDbSet = income.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 
     private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date)

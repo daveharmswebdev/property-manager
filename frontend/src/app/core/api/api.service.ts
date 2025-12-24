@@ -22,6 +22,7 @@ export interface IApiClient {
     auth_Logout(): Observable<void>;
     auth_ForgotPassword(request: ForgotPasswordRequest): Observable<void>;
     auth_ResetPassword(request: ResetPasswordRequest): Observable<void>;
+    dashboard_GetTotals(year?: number | undefined): Observable<DashboardTotalsDto>;
     expenses_CheckDuplicateExpense(propertyId?: string | null | undefined, amount?: number | null | undefined, date?: Date | null | undefined): Observable<DuplicateCheckResult>;
     expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto>;
     expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
@@ -443,6 +444,64 @@ export class ApiClient implements IApiClient {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    dashboard_GetTotals(year?: number | undefined): Observable<DashboardTotalsDto> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/totals?";
+        if (year === null)
+            throw new globalThis.Error("The parameter 'year' cannot be null.");
+        else if (year !== undefined)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDashboard_GetTotals(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDashboard_GetTotals(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardTotalsDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardTotalsDto>;
+        }));
+    }
+
+    protected processDashboard_GetTotals(response: HttpResponseBase): Observable<DashboardTotalsDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardTotalsDto;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1959,6 +2018,13 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
     token?: string;
     newPassword?: string;
+}
+
+export interface DashboardTotalsDto {
+    totalExpenses?: number;
+    totalIncome?: number;
+    netIncome?: number;
+    propertyCount?: number;
 }
 
 export interface DuplicateCheckResult {

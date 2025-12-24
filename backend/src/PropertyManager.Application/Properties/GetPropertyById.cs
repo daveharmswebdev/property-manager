@@ -90,7 +90,12 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         && e.DeletedAt == null
                         && e.Date >= yearStart && e.Date <= yearEnd)
                     .Sum(e => (decimal?)e.Amount) ?? 0m,
-                0m, // IncomeTotal placeholder until Epic 4
+                _dbContext.Income
+                    .Where(i => i.PropertyId == p.Id
+                        && i.AccountId == _currentUser.AccountId
+                        && i.DeletedAt == null
+                        && i.Date >= yearStart && i.Date <= yearEnd)
+                    .Sum(i => (decimal?)i.Amount) ?? 0m,
                 p.CreatedAt,
                 p.UpdatedAt,
                 _dbContext.Expenses
@@ -107,7 +112,20 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         new DateTime(e.Date.Year, e.Date.Month, e.Date.Day)
                     ))
                     .ToList(),
-                Array.Empty<IncomeSummaryDto>()   // RecentIncome placeholder until Epic 4
+                _dbContext.Income
+                    .Where(i => i.PropertyId == p.Id
+                        && i.AccountId == _currentUser.AccountId
+                        && i.DeletedAt == null
+                        && i.Date >= yearStart && i.Date <= yearEnd)
+                    .OrderByDescending(i => i.Date)
+                    .Take(5)
+                    .Select(i => new IncomeSummaryDto(
+                        i.Id,
+                        i.Description ?? string.Empty,
+                        i.Amount,
+                        new DateTime(i.Date.Year, i.Date.Month, i.Date.Day)
+                    ))
+                    .ToList()
             ))
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);

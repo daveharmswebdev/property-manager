@@ -71,7 +71,7 @@ development_status:
   4-1-income-workspace-create-income-entry: done
   4-2-edit-and-delete-income-entry: done
   4-3-view-all-income-with-date-filter: done
-  4-4-dashboard-income-and-net-income-totals: backlog
+  4-4-dashboard-income-and-net-income-totals: ready-for-review
   epic-4-retrospective: optional
 
   # Epic 5: Receipt Capture

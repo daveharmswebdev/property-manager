@@ -96,6 +96,7 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
                       [city]="property.city"
                       [state]="property.state"
                       [expenseTotal]="property.expenseTotal"
+                      [incomeTotal]="property.incomeTotal"
                       (rowClick)="navigateToProperty($event)">
                     </app-property-row>
                   }
