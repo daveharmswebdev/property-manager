@@ -4,6 +4,7 @@ using Moq;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Properties;
 using PropertyManager.Domain.Entities;
+using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
 namespace PropertyManager.Application.Tests.Properties;
 
@@ -41,6 +42,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -65,6 +67,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property>();
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var nonExistentId = Guid.NewGuid();
         var query = new GetPropertyByIdQuery(nonExistentId);
 
@@ -83,6 +86,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { otherAccountProperty };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(otherAccountProperty.Id);
 
         // Act
@@ -102,6 +106,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { deletedProperty };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(deletedProperty.Id);
 
         // Act
@@ -119,6 +124,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -138,6 +144,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -166,6 +173,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -193,6 +201,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -229,6 +238,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -261,6 +271,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -289,6 +300,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -318,6 +330,7 @@ public class GetPropertyByIdHandlerTests
 
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
@@ -341,6 +354,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { property1, property2, property3 };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(property2.Id);
 
         // Act
@@ -360,6 +374,7 @@ public class GetPropertyByIdHandlerTests
         var properties = new List<Property> { property };
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(new List<IncomeEntity>());
         var query = new GetPropertyByIdQuery(Guid.Empty);
 
         // Act
@@ -395,6 +410,12 @@ public class GetPropertyByIdHandlerTests
     {
         var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
+    }
+
+    private void SetupIncomeDbSet(List<IncomeEntity> income)
+    {
+        var mockDbSet = income.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 
     private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date, string description)
