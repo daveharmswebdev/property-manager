@@ -229,6 +229,9 @@ export class ExpenseFormComponent implements OnInit {
   // Duplicate check loading state (AC-3.6.1)
   protected readonly isCheckingDuplicate = signal(false);
 
+  // Flag to prevent marking fields as touched during form reset
+  private isResetting = false;
+
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [this.today, [Validators.required]],
@@ -243,7 +246,10 @@ export class ExpenseFormComponent implements OnInit {
 
   protected onCategoryChange(categoryId: string): void {
     this.form.patchValue({ categoryId });
-    this.form.get('categoryId')?.markAsTouched();
+    // Only mark as touched on user interaction, not during programmatic reset
+    if (!this.isResetting) {
+      this.form.get('categoryId')?.markAsTouched();
+    }
   }
 
   protected getCategoryError(): string | null {
@@ -364,6 +370,7 @@ export class ExpenseFormComponent implements OnInit {
   }
 
   private resetForm(): void {
+    this.isResetting = true;
     this.form.reset({
       amount: null,
       date: this.today,
@@ -372,5 +379,9 @@ export class ExpenseFormComponent implements OnInit {
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
+    // Reset flag after a microtask to ensure change detection completes
+    setTimeout(() => {
+      this.isResetting = false;
+    });
   }
 }

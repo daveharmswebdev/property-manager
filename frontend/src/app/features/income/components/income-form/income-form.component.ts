@@ -222,6 +222,9 @@ export class IncomeFormComponent {
 
   protected readonly today = new Date();
 
+  // Flag to prevent marking fields as touched during form reset
+  private isResetting = false;
+
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [this.today, [Validators.required]],
@@ -261,6 +264,7 @@ export class IncomeFormComponent {
   }
 
   private resetForm(): void {
+    this.isResetting = true;
     this.form.reset({
       amount: null,
       date: this.today,
@@ -269,5 +273,9 @@ export class IncomeFormComponent {
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
+    // Reset flag after a microtask to ensure change detection completes
+    setTimeout(() => {
+      this.isResetting = false;
+    });
   }
 }

@@ -71,8 +71,16 @@ development_status:
   4-1-income-workspace-create-income-entry: done
   4-2-edit-and-delete-income-entry: done
   4-3-view-all-income-with-date-filter: done
-  4-4-dashboard-income-and-net-income-totals: ready-for-review
+  4-4-dashboard-income-and-net-income-totals: done
   epic-4-retrospective: optional
+
+  # Tech Debt Sprint 1 (between Epic 4 and 5)
+  tech-debt-sprint-1: in-progress
+  td-1-e2e-tests-main-flows: backlog          # Property CRUD, Expense CRUD, Income CRUD
+  td-2-refactor-e2e-tests: backlog            # Refine and organize e2e test structure
+  td-3-e2e-tests-in-cicd: backlog             # Verify e2e tests run in CI/CD pipeline
+  td-4-expense-form-reset-bug: ready-for-review  # Fixed: Added isResetting flag to prevent touched marking during reset
+  td-5-income-form-reset-bug: ready-for-review   # Fixed: Added isResetting flag with setTimeout for proper reset timing
 
   # Epic 5: Receipt Capture
   epic-5: backlog
