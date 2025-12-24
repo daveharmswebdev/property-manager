@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 
 /**
- * StatsBarComponent (AC-2.2.1)
+ * StatsBarComponent (AC-2.2.1, AC-4.4.1, AC-4.4.2, AC-4.4.3, AC-4.4.4)
  *
  * Displays a horizontal bar with three financial summary cards:
  * - Total Expenses YTD
@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
  * - Net Income YTD (calculated: income - expenses)
  *
  * Uses Forest Green theme styling.
+ * Negative net income displays in accounting format with parentheses: ($1,234.00)
  */
 @Component({
   selector: 'app-stats-bar',
@@ -35,11 +36,11 @@ import { MatIconModule } from '@angular/material/icon';
         </div>
       </mat-card>
 
-      <mat-card class="stat-card net-card" [class.positive]="netIncome() >= 0" [class.negative]="netIncome() < 0">
+      <mat-card class="stat-card net-card" [class.positive]="netIncome() > 0" [class.negative]="netIncome() < 0" [class.zero]="netIncome() === 0">
         <mat-icon class="stat-icon">{{ netIncome() >= 0 ? 'account_balance' : 'warning' }}</mat-icon>
         <div class="stat-content">
           <span class="stat-label">Net Income YTD</span>
-          <span class="stat-value net">{{ netIncome() | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="stat-value net">{{ formattedNetIncome() }}</span>
         </div>
       </mat-card>
     </div>
@@ -131,6 +132,10 @@ import { MatIconModule } from '@angular/material/icon';
       color: #c62828;
     }
 
+    .net-card.zero .stat-value.net {
+      color: var(--pm-text-primary);
+    }
+
     @media (max-width: 767px) {
       .stats-bar {
         flex-direction: column;
@@ -163,4 +168,27 @@ export class StatsBarComponent {
    * Computed net income: income - expenses
    */
   readonly netIncome = computed(() => this.incomeTotal() - this.expenseTotal());
+
+  /**
+   * Formatted net income with accounting format for negative values (AC-4.4.4)
+   * Positive: $1,234.00
+   * Negative: ($1,234.00) - accounting format with parentheses
+   * Zero: $0.00
+   */
+  readonly formattedNetIncome = computed(() => {
+    const value = this.netIncome();
+    const absValue = Math.abs(value);
+    const formatted = absValue.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    if (value < 0) {
+      // Accounting format: wrap in parentheses
+      return `(${formatted})`;
+    }
+    return formatted;
+  });
 }

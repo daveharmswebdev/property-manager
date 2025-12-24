@@ -135,12 +135,12 @@ import {
           <mat-card class="stat-card net-card">
             <mat-card-content>
               <div class="stat-icon">
-                <mat-icon>account_balance</mat-icon>
+                <mat-icon>{{ propertyStore.selectedPropertyNetIncome() >= 0 ? 'account_balance' : 'warning' }}</mat-icon>
               </div>
               <div class="stat-details">
                 <span class="stat-label">Net Income</span>
-                <span class="stat-value" [class.negative]="propertyStore.selectedPropertyNetIncome() < 0">
-                  {{ propertyStore.selectedPropertyNetIncome() | currency }}
+                <span class="stat-value" [class.negative]="propertyStore.selectedPropertyNetIncome() < 0" [class.positive]="propertyStore.selectedPropertyNetIncome() > 0">
+                  {{ formatNetIncome(propertyStore.selectedPropertyNetIncome()) }}
                 </span>
               </div>
             </mat-card-content>
@@ -376,6 +376,10 @@ import {
             &.negative {
               color: #c62828;
             }
+
+            &.positive {
+              color: var(--pm-primary-dark);
+            }
           }
         }
       }
@@ -510,6 +514,27 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/properties']);
+  }
+
+  /**
+   * Format net income with accounting format for negative values (AC-4.4.4)
+   * Positive: $1,234.00
+   * Negative: ($1,234.00) - accounting format with parentheses
+   * Zero: $0.00
+   */
+  formatNetIncome(value: number): string {
+    const absValue = Math.abs(value);
+    const formatted = absValue.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    if (value < 0) {
+      return `(${formatted})`;
+    }
+    return formatted;
   }
 
   /**
