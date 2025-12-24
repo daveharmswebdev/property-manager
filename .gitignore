@@ -129,3 +129,5 @@ docker-compose.local.yml
 *.tmp
 *.temp
 .cache/
+
+.playwright-mcp
