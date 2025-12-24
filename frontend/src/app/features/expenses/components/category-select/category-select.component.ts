@@ -34,7 +34,6 @@ import { ExpenseStore } from '../../stores/expense.store';
           [ngModel]="value()"
           (ngModelChange)="onCategoryChange($event)"
           [disabled]="disabled()"
-          required
         >
           @for (category of store.sortedCategories(); track category.id) {
             <mat-option [value]="category.id">

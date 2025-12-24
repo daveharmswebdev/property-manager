@@ -1,8 +1,9 @@
-import { Component, inject, input, output, OnInit, signal } from '@angular/core';
+import { Component, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormGroupDirective,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -239,6 +240,9 @@ export class ExpenseFormComponent implements OnInit {
     description: ['', [Validators.maxLength(500)]],
   });
 
+  // ViewChild to access FormGroupDirective for resetting submitted state
+  @ViewChild(FormGroupDirective) private formDirective!: FormGroupDirective;
+
   ngOnInit(): void {
     // Load categories if not already loaded
     this.store.loadCategories();
@@ -371,15 +375,15 @@ export class ExpenseFormComponent implements OnInit {
 
   private resetForm(): void {
     this.isResetting = true;
-    this.form.reset({
+    // Use formDirective.resetForm() to reset both form values AND the submitted state
+    // This is critical because ErrorStateMatcher shows errors when form.submitted is true
+    this.formDirective.resetForm({
       amount: null,
       date: this.today,
       categoryId: '',
       description: '',
     });
-    this.form.markAsUntouched();
-    this.form.markAsPristine();
-    // Reset flag after a microtask to ensure change detection completes
+    // Clear the resetting flag after change detection completes
     setTimeout(() => {
       this.isResetting = false;
     });

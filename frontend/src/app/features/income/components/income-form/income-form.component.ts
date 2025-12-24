@@ -1,8 +1,9 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormGroupDirective,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -222,15 +223,15 @@ export class IncomeFormComponent {
 
   protected readonly today = new Date();
 
-  // Flag to prevent marking fields as touched during form reset
-  private isResetting = false;
-
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [this.today, [Validators.required]],
     source: ['', [Validators.maxLength(255)]],
     description: ['', [Validators.maxLength(500)]],
   });
+
+  // ViewChild to access FormGroupDirective for resetting submitted state
+  @ViewChild(FormGroupDirective) private formDirective!: FormGroupDirective;
 
   /**
    * Handle form submission (AC-4.1.3, AC-4.1.5)
@@ -264,18 +265,13 @@ export class IncomeFormComponent {
   }
 
   private resetForm(): void {
-    this.isResetting = true;
-    this.form.reset({
+    // Use formDirective.resetForm() to reset both form values AND the submitted state
+    // This is critical because ErrorStateMatcher shows errors when form.submitted is true
+    this.formDirective.resetForm({
       amount: null,
       date: this.today,
       source: '',
       description: '',
-    });
-    this.form.markAsUntouched();
-    this.form.markAsPristine();
-    // Reset flag after a microtask to ensure change detection completes
-    setTimeout(() => {
-      this.isResetting = false;
     });
   }
 }
