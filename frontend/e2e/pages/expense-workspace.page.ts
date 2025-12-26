@@ -1,6 +1,7 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 import { BasePage } from './base.page';
 import { type TestExpense } from '../helpers/test-data.helper';
+import { formatDateForInput } from '../helpers/date.helper';
 
 /**
  * ExpenseWorkspacePage - Page object for expense workspace E2E tests
@@ -35,10 +36,8 @@ export class ExpenseWorkspacePage extends BasePage {
   readonly emptyState: Locator;
   readonly ytdTotal: Locator;
 
-  // Confirmation dialog
-  readonly confirmDialog: Locator;
-  readonly confirmDeleteButton: Locator;
-  readonly cancelDeleteButton: Locator;
+  // Note: Confirmation dialog locators inherited from BasePage
+  // - confirmDialog, confirmDialogConfirmButton, confirmDialogCancelButton
 
   constructor(page: Page) {
     super(page);
@@ -70,10 +69,7 @@ export class ExpenseWorkspacePage extends BasePage {
     this.emptyState = page.locator('.empty-state');
     this.ytdTotal = page.locator('.ytd-amount');
 
-    // Confirmation Dialog (uses shared ConfirmDialogComponent)
-    this.confirmDialog = page.locator('mat-dialog-container');
-    this.confirmDeleteButton = page.locator('mat-dialog-container button', { hasText: 'Delete' });
-    this.cancelDeleteButton = page.locator('mat-dialog-container button', { hasText: 'Cancel' });
+    // Confirmation Dialog - uses inherited locators from BasePage
   }
 
   async goto(): Promise<void> {
@@ -98,12 +94,7 @@ export class ExpenseWorkspacePage extends BasePage {
     // Fill date if provided (otherwise default is today)
     if (expense.date) {
       await this.dateInput.clear();
-      const dateStr = expense.date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric',
-      });
-      await this.dateInput.fill(dateStr);
+      await this.dateInput.fill(formatDateForInput(expense.date));
     }
 
     // Select category
@@ -160,12 +151,7 @@ export class ExpenseWorkspacePage extends BasePage {
 
     if (newData.date) {
       await this.editDateInput.clear();
-      const dateStr = newData.date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric',
-      });
-      await this.editDateInput.fill(dateStr);
+      await this.editDateInput.fill(formatDateForInput(newData.date));
     }
 
     if (newData.category) {
@@ -207,21 +193,17 @@ export class ExpenseWorkspacePage extends BasePage {
   async deleteExpense(description: string): Promise<void> {
     await this.clickDeleteExpense(description);
 
-    // Wait for and click confirm in dialog
-    await expect(this.confirmDialog).toBeVisible();
-    await this.confirmDeleteButton.click();
-
-    // Wait for snackbar confirmation
-    await this.waitForSnackBar('Expense deleted');
+    // Wait for and click confirm in dialog, then wait for snackbar
+    await this.waitForConfirmDialog();
+    await this.confirmDialogAction('Expense deleted');
   }
 
   /**
    * Cancel delete operation
    */
   async cancelDelete(): Promise<void> {
-    await expect(this.confirmDialog).toBeVisible();
-    await this.cancelDeleteButton.click();
-    await expect(this.confirmDialog).not.toBeVisible();
+    await this.waitForConfirmDialog();
+    await this.cancelDialogAction();
   }
 
   /**
@@ -259,12 +241,8 @@ export class ExpenseWorkspacePage extends BasePage {
     await expect(this.ytdTotal).toContainText(expectedTotal);
   }
 
-  /**
-   * Assert empty state is visible
-   */
-  async expectEmptyState(): Promise<void> {
-    await expect(this.emptyState).toBeVisible();
-  }
+  // Note: expectEmptyState() is inherited from BasePage
+  // Override emptyStateLocator getter if custom selector needed
 
   /**
    * Get expense amount from a row

@@ -30,10 +30,8 @@ export class PropertyDetailPage extends BasePage {
   readonly expensesEmptyState: Locator;
   readonly incomeEmptyState: Locator;
 
-  // Confirmation dialog
-  readonly confirmDialog: Locator;
-  readonly confirmDeleteButton: Locator;
-  readonly cancelDeleteButton: Locator;
+  // Note: Confirmation dialog locators inherited from BasePage
+  // - confirmDialog, confirmDialogConfirmButton, confirmDialogCancelButton
 
   // Edit form elements (on edit page)
   readonly nameInput: Locator;
@@ -73,10 +71,7 @@ export class PropertyDetailPage extends BasePage {
     this.expensesEmptyState = this.recentExpenses.locator('.empty-state');
     this.incomeEmptyState = this.recentIncome.locator('.empty-state');
 
-    // Confirmation dialog
-    this.confirmDialog = page.locator('mat-dialog-container');
-    this.confirmDeleteButton = page.locator('mat-dialog-container button', { hasText: 'Delete' });
-    this.cancelDeleteButton = page.locator('mat-dialog-container button', { hasText: 'Cancel' });
+    // Confirmation dialog - uses inherited locators from BasePage
 
     // Edit form elements (for property-edit page)
     this.nameInput = page.locator('input[formControlName="name"]');
@@ -107,14 +102,31 @@ export class PropertyDetailPage extends BasePage {
   }
 
   /**
-   * Click edit button from detail page
+   * Clicks the Edit button to navigate to the property edit page.
+   *
+   * After clicking, the page navigates to `/properties/{id}/edit`.
+   *
+   * @example
+   * ```typescript
+   * await propertyDetailPage.clickEdit();
+   * await expect(page).toHaveURL(/\/properties\/.*\/edit$/);
+   * ```
    */
   async clickEdit(): Promise<void> {
     await this.editButton.click();
   }
 
   /**
-   * Click delete button from detail page
+   * Clicks the Delete button to initiate property deletion.
+   *
+   * This opens the confirmation dialog. Use `deleteProperty()` for the
+   * complete delete flow including confirmation.
+   *
+   * @example
+   * ```typescript
+   * await propertyDetailPage.clickDelete();
+   * await expect(propertyDetailPage.confirmDialog).toBeVisible();
+   * ```
    */
   async clickDelete(): Promise<void> {
     await this.deleteButton.click();
@@ -125,18 +137,16 @@ export class PropertyDetailPage extends BasePage {
    */
   async deleteProperty(): Promise<void> {
     await this.clickDelete();
-    await expect(this.confirmDialog).toBeVisible();
-    await this.confirmDeleteButton.click();
-    await this.waitForSnackBar('Property deleted');
+    await this.waitForConfirmDialog();
+    await this.confirmDialogAction('Property deleted');
   }
 
   /**
    * Cancel delete operation
    */
   async cancelDelete(): Promise<void> {
-    await expect(this.confirmDialog).toBeVisible();
-    await this.cancelDeleteButton.click();
-    await expect(this.confirmDialog).not.toBeVisible();
+    await this.waitForConfirmDialog();
+    await this.cancelDialogAction();
   }
 
   /**
@@ -201,14 +211,30 @@ export class PropertyDetailPage extends BasePage {
   }
 
   /**
-   * Click Add Expense button
+   * Clicks the "Add Expense" button to navigate to the expense workspace.
+   *
+   * Navigates to `/properties/{id}/expenses`.
+   *
+   * @example
+   * ```typescript
+   * await propertyDetailPage.clickAddExpense();
+   * await expect(page).toHaveURL(/\/properties\/.*\/expenses$/);
+   * ```
    */
   async clickAddExpense(): Promise<void> {
     await this.addExpenseButton.click();
   }
 
   /**
-   * Click Add Income button
+   * Clicks the "Add Income" button to navigate to the income workspace.
+   *
+   * Navigates to `/properties/{id}/income`.
+   *
+   * @example
+   * ```typescript
+   * await propertyDetailPage.clickAddIncome();
+   * await expect(page).toHaveURL(/\/properties\/.*\/income$/);
+   * ```
    */
   async clickAddIncome(): Promise<void> {
     await this.addIncomeButton.click();
