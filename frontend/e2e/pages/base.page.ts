@@ -12,7 +12,8 @@ export abstract class BasePage {
   }
 
   get snackBar(): Locator {
-    return this.page.locator('.mat-mdc-snack-bar-label');
+    // Use specific attribute selector to avoid matching nested elements
+    return this.page.locator('[matsnackbarlabel]');
   }
 
   async waitForLoading(): Promise<void> {
@@ -20,7 +21,9 @@ export abstract class BasePage {
   }
 
   async waitForSnackBar(text: string): Promise<void> {
-    await this.snackBar.filter({ hasText: text }).waitFor({ state: 'visible' });
+    // First wait for the snackbar container to appear
+    const snackbar = this.snackBar.filter({ hasText: text });
+    await snackbar.first().waitFor({ state: 'visible', timeout: 5000 });
   }
 
   abstract goto(): Promise<void>;
