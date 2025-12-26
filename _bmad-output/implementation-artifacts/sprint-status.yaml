@@ -81,7 +81,7 @@ development_status:
   td-3-e2e-tests-in-cicd: done               # Verified: E2E tests running successfully in CI/CD (PR #41)
   td-4-expense-form-reset-bug: done              # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
   td-5-income-form-reset-bug: done               # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
-  td-6-invitation-only-registration: in-progress     # Remove public registration, add email invitation system
+  td-6-invitation-only-registration: done            # Remove public registration, add email invitation system (PR #42)
 
   # Epic 5: Receipt Capture
   epic-5: backlog
