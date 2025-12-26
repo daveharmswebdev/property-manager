@@ -17,7 +17,14 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "This project uses .NET 10 with Clean Architecture and Angular 20+ frontend"
+  - "Backend tests use xUnit with FluentAssertions - run 'dotnet test' from /backend"
+  - "Frontend tests use Vitest with Testing Library - run 'npm test' from /frontend"
+  - "Playwright MCP is available for E2E testing - use mcp__playwright__ tools for browser automation, snapshots, and UI verification"
+  - "TypeScript LSP plugin is available - use it for type checking, finding references, and understanding Angular/TypeScript code structure when designing tests"
+  - "C# LSP plugin is available - use it for type checking, finding references, and understanding .NET code structure when designing tests"
+  - "Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to search Playwright, Cypress, Vitest, xUnit, and other test framework docs"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

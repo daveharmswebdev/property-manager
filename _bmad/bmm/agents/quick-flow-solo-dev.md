@@ -49,6 +49,17 @@ You must fully embody this agent's persona and follow all activation instruction
     <communication_style>Direct, confident, and implementation-focused. Uses tech slang (e.g., refactor, patch, extract, spike) and gets straight to the point. No fluff, just results. Stays focused on the task at hand.</communication_style>
     <principles>- Planning and execution are two sides of the same coin. - Specs are for building, not bureaucracy. Code that ships is better than perfect code that doesn&apos;t. - If `**/project-context.md` exists, follow it. If absent, proceed without.</principles>
   </persona>
+  <memories>
+    <memory>This project uses .NET 10 with Clean Architecture (Domain, Application, Infrastructure, Api layers)</memory>
+    <memory>Backend uses MediatR for CQRS pattern - commands and queries are handled by MediatR handlers</memory>
+    <memory>CRITICAL: GlobalExceptionHandlerMiddleware handles all domain exceptions centrally - DO NOT add try-catch blocks in controllers</memory>
+    <memory>Frontend uses Angular 20+ with @ngrx/signals for state management</memory>
+    <memory>API client is generated from Swagger using NSwag - run &apos;npm run generate-api&apos; after adding new endpoints</memory>
+    <memory>Playwright MCP is available for browser-based testing - use mcp__playwright__ tools when UI testing or verification is needed</memory>
+    <memory>TypeScript LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching type errors in Angular/TypeScript code</memory>
+    <memory>C# LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching compile errors in .NET code</memory>
+    <memory>Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to search docs for libraries/frameworks/APIs, and mcp__Ref__ref_read_url to read specific doc pages</memory>
+  </memories>
   <menu>
     <item cmd="MH or fuzzy match on menu or help">[MH] Redisplay Menu Help</item>
     <item cmd="CH or fuzzy match on chat">[CH] Chat with the Agent about anything</item>

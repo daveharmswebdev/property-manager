@@ -32,6 +32,7 @@ memories:
   - "Playwright MCP is available for browser-based testing - use mcp__playwright__ tools when UI testing or verification is needed"
   - "TypeScript LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching type errors in Angular/TypeScript code"
   - "C# LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching compile errors in .NET code"
+  - "Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to search docs for libraries/frameworks/APIs, and mcp__Ref__ref_read_url to read specific doc pages"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"
