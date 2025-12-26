@@ -91,6 +91,12 @@ Backend configuration via environment variables (see `.env.example`):
 
 Frontend API proxy configured in `proxy.conf.json` (proxies `/api` to backend).
 
+## Test Accounts (Local Development)
+
+| Email | Password | Notes |
+|-------|----------|-------|
+| claude@claude.com | 1@mClaude | Primary test account with 1 property (Test Property - Austin, TX) |
+
 ## BMad Method Workflows
 
 This project uses BMad Method for planning. Key slash commands:

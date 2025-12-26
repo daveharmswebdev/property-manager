@@ -1,0 +1,101 @@
+# generated: 2025-12-04
+# project: property-manager
+# project_key: property-manager
+# tracking_system: file-system
+# story_location: docs/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic exists in epic file but not contexted
+#   - contexted: Next epic tech context created by *epic-tech-context (required)
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder by *create-story
+#   - ready-for-dev: Draft approved and story context created by *story-ready
+#   - in-progress: Developer actively working on implementation by *dev-story
+#   - review: Implementation complete, ready for review by *code-review
+#   - done: Story completed by *story-done
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done by *retrospective
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epics should be 'contexted' before stories can be 'drafted'
+# - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
+
+generated: 2025-12-04
+project: property-manager
+project_key: property-manager
+tracking_system: file-system
+story_location: docs/sprint-artifacts
+
+development_status:
+  # Epic 1: Foundation
+  epic-1: contexted
+  1-1-project-infrastructure-setup: done
+  1-2-database-schema-and-ef-core-setup: done
+  1-3-user-registration-with-email-verification: done
+  1-4-user-login-and-jwt-authentication: done
+  1-5-user-logout: done
+  1-6-password-reset-flow: done
+  1-7-application-shell-with-navigation: done
+  1-8-ci-cd-pipeline-and-initial-deployment: done
+  epic-1-retrospective: completed
+
+  # Epic 2: Property Management
+  epic-2: contexted
+  2-1-create-property: done
+  2-2-view-properties-list-with-dashboard-stats: done
+  2-3-view-property-detail-page: done
+  2-4-edit-property: done
+  2-5-delete-property: done
+  epic-2-retrospective: completed
+
+  # Epic 3: Expense Tracking
+  epic-3: contexted
+  3-1-expense-workspace-create-expense: done
+  3-2-edit-expense: done
+  3-3-delete-expense: done
+  3-4-view-all-expenses-with-filters: done
+  3-5-tax-year-selector-and-dashboard-totals: done
+  3-6-duplicate-expense-prevention: done
+  epic-3-retrospective: optional
+
+  # Epic 4: Income Tracking
+  epic-4: contexted
+  4-1-income-workspace-create-income-entry: done
+  4-2-edit-and-delete-income-entry: done
+  4-3-view-all-income-with-date-filter: done
+  4-4-dashboard-income-and-net-income-totals: done
+  epic-4-retrospective: optional
+
+  # Tech Debt Sprint 1 (between Epic 4 and 5)
+  tech-debt-sprint-1: in-progress
+  td-1-e2e-tests-main-flows: ready-for-dev    # Property CRUD, Expense CRUD, Income CRUD
+  td-2-refactor-e2e-tests: backlog            # Refine and organize e2e test structure
+  td-3-e2e-tests-in-cicd: backlog             # Verify e2e tests run in CI/CD pipeline
+  td-4-expense-form-reset-bug: done              # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
+  td-5-income-form-reset-bug: done               # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
+
+  # Epic 5: Receipt Capture
+  epic-5: backlog
+  5-1-receipt-upload-infrastructure-s3-presigned-urls: backlog
+  5-2-mobile-receipt-capture-with-camera: backlog
+  5-3-unprocessed-receipt-queue: backlog
+  5-4-process-receipt-into-expense: backlog
+  5-5-view-and-delete-receipts: backlog
+  5-6-real-time-receipt-sync-signalr: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Tax Reports
+  epic-6: backlog
+  6-1-generate-schedule-e-pdf-for-single-property: backlog
+  6-2-generate-schedule-e-pdfs-for-all-properties: backlog
+  6-3-view-and-manage-generated-reports: backlog
+  6-4-report-preview-and-print: backlog
+  epic-6-retrospective: optional

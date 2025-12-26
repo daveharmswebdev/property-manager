@@ -1,0 +1,227 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>TD</epicId>
+    <storyId>1</storyId>
+    <title>E2E Tests Main Flows</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/td-1-e2e-tests-main-flows.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>comprehensive Playwright E2E tests for the main user flows (Property CRUD, Expense CRUD, Income CRUD)</iWant>
+    <soThat>we can confidently verify critical paths work correctly after code changes</soThat>
+    <tasks>
+      <task id="1" ac="TD.1.2">Create Page Objects for Expense Workspace
+        <subtask>Create frontend/e2e/pages/expense-workspace.page.ts</subtask>
+        <subtask>Add form field locators: amount, date, category, description</subtask>
+        <subtask>Add action methods: fillForm(), submit(), editExpense(), deleteExpense()</subtask>
+        <subtask>Add assertion helpers: expectExpenseInList(), expectTotal()</subtask>
+      </task>
+      <task id="2" ac="TD.1.3">Create Page Objects for Income Workspace
+        <subtask>Create frontend/e2e/pages/income-workspace.page.ts</subtask>
+        <subtask>Add form field locators: amount, date, source, description</subtask>
+        <subtask>Add action methods: fillForm(), submit(), editIncome(), deleteIncome()</subtask>
+        <subtask>Add assertion helpers: expectIncomeInList(), expectTotal()</subtask>
+      </task>
+      <task id="3" ac="TD.1.1">Extend Property Page Object for Edit/Delete
+        <subtask>Create frontend/e2e/pages/property-detail.page.ts</subtask>
+        <subtask>Add navigation to edit page, click delete button</subtask>
+        <subtask>Add confirmation dialog handling</subtask>
+        <subtask>Add verification methods for property details</subtask>
+      </task>
+      <task id="4" ac="TD.1.2, TD.1.3">Extend Test Data Helper
+        <subtask>Add generateExpense() method to TestDataHelper</subtask>
+        <subtask>Add generateIncome() method to TestDataHelper</subtask>
+        <subtask>Ensure unique timestamps for each test run</subtask>
+      </task>
+      <task id="5" ac="TD.1.1">Write Property Edit/Delete E2E Tests
+        <subtask>Create frontend/e2e/tests/properties/property-edit.spec.ts</subtask>
+        <subtask>Test: Edit property name and address, verify changes</subtask>
+        <subtask>Test: Delete property, verify removal from dashboard</subtask>
+        <subtask>Test: Cancel edit returns to detail without changes</subtask>
+      </task>
+      <task id="6" ac="TD.1.2, TD.1.4">Write Expense CRUD E2E Tests
+        <subtask>Create frontend/e2e/tests/expenses/expense-flow.spec.ts</subtask>
+        <subtask>Test: Create expense from dashboard quick-add</subtask>
+        <subtask>Test: Create expense from expense workspace</subtask>
+        <subtask>Test: Edit existing expense, verify totals recalculate</subtask>
+        <subtask>Test: Delete expense with confirmation</subtask>
+        <subtask>Test: Filter expenses by category</subtask>
+        <subtask>Test: Verify dashboard totals update after expense changes</subtask>
+      </task>
+      <task id="7" ac="TD.1.3, TD.1.4">Write Income CRUD E2E Tests
+        <subtask>Create frontend/e2e/tests/income/income-flow.spec.ts</subtask>
+        <subtask>Test: Create income entry from property detail</subtask>
+        <subtask>Test: Create income from income workspace</subtask>
+        <subtask>Test: Edit existing income entry</subtask>
+        <subtask>Test: Delete income with confirmation</subtask>
+        <subtask>Test: Verify dashboard totals update after income changes</subtask>
+      </task>
+      <task id="8" ac="TD.1.5">Update Test Fixtures
+        <subtask>Add expense workspace page to fixtures</subtask>
+        <subtask>Add income workspace page to fixtures</subtask>
+        <subtask>Add property detail page to fixtures</subtask>
+        <subtask>Ensure all fixtures work with authenticatedUser</subtask>
+      </task>
+      <task id="9" ac="TD.1.5">Run and Verify All Tests
+        <subtask>Run npm run test:e2e locally</subtask>
+        <subtask>Verify all new tests pass</subtask>
+        <subtask>Verify existing auth and property tests still pass</subtask>
+        <subtask>Fix any flaky tests or timing issues</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-TD.1.1" name="Property CRUD E2E tests cover Edit and Delete flows">
+      <requirement>Edit Property: Navigate to property detail > Click Edit > Modify fields > Save > Verify changes persist</requirement>
+      <requirement>Delete Property: Navigate to property detail > Click Delete > Confirm dialog > Verify removal from list</requirement>
+      <requirement>Existing create/view tests continue to pass</requirement>
+    </criterion>
+    <criterion id="AC-TD.1.2" name="Expense CRUD E2E tests cover complete workflow">
+      <requirement>Create Expense: Navigate to expense workspace > Fill form > Save > Verify appears in list and totals update</requirement>
+      <requirement>Edit Expense: Click edit on existing expense > Modify fields > Save > Verify changes persist</requirement>
+      <requirement>Delete Expense: Click delete > Confirm > Verify removal and total recalculation</requirement>
+      <requirement>Filter expenses by date range and category (basic verification)</requirement>
+    </criterion>
+    <criterion id="AC-TD.1.3" name="Income CRUD E2E tests cover complete workflow">
+      <requirement>Create Income: Navigate to income workspace > Fill form > Save > Verify appears in list and totals update</requirement>
+      <requirement>Edit Income: Click edit on existing income > Modify fields > Save > Verify changes persist</requirement>
+      <requirement>Delete Income: Click delete > Confirm > Verify removal and total recalculation</requirement>
+    </criterion>
+    <criterion id="AC-TD.1.4" name="Dashboard totals verified after data changes">
+      <requirement>After creating expense, verify dashboard expense total updates</requirement>
+      <requirement>After creating income, verify dashboard income total updates</requirement>
+      <requirement>Verify net income calculation displays correctly (positive green, negative red)</requirement>
+    </criterion>
+    <criterion id="AC-TD.1.5" name="All E2E tests pass locally">
+      <requirement>npm run test:e2e runs all tests successfully</requirement>
+      <requirement>Tests are independent (can run in any order)</requirement>
+      <requirement>Tests use unique test data to avoid conflicts</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Testing Strategy">
+        Test pyramid: xUnit (unit), Vitest (component), Playwright (E2E), Postman (API). E2E tests cover critical user flows.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Frontend Structure">
+        Feature-based structure: features/expenses, features/income, features/properties. Components use Angular Material.
+      </doc>
+      <doc path="docs/prd.md" title="PRD" section="Functional Requirements">
+        FR7-11: Property CRUD, FR12-22: Expense management, FR23-29: Income management, FR38-48: Dashboard views.
+      </doc>
+    </docs>
+    <code>
+      <!-- Existing E2E Infrastructure -->
+      <file path="frontend/e2e/fixtures/test-fixtures.ts" kind="fixture" symbol="Fixtures" reason="Base fixture pattern to extend with new page objects"/>
+      <file path="frontend/e2e/helpers/test-data.helper.ts" kind="helper" symbol="TestDataHelper" reason="Pattern for generating test data - extend with generateExpense() and generateIncome()"/>
+      <file path="frontend/e2e/helpers/auth.helper.ts" kind="helper" symbol="AuthHelper" reason="Authentication helper for registering and logging in test users"/>
+      <file path="frontend/e2e/pages/base.page.ts" kind="page-object" symbol="BasePage" reason="Base class for all page objects - extend for new pages"/>
+      <file path="frontend/e2e/pages/dashboard.page.ts" kind="page-object" symbol="DashboardPage" reason="Dashboard interactions, property navigation, statsBar locator"/>
+      <file path="frontend/e2e/pages/property-form.page.ts" kind="page-object" symbol="PropertyFormPage" reason="Form pattern to replicate for expense/income forms"/>
+      <file path="frontend/e2e/tests/properties/property-flow.spec.ts" kind="test" symbol="Property Critical Path" reason="Existing test pattern for CRUD flows"/>
+      <file path="frontend/e2e/tests/auth/auth-flow.spec.ts" kind="test" symbol="Auth Critical Path" reason="Reference for test structure and assertions"/>
+
+      <!-- Frontend Components to Test -->
+      <file path="frontend/src/app/features/expenses/expense-workspace/expense-workspace.component.ts" kind="component" symbol="ExpenseWorkspaceComponent" reason="Main expense CRUD UI - form, list, edit, delete"/>
+      <file path="frontend/src/app/features/expenses/components/expense-form/expense-form.component.ts" kind="component" symbol="ExpenseFormComponent" reason="Expense form with amount, date, category, description fields"/>
+      <file path="frontend/src/app/features/expenses/components/expense-row/expense-row.component.ts" kind="component" symbol="ExpenseRowComponent" reason="Individual expense row with edit/delete buttons"/>
+      <file path="frontend/src/app/features/income/income-workspace/income-workspace.component.ts" kind="component" symbol="IncomeWorkspaceComponent" reason="Main income CRUD UI - form, list, edit, delete"/>
+      <file path="frontend/src/app/features/income/components/income-form/income-form.component.ts" kind="component" symbol="IncomeFormComponent" reason="Income form with amount, date, source, description fields"/>
+      <file path="frontend/src/app/features/income/components/income-row/income-row.component.ts" kind="component" symbol="IncomeRowComponent" reason="Individual income row with edit/delete buttons"/>
+      <file path="frontend/src/app/features/properties/property-detail/property-detail.component.ts" kind="component" symbol="PropertyDetailComponent" reason="Property detail with edit/delete buttons, stats cards"/>
+      <file path="frontend/src/app/features/properties/property-edit/property-edit.component.ts" kind="component" symbol="PropertyEditComponent" reason="Property edit form"/>
+      <file path="frontend/src/app/shared/components/stats-bar/stats-bar.component.ts" kind="component" symbol="StatsBarComponent" reason="Dashboard totals display - expenses, income, net income"/>
+      <file path="frontend/src/app/shared/components/confirm-dialog/confirm-dialog.component.ts" kind="component" symbol="ConfirmDialogComponent" reason="Delete confirmation dialog pattern"/>
+
+      <!-- Playwright Config -->
+      <file path="frontend/playwright.config.ts" kind="config" symbol="defineConfig" reason="Playwright configuration - timeout, baseURL, webServer settings"/>
+    </code>
+    <dependencies>
+      <frontend>
+        <package name="@angular/core" version="^20.3.0"/>
+        <package name="@angular/material" version="^20.2.14"/>
+        <package name="@ngrx/signals" version="^20.1.0"/>
+        <package name="@playwright/test" version="^1.57.0" dev="true"/>
+        <package name="vitest" version="^3.2.4" dev="true"/>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Follow existing Page Object pattern extending BasePage class</constraint>
+    <constraint type="pattern">Use authenticatedUser fixture for all tests requiring login</constraint>
+    <constraint type="pattern">Generate unique test data using TestDataHelper with timestamps</constraint>
+    <constraint type="pattern">Use formControlName selectors for form fields (e.g., input[formControlName="amount"])</constraint>
+    <constraint type="pattern">Use mat-select for Angular Material dropdowns, mat-datepicker for date inputs</constraint>
+    <constraint type="pattern">Use mat-dialog-container for confirmation dialog interactions</constraint>
+    <constraint type="independence">Each test must be independent - create its own test data, clean up if needed</constraint>
+    <constraint type="timing">Use waitFor patterns for loading spinners and async operations</constraint>
+    <constraint type="selectors">Key selectors: app-expense-row, app-income-row, app-property-row, app-stats-bar</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Expense Form Fields" kind="form">
+      <field name="amount" locator="input[formControlName='amount']" type="currency"/>
+      <field name="date" locator="input[formControlName='date']" type="datepicker"/>
+      <field name="categoryId" locator="mat-select[formControlName='categoryId']" type="select"/>
+      <field name="description" locator="textarea[formControlName='description']" type="textarea"/>
+      <button name="submit" locator="button[type='submit']"/>
+    </interface>
+    <interface name="Income Form Fields" kind="form">
+      <field name="amount" locator="input[formControlName='amount']" type="currency"/>
+      <field name="date" locator="input[formControlName='date']" type="datepicker"/>
+      <field name="source" locator="input[formControlName='source']" type="text"/>
+      <field name="description" locator="textarea[formControlName='description']" type="textarea"/>
+      <button name="submit" locator="button[type='submit']"/>
+    </interface>
+    <interface name="Property Detail Actions" kind="page">
+      <button name="addExpense" locator="button:has-text('Add Expense')"/>
+      <button name="addIncome" locator="button:has-text('Add Income')"/>
+      <button name="edit" locator="button:has-text('Edit')"/>
+      <button name="delete" locator="button:has-text('Delete')"/>
+    </interface>
+    <interface name="Dashboard Stats" kind="component">
+      <element name="statsBar" locator="app-stats-bar"/>
+      <element name="expenseTotal" locator=".stat-value.expense"/>
+      <element name="incomeTotal" locator=".stat-value.income"/>
+      <element name="netIncome" locator=".stat-value.net"/>
+    </interface>
+    <interface name="Routes" kind="navigation">
+      <route path="/dashboard" description="Main dashboard with property list"/>
+      <route path="/properties/:id" description="Property detail page"/>
+      <route path="/properties/:id/edit" description="Property edit form"/>
+      <route path="/properties/:id/expenses" description="Expense workspace for property"/>
+      <route path="/properties/:id/income" description="Income workspace for property"/>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Playwright E2E tests follow the Page Object pattern with BasePage as the base class. Tests use custom fixtures defined in test-fixtures.ts. The authenticatedUser fixture handles login before tests. Test data is generated with unique timestamps via TestDataHelper to ensure test independence. Tests run in Chromium by default with 30s timeout. Screenshots/videos captured on failure for debugging.
+    </standards>
+    <locations>
+      <location>frontend/e2e/tests/**/*.spec.ts</location>
+      <location>frontend/e2e/pages/*.page.ts</location>
+      <location>frontend/e2e/helpers/*.helper.ts</location>
+      <location>frontend/e2e/fixtures/test-fixtures.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="TD.1.1">Test edit property: navigate to detail > click Edit > modify name/address > save > verify changes on detail page</idea>
+      <idea ac="TD.1.1">Test delete property: navigate to detail > click Delete > confirm dialog > verify redirected to dashboard > verify property removed</idea>
+      <idea ac="TD.1.2">Test create expense: navigate to expense workspace > fill amount/date/category > save > verify in list > verify YTD total updated</idea>
+      <idea ac="TD.1.2">Test edit expense: click edit on row > modify amount > save > verify changes > verify total recalculated</idea>
+      <idea ac="TD.1.2">Test delete expense: click delete > confirm > verify removed from list > verify total updated</idea>
+      <idea ac="TD.1.3">Test create income: navigate to income workspace > fill amount/date/source > save > verify in list > verify YTD total</idea>
+      <idea ac="TD.1.3">Test edit income: click edit on row > modify fields > save > verify changes persist</idea>
+      <idea ac="TD.1.3">Test delete income: confirm dialog > verify removal and total recalculation</idea>
+      <idea ac="TD.1.4">Test dashboard totals: after creating expense/income, navigate to dashboard > verify stats bar shows updated totals</idea>
+      <idea ac="TD.1.4">Test net income color: positive shows green, negative shows red/accounting format</idea>
+    </ideas>
+  </tests>
+</story-context>
