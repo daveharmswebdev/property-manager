@@ -35,8 +35,8 @@ test.describe('Auth Critical Path', () => {
     // Try to access protected route without logging in
     await page.goto('/dashboard');
 
-    // Should be redirected to login
-    await page.waitForURL('/login', { timeout: 10000 });
+    // Should be redirected to login (with returnUrl query param)
+    await page.waitForURL('**/login**', { timeout: 10000 });
   });
 
   test('should logout successfully', async ({ page, loginPage, dashboardPage }) => {
