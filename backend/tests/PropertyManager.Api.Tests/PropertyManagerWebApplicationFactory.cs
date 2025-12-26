@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
@@ -76,12 +79,54 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
         await _postgres.StopAsync();
         await base.DisposeAsync();
     }
+
+    /// <summary>
+    /// Creates a test user with a verified email directly in the database.
+    /// This bypasses the registration endpoint for test setup.
+    /// </summary>
+    public async Task<(Guid UserId, Guid AccountId)> CreateTestUserAsync(string email, string password = "Test@123456", string role = "Owner")
+    {
+        using var scope = Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // Create an Account first
+        var account = new Account
+        {
+            Id = Guid.NewGuid(),
+            Name = $"Test Account for {email}",
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.Accounts.Add(account);
+        await dbContext.SaveChangesAsync();
+
+        // Create the ApplicationUser with confirmed email
+        var user = new ApplicationUser
+        {
+            Email = email,
+            UserName = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true, // Skip email verification for tests
+            AccountId = account.Id,
+            Role = role
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException($"Failed to create test user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+        }
+
+        return (user.Id, account.Id);
+    }
 }
 
 public class FakeEmailService : IEmailService
 {
     public List<(string Email, string Token)> SentVerificationEmails { get; } = [];
     public List<(string Email, string Token)> SentPasswordResetEmails { get; } = [];
+    public List<(string Email, string Code)> SentInvitationEmails { get; } = [];
 
     public Task SendVerificationEmailAsync(string email, string token, CancellationToken cancellationToken = default)
     {
@@ -92,6 +137,12 @@ public class FakeEmailService : IEmailService
     public Task SendPasswordResetEmailAsync(string email, string token, CancellationToken cancellationToken = default)
     {
         SentPasswordResetEmails.Add((email, token));
+        return Task.CompletedTask;
+    }
+
+    public Task SendInvitationEmailAsync(string email, string code, CancellationToken cancellationToken = default)
+    {
+        SentInvitationEmails.Add((email, code));
         return Task.CompletedTask;
     }
 }

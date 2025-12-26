@@ -205,24 +205,8 @@ public class ExpensesControllerDeleteTests : IClassFixture<PropertyManagerWebApp
     {
         var password = "Test@123456";
 
-        // Register
-        var registerRequest = new
-        {
-            Email = email,
-            Password = password,
-            Name = "Test Account"
-        };
-        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
-        registerResponse.EnsureSuccessStatusCode();
-
-        // Verify email using fake email service
-        using var scope = _factory.Services.CreateScope();
-        var fakeEmailService = scope.ServiceProvider.GetRequiredService<FakeEmailService>();
-        var verificationToken = fakeEmailService.SentVerificationEmails.Last().Token;
-
-        var verifyRequest = new { Token = verificationToken };
-        var verifyResponse = await _client.PostAsJsonAsync("/api/v1/auth/verify-email", verifyRequest);
-        verifyResponse.EnsureSuccessStatusCode();
+        // Create user directly in database (bypasses removed registration endpoint)
+        var (userId, _) = await _factory.CreateTestUserAsync(email, password);
 
         // Login
         var loginRequest = new { Email = email, Password = password };
@@ -230,7 +214,7 @@ public class ExpensesControllerDeleteTests : IClassFixture<PropertyManagerWebApp
         loginResponse.EnsureSuccessStatusCode();
 
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        return (loginContent!.AccessToken, Guid.Empty);
+        return (loginContent!.AccessToken, userId);
     }
 
     private async Task<Guid> CreatePropertyAsync(string accessToken)

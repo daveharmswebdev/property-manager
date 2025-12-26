@@ -27,7 +27,7 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     // Initialize auth state for all routes - ensures isInitializing becomes false
-    // even for routes without guards (e.g., /verify-email)
+    // even for routes without guards (e.g., /accept-invitation)
     this.authService.initializeAuth().subscribe();
   }
 }

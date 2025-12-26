@@ -8,9 +8,22 @@ public interface IIdentityService
 {
     /// <summary>
     /// Creates a new user with the given credentials and links to account.
+    /// Email will NOT be confirmed - user must verify via email.
     /// </summary>
     /// <returns>Tuple of (UserId, PasswordErrors). UserId is null if creation failed.</returns>
     Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserAsync(
+        string email,
+        string password,
+        Guid accountId,
+        string role,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a new user with the given credentials and links to account.
+    /// Email will be pre-confirmed - used for invitation flow.
+    /// </summary>
+    /// <returns>Tuple of (UserId, PasswordErrors). UserId is null if creation failed.</returns>
+    Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserWithConfirmedEmailAsync(
         string email,
         string password,
         Guid accountId,

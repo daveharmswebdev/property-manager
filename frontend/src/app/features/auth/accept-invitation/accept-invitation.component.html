@@ -1,0 +1,99 @@
+<div class="accept-invitation-container">
+  <mat-card class="accept-invitation-card">
+    <mat-card-header>
+      <mat-card-title>Accept Invitation</mat-card-title>
+      <mat-card-subtitle>Create your Property Manager account</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (validating()) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Validating your invitation...</p>
+        </div>
+      } @else if (invalidCode()) {
+        <div class="error-state">
+          <mat-icon class="error-icon">error_outline</mat-icon>
+          <h3>Invalid Invitation</h3>
+          <p>{{ invalidReason() }}</p>
+          <p>Please contact the person who invited you to request a new invitation.</p>
+        </div>
+      } @else if (success()) {
+        <div class="success-message">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <h3>Account Created Successfully!</h3>
+          <p>Welcome to Property Manager!</p>
+          <p>You can now sign in with your email and password.</p>
+          <a mat-raised-button color="primary" routerLink="/login">Sign In</a>
+        </div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          @if (serverError()) {
+            <div class="server-error">
+              {{ serverError() }}
+            </div>
+          }
+
+          <div class="email-display">
+            <mat-icon>email</mat-icon>
+            <span>{{ email() }}</span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password</mat-label>
+            <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" autocomplete="new-password">
+            <button mat-icon-button matSuffix (click)="hidePassword.set(!hidePassword())" type="button">
+              <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (hasPasswordError('required')) {
+              <mat-error>Password is required</mat-error>
+            }
+            @if (hasPasswordError('minlength')) {
+              <mat-error>Password must be at least 8 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="password-requirements">
+            <p class="requirements-title">Password must contain:</p>
+            <ul>
+              <li [class.met]="form.get('password')?.value?.length >= 8">At least 8 characters</li>
+              <li [class.met]="hasUppercase()">One uppercase letter</li>
+              <li [class.met]="hasLowercase()">One lowercase letter</li>
+              <li [class.met]="hasNumber()">One number</li>
+              <li [class.met]="hasSpecialChar()">One special character</li>
+            </ul>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Confirm Password</mat-label>
+            <input matInput [type]="hideConfirmPassword() ? 'password' : 'text'" formControlName="confirmPassword" autocomplete="new-password">
+            <button mat-icon-button matSuffix (click)="hideConfirmPassword.set(!hideConfirmPassword())" type="button">
+              <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (form.get('confirmPassword')?.hasError('required') && form.get('confirmPassword')?.touched) {
+              <mat-error>Please confirm your password</mat-error>
+            }
+            @if (passwordMatchError()) {
+              <mat-error>Passwords do not match</mat-error>
+            }
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" type="submit" class="full-width submit-btn" [disabled]="loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+            } @else {
+              Create Account
+            }
+          </button>
+        </form>
+      }
+    </mat-card-content>
+
+    <mat-card-actions>
+      <a routerLink="/login" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        Back to sign in
+      </a>
+    </mat-card-actions>
+  </mat-card>
+</div>
