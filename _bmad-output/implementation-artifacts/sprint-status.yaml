@@ -75,10 +75,10 @@ development_status:
   epic-4-retrospective: optional
 
   # Tech Debt Sprint 1 (between Epic 4 and 5)
-  tech-debt-sprint-1: in-progress
+  tech-debt-sprint-1: done
   td-1-e2e-tests-main-flows: done    # Property CRUD, Expense CRUD, Income CRUD - 23/23 tests passing
   td-2-refactor-e2e-tests: done               # Refine and organize e2e test structure - Code review complete
-  td-3-e2e-tests-in-cicd: backlog             # Verify e2e tests run in CI/CD pipeline
+  td-3-e2e-tests-in-cicd: done               # Verified: E2E tests running successfully in CI/CD (PR #41)
   td-4-expense-form-reset-bug: done              # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
   td-5-income-form-reset-bug: done               # Fixed: Use FormGroupDirective.resetForm() to clear submitted state
 
