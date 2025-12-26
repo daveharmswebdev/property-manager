@@ -280,29 +280,16 @@ public class ExpensesControllerCheckDuplicateTests : IClassFixture<PropertyManag
     {
         var password = "Test@123456";
 
-        var registerRequest = new
-        {
-            Email = email,
-            Password = password,
-            Name = "Test Account"
-        };
-        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
-        registerResponse.EnsureSuccessStatusCode();
+        // Create user directly in database (bypasses removed registration endpoint)
+        var (userId, _) = await _factory.CreateTestUserAsync(email, password);
 
-        using var scope = _factory.Services.CreateScope();
-        var fakeEmailService = scope.ServiceProvider.GetRequiredService<FakeEmailService>();
-        var verificationToken = fakeEmailService.SentVerificationEmails.Last().Token;
-
-        var verifyRequest = new { Token = verificationToken };
-        var verifyResponse = await _client.PostAsJsonAsync("/api/v1/auth/verify-email", verifyRequest);
-        verifyResponse.EnsureSuccessStatusCode();
-
+        // Login
         var loginRequest = new { Email = email, Password = password };
         var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
         loginResponse.EnsureSuccessStatusCode();
 
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        return (loginContent!.AccessToken, Guid.Empty);
+        return (loginContent!.AccessToken, userId);
     }
 
     private async Task<Guid> CreatePropertyAsync(string accessToken, string name = "Test Property")

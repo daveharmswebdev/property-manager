@@ -15,7 +15,6 @@ import { HttpClient, HttpHeaders, HttpResponse, HttpResponseBase } from '@angula
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
 export interface IApiClient {
-    auth_Register(request: RegisterRequest): Observable<RegisterResponse>;
     auth_VerifyEmail(request: VerifyEmailRequest): Observable<void>;
     auth_Login(request: LoginRequest): Observable<LoginResponse>;
     auth_Refresh(): Observable<RefreshResponse>;
@@ -41,6 +40,9 @@ export interface IApiClient {
     income_GetIncomeById(id: string): Observable<IncomeDto>;
     income_UpdateIncome(id: string, request: UpdateIncomeRequest): Observable<void>;
     income_DeleteIncome(id: string): Observable<void>;
+    invitations_CreateInvitation(request: CreateInvitationRequest): Observable<CreateInvitationResponse>;
+    invitations_ValidateInvitation(code: string): Observable<ValidateInvitationResponse>;
+    invitations_AcceptInvitation(code: string, request: AcceptInvitationRequest): Observable<AcceptInvitationResponse>;
     properties_GetAllProperties(year?: number | null | undefined): Observable<GetAllPropertiesResponse>;
     properties_CreateProperty(request: CreatePropertyRequest): Observable<CreatePropertyResponse>;
     properties_GetPropertyById(id: string, year?: number | null | undefined): Observable<PropertyDetailDto>;
@@ -59,64 +61,6 @@ export class ApiClient implements IApiClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "http://localhost:5292";
-    }
-
-    auth_Register(request: RegisterRequest): Observable<RegisterResponse> {
-        let url_ = this.baseUrl + "/api/v1/auth/register";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            withCredentials: true,
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processAuth_Register(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processAuth_Register(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<RegisterResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<RegisterResponse>;
-        }));
-    }
-
-    protected processAuth_Register(response: HttpResponseBase): Observable<RegisterResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RegisterResponse;
-            return _observableOf(result201);
-            }));
-        } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
     }
 
     auth_VerifyEmail(request: VerifyEmailRequest): Observable<void> {
@@ -1644,6 +1588,194 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    invitations_CreateInvitation(request: CreateInvitationRequest): Observable<CreateInvitationResponse> {
+        let url_ = this.baseUrl + "/api/v1/invitations";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processInvitations_CreateInvitation(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processInvitations_CreateInvitation(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CreateInvitationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CreateInvitationResponse>;
+        }));
+    }
+
+    protected processInvitations_CreateInvitation(response: HttpResponseBase): Observable<CreateInvitationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CreateInvitationResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    invitations_ValidateInvitation(code: string): Observable<ValidateInvitationResponse> {
+        let url_ = this.baseUrl + "/api/v1/invitations/{code}/validate";
+        if (code === undefined || code === null)
+            throw new globalThis.Error("The parameter 'code' must be defined.");
+        url_ = url_.replace("{code}", encodeURIComponent("" + code));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processInvitations_ValidateInvitation(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processInvitations_ValidateInvitation(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ValidateInvitationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ValidateInvitationResponse>;
+        }));
+    }
+
+    protected processInvitations_ValidateInvitation(response: HttpResponseBase): Observable<ValidateInvitationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidateInvitationResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    invitations_AcceptInvitation(code: string, request: AcceptInvitationRequest): Observable<AcceptInvitationResponse> {
+        let url_ = this.baseUrl + "/api/v1/invitations/{code}/accept";
+        if (code === undefined || code === null)
+            throw new globalThis.Error("The parameter 'code' must be defined.");
+        url_ = url_.replace("{code}", encodeURIComponent("" + code));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processInvitations_AcceptInvitation(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processInvitations_AcceptInvitation(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AcceptInvitationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AcceptInvitationResponse>;
+        }));
+    }
+
+    protected processInvitations_AcceptInvitation(response: HttpResponseBase): Observable<AcceptInvitationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AcceptInvitationResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     properties_GetAllProperties(year?: number | null | undefined): Observable<GetAllPropertiesResponse> {
         let url_ = this.baseUrl + "/api/v1/properties?";
         if (year !== undefined && year !== null)
@@ -1960,10 +2092,6 @@ export class ApiClient implements IApiClient {
     }
 }
 
-export interface RegisterResponse {
-    userId?: string;
-}
-
 export interface ProblemDetails {
     type?: string | undefined;
     title?: string | undefined;
@@ -1972,12 +2100,6 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
-}
-
-export interface RegisterRequest {
-    email?: string;
-    password?: string;
-    name?: string;
 }
 
 export interface VerifyEmailRequest {
@@ -2181,6 +2303,31 @@ export interface UpdateIncomeRequest {
     date?: Date;
     source?: string | undefined;
     description?: string | undefined;
+}
+
+export interface CreateInvitationResponse {
+    invitationId?: string;
+    message?: string;
+}
+
+export interface CreateInvitationRequest {
+    email?: string;
+}
+
+export interface ValidateInvitationResponse {
+    isValid?: boolean;
+    email?: string | undefined;
+    errorMessage?: string | undefined;
+}
+
+export interface AcceptInvitationResponse {
+    userId?: string;
+    email?: string;
+    message?: string;
+}
+
+export interface AcceptInvitationRequest {
+    password?: string;
 }
 
 export interface GetAllPropertiesResponse {

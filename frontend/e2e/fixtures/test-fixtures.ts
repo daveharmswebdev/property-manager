@@ -11,7 +11,7 @@
  * import { test, expect } from '../../fixtures/test-fixtures';
  *
  * test('my test', async ({
- *   authenticatedUser,  // Auto-handles registration and login
+ *   authenticatedUser,  // Auto-handles login with seeded account
  *   dashboardPage,      // Dashboard page object
  *   expenseWorkspacePage,
  * }) => {
@@ -22,15 +22,21 @@
 
 import { test as base, expect } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
-import { RegisterPage } from '../pages/register.page';
 import { DashboardPage } from '../pages/dashboard.page';
 import { PropertyFormPage } from '../pages/property-form.page';
 import { PropertyDetailPage } from '../pages/property-detail.page';
 import { ExpenseWorkspacePage } from '../pages/expense-workspace.page';
 import { IncomeWorkspacePage } from '../pages/income-workspace.page';
-import { AuthHelper } from '../helpers/auth.helper';
+import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
-import { type TestUser } from '../helpers/test-data.helper';
+
+/**
+ * Test user type for authenticated fixtures
+ */
+export type TestUser = {
+  email: string;
+  password: string;
+};
 
 /**
  * Custom fixture types for E2E tests
@@ -38,8 +44,6 @@ import { type TestUser } from '../helpers/test-data.helper';
 type Fixtures = {
   /** Login page object */
   loginPage: LoginPage;
-  /** Registration page object */
-  registerPage: RegisterPage;
   /** Dashboard page object */
   dashboardPage: DashboardPage;
   /** Property creation form page object */
@@ -50,15 +54,15 @@ type Fixtures = {
   expenseWorkspacePage: ExpenseWorkspacePage;
   /** Income workspace page object */
   incomeWorkspacePage: IncomeWorkspacePage;
-  /** Authentication helper for registration/login flows */
+  /** Authentication helper for login flows */
   authHelper: AuthHelper;
-  /** MailHog helper for email verification */
+  /** MailHog helper for email verification (invitation flow) */
   mailhog: MailHogHelper;
   /**
    * Authenticated user fixture.
    *
-   * When used, automatically registers a new user, verifies email,
-   * and logs in before the test runs. The test user data is returned.
+   * When used, automatically logs in with the seeded owner account
+   * before the test runs. The test user data is returned.
    */
   authenticatedUser: TestUser;
 };
@@ -71,10 +75,6 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
-  },
-
-  registerPage: async ({ page }, use) => {
-    await use(new RegisterPage(page));
   },
 
   dashboardPage: async ({ page }, use) => {
@@ -98,8 +98,7 @@ export const test = base.extend<Fixtures>({
   },
 
   authHelper: async ({ page }, use) => {
-    const mailhogUrl = process.env.MAILHOG_URL || 'http://localhost:8025';
-    await use(new AuthHelper(page, mailhogUrl));
+    await use(new AuthHelper(page));
   },
 
   mailhog: async ({}, use) => {
@@ -110,18 +109,13 @@ export const test = base.extend<Fixtures>({
   /**
    * Authenticated user fixture.
    *
-   * This fixture handles the full authentication flow:
-   * 1. Generates unique test user data
-   * 2. Registers the user via the registration form
-   * 3. Retrieves email verification token from MailHog
-   * 4. Verifies the email address
-   * 5. Logs in with the verified credentials
-   *
-   * The resulting user is logged in and ready for test interactions.
+   * This fixture logs in with the pre-seeded owner account.
+   * Since public registration has been removed, all E2E tests
+   * use this seeded account for authentication.
    */
   authenticatedUser: async ({ page, authHelper }, use) => {
-    const user = await authHelper.registerAndLogin();
-    await use(user);
+    await authHelper.login();
+    await use(DEFAULT_TEST_USER);
   },
 });
 

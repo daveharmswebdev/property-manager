@@ -85,14 +85,15 @@ builder.Services.AddAuthorization();
 // Configure MediatR
 builder.Services.AddMediatR(cfg =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(PropertyManager.Application.Auth.RegisterCommand).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(PropertyManager.Application.Auth.LoginCommand).Assembly);
 });
 
 // Configure FluentValidation
-builder.Services.AddValidatorsFromAssembly(typeof(PropertyManager.Application.Auth.RegisterCommand).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(PropertyManager.Application.Auth.LoginCommand).Assembly);
 
 // Configure ASP.NET Core Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+// Use AddIdentityCore to avoid overriding JWT Bearer as the default auth scheme
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     // Password requirements per AC3.2
     options.Password.RequiredLength = 8;
@@ -112,8 +113,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 })
+.AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddSignInManager();
 
 // Configure token lifespan for email verification (24 hours per AC3.4)
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -154,21 +157,38 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply database migrations in production
-if (app.Environment.IsProduction())
+// Apply database migrations and seed data
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    if (app.Environment.IsProduction())
+    {
+        try
+        {
+            Log.Information("Applying database migrations...");
+            await db.Database.MigrateAsync();
+            Log.Information("Database migrations applied successfully");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to apply database migrations - application cannot start");
+            throw; // Prevent app from starting with failed migrations
+        }
+    }
+
+    // Seed owner account (runs in all environments)
     try
     {
-        Log.Information("Applying database migrations...");
-        await db.Database.MigrateAsync();
-        Log.Information("Database migrations applied successfully");
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<OwnerAccountSeeder>>();
+        var seeder = new OwnerAccountSeeder(db, userManager, logger);
+        await seeder.SeedAsync();
     }
     catch (Exception ex)
     {
-        Log.Fatal(ex, "Failed to apply database migrations - application cannot start");
-        throw; // Prevent app from starting with failed migrations
+        Log.Error(ex, "Failed to seed owner account - continuing anyway");
+        // Don't throw - allow app to start even if seeding fails (owner might already exist)
     }
 }
 

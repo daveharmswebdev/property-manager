@@ -2,20 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, computed, signal } from '@angular/core';
 import { Observable, tap, catchError, throwError, BehaviorSubject, of } from 'rxjs';
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface RegisterResponse {
-  userId: string;
-}
-
-export interface VerifyEmailRequest {
-  token: string;
-}
-
 export interface LoginResponse {
   accessToken: string;
   expiresIn: number;
@@ -61,14 +47,6 @@ export class AuthService {
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this._accessToken() !== null);
   readonly isInitializing = this._isInitializing.asReadonly(); // AC7.8 - Exposed for guards/components
-
-  register(request: RegisterRequest): Observable<RegisterResponse> {
-    return this.http.post<RegisterResponse>(`${this.baseUrl}/register`, request);
-  }
-
-  verifyEmail(token: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/verify-email`, { token });
-  }
 
   /**
    * Login with email and password (AC4.8).

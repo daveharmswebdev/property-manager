@@ -7,7 +7,7 @@ using PropertyManager.Application.Auth;
 namespace PropertyManager.Api.Controllers;
 
 /// <summary>
-/// Authentication endpoints for registration, login, and token refresh.
+/// Authentication endpoints for login, token refresh, and password reset.
 /// </summary>
 [ApiController]
 [Route("api/v1/auth")]
@@ -15,7 +15,6 @@ namespace PropertyManager.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IValidator<RegisterCommand> _registerValidator;
     private readonly IValidator<LoginCommand> _loginValidator;
     private readonly IValidator<ForgotPasswordCommand> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordCommand> _resetPasswordValidator;
@@ -26,14 +25,12 @@ public class AuthController : ControllerBase
 
     public AuthController(
         IMediator mediator,
-        IValidator<RegisterCommand> registerValidator,
         IValidator<LoginCommand> loginValidator,
         IValidator<ForgotPasswordCommand> forgotPasswordValidator,
         IValidator<ResetPasswordCommand> resetPasswordValidator,
         ILogger<AuthController> logger)
     {
         _mediator = mediator;
-        _registerValidator = registerValidator;
         _loginValidator = loginValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
@@ -41,47 +38,6 @@ public class AuthController : ControllerBase
     }
 
 /// <summary>
-    /// Register a new user account.
-    /// Creates an Account with the provided name and a User with "Owner" role.
-    /// Sends verification email to the provided address.
-    /// </summary>
-    /// <param name="request">Registration details</param>
-    /// <returns>User ID on success</returns>
-    /// <response code="201">Returns the newly created user's ID</response>
-    /// <response code="400">If validation fails or email already exists</response>
-    [HttpPost("register")]
-    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-    {
-        var command = new RegisterCommand(request.Email, request.Password, request.Name);
-
-        // Validate command
-        var validationResult = await _registerValidator.ValidateAsync(command);
-        if (!validationResult.IsValid)
-        {
-            var problemDetails = CreateValidationProblemDetails(validationResult);
-            return BadRequest(problemDetails);
-        }
-
-        try
-        {
-            var result = await _mediator.Send(command);
-            var response = new RegisterResponse(result.UserId);
-
-            return CreatedAtAction(
-                nameof(Register),
-                new { userId = result.UserId },
-                response);
-        }
-        catch (ValidationException ex)
-        {
-            var problemDetails = CreateValidationProblemDetails(ex);
-            return BadRequest(problemDetails);
-        }
-    }
-
-    /// <summary>
     /// Verify email address using the token from verification email.
     /// </summary>
     /// <param name="request">Verification token</param>
@@ -379,22 +335,6 @@ public class AuthController : ControllerBase
         };
     }
 }
-
-/// <summary>
-/// Request model for user registration.
-/// </summary>
-public record RegisterRequest(
-    string Email,
-    string Password,
-    string Name
-);
-
-/// <summary>
-/// Response model for successful registration.
-/// </summary>
-public record RegisterResponse(
-    Guid UserId
-);
 
 /// <summary>
 /// Request model for email verification.

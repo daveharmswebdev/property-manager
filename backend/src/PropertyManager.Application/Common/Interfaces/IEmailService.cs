@@ -22,4 +22,13 @@ public interface IEmailService
         string email,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends an invitation email with the provided code (AC: TD.6.5).
+    /// Link format: {frontend_url}/accept-invitation?code={code}
+    /// </summary>
+    Task SendInvitationEmailAsync(
+        string email,
+        string code,
+        CancellationToken cancellationToken = default);
 }

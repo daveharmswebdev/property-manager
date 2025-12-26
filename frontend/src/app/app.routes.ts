@@ -3,23 +3,7 @@ import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
-  // Public auth routes (only for guests) (AC7.6)
-  {
-    path: 'register',
-    loadComponent: () =>
-      import('./features/auth/register/register.component').then(
-        (m) => m.RegisterComponent
-      ),
-    canActivate: [guestGuard],
-  },
-  {
-    path: 'verify-email',
-    loadComponent: () =>
-      import('./features/auth/verify-email/verify-email.component').then(
-        (m) => m.VerifyEmailComponent
-      ),
-    canActivate: [publicGuard],
-  },
+  // Public auth routes (AC7.6)
   {
     path: 'login',
     loadComponent: () =>
@@ -41,6 +25,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/reset-password/reset-password.component').then(
         (m) => m.ResetPasswordComponent
+      ),
+    canActivate: [publicGuard],
+  },
+  {
+    path: 'accept-invitation',
+    loadComponent: () =>
+      import('./features/auth/accept-invitation/accept-invitation.component').then(
+        (m) => m.AcceptInvitationComponent
       ),
     canActivate: [publicGuard],
   },

@@ -1,0 +1,297 @@
+{
+  "info": {
+    "_postman_id": "invitation-flow-collection",
+    "name": "Property Manager - Invitations",
+    "description": "Collection for testing the invitation-only registration flow.\n\n## Setup\n1. Make sure the API is running at http://localhost:5292\n2. Run the \"Login\" request first to get an access token\n3. Use \"Create Invitation\" to invite a new user\n4. Check MailHog at http://localhost:8025 for the invitation email\n\n## Test Account\n- Email: claude@claude.com\n- Password: 1@mClaude",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Login (Get Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', response.accessToken);",
+              "    pm.test('Access token captured', function() {",
+              "        pm.expect(response.accessToken).to.be.a('string');",
+              "    });",
+              "    pm.test('Token expires in 1 hour', function() {",
+              "        pm.expect(response.expiresIn).to.equal(3600);",
+              "    });",
+              "} else {",
+              "    pm.test('Login failed', function() {",
+              "        pm.expect.fail('Login returned status ' + pm.response.code);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{ownerEmail}}\",\n    \"password\": \"{{ownerPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        },
+        "description": "Login with the seeded owner account to get an access token.\n\nThe token is automatically captured and stored in the `accessToken` collection variable for use in subsequent requests."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Create Invitation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('invitationCode', response.code);",
+              "    pm.test('Invitation created successfully', function() {",
+              "        pm.expect(response.code).to.be.a('string');",
+              "        pm.expect(response.code.length).to.be.greaterThan(20);",
+              "    });",
+              "    pm.test('Expiration date is set', function() {",
+              "        pm.expect(response.expiresAt).to.be.a('string');",
+              "    });",
+              "    console.log('Invitation Code:', response.code);",
+              "    console.log('Check MailHog for the invitation email!');",
+              "} else if (pm.response.code === 401) {",
+              "    pm.test('Unauthorized - run Login first', function() {",
+              "        pm.expect.fail('You need to login first to get an access token');",
+              "    });",
+              "} else if (pm.response.code === 400) {",
+              "    const response = pm.response.json();",
+              "    pm.test('Bad request', function() {",
+              "        pm.expect.fail(response.detail || 'Invalid request');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{inviteeEmail}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/invitations",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "invitations"]
+        },
+        "description": "Create an invitation for a new user.\n\nRequires Owner role (the seeded account has this).\n\nThe invitation code is captured in the `invitationCode` variable.\n\n**Check MailHog at http://localhost:8025 to see the invitation email!**"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Validate Invitation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    pm.test('Invitation is valid', function() {",
+              "        pm.expect(response.isValid).to.be.true;",
+              "    });",
+              "    pm.test('Email matches', function() {",
+              "        pm.expect(response.email).to.equal(pm.collectionVariables.get('inviteeEmail'));",
+              "    });",
+              "} else {",
+              "    pm.test('Validation failed', function() {",
+              "        pm.expect.fail('Validation returned status ' + pm.response.code);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/invitations/{{invitationCode}}/validate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "invitations", "{{invitationCode}}", "validate"]
+        },
+        "description": "Validate an invitation code.\n\nThis is a public endpoint (no auth required) - it's called by the accept-invitation page to verify the code before showing the password form."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Accept Invitation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.test('User created successfully', function() {",
+              "        pm.expect(response.userId).to.be.a('string');",
+              "    });",
+              "    console.log('New user created! User ID:', response.userId);",
+              "    console.log('The user can now login with their email and password.');",
+              "} else if (pm.response.code === 400) {",
+              "    const response = pm.response.json();",
+              "    pm.test('Bad request', function() {",
+              "        pm.expect.fail(response.detail || JSON.stringify(response.errors) || 'Invalid request');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"password\": \"NewUser@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/invitations/{{invitationCode}}/accept",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "invitations", "{{invitationCode}}", "accept"]
+        },
+        "description": "Accept an invitation and create the user account.\n\nThis is a public endpoint (no auth required).\n\nPassword must meet requirements:\n- At least 8 characters\n- At least one uppercase letter\n- At least one lowercase letter\n- At least one number\n- At least one special character"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Login as New User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    pm.test('New user can login', function() {",
+              "        pm.expect(response.accessToken).to.be.a('string');",
+              "    });",
+              "    console.log('Success! The invited user is now logged in.');",
+              "} else {",
+              "    pm.test('Login failed', function() {",
+              "        pm.expect.fail('Login returned status ' + pm.response.code);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{inviteeEmail}}\",\n    \"password\": \"NewUser@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        },
+        "description": "Login with the newly created user account to verify the invitation flow completed successfully."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5292",
+      "type": "string"
+    },
+    {
+      "key": "ownerEmail",
+      "value": "claude@claude.com",
+      "type": "string"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "1@mClaude",
+      "type": "string"
+    },
+    {
+      "key": "inviteeEmail",
+      "value": "newuser@example.com",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invitationCode",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

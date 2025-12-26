@@ -29,13 +29,33 @@ public class IdentityService : IIdentityService
         string role,
         CancellationToken cancellationToken = default)
     {
+        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: false);
+    }
+
+    public async Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserWithConfirmedEmailAsync(
+        string email,
+        string password,
+        Guid accountId,
+        string role,
+        CancellationToken cancellationToken = default)
+    {
+        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: true);
+    }
+
+    private async Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserInternalAsync(
+        string email,
+        string password,
+        Guid accountId,
+        string role,
+        bool emailConfirmed)
+    {
         var user = new ApplicationUser
         {
             Email = email,
             UserName = email,
             AccountId = accountId,
             Role = role,
-            EmailConfirmed = false
+            EmailConfirmed = emailConfirmed
         };
 
         var result = await _userManager.CreateAsync(user, password);

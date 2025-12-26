@@ -17,7 +17,11 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:  
+  - "This project uses .NET 10 with Clean Architecture (Domain, Application, Infrastructure, Api layers) and Angular 20+ frontend"
+  - "Backend uses MediatR for CQRS, FluentValidation, EF Core with PostgreSQL"
+  - "Frontend uses @ngrx/signals for state management, Angular Material for UI"
+  - "Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to research frameworks, libraries, and patterns when making architecture decisions"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"
