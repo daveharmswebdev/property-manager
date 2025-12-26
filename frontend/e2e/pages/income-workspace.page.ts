@@ -1,6 +1,7 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 import { BasePage } from './base.page';
 import { type TestIncome } from '../helpers/test-data.helper';
+import { formatDateForInput } from '../helpers/date.helper';
 
 /**
  * IncomeWorkspacePage - Page object for income workspace E2E tests
@@ -69,12 +70,7 @@ export class IncomeWorkspacePage extends BasePage {
     // Fill date if provided (otherwise default is today)
     if (income.date) {
       await this.dateInput.clear();
-      const dateStr = income.date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric',
-      });
-      await this.dateInput.fill(dateStr);
+      await this.dateInput.fill(formatDateForInput(income.date));
     }
 
     // Fill source if provided
@@ -137,12 +133,7 @@ export class IncomeWorkspacePage extends BasePage {
     if (newData.date) {
       const dateInput = editingRow.locator('input[formControlName="date"]');
       await dateInput.clear();
-      const dateStr = newData.date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric',
-      });
-      await dateInput.fill(dateStr);
+      await dateInput.fill(formatDateForInput(newData.date));
     }
 
     if (newData.source !== undefined) {
@@ -244,12 +235,8 @@ export class IncomeWorkspacePage extends BasePage {
     await expect(this.ytdTotal).toContainText(expectedTotal);
   }
 
-  /**
-   * Assert empty state is visible
-   */
-  async expectEmptyState(): Promise<void> {
-    await expect(this.emptyState).toBeVisible();
-  }
+  // Note: expectEmptyState() is inherited from BasePage
+  // Override emptyStateLocator getter if custom selector needed
 
   /**
    * Get income amount from a row

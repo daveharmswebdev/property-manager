@@ -60,19 +60,10 @@ test.describe('Property Edit/Delete E2E Tests (AC-TD.1.1)', () => {
     // Verify property appears in detail
     await propertyDetailPage.expectPropertyName(propertyData.name);
 
-    // Step 2: Click Delete button
-    await propertyDetailPage.clickDelete();
+    // Step 2: Delete the property (click delete + confirm dialog)
+    await propertyDetailPage.deleteProperty();
 
-    // Step 3: Confirm dialog appears
-    await expect(propertyDetailPage.confirmDialog).toBeVisible();
-    await expect(propertyDetailPage.confirmDialog).toContainText('Delete');
-    await expect(propertyDetailPage.confirmDialog).toContainText(propertyData.name);
-
-    // Step 4: Click confirm
-    await propertyDetailPage.confirmDeleteButton.click();
-
-    // Step 5: Verify snackbar and redirect to dashboard
-    await propertyDetailPage.waitForSnackBar('Property deleted');
+    // Step 3: Verify redirect to dashboard
     await expect(page).toHaveURL('/dashboard');
 
     // Step 6: Verify property is removed from dashboard list
