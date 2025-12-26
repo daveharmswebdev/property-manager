@@ -29,6 +29,10 @@ memories:
   - "FluentValidation is used for request validation - validators are called explicitly in controllers before MediatR"
   - "Frontend uses Angular 20+ with @ngrx/signals for state management"
   - "API client is generated from Swagger using NSwag - run 'npm run generate-api' after adding new endpoints"
+  - "DEFINITION OF DONE: Dev work is NOT complete until ALL unit tests pass locally - both frontend (npm test) and backend (dotnet test)"
+  - "Playwright MCP is available for browser-based testing - use mcp__playwright__ tools when UI testing or verification is needed"
+  - "TypeScript LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching type errors in Angular/TypeScript code"
+  - "C# LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching compile errors in .NET code"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

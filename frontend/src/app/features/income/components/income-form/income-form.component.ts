@@ -1,8 +1,9 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormGroupDirective,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -229,6 +230,9 @@ export class IncomeFormComponent {
     description: ['', [Validators.maxLength(500)]],
   });
 
+  // ViewChild to access FormGroupDirective for resetting submitted state
+  @ViewChild(FormGroupDirective) private formDirective!: FormGroupDirective;
+
   /**
    * Handle form submission (AC-4.1.3, AC-4.1.5)
    */
@@ -261,13 +265,13 @@ export class IncomeFormComponent {
   }
 
   private resetForm(): void {
-    this.form.reset({
+    // Use formDirective.resetForm() to reset both form values AND the submitted state
+    // This is critical because ErrorStateMatcher shows errors when form.submitted is true
+    this.formDirective.resetForm({
       amount: null,
       date: this.today,
       source: '',
       description: '',
     });
-    this.form.markAsUntouched();
-    this.form.markAsPristine();
   }
 }

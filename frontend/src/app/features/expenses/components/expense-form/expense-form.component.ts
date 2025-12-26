@@ -1,8 +1,9 @@
-import { Component, inject, input, output, OnInit, signal } from '@angular/core';
+import { Component, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormGroupDirective,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -229,12 +230,18 @@ export class ExpenseFormComponent implements OnInit {
   // Duplicate check loading state (AC-3.6.1)
   protected readonly isCheckingDuplicate = signal(false);
 
+  // Flag to prevent marking fields as touched during form reset
+  private isResetting = false;
+
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [this.today, [Validators.required]],
     categoryId: ['', [Validators.required]],
     description: ['', [Validators.maxLength(500)]],
   });
+
+  // ViewChild to access FormGroupDirective for resetting submitted state
+  @ViewChild(FormGroupDirective) private formDirective!: FormGroupDirective;
 
   ngOnInit(): void {
     // Load categories if not already loaded
@@ -243,7 +250,10 @@ export class ExpenseFormComponent implements OnInit {
 
   protected onCategoryChange(categoryId: string): void {
     this.form.patchValue({ categoryId });
-    this.form.get('categoryId')?.markAsTouched();
+    // Only mark as touched on user interaction, not during programmatic reset
+    if (!this.isResetting) {
+      this.form.get('categoryId')?.markAsTouched();
+    }
   }
 
   protected getCategoryError(): string | null {
@@ -364,13 +374,18 @@ export class ExpenseFormComponent implements OnInit {
   }
 
   private resetForm(): void {
-    this.form.reset({
+    this.isResetting = true;
+    // Use formDirective.resetForm() to reset both form values AND the submitted state
+    // This is critical because ErrorStateMatcher shows errors when form.submitted is true
+    this.formDirective.resetForm({
       amount: null,
       date: this.today,
       categoryId: '',
       description: '',
     });
-    this.form.markAsUntouched();
-    this.form.markAsPristine();
+    // Clear the resetting flag after change detection completes
+    setTimeout(() => {
+      this.isResetting = false;
+    });
   }
 }
