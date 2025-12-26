@@ -3,6 +3,9 @@ import { LoginPage } from '../pages/login.page';
 import { RegisterPage } from '../pages/register.page';
 import { DashboardPage } from '../pages/dashboard.page';
 import { PropertyFormPage } from '../pages/property-form.page';
+import { PropertyDetailPage } from '../pages/property-detail.page';
+import { ExpenseWorkspacePage } from '../pages/expense-workspace.page';
+import { IncomeWorkspacePage } from '../pages/income-workspace.page';
 import { AuthHelper } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 import { type TestUser } from '../helpers/test-data.helper';
@@ -12,6 +15,9 @@ type Fixtures = {
   registerPage: RegisterPage;
   dashboardPage: DashboardPage;
   propertyFormPage: PropertyFormPage;
+  propertyDetailPage: PropertyDetailPage;
+  expenseWorkspacePage: ExpenseWorkspacePage;
+  incomeWorkspacePage: IncomeWorkspacePage;
   authHelper: AuthHelper;
   mailhog: MailHogHelper;
   authenticatedUser: TestUser;
@@ -32,6 +38,18 @@ export const test = base.extend<Fixtures>({
 
   propertyFormPage: async ({ page }, use) => {
     await use(new PropertyFormPage(page));
+  },
+
+  propertyDetailPage: async ({ page }, use) => {
+    await use(new PropertyDetailPage(page));
+  },
+
+  expenseWorkspacePage: async ({ page }, use) => {
+    await use(new ExpenseWorkspacePage(page));
+  },
+
+  incomeWorkspacePage: async ({ page }, use) => {
+    await use(new IncomeWorkspacePage(page));
   },
 
   authHelper: async ({ page }, use) => {
