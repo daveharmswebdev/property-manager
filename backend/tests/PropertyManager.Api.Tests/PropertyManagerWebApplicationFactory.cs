@@ -10,6 +10,8 @@ using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
+// UploadUrlResult is in Application.Common.Interfaces
+
 namespace PropertyManager.Api.Tests;
 
 public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -59,6 +61,18 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<FakeEmailService>();
             services.AddSingleton<IEmailService>(sp => sp.GetRequiredService<FakeEmailService>());
+
+            // Replace storage service with a singleton fake for testing
+            var storageServiceDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IStorageService));
+
+            if (storageServiceDescriptor != null)
+            {
+                services.Remove(storageServiceDescriptor);
+            }
+
+            services.AddSingleton<FakeStorageService>();
+            services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<FakeStorageService>());
         });
 
         builder.UseEnvironment("Testing");
@@ -143,6 +157,39 @@ public class FakeEmailService : IEmailService
     public Task SendInvitationEmailAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         SentInvitationEmails.Add((email, code));
+        return Task.CompletedTask;
+    }
+}
+
+public class FakeStorageService : IStorageService
+{
+    public List<string> UploadedKeys { get; } = [];
+    public List<string> DeletedKeys { get; } = [];
+
+    public Task<UploadUrlResult> GeneratePresignedUploadUrlAsync(
+        string storageKey,
+        string contentType,
+        long fileSizeBytes,
+        CancellationToken cancellationToken = default)
+    {
+        UploadedKeys.Add(storageKey);
+        var expiresAt = DateTime.UtcNow.AddMinutes(60);
+        var url = $"https://test-bucket.s3.amazonaws.com/{storageKey}?presigned=true";
+        return Task.FromResult(new UploadUrlResult(url, expiresAt));
+    }
+
+    public Task<string> GeneratePresignedDownloadUrlAsync(
+        string storageKey,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult($"https://test-bucket.s3.amazonaws.com/{storageKey}?presigned=download");
+    }
+
+    public Task DeleteFileAsync(
+        string storageKey,
+        CancellationToken cancellationToken = default)
+    {
+        DeletedKeys.Add(storageKey);
         return Task.CompletedTask;
     }
 }

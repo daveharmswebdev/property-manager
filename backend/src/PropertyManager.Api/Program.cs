@@ -10,6 +10,7 @@ using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Infrastructure.Email;
 using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
+using PropertyManager.Infrastructure.Storage;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +52,11 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 // Configure Email settings
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection(EmailSettings.SectionName));
+
+// Configure S3 Storage settings
+builder.Services.Configure<S3StorageSettings>(
+    builder.Configuration.GetSection(S3StorageSettings.SectionName));
+builder.Services.AddScoped<IStorageService, S3StorageService>();
 
 // Configure JWT settings
 builder.Services.Configure<JwtSettings>(

@@ -12,6 +12,11 @@ services:
       - Email__SmtpHost=mailhog
       - Email__SmtpPort=1025
       - Email__FromAddress=noreply@localhost
+      - AWS__AccessKeyId=${AWS_ACCESS_KEY_ID:-}
+      - AWS__SecretAccessKey=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS__BucketName=${AWS_BUCKET_NAME:-property-manager-receipts}
+      - AWS__Region=${AWS_REGION:-us-east-1}
+      - AWS__PresignedUrlExpiryMinutes=${AWS_PRESIGNED_URL_EXPIRY_MINUTES:-60}
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       db:
