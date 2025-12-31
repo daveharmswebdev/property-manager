@@ -84,8 +84,8 @@ development_status:
   td-6-invitation-only-registration: done            # Remove public registration, add email invitation system (PR #42)
 
   # Epic 5: Receipt Capture
-  epic-5: backlog
-  5-1-receipt-upload-infrastructure-s3-presigned-urls: backlog
+  epic-5: in-progress
+  5-1-receipt-upload-infrastructure-s3-presigned-urls: done
   5-2-mobile-receipt-capture-with-camera: backlog
   5-3-unprocessed-receipt-queue: backlog
   5-4-process-receipt-into-expense: backlog
