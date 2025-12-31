@@ -86,7 +86,7 @@ development_status:
   # Epic 5: Receipt Capture
   epic-5: in-progress
   5-1-receipt-upload-infrastructure-s3-presigned-urls: done
-  5-2-mobile-receipt-capture-with-camera: backlog
+  5-2-mobile-receipt-capture-with-camera: done
   5-3-unprocessed-receipt-queue: backlog
   5-4-process-receipt-into-expense: backlog
   5-5-view-and-delete-receipts: backlog

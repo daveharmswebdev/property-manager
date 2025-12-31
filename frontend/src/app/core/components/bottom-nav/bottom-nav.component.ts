@@ -49,11 +49,5 @@ export class BottomNavComponent {
     { label: 'Receipts', route: '/receipts', icon: 'document_scanner', badge: 0 },
   ];
 
-  /**
-   * FAB click handler - placeholder for future quick actions (Epic 5)
-   */
-  onFabClick(): void {
-    // Placeholder - will be implemented in Epic 5 for receipt capture
-    console.log('FAB clicked - quick action placeholder');
-  }
+  // FAB functionality moved to MobileCaptureFabComponent (AC-5.2.1)
 }

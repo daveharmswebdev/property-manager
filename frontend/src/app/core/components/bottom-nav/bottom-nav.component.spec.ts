@@ -40,10 +40,8 @@ describe('BottomNavComponent', () => {
     expect(labels).not.toContain('Settings');
   });
 
-  it('should render FAB button (AC7.5)', () => {
-    const fab = fixture.debugElement.query(By.css('[data-testid="quick-action-fab"]'));
-    expect(fab).toBeTruthy();
-  });
+  // FAB moved to MobileCaptureFabComponent (AC-5.2.1)
+  // See mobile-capture-fab.component.spec.ts for FAB tests
 
   it('should render all nav tabs in the DOM (AC7.5)', () => {
     const navTabs = fixture.debugElement.queryAll(By.css('.nav-tab'));
