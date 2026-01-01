@@ -1,10 +1,12 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseListItemDto } from '../../services/expense.service';
+import { ApiClient } from '../../../../core/api/api.service';
 
 /**
  * ExpenseListRowComponent (AC-3.4.2)
@@ -52,10 +54,14 @@ import { ExpenseListItemDto } from '../../services/expense.service';
         </mat-chip-set>
       </div>
 
-      <!-- Receipt Indicator (AC-3.4.2 - placeholder for Epic 5) -->
+      <!-- Receipt Indicator (AC-3.4.2, AC-5.4) -->
       <div class="expense-receipt">
         @if (expense().receiptId) {
-          <mat-icon matTooltip="Receipt attached">receipt</mat-icon>
+          <mat-icon
+            matTooltip="View receipt"
+            class="receipt-link"
+            (click)="viewReceipt($event)"
+          >receipt</mat-icon>
         }
       </div>
 
@@ -130,6 +136,15 @@ import { ExpenseListItemDto } from '../../services/expense.service';
         height: 18px;
         color: var(--mat-sys-on-surface-variant);
       }
+
+      .receipt-link {
+        cursor: pointer;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: var(--mat-sys-primary);
+        }
+      }
     }
 
     .expense-amount {
@@ -181,9 +196,11 @@ import { ExpenseListItemDto } from '../../services/expense.service';
   `],
 })
 export class ExpenseListRowComponent {
-  expense = input.required<ExpenseListItemDto>();
+  private readonly router = inject(Router);
+  private readonly api = inject(ApiClient);
+  private readonly snackBar = inject(MatSnackBar);
 
-  constructor(private router: Router) {}
+  expense = input.required<ExpenseListItemDto>();
 
   /**
    * Format date as "Dec 08, 2025" (AC-3.4.2)
@@ -213,5 +230,33 @@ export class ExpenseListRowComponent {
    */
   navigateToExpense(): void {
     this.router.navigate(['/properties', this.expense().propertyId, 'expenses']);
+  }
+
+  /**
+   * View the attached receipt image
+   * Fetches the receipt to get the presigned URL and opens in new tab
+   */
+  viewReceipt(event: Event): void {
+    event.stopPropagation(); // Prevent row click navigation
+
+    const receiptId = this.expense().receiptId;
+    if (!receiptId) return;
+
+    this.api.receipts_GetReceipt(receiptId).subscribe({
+      next: (receipt) => {
+        if (receipt.viewUrl) {
+          window.open(receipt.viewUrl, '_blank');
+        } else {
+          this.snackBar.open('Receipt image not available', 'Close', {
+            duration: 3000,
+          });
+        }
+      },
+      error: () => {
+        this.snackBar.open('Failed to load receipt', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
   }
 }

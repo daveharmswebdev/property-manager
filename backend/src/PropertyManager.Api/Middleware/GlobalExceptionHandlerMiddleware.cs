@@ -94,6 +94,11 @@ public class GlobalExceptionHandlerMiddleware
                 "https://propertymanager.app/errors/not-found",
                 "Resource not found"
             ),
+            ConflictException => (
+                StatusCodes.Status409Conflict,
+                "https://propertymanager.app/errors/conflict",
+                "Resource conflict"
+            ),
             UnauthorizedAccessException => (
                 StatusCodes.Status403Forbidden,
                 "https://propertymanager.app/errors/forbidden",

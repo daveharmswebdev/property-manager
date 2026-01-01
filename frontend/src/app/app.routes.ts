@@ -126,6 +126,14 @@ export const routes: Routes = [
             (m) => m.ReceiptsComponent
           ),
       },
+      // Receipt Processing (AC-5.4.1)
+      {
+        path: 'receipts/:id',
+        loadComponent: () =>
+          import('./features/receipts/receipt-process/receipt-process.component').then(
+            (m) => m.ReceiptProcessComponent
+          ),
+      },
       // Reports (AC7.7)
       {
         path: 'reports',
