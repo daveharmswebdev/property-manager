@@ -19,17 +19,20 @@ public class ReceiptsController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<GenerateUploadUrlCommand> _uploadUrlValidator;
     private readonly IValidator<CreateReceiptCommand> _createValidator;
+    private readonly IValidator<ProcessReceiptCommand> _processValidator;
     private readonly ILogger<ReceiptsController> _logger;
 
     public ReceiptsController(
         IMediator mediator,
         IValidator<GenerateUploadUrlCommand> uploadUrlValidator,
         IValidator<CreateReceiptCommand> createValidator,
+        IValidator<ProcessReceiptCommand> processValidator,
         ILogger<ReceiptsController> logger)
     {
         _mediator = mediator;
         _uploadUrlValidator = uploadUrlValidator;
         _createValidator = createValidator;
+        _processValidator = processValidator;
         _logger = logger;
     }
 
@@ -191,6 +194,59 @@ public class ReceiptsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Process a receipt by creating an expense from it (AC-5.4.4, AC-5.4.7).
+    /// Links the expense to the receipt and marks receipt as processed.
+    /// </summary>
+    /// <param name="id">Receipt GUID</param>
+    /// <param name="request">Expense details to create from receipt</param>
+    /// <returns>The newly created expense's ID</returns>
+    /// <response code="201">Returns the newly created expense ID</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If receipt, property, or category not found</response>
+    /// <response code="409">If receipt is already processed</response>
+    [HttpPost("{id:guid}/process")]
+    [ProducesResponseType(typeof(ProcessReceiptResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ProcessReceipt(Guid id, [FromBody] ProcessReceiptRequest request)
+    {
+        var command = new ProcessReceiptCommand(
+            id,
+            request.PropertyId,
+            request.Amount,
+            DateOnly.Parse(request.Date),
+            request.CategoryId,
+            request.Description);
+
+        // Validate command
+        var validationResult = await _processValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        var expenseId = await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Receipt processed: ReceiptId={ReceiptId} ExpenseId={ExpenseId} at {Timestamp}",
+            id,
+            expenseId,
+            DateTime.UtcNow);
+
+        var response = new ProcessReceiptResponse(expenseId);
+
+        return CreatedAtAction(
+            "GetExpense",
+            "Expenses",
+            new { id = expenseId },
+            response);
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -235,4 +291,22 @@ public record CreateReceiptRequest(
 /// </summary>
 public record CreateReceiptResponse(
     Guid Id
+);
+
+/// <summary>
+/// Request model for processing a receipt into an expense (AC-5.4.4).
+/// </summary>
+public record ProcessReceiptRequest(
+    Guid PropertyId,
+    decimal Amount,
+    string Date,
+    Guid CategoryId,
+    string? Description = null
+);
+
+/// <summary>
+/// Response model for successful receipt processing.
+/// </summary>
+public record ProcessReceiptResponse(
+    Guid ExpenseId
 );
