@@ -3,16 +3,41 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { BottomNavComponent } from './bottom-nav.component';
+import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
+import { ApiClient } from '../../api/api.service';
 
 describe('BottomNavComponent', () => {
   let component: BottomNavComponent;
   let fixture: ComponentFixture<BottomNavComponent>;
 
+  const mockReceiptStore = {
+    unprocessedReceipts: signal([]),
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isEmpty: signal(true),
+    unprocessedCount: signal(0),
+    hasReceipts: signal(false),
+    loadUnprocessedReceipts: vi.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BottomNavComponent, NoopAnimationsModule],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: ReceiptStore, useValue: mockReceiptStore },
+        {
+          provide: ApiClient,
+          useValue: {
+            receipts_GetUnprocessed: vi
+              .fn()
+              .mockReturnValue(of({ items: [], totalCount: 0 })),
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BottomNavComponent);
@@ -22,6 +47,11 @@ describe('BottomNavComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should call loadUnprocessedReceipts on init (AC-5.3.1)', () => {
+    // ngOnInit is called during fixture.detectChanges() in beforeEach
+    expect(mockReceiptStore.loadUnprocessedReceipts).toHaveBeenCalled();
   });
 
   it('should have 5 navigation items (AC7.5)', () => {

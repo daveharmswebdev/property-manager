@@ -1,0 +1,166 @@
+import { Component, computed, input, output, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { formatDistanceToNow } from 'date-fns';
+
+import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
+
+/**
+ * Receipt Queue Item Component (AC-5.3.2, AC-5.3.5, AC-5.3.6)
+ *
+ * Displays a single receipt in the unprocessed queue with:
+ * - Thumbnail (image preview or PDF icon)
+ * - Capture date (relative time format)
+ * - Property name or "(unassigned)" in muted style
+ * - Click handler for navigation to processing view
+ * - Hover effect for clickability
+ */
+@Component({
+  selector: 'app-receipt-queue-item',
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatIconModule],
+  template: `
+    <mat-card class="receipt-item" (click)="onClick()" data-testid="receipt-queue-item">
+      <div class="receipt-content">
+        <div class="thumbnail" data-testid="receipt-thumbnail">
+          @if (isPdf()) {
+            <mat-icon class="pdf-icon">description</mat-icon>
+          } @else if (imageError()) {
+            <mat-icon class="fallback-icon">image</mat-icon>
+          } @else {
+            <img
+              [src]="receipt().viewUrl"
+              [alt]="'Receipt from ' + formattedDate()"
+              (error)="onImageError()"
+              class="receipt-thumb"
+              loading="lazy"
+            />
+          }
+        </div>
+        <div class="details">
+          <span class="date" data-testid="receipt-date">{{ formattedDate() }}</span>
+          <span
+            class="property"
+            [class.unassigned]="!receipt().propertyName"
+            data-testid="receipt-property"
+          >
+            {{ receipt().propertyName || '(unassigned)' }}
+          </span>
+        </div>
+        <mat-icon class="chevron">chevron_right</mat-icon>
+      </div>
+    </mat-card>
+  `,
+  styles: [
+    `
+      .receipt-item {
+        cursor: pointer;
+        transition: box-shadow 0.2s ease;
+        margin-bottom: 8px;
+      }
+
+      .receipt-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .receipt-content {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        gap: 16px;
+      }
+
+      .thumbnail {
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .receipt-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .pdf-icon,
+      .fallback-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: #666;
+      }
+
+      .fallback-icon {
+        color: #999;
+      }
+
+      .details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .date {
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .property {
+        font-size: 0.875rem;
+        color: rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .property.unassigned {
+        font-style: italic;
+        color: rgba(0, 0, 0, 0.38);
+      }
+
+      .chevron {
+        color: rgba(0, 0, 0, 0.38);
+        flex-shrink: 0;
+      }
+    `,
+  ],
+})
+export class ReceiptQueueItemComponent {
+  /** The receipt data to display */
+  receipt = input.required<UnprocessedReceiptDto>();
+
+  /** Emitted when the item is clicked */
+  clicked = output<void>();
+
+  /** Whether the thumbnail image failed to load */
+  imageError = signal(false);
+
+  /** Whether the receipt is a PDF (shows document icon instead of thumbnail) */
+  isPdf = computed(() => this.receipt().contentType === 'application/pdf');
+
+  /** Formatted date using relative time (e.g., "2 hours ago") */
+  formattedDate = computed(() => {
+    const createdAt = this.receipt().createdAt;
+    if (!createdAt) return 'Unknown date';
+    const date = new Date(createdAt);
+    return formatDistanceToNow(date, { addSuffix: true });
+  });
+
+  onClick(): void {
+    this.clicked.emit();
+  }
+
+  onImageError(): void {
+    // Set signal to show fallback icon instead of broken image
+    this.imageError.set(true);
+  }
+}

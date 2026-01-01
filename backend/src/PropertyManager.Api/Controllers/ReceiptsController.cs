@@ -144,6 +144,28 @@ public class ReceiptsController : ControllerBase
     }
 
     /// <summary>
+    /// Get all unprocessed receipts for the current account (AC-5.3.2, AC-5.3.4).
+    /// Returns receipts where ProcessedAt IS NULL, sorted by CreatedAt descending.
+    /// </summary>
+    /// <returns>List of unprocessed receipts with presigned view URLs</returns>
+    /// <response code="200">Returns list of unprocessed receipts</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("unprocessed")]
+    [ProducesResponseType(typeof(UnprocessedReceiptsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetUnprocessed()
+    {
+        var result = await _mediator.Send(new GetUnprocessedReceiptsQuery());
+
+        _logger.LogInformation(
+            "Retrieved {Count} unprocessed receipts at {Timestamp}",
+            result.TotalCount,
+            DateTime.UtcNow);
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Delete a receipt (soft delete) (AC-5.1.7).
     /// Sets DeletedAt timestamp and optionally removes file from S3.
     /// </summary>

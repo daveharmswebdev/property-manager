@@ -24,9 +24,9 @@
       >
         <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
         <span matListItemTitle>{{ item.label }}</span>
-        @if (item.badge !== null && item.badge !== undefined && item.badge > 0) {
+        @if (getBadgeCount(item) > 0) {
           <span matListItemMeta>
-            <span class="badge" [matBadge]="item.badge" matBadgeColor="accent" matBadgeSize="small"></span>
+            <span class="badge" [matBadge]="getBadgeCount(item)" matBadgeColor="accent" matBadgeSize="small"></span>
           </span>
         }
       </a>

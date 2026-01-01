@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Router } from '@angular/router';
@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../services/auth.service';
 import { YearSelectorComponent } from '../../../shared/components/year-selector/year-selector.component';
+import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
 
 /**
  * Navigation item interface for sidebar links
@@ -49,12 +50,16 @@ interface NavItem {
   templateUrl: './sidebar-nav.component.html',
   styleUrl: './sidebar-nav.component.scss',
 })
-export class SidebarNavComponent {
+export class SidebarNavComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly receiptStore = inject(ReceiptStore);
 
   readonly currentUser = this.authService.currentUser;
   readonly isLoggingOut = signal(false);
+
+  /** Unprocessed receipt count for badge (AC-5.3.1) */
+  readonly unprocessedReceiptCount = this.receiptStore.unprocessedCount;
 
   // Navigation items (AC7.1)
   readonly navItems: NavItem[] = [
@@ -62,10 +67,26 @@ export class SidebarNavComponent {
     { label: 'Properties', route: '/properties', icon: 'home_work' },
     { label: 'Expenses', route: '/expenses', icon: 'receipt_long' },
     { label: 'Income', route: '/income', icon: 'payments' },
-    { label: 'Receipts', route: '/receipts', icon: 'document_scanner', badge: 0 }, // Placeholder badge
+    { label: 'Receipts', route: '/receipts', icon: 'document_scanner' },
     { label: 'Reports', route: '/reports', icon: 'assessment' },
     { label: 'Settings', route: '/settings', icon: 'settings' },
   ];
+
+  ngOnInit(): void {
+    // Load unprocessed receipts on init to populate badge count
+    this.receiptStore.loadUnprocessedReceipts();
+  }
+
+  /**
+   * Get badge count for a nav item (AC-5.3.1)
+   * Currently only Receipts has a dynamic badge
+   */
+  getBadgeCount(item: NavItem): number {
+    if (item.route === '/receipts') {
+      return this.unprocessedReceiptCount();
+    }
+    return item.badge ?? 0;
+  }
 
   /**
    * Get user display name - prefer email, fall back to role

@@ -9,6 +9,8 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { SidebarNavComponent } from './sidebar-nav.component';
 import { AuthService, User } from '../../services/auth.service';
+import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
+import { ApiClient } from '../../api/api.service';
 
 describe('SidebarNavComponent', () => {
   let component: SidebarNavComponent;
@@ -19,6 +21,16 @@ describe('SidebarNavComponent', () => {
     userId: 'test-user-id',
     accountId: 'test-account-id',
     role: 'Owner',
+  };
+
+  const mockReceiptStore = {
+    unprocessedReceipts: signal([]),
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isEmpty: signal(true),
+    unprocessedCount: signal(0),
+    hasReceipts: signal(false),
+    loadUnprocessedReceipts: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -36,6 +48,15 @@ describe('SidebarNavComponent', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },
+        { provide: ReceiptStore, useValue: mockReceiptStore },
+        {
+          provide: ApiClient,
+          useValue: {
+            receipts_GetUnprocessed: vi
+              .fn()
+              .mockReturnValue(of({ items: [], totalCount: 0 })),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -71,10 +92,19 @@ describe('SidebarNavComponent', () => {
     expect(component.navItems[0].route).toBe('/dashboard');
   });
 
-  it('should have Receipts badge placeholder (AC7.1)', () => {
+  it('should have Receipts nav item with dynamic badge (AC-5.3.1)', () => {
     const receiptsItem = component.navItems.find((item) => item.label === 'Receipts');
     expect(receiptsItem).toBeTruthy();
-    expect(receiptsItem?.badge).toBe(0);
+    expect(receiptsItem?.route).toBe('/receipts');
+    // Badge is now dynamic from store, default 0 when no receipts
+    expect(component.getBadgeCount(receiptsItem!)).toBe(0);
+  });
+
+  it('should return unprocessed count for Receipts badge (AC-5.3.1)', () => {
+    const receiptsItem = component.navItems.find((item) => item.label === 'Receipts');
+    // Verify the getBadgeCount method returns the store signal value
+    mockReceiptStore.unprocessedCount.set(5);
+    expect(component.getBadgeCount(receiptsItem!)).toBe(5);
   });
 
   it('should display user role in footer (AC7.2)', () => {

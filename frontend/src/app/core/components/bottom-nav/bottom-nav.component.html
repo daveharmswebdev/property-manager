@@ -7,8 +7,8 @@
       class="nav-tab"
       [attr.data-testid]="'bottom-nav-' + item.label.toLowerCase()"
     >
-      @if (item.badge !== null && item.badge !== undefined && item.badge > 0) {
-        <mat-icon [matBadge]="item.badge" matBadgeColor="accent" matBadgeSize="small">
+      @if (getBadgeCount(item) > 0) {
+        <mat-icon [matBadge]="getBadgeCount(item)" matBadgeColor="accent" matBadgeSize="small">
           {{ item.icon }}
         </mat-icon>
       } @else {
