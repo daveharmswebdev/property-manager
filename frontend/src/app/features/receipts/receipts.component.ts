@@ -1,58 +1,126 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
+import { Router } from '@angular/router';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 
+import { ReceiptStore } from './stores/receipt.store';
+import { ReceiptQueueItemComponent } from './components/receipt-queue-item/receipt-queue-item.component';
+import { UnprocessedReceiptDto } from '../../core/api/api.service';
+
 /**
- * Receipts placeholder component (AC7.7)
- * Will be implemented in Epic 5: Receipt Capture
+ * Receipts Page Component (AC-5.3.2, AC-5.3.3)
+ *
+ * Displays the unprocessed receipt queue with:
+ * - Page title "Receipts to Process"
+ * - Loading spinner while fetching
+ * - Empty state with checkmark and message when no receipts
+ * - List of receipt queue items when receipts exist
  */
 @Component({
   selector: 'app-receipts',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
+    ReceiptQueueItemComponent,
+  ],
   template: `
-    <div class="placeholder-container">
-      <mat-card class="placeholder-card">
-        <mat-icon class="placeholder-icon">document_scanner</mat-icon>
-        <h2>Receipts</h2>
-        <p>Receipt queue coming soon.</p>
-        <p class="hint">This feature will be implemented in Epic 5.</p>
-      </mat-card>
+    <div class="receipts-page">
+      <h1 class="page-title">Receipts to Process</h1>
+
+      @if (store.isLoading()) {
+        <div class="loading" data-testid="receipts-loading">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else if (store.isEmpty()) {
+        <div class="empty-state" data-testid="receipts-empty">
+          <mat-icon class="check-icon">check_circle</mat-icon>
+          <h2>All caught up!</h2>
+          <p>No receipts to process.</p>
+        </div>
+      } @else {
+        <div class="receipt-queue" data-testid="receipts-queue">
+          @for (receipt of store.unprocessedReceipts(); track receipt.id) {
+            <app-receipt-queue-item
+              [receipt]="receipt"
+              (clicked)="onReceiptClick(receipt)"
+            />
+          }
+        </div>
+      }
     </div>
   `,
-  styles: [`
-    .placeholder-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: calc(100vh - 100px);
-    }
-    .placeholder-card {
-      text-align: center;
-      padding: 48px;
-      max-width: 400px;
-    }
-    .placeholder-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      color: var(--pm-primary);
-      margin-bottom: 16px;
-    }
-    h2 {
-      color: var(--pm-text-primary);
-      margin: 0 0 8px 0;
-    }
-    p {
-      color: var(--pm-text-secondary);
-      margin: 0;
-    }
-    .hint {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-top: 16px;
-    }
-  `]
+  styles: [
+    `
+      .receipts-page {
+        padding: 24px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .page-title {
+        margin: 0 0 24px 0;
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 200px;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        text-align: center;
+        padding: 48px;
+      }
+
+      .check-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--pm-primary, #2e7d32);
+        margin-bottom: 16px;
+      }
+
+      .empty-state h2 {
+        margin: 0 0 8px 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .empty-state p {
+        margin: 0;
+        color: rgba(0, 0, 0, 0.6);
+      }
+
+      .receipt-queue {
+        display: flex;
+        flex-direction: column;
+      }
+    `,
+  ],
 })
-export class ReceiptsComponent {}
+export class ReceiptsComponent implements OnInit {
+  readonly store = inject(ReceiptStore);
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.store.loadUnprocessedReceipts();
+  }
+
+  onReceiptClick(receipt: UnprocessedReceiptDto): void {
+    // Navigate to receipt processing view (Story 5.4)
+    this.router.navigate(['/receipts', receipt.id]);
+  }
+}

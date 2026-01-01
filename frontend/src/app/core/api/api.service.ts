@@ -52,6 +52,7 @@ export interface IApiClient {
     receipts_CreateReceipt(request: CreateReceiptRequest): Observable<CreateReceiptResponse>;
     receipts_GetReceipt(id: string): Observable<ReceiptDto>;
     receipts_DeleteReceipt(id: string): Observable<void>;
+    receipts_GetUnprocessed(): Observable<UnprocessedReceiptsResponse>;
 }
 
 @Injectable({
@@ -2351,6 +2352,60 @@ export class ApiClient implements IApiClient {
         }
         return _observableOf(null as any);
     }
+
+    receipts_GetUnprocessed(): Observable<UnprocessedReceiptsResponse> {
+        let url_ = this.baseUrl + "/api/v1/receipts/unprocessed";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReceipts_GetUnprocessed(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReceipts_GetUnprocessed(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UnprocessedReceiptsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UnprocessedReceiptsResponse>;
+        }));
+    }
+
+    protected processReceipts_GetUnprocessed(response: HttpResponseBase): Observable<UnprocessedReceiptsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessedReceiptsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface ProblemDetails {
@@ -2690,6 +2745,20 @@ export interface ReceiptDto {
     expenseId?: string | undefined;
     createdAt?: Date;
     processedAt?: Date | undefined;
+    viewUrl?: string;
+}
+
+export interface UnprocessedReceiptsResponse {
+    items?: UnprocessedReceiptDto[];
+    totalCount?: number;
+}
+
+export interface UnprocessedReceiptDto {
+    id?: string;
+    createdAt?: Date;
+    propertyId?: string | undefined;
+    propertyName?: string | undefined;
+    contentType?: string;
     viewUrl?: string;
 }
 
