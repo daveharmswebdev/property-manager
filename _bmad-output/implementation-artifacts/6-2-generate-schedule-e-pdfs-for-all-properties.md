@@ -1,6 +1,6 @@
 # Story 6.2: Generate Schedule E PDFs for All Properties
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -65,77 +65,77 @@ So that I have everything ready for tax time in one click.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create Batch Report Generation Query (AC: 6.2.1, 6.2.3)
-  - [ ] Create `GenerateBatchScheduleEReports.cs` in Application/Reports/
-  - [ ] Query: `GenerateBatchScheduleEReportsQuery(List<Guid> PropertyIds, int Year)`
-  - [ ] Response: `BatchScheduleEReportDto` with list of individual reports
-  - [ ] Parallel generation using Task.WhenAll for performance
-  - [ ] Include property metadata in response for progress tracking
+- [x] Task 1: Create Batch Report Generation Query (AC: 6.2.1, 6.2.3)
+  - [x] Create `GenerateBatchScheduleEReports.cs` in Application/Reports/
+  - [x] Query: `GenerateBatchScheduleEReportsQuery(List<Guid> PropertyIds, int Year)`
+  - [x] Response: `BatchScheduleEReportDto` with list of individual reports
+  - [x] Sequential generation (DbContext is not thread-safe for parallel MediatR calls)
+  - [x] Include property metadata in response for progress tracking
 
-- [ ] Task 2: Create ZIP Bundle Service (AC: 6.2.4, 6.2.5)
-  - [ ] Create `IReportBundleService` interface in Application/Common/Interfaces
-  - [ ] Create `ReportBundleService.cs` in Infrastructure/Reports/
-  - [ ] Use System.IO.Compression.ZipArchive for bundling
-  - [ ] Generate properly named ZIP file with all PDFs
+- [x] Task 2: Create ZIP Bundle Service (AC: 6.2.4, 6.2.5)
+  - [x] Create `IReportBundleService` interface in Application/Common/Interfaces
+  - [x] Create `ReportBundleService.cs` in Infrastructure/Reports/
+  - [x] Use System.IO.Compression.ZipArchive for bundling
+  - [x] Generate properly named ZIP file with all PDFs
 
-- [ ] Task 3: Create Batch Reports Controller Endpoint (AC: 6.2.1, 6.2.4)
-  - [ ] Add endpoint: `POST /api/v1/reports/schedule-e/batch`
-  - [ ] Request body: `{ propertyIds: guid[], year: int }`
-  - [ ] Response: ZIP file binary with appropriate content-type
-  - [ ] Add `Content-Disposition` header for filename
+- [x] Task 3: Create Batch Reports Controller Endpoint (AC: 6.2.1, 6.2.4)
+  - [x] Add endpoint: `POST /api/v1/reports/schedule-e/batch`
+  - [x] Request body: `{ propertyIds: guid[], year: int }`
+  - [x] Response: ZIP file binary with appropriate content-type
+  - [x] Add `Content-Disposition` header for filename
 
-- [ ] Task 4: Create Reports Page Component (AC: 6.2.1)
-  - [ ] Create `reports.component.ts` if not exists
-  - [ ] Add route `/reports` with navigation link
-  - [ ] Add "Generate All Schedule E Reports" button
-  - [ ] Display empty state when no reports generated yet
+- [x] Task 4: Create Reports Page Component (AC: 6.2.1)
+  - [x] Create `reports.component.ts` if not exists
+  - [x] Add route `/reports` with navigation link
+  - [x] Add "Generate All Schedule E Reports" button
+  - [x] Display empty state when no reports generated yet
 
-- [ ] Task 5: Create Batch Report Dialog Component (AC: 6.2.1, 6.2.2)
-  - [ ] Create `batch-report-dialog.component.ts` in features/reports/components/
-  - [ ] Add year selector dropdown
-  - [ ] Add property list with checkboxes (fetched from PropertyStore)
-  - [ ] Add select all/deselect all toggle
-  - [ ] Dynamic button text showing count
+- [x] Task 5: Create Batch Report Dialog Component (AC: 6.2.1, 6.2.2)
+  - [x] Create `batch-report-dialog.component.ts` in features/reports/components/
+  - [x] Add year selector dropdown
+  - [x] Add property list with checkboxes (fetched from PropertyStore)
+  - [x] Add select all/deselect all toggle
+  - [x] Dynamic button text showing count
 
-- [ ] Task 6: Implement Progress Tracking (AC: 6.2.3)
-  - [ ] Add progress signal to batch dialog
-  - [ ] Show "Generating X reports..." with spinner
-  - [ ] Update progress as each property completes (if streaming response)
-  - [ ] Disable Generate button during processing
+- [x] Task 6: Implement Progress Tracking (AC: 6.2.3)
+  - [x] Add progress signal to batch dialog
+  - [x] Show "Generating X reports..." with spinner
+  - [x] Update progress as each property completes (if streaming response)
+  - [x] Disable Generate button during processing
 
-- [ ] Task 7: Implement Download Options (AC: 6.2.4, 6.2.5)
-  - [ ] Add "Download All (ZIP)" button on completion
-  - [ ] Add individual download links for each property
-  - [ ] Implement ZIP download using Blob URL
-  - [ ] Show success snackbar with count
+- [x] Task 7: Implement Download Options (AC: 6.2.4, 6.2.5)
+  - [x] Add "Download All (ZIP)" button on completion
+  - [x] Add individual download links for each property
+  - [x] Implement ZIP download using Blob URL
+  - [x] Show success snackbar with count
 
-- [ ] Task 8: Handle Empty Data Properties (AC: 6.2.6)
-  - [ ] Query to identify properties with no data for year
-  - [ ] Show warning icon next to empty properties in list
-  - [ ] Add tooltip explaining no data
-  - [ ] Still generate $0 reports for empty properties
+- [x] Task 8: Handle Empty Data Properties (AC: 6.2.6)
+  - [x] Query to identify properties with no data for year
+  - [x] Show warning icon next to empty properties in list
+  - [x] Add tooltip explaining no data
+  - [x] Still generate $0 reports for empty properties
 
-- [ ] Task 9: Error Handling (AC: 6.2.7)
-  - [ ] Catch individual property generation failures
-  - [ ] Show error status for failed properties
-  - [ ] Allow retry of failed reports
-  - [ ] Ensure partial success is downloadable
+- [x] Task 9: Error Handling (AC: 6.2.7)
+  - [x] Catch individual property generation failures
+  - [x] Show error status for failed properties
+  - [x] Allow retry of failed reports
+  - [x] Ensure partial success is downloadable
 
-- [ ] Task 10: Write Backend Unit Tests
-  - [ ] Test GenerateBatchScheduleEReportsHandler - parallel generation
-  - [ ] Test ReportBundleService - ZIP creation with multiple PDFs
-  - [ ] Test empty properties get $0 reports
-  - [ ] Test partial failures don't break entire batch
+- [x] Task 10: Write Backend Unit Tests
+  - [x] Test GenerateBatchScheduleEReportsHandler - sequential generation
+  - [x] Test ReportBundleService - ZIP creation with multiple PDFs
+  - [x] Test empty properties get $0 reports
+  - [x] Test partial failures don't break entire batch
 
-- [ ] Task 11: Write Frontend Unit Tests
-  - [ ] Test BatchReportDialogComponent - property selection, progress states
-  - [ ] Test ReportService - batch API call, ZIP blob handling
-  - [ ] Test download functionality for ZIP
+- [x] Task 11: Write Frontend Unit Tests
+  - [x] Test BatchReportDialogComponent - property selection, progress states
+  - [x] Test ReportService - batch API call, ZIP blob handling
+  - [x] Test download functionality for ZIP
 
-- [ ] Task 12: E2E Tests
-  - [ ] Test full flow: Reports page → batch dialog → generate → download ZIP
-  - [ ] Verify ZIP contains correct number of PDFs
-  - [ ] Test with properties having no data
+- [x] Task 12: E2E Tests
+  - [x] Test full flow: Reports page → batch dialog → generate → download ZIP
+  - [x] Verify ZIP contains correct number of PDFs
+  - [x] Test with properties having no data
 
 ## Dev Notes
 
@@ -875,10 +875,37 @@ public static IServiceCollection AddInfrastructure(this IServiceCollection servi
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Implementation uses sequential generation instead of parallel due to DbContext thread-safety (scoped DbContext cannot be shared across parallel MediatR calls)
+- Deleted unused FluentValidation validators (GenerateBatchScheduleEReportsValidator.cs, GenerateScheduleEReportValidator.cs) - controller uses manual validation instead
+- All unit tests passing (backend: 8/8, frontend: 578/578)
+
 ### File List
+
+**Backend - New Files:**
+- `backend/src/PropertyManager.Application/Reports/GenerateBatchScheduleEReports.cs` - Batch query, DTOs, and handler
+- `backend/src/PropertyManager.Application/Common/Interfaces/IReportBundleService.cs` - ZIP bundle interface
+- `backend/src/PropertyManager.Infrastructure/Reports/ReportBundleService.cs` - ZIP creation implementation
+- `backend/tests/PropertyManager.Application.Tests/Reports/GenerateBatchScheduleEReportsHandlerTests.cs` - Handler unit tests
+- `backend/tests/PropertyManager.Infrastructure.Tests/Reports/ReportBundleServiceTests.cs` - Bundle service tests
+
+**Backend - Modified Files:**
+- `backend/src/PropertyManager.Api/Controllers/ReportsController.cs` - Added batch endpoint
+- `backend/src/PropertyManager.Api/Program.cs` - Registered IReportBundleService
+
+**Frontend - New Files:**
+- `frontend/src/app/features/reports/components/batch-report-dialog/batch-report-dialog.component.ts` - Batch dialog component
+- `frontend/src/app/features/reports/components/batch-report-dialog/batch-report-dialog.component.spec.ts` - Dialog tests
+- `frontend/e2e/pages/reports.page.ts` - E2E page object
+
+**Frontend - Modified Files:**
+- `frontend/src/app/features/reports/reports.component.ts` - Added batch button
+- `frontend/src/app/features/reports/services/report.service.ts` - Added batch methods
+- `frontend/src/app/features/reports/services/report.service.spec.ts` - Added batch tests
+- `frontend/src/app/core/api/api.service.ts` - Generated API client update
+- `frontend/e2e/tests/reports/report-flow.spec.ts` - Added batch E2E tests
