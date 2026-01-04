@@ -13,7 +13,12 @@ using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Api.Services;
 using PropertyManager.Infrastructure.Persistence;
 using PropertyManager.Infrastructure.Storage;
+using PropertyManager.Infrastructure.Reports;
+using QuestPDF.Infrastructure;
 using Serilog;
+
+// Configure QuestPDF license (Community MIT for < $1M revenue) - AC 6.1.4
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +64,9 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.Configure<S3StorageSettings>(
     builder.Configuration.GetSection(S3StorageSettings.SectionName));
 builder.Services.AddScoped<IStorageService, S3StorageService>();
+
+// Register PDF report generator (AC-6.1.4)
+builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();
 
 // Configure SignalR for real-time notifications (AC-5.6.1)
 builder.Services.AddSignalR();

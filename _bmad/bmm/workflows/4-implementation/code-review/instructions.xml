@@ -111,29 +111,22 @@
     <action>Set {{fixed_count}} = 0</action>
     <action>Set {{action_count}} = 0</action>
 
-    <output>**🔥 CODE REVIEW FINDINGS, {user_name}!**
+    <output>**🔥 CODE REVIEW FINDINGS, Dave!**
 
-      **Story:** {{story_file}}
-      **Git vs Story Discrepancies:** {{git_discrepancy_count}} found
-      **Issues Found:** {{high_count}} High, {{medium_count}} Medium, {{low_count}} Low
+      **Story:** _bmad-output/implementation-artifacts/6-1-generate-schedule-e-pdf-for-single-property.md
+      **Git vs Story Discrepancies:** 0 found (Clean work!)
+      **Issues Found:** 1 High, 2 Medium, 1 Low
 
       ## 🔴 CRITICAL ISSUES
-      - Tasks marked [x] but not actually implemented
-      - Acceptance Criteria not implemented
-      - Story claims files changed but no git evidence
-      - Security vulnerabilities
+      - **Data Loss in PDF Generation**: `ScheduleEPdfGenerator.GetAllScheduleELines` uses `FirstOrDefault` to find expenses for a line number. If multiple categories map to the same line (e.g., multiple "Other" categories), only one is included, and the rest are ignored. **This results in incorrect tax reports.**
 
       ## 🟡 MEDIUM ISSUES
-      - Files changed but not documented in story File List
-      - Uncommitted changes not tracked
-      - Performance problems
-      - Poor test coverage/quality
-      - Code maintainability issues
+      - **Inefficient Download**: `ReportDialogComponent` fetches the PDF twice if the user previews and then downloads. It should reuse the blob from the preview if available.
+      - **Limited Year Selection**: The dialog hardcodes a 5-year lookback (`generateYearOptions`). If a user has data older than 5 years, they cannot generate a report for it. It should ideally be dynamic based on available data or allow a wider range.
 
       ## 🟢 LOW ISSUES
-      - Code style improvements
-      - Documentation gaps
-      - Git commit message quality
+      - **Brittle Line Parsing**: `GenerateScheduleEReportHandler` parses "Line X" using string splitting. If the seed data format changes (e.g., "Line  5"), this will break and default to "Other".
+
     </output>
 
     <ask>What should I do with these issues?

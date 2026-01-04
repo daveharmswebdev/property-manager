@@ -13,6 +13,10 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  ReportDialogComponent,
+  ReportDialogData,
+} from '../../reports/components/report-dialog/report-dialog.component';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -74,7 +78,7 @@ import {
               <p class="address">{{ propertyStore.selectedPropertyFullAddress() }}</p>
             </div>
           </div>
-          <!-- Action Buttons (AC-2.3.4, AC-3.1.1) -->
+          <!-- Action Buttons (AC-2.3.4, AC-3.1.1, AC-6.1.1) -->
           <div class="action-buttons">
             <button mat-stroked-button
                     color="primary"
@@ -87,6 +91,13 @@ import {
                     [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'income']">
               <mat-icon>add</mat-icon>
               Add Income
+            </button>
+            <button mat-flat-button
+                    color="primary"
+                    (click)="openReportDialog()"
+                    data-testid="generate-report-button">
+              <mat-icon>description</mat-icon>
+              Generate Report
             </button>
             <button mat-stroked-button color="primary" [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'edit']">
               <mat-icon>edit</mat-icon>
@@ -535,6 +546,28 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
       return `(${formatted})`;
     }
     return formatted;
+  }
+
+  /**
+   * Opens the report generation dialog (AC-6.1.1).
+   * Passes property details and current year to the dialog.
+   */
+  openReportDialog(): void {
+    const property = this.propertyStore.selectedProperty();
+    if (!property) return;
+
+    const dialogData: ReportDialogData = {
+      propertyId: property.id,
+      propertyName: property.name,
+      currentYear: this.yearService.selectedYear()
+    };
+
+    this.dialog.open(ReportDialogComponent, {
+      width: '700px',
+      maxHeight: '90vh',
+      data: dialogData,
+      panelClass: 'report-dialog-panel'
+    });
   }
 
   /**
