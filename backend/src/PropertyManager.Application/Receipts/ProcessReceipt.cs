@@ -21,18 +21,22 @@ public record ProcessReceiptCommand(
 /// <summary>
 /// Handler for ProcessReceiptCommand.
 /// Creates an expense linked to the receipt and marks the receipt as processed.
+/// Broadcasts SignalR notification after successful processing (AC-5.6.2).
 /// </summary>
 public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid>
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IReceiptNotificationService _notificationService;
 
     public ProcessReceiptHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IReceiptNotificationService notificationService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _notificationService = notificationService;
     }
 
     public async Task<Guid> Handle(ProcessReceiptCommand request, CancellationToken cancellationToken)
@@ -90,6 +94,12 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
         receipt.PropertyId = request.PropertyId;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Broadcast real-time notification (AC-5.6.2)
+        await _notificationService.NotifyReceiptLinkedAsync(
+            _currentUser.AccountId,
+            new ReceiptLinkedEvent(receipt.Id, expense.Id),
+            cancellationToken);
 
         return expense.Id;
     }

@@ -23,6 +23,7 @@ describe('ReceiptsComponent', () => {
     hasReceipts: ReturnType<typeof signal<boolean>>;
     loadUnprocessedReceipts: ReturnType<typeof vi.fn>;
     removeFromQueue: ReturnType<typeof vi.fn>;
+    isNewReceipt: ReturnType<typeof vi.fn>;
   };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
   let mockSnackBar: { open: ReturnType<typeof vi.fn> };
@@ -64,6 +65,7 @@ describe('ReceiptsComponent', () => {
       hasReceipts: signal(false),
       loadUnprocessedReceipts: vi.fn().mockResolvedValue(undefined),
       removeFromQueue: vi.fn(),
+      isNewReceipt: vi.fn().mockReturnValue(false),
     };
 
     mockDialog = {

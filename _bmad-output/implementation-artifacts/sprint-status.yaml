@@ -90,7 +90,7 @@ development_status:
   5-3-unprocessed-receipt-queue: done
   5-4-process-receipt-into-expense: done
   5-5-view-and-delete-receipts: done
-  5-6-real-time-receipt-sync-signalr: ready-for-dev
+  5-6-real-time-receipt-sync-signalr: done
   epic-5-retrospective: optional
 
   # Epic 6: Tax Reports

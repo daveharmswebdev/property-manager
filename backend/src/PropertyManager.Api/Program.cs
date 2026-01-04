@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PropertyManager.Api.Hubs;
 using PropertyManager.Api.Middleware;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Infrastructure.Email;
 using PropertyManager.Infrastructure.Identity;
+using PropertyManager.Api.Services;
 using PropertyManager.Infrastructure.Persistence;
 using PropertyManager.Infrastructure.Storage;
 using Serilog;
@@ -58,6 +60,10 @@ builder.Services.Configure<S3StorageSettings>(
     builder.Configuration.GetSection(S3StorageSettings.SectionName));
 builder.Services.AddScoped<IStorageService, S3StorageService>();
 
+// Configure SignalR for real-time notifications (AC-5.6.1)
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IReceiptNotificationService, ReceiptNotificationService>();
+
 // Configure JWT settings
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
@@ -83,6 +89,24 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings.Secret)),
         ClockSkew = TimeSpan.Zero  // No clock skew tolerance per Architecture doc
+    };
+
+    // Handle JWT in query string for SignalR connections (AC-5.6.1)
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -162,6 +186,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR hub for real-time receipt notifications (AC-5.6.1)
+app.MapHub<ReceiptHub>("/hubs/receipts");
 
 // Apply database migrations and seed data
 using (var scope = app.Services.CreateScope())

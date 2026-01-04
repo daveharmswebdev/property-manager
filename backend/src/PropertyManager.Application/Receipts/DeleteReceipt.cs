@@ -16,20 +16,27 @@ public record DeleteReceiptCommand(Guid Id) : IRequest<Unit>;
 /// Handler for DeleteReceiptCommand.
 /// Soft-deletes receipt record and optionally deletes from S3.
 /// Tenant isolation is enforced via global query filter.
+/// Broadcasts SignalR notification after successful deletion.
 /// </summary>
 public class DeleteReceiptHandler : IRequestHandler<DeleteReceiptCommand, Unit>
 {
     private readonly IAppDbContext _dbContext;
     private readonly IStorageService _storageService;
+    private readonly IReceiptNotificationService _notificationService;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<DeleteReceiptHandler> _logger;
 
     public DeleteReceiptHandler(
         IAppDbContext dbContext,
         IStorageService storageService,
+        IReceiptNotificationService notificationService,
+        ICurrentUser currentUser,
         ILogger<DeleteReceiptHandler> logger)
     {
         _dbContext = dbContext;
         _storageService = storageService;
+        _notificationService = notificationService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -49,6 +56,12 @@ public class DeleteReceiptHandler : IRequestHandler<DeleteReceiptCommand, Unit>
         receipt.DeletedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Broadcast real-time notification
+        await _notificationService.NotifyReceiptDeletedAsync(
+            _currentUser.AccountId,
+            receipt.Id,
+            cancellationToken);
 
         // Optionally delete from S3 (fire-and-forget, don't fail if S3 delete fails)
         try

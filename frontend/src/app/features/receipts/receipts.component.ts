@@ -51,6 +51,7 @@ import {
           @for (receipt of store.unprocessedReceipts(); track receipt.id) {
             <app-receipt-queue-item
               [receipt]="receipt"
+              [isNew]="store.isNewReceipt(receipt.id!)"
               (clicked)="onReceiptClick(receipt)"
               (delete)="onDeleteReceipt($event)"
             />

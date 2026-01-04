@@ -15,6 +15,7 @@ public class ProcessReceiptHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IReceiptNotificationService> _notificationServiceMock;
     private readonly ProcessReceiptHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _testUserId = Guid.NewGuid();
@@ -26,6 +27,7 @@ public class ProcessReceiptHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _notificationServiceMock = new Mock<IReceiptNotificationService>();
 
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
@@ -35,7 +37,8 @@ public class ProcessReceiptHandlerTests
 
         _handler = new ProcessReceiptHandler(
             _dbContextMock.Object,
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            _notificationServiceMock.Object);
     }
 
     [Fact]
@@ -71,6 +74,13 @@ public class ProcessReceiptHandlerTests
         receipt.ProcessedAt.Should().NotBeNull();
         receipt.PropertyId.Should().Be(_testPropertyId);
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify SignalR notification was sent (AC-5.6.2)
+        _notificationServiceMock.Verify(x => x.NotifyReceiptLinkedAsync(
+            _testAccountId,
+            It.Is<ReceiptLinkedEvent>(e =>
+                e.ReceiptId == _testReceiptId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
