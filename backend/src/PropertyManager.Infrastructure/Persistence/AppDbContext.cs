@@ -38,6 +38,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<GeneratedReport> GeneratedReports => Set<GeneratedReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,13 +84,18 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         // Apply tenant filter to RefreshToken (no soft delete, just tenant isolation)
         modelBuilder.Entity<RefreshToken>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to GeneratedReport (combined with soft delete)
+        modelBuilder.Entity<GeneratedReport>()
+            .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
+                                 && e.DeletedAt == null);
     }
 
     private void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)
     {
         // Note: Soft delete filters are combined with tenant filters above
         // This method is kept for documentation purposes
-        // Entities with ISoftDeletable: Property, Expense, Income, Receipt
+        // Entities with ISoftDeletable: Property, Expense, Income, Receipt, GeneratedReport
     }
 
     public override int SaveChanges()

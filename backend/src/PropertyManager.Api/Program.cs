@@ -64,6 +64,7 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.Configure<S3StorageSettings>(
     builder.Configuration.GetSection(S3StorageSettings.SectionName));
 builder.Services.AddScoped<IStorageService, S3StorageService>();
+builder.Services.AddScoped<IReportStorageService, ReportStorageService>();
 
 // Register PDF report generator (AC-6.1.4)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();

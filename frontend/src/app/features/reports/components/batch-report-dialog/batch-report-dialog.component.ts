@@ -396,7 +396,7 @@ export class BatchReportDialogComponent implements OnInit {
         { duration: 5000 }
       );
 
-      this.dialogRef.close(true);
+      this.dialogRef.close({ generated: true });
     } catch (err) {
       console.error('Batch report generation failed:', err);
       this.error.set('Failed to generate reports. Please try again.');
