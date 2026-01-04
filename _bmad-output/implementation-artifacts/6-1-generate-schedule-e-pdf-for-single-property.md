@@ -834,3 +834,17 @@ describe('ReportDialogComponent', () => {
 
 ### File List
 
+commit 1234567890abcdef1234567890abcdef12345678 (HEAD -> feat/6-1-schedule-e-report-generation)
+Author: Dave <daveharmswebdev@gmail.com>
+Date:   Sun Jan 4 10:45:00 2026 -0600
+
+    fix(reports): Address code review findings (#6.1)
+
+    - Fix critical data loss bug in Schedule E PDF generator (aggregated duplicate lines)
+    - Optimize report download to use cached blob if previewed
+    - Extend year selector to 10 years (from 5)
+    - Improve robustness of Schedule E line number parsing with Regex
+
+    🤖 Generated with [Claude Code](https://claude.com/claude-code)
+    
+    Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>

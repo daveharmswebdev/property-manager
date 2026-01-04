@@ -73,8 +73,12 @@ describe('ReportDialogComponent', () => {
     });
 
     it('should have available years options', () => {
-      expect(component.availableYears.length).toBe(5);
-      expect(component.availableYears[0]).toBe(new Date().getFullYear());
+      // Check that we have years generated (default is 10)
+      expect(component.availableYears.length).toBe(10);
+      
+      const currentYear = new Date().getFullYear();
+      expect(component.availableYears[0]).toBe(currentYear);
+      expect(component.availableYears[9]).toBe(currentYear - 9);
     });
 
     it('should not be loading initially', () => {

@@ -113,15 +113,18 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
 
     private static IEnumerable<ScheduleELineItemDto> GetAllScheduleELines(List<ScheduleELineItemDto> reported)
     {
-        // Return all 15 lines, with $0 for any not in the report
+        // Return all 15 lines, summing amounts if multiple categories map to the same line
         var allLines = ScheduleECategoryMapping.CategoryToLine
             .Select(kvp =>
             {
-                var existing = reported.FirstOrDefault(r => r.LineNumber == kvp.Value);
+                var totalAmount = reported
+                    .Where(r => r.LineNumber == kvp.Value)
+                    .Sum(r => r.Amount);
+
                 return new ScheduleELineItemDto(
                     kvp.Value,
                     kvp.Key,
-                    existing?.Amount ?? 0
+                    totalAmount
                 );
             })
             .OrderBy(l => l.LineNumber);

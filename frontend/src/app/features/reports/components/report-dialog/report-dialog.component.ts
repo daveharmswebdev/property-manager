@@ -202,13 +202,14 @@ export class ReportDialogComponent implements OnDestroy {
   readonly previewUrl = signal<SafeResourceUrl | null>(null);
 
   private currentBlobUrl: string | null = null;
+  private cachedBlob: Blob | null = null;
 
   /**
-   * Generate a list of available years (current year and 4 previous years).
+   * Generate a list of available years (current year and 9 previous years).
    */
   private generateYearOptions(): number[] {
     const currentYear = new Date().getFullYear();
-    return Array.from({ length: 5 }, (_, i) => currentYear - i);
+    return Array.from({ length: 10 }, (_, i) => currentYear - i);
   }
 
   /**
@@ -219,6 +220,7 @@ export class ReportDialogComponent implements OnDestroy {
     this.isLoading.set(true);
     this.error.set(null);
     this.cleanupBlobUrl();
+    this.cachedBlob = null;
 
     try {
       const blob = await this.reportService.generateScheduleE(
@@ -226,6 +228,7 @@ export class ReportDialogComponent implements OnDestroy {
         this.selectedYear
       );
 
+      this.cachedBlob = blob;
       // Create object URL for preview
       this.currentBlobUrl = URL.createObjectURL(blob);
       const safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.currentBlobUrl);
@@ -240,9 +243,14 @@ export class ReportDialogComponent implements OnDestroy {
 
   /**
    * Download the Schedule E report (AC-6.1.3).
-   * Generates the PDF and triggers a browser download.
+   * Uses cached blob if available, otherwise generates fresh.
    */
   async download(): Promise<void> {
+    if (this.cachedBlob) {
+        this.reportService.downloadPdf(this.cachedBlob, this.data.propertyName, this.selectedYear);
+        return;
+    }
+
     this.isLoading.set(true);
     this.error.set(null);
 
@@ -279,5 +287,6 @@ export class ReportDialogComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupBlobUrl();
+    this.cachedBlob = null;
   }
 }

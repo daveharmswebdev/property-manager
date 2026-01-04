@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
@@ -97,9 +98,11 @@ public class GenerateScheduleEReportHandler : IRequestHandler<GenerateScheduleER
         if (string.IsNullOrEmpty(scheduleELine))
             return 19; // Default to "Other" line
 
-        // Format is "Line X" - extract the number
-        var parts = scheduleELine.Split(' ');
-        if (parts.Length == 2 && int.TryParse(parts[1], out var lineNumber))
+        // Use Regex to find the first number in the string
+        // Handles formats like "Line 5", "Line 5 ", "5", "Line  5"
+        var match = Regex.Match(scheduleELine, @"\d+");
+        
+        if (match.Success && int.TryParse(match.Value, out var lineNumber))
             return lineNumber;
 
         return 19; // Default to "Other" if parsing fails
