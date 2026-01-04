@@ -63,7 +63,24 @@ builder.Services.Configure<EmailSettings>(
 // Configure S3 Storage settings
 builder.Services.Configure<S3StorageSettings>(
     builder.Configuration.GetSection(S3StorageSettings.SectionName));
-builder.Services.AddScoped<IStorageService, S3StorageService>();
+
+// Check if S3 credentials are configured
+var s3Settings = builder.Configuration.GetSection(S3StorageSettings.SectionName).Get<S3StorageSettings>();
+var s3Configured = !string.IsNullOrEmpty(s3Settings?.AccessKeyId)
+    && !string.IsNullOrEmpty(s3Settings?.SecretAccessKey)
+    && !string.IsNullOrEmpty(s3Settings?.BucketName);
+
+if (s3Configured)
+{
+    builder.Services.AddScoped<IStorageService, S3StorageService>();
+    builder.Services.AddScoped<IReportStorageService, ReportStorageService>();
+}
+else
+{
+    // Use NoOp implementations for local development and CI
+    builder.Services.AddScoped<IStorageService, NoOpStorageService>();
+    builder.Services.AddScoped<IReportStorageService, NoOpReportStorageService>();
+}
 
 // Register PDF report generator (AC-6.1.4)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();

@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<Receipt> Receipts { get; }
     DbSet<ExpenseCategory> ExpenseCategories { get; }
     DbSet<Invitation> Invitations { get; }
+    DbSet<GeneratedReport> GeneratedReports { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

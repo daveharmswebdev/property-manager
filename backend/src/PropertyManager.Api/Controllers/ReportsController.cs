@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Reports;
+using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Persistence;
 
 namespace PropertyManager.Api.Controllers;
 
@@ -19,17 +21,26 @@ public class ReportsController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IScheduleEPdfGenerator _pdfGenerator;
     private readonly IReportBundleService _bundleService;
+    private readonly IReportStorageService _reportStorageService;
+    private readonly ICurrentUser _currentUser;
+    private readonly AppDbContext _dbContext;
     private readonly ILogger<ReportsController> _logger;
 
     public ReportsController(
         IMediator mediator,
         IScheduleEPdfGenerator pdfGenerator,
         IReportBundleService bundleService,
+        IReportStorageService reportStorageService,
+        ICurrentUser currentUser,
+        AppDbContext dbContext,
         ILogger<ReportsController> logger)
     {
         _mediator = mediator;
         _pdfGenerator = pdfGenerator;
         _bundleService = bundleService;
+        _reportStorageService = reportStorageService;
+        _currentUser = currentUser;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -91,6 +102,31 @@ public class ReportsController : ControllerBase
             .Replace(' ', '-');
 
         var filename = $"Schedule-E-{sanitizedName}-{request.Year}.pdf";
+
+        // Persist report to S3 and database (AC-6.3.5)
+        var reportId = Guid.NewGuid();
+        var storageFilename = $"{reportId}.pdf";
+        var storageKey = _reportStorageService.GenerateStorageKey(
+            _currentUser.AccountId, request.Year, storageFilename);
+
+        await _reportStorageService.SaveReportAsync(pdfBytes, storageKey, ct);
+
+        var generatedReport = new GeneratedReport
+        {
+            Id = reportId,
+            AccountId = _currentUser.AccountId,
+            PropertyId = request.PropertyId,
+            PropertyName = reportData.PropertyName,
+            Year = request.Year,
+            FileName = filename,
+            StorageKey = storageKey,
+            FileSizeBytes = pdfBytes.Length,
+            ReportType = ReportType.SingleProperty,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.GeneratedReports.Add(generatedReport);
+        await _dbContext.SaveChangesAsync(ct);
 
         _logger.LogInformation(
             "Generated Schedule E report for property {PropertyId}, year {Year}: Income={TotalIncome}, Expenses={TotalExpenses}, Net={NetIncome} at {Timestamp}",
@@ -178,6 +214,31 @@ public class ReportsController : ControllerBase
         var zipBytes = _bundleService.CreateZipBundle(pdfFiles);
         var filename = $"Schedule-E-Reports-{request.Year}.zip";
 
+        // Persist batch report to S3 and database (AC-6.3.5)
+        var reportId = Guid.NewGuid();
+        var storageFilename = $"{reportId}.zip";
+        var storageKey = _reportStorageService.GenerateStorageKey(
+            _currentUser.AccountId, request.Year, storageFilename);
+
+        await _reportStorageService.SaveReportAsync(zipBytes, storageKey, ct);
+
+        var generatedReport = new GeneratedReport
+        {
+            Id = reportId,
+            AccountId = _currentUser.AccountId,
+            PropertyId = null, // Batch report - no single property
+            PropertyName = $"All Properties ({pdfFiles.Count})",
+            Year = request.Year,
+            FileName = filename,
+            StorageKey = storageKey,
+            FileSizeBytes = zipBytes.Length,
+            ReportType = ReportType.Batch,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.GeneratedReports.Add(generatedReport);
+        await _dbContext.SaveChangesAsync(ct);
+
         _logger.LogInformation(
             "Generated batch Schedule E reports for {SuccessCount}/{TotalCount} properties, year {Year} at {Timestamp}",
             pdfFiles.Count,
@@ -186,6 +247,61 @@ public class ReportsController : ControllerBase
             DateTime.UtcNow);
 
         return File(zipBytes, "application/zip", filename);
+    }
+
+    /// <summary>
+    /// Get all generated reports for the current user (AC-6.3.1).
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of generated reports</returns>
+    /// <response code="200">Returns the list of generated reports</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(List<GeneratedReportDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetReports(CancellationToken ct)
+    {
+        var reports = await _mediator.Send(new GetGeneratedReportsQuery(), ct);
+        return Ok(reports);
+    }
+
+    /// <summary>
+    /// Download a specific generated report (AC-6.3.2).
+    /// </summary>
+    /// <param name="id">Report ID</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>The report file (PDF or ZIP)</returns>
+    /// <response code="200">Returns the report file</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If report not found</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadReport(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetReportDownloadQuery(id), ct);
+        return File(result.Content, result.ContentType, result.FileName);
+    }
+
+    /// <summary>
+    /// Delete a generated report (AC-6.3.3).
+    /// </summary>
+    /// <param name="id">Report ID</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Report deleted successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If report not found</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteReport(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteGeneratedReportCommand(id), ct);
+        return NoContent();
     }
 
     /// <summary>

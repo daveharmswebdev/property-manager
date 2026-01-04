@@ -156,7 +156,7 @@ describe('BatchReportDialogComponent', () => {
 
       await component.generate();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith(true);
+      expect(mockDialogRef.close).toHaveBeenCalledWith({ generated: true });
     });
 
     it('should set error on failure', async () => {
