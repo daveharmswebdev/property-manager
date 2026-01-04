@@ -9,7 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
 
 /**
- * Receipt Queue Item Component (AC-5.3.2, AC-5.3.5, AC-5.3.6)
+ * Receipt Queue Item Component (AC-5.3.2, AC-5.3.5, AC-5.3.6, AC-5.6.3)
  *
  * Displays a single receipt in the unprocessed queue with:
  * - Thumbnail (image preview or PDF icon)
@@ -17,6 +17,7 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
  * - Property name or "(unassigned)" in muted style
  * - Click handler for navigation to processing view
  * - Hover effect for clickability
+ * - Slide-in animation for new receipts from SignalR (AC-5.6.3)
  */
 @Component({
   selector: 'app-receipt-queue-item',
@@ -29,7 +30,12 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
     MatTooltipModule,
   ],
   template: `
-    <mat-card class="receipt-item" (click)="onClick()" data-testid="receipt-queue-item">
+    <mat-card
+      class="receipt-item"
+      [class.new-receipt]="isNew()"
+      (click)="onClick()"
+      data-testid="receipt-queue-item"
+    >
       <div class="receipt-content">
         <div class="thumbnail" data-testid="receipt-thumbnail">
           @if (isPdf()) {
@@ -170,12 +176,40 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
           opacity: 1;
         }
       }
+
+      /* Animation for new receipts from SignalR (AC-5.6.3) */
+      @keyframes slideIn {
+        from {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes highlightPulse {
+        0% {
+          background-color: rgba(76, 175, 80, 0.15);
+        }
+        100% {
+          background-color: transparent;
+        }
+      }
+
+      .receipt-item.new-receipt {
+        animation: slideIn 0.3s ease-out, highlightPulse 2s ease-out 0.3s;
+      }
     `,
   ],
 })
 export class ReceiptQueueItemComponent {
   /** The receipt data to display */
   receipt = input.required<UnprocessedReceiptDto>();
+
+  /** Whether this is a newly added receipt (for animation, AC-5.6.3) */
+  isNew = input<boolean>(false);
 
   /** Emitted when the item is clicked */
   clicked = output<void>();

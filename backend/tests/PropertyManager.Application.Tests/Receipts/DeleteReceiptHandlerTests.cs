@@ -16,6 +16,8 @@ public class DeleteReceiptHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<IStorageService> _storageServiceMock;
+    private readonly Mock<IReceiptNotificationService> _notificationServiceMock;
+    private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly Mock<ILogger<DeleteReceiptHandler>> _loggerMock;
     private readonly DeleteReceiptHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
@@ -25,7 +27,11 @@ public class DeleteReceiptHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _storageServiceMock = new Mock<IStorageService>();
+        _notificationServiceMock = new Mock<IReceiptNotificationService>();
+        _currentUserMock = new Mock<ICurrentUser>();
         _loggerMock = new Mock<ILogger<DeleteReceiptHandler>>();
+
+        _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
 
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -33,6 +39,8 @@ public class DeleteReceiptHandlerTests
         _handler = new DeleteReceiptHandler(
             _dbContextMock.Object,
             _storageServiceMock.Object,
+            _notificationServiceMock.Object,
+            _currentUserMock.Object,
             _loggerMock.Object);
     }
 
@@ -57,6 +65,12 @@ public class DeleteReceiptHandlerTests
         receipt.DeletedAt.Should().NotBeNull();
         receipt.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify SignalR notification was sent
+        _notificationServiceMock.Verify(x => x.NotifyReceiptDeletedAsync(
+            _testAccountId,
+            receipt.Id,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

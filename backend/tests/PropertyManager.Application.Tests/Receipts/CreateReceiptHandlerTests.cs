@@ -15,6 +15,7 @@ public class CreateReceiptHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IReceiptNotificationService> _notificationServiceMock;
     private readonly CreateReceiptHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _testUserId = Guid.NewGuid();
@@ -24,6 +25,7 @@ public class CreateReceiptHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _notificationServiceMock = new Mock<IReceiptNotificationService>();
 
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
@@ -44,7 +46,8 @@ public class CreateReceiptHandlerTests
 
         _handler = new CreateReceiptHandler(
             _dbContextMock.Object,
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            _notificationServiceMock.Object);
     }
 
     [Fact]
@@ -72,6 +75,14 @@ public class CreateReceiptHandlerTests
             r.CreatedByUserId == _testUserId &&
             r.PropertyId == null)), Times.Once);
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify SignalR notification was sent (AC-5.6.1)
+        _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
+            _testAccountId,
+            It.Is<ReceiptAddedEvent>(e =>
+                e.PropertyId == null &&
+                e.PropertyName == null),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -106,6 +117,14 @@ public class CreateReceiptHandlerTests
         result.Should().NotBeEmpty();
         _dbContextMock.Verify(x => x.Receipts.Add(It.Is<Receipt>(r =>
             r.PropertyId == _testPropertyId)), Times.Once);
+
+        // Verify SignalR notification was sent with property info (AC-5.6.1)
+        _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
+            _testAccountId,
+            It.Is<ReceiptAddedEvent>(e =>
+                e.PropertyId == _testPropertyId &&
+                e.PropertyName == "Test Property"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

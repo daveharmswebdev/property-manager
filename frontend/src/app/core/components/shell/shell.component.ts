@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -13,9 +13,12 @@ import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { YearSelectorComponent } from '../../../shared/components/year-selector/year-selector.component';
 import { MobileCaptureFabComponent } from '../../../features/receipts/components/mobile-capture-fab/mobile-capture-fab.component';
+import { ReceiptSignalRService } from '../../../features/receipts/services/receipt-signalr.service';
+import { SignalRService } from '../../signalr/signalr.service';
+import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
 
 /**
- * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3)
+ * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3, AC-5.6.1)
  *
  * Provides:
  * - Dark sidebar navigation on desktop (≥1024px) - always visible
@@ -23,6 +26,7 @@ import { MobileCaptureFabComponent } from '../../../features/receipts/components
  * - Bottom tab navigation on mobile (<768px)
  * - Light background content area (#FAFAFA)
  * - Responsive layout with smooth transitions
+ * - SignalR initialization for real-time receipt updates (AC-5.6.1)
  */
 @Component({
   selector: 'app-shell',
@@ -42,8 +46,11 @@ import { MobileCaptureFabComponent } from '../../../features/receipts/components
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit, OnDestroy {
   private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly receiptSignalR = inject(ReceiptSignalRService);
+  private readonly signalR = inject(SignalRService);
+  private readonly receiptStore = inject(ReceiptStore);
 
   // Breakpoint detection using CDK BreakpointObserver
   // Mobile: <768px, Tablet: 768-1023px, Desktop: ≥1024px
@@ -82,6 +89,24 @@ export class ShellComponent {
   // Computed: Show hamburger menu on tablet
   readonly showMenuButton = computed(() => this.isTablet());
 
+  /** Track previous reconnecting state for detecting reconnection completion */
+  private wasReconnecting = false;
+
+  /** Effect to handle SignalR reconnection (AC-5.6.4) */
+  private reconnectEffect = effect(() => {
+    const isReconnecting = this.signalR.isReconnecting();
+    const isConnected = this.signalR.isConnected();
+
+    // Detect transition: wasReconnecting=true → isReconnecting=false && isConnected=true
+    if (this.wasReconnecting && !isReconnecting && isConnected) {
+      // Connection restored after reconnection - sync state
+      this.receiptSignalR.handleReconnection();
+    }
+
+    // Update tracking state
+    this.wasReconnecting = isReconnecting;
+  });
+
   constructor() {
     // Close sidebar when switching away from tablet mode
     effect(() => {
@@ -89,6 +114,19 @@ export class ShellComponent {
         this.sidebarOpen.set(false);
       }
     });
+  }
+
+  ngOnInit(): void {
+    // Initialize SignalR for real-time receipt updates (AC-5.6.1)
+    this.receiptSignalR.initialize();
+
+    // Load initial receipt count for badge
+    this.receiptStore.loadUnprocessedReceipts();
+  }
+
+  ngOnDestroy(): void {
+    // Disconnect SignalR when shell is destroyed (logout)
+    this.signalR.disconnect();
   }
 
   /**

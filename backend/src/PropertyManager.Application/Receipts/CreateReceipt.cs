@@ -20,18 +20,22 @@ public record CreateReceiptCommand(
 /// <summary>
 /// Handler for CreateReceiptCommand.
 /// Creates a receipt record after client has uploaded to S3.
+/// Broadcasts SignalR notification after successful creation (AC-5.6.1).
 /// </summary>
 public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IReceiptNotificationService _notificationService;
 
     public CreateReceiptHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IReceiptNotificationService notificationService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _notificationService = notificationService;
     }
 
     public async Task<Guid> Handle(
@@ -39,15 +43,19 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
         CancellationToken cancellationToken)
     {
         // Validate property exists if provided (global query filter handles account isolation)
+        string? propertyName = null;
         if (request.PropertyId.HasValue)
         {
-            var propertyExists = await _dbContext.Properties
-                .AnyAsync(p => p.Id == request.PropertyId.Value, cancellationToken);
+            var property = await _dbContext.Properties
+                .Where(p => p.Id == request.PropertyId.Value)
+                .Select(p => new { p.Id, p.Name })
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!propertyExists)
+            if (property == null)
             {
                 throw new NotFoundException(nameof(Property), request.PropertyId.Value);
             }
+            propertyName = property.Name;
         }
 
         var receipt = new Receipt
@@ -63,6 +71,18 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
 
         _dbContext.Receipts.Add(receipt);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Broadcast real-time notification (AC-5.6.1)
+        await _notificationService.NotifyReceiptAddedAsync(
+            _currentUser.AccountId,
+            new ReceiptAddedEvent(
+                receipt.Id,
+                null, // ThumbnailUrl - not available at creation time
+                receipt.PropertyId,
+                propertyName,
+                receipt.CreatedAt
+            ),
+            cancellationToken);
 
         return receipt.Id;
     }
