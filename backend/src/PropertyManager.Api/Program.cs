@@ -68,6 +68,9 @@ builder.Services.AddScoped<IStorageService, S3StorageService>();
 // Register PDF report generator (AC-6.1.4)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();
 
+// Register report bundle service for ZIP creation (AC-6.2.4, AC-6.2.5)
+builder.Services.AddScoped<IReportBundleService, ReportBundleService>();
+
 // Configure SignalR for real-time notifications (AC-5.6.1)
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IReceiptNotificationService, ReceiptNotificationService>();

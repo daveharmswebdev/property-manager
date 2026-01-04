@@ -146,27 +146,4 @@ test.describe('Receipt Queue E2E Tests (AC-5.3)', () => {
       await expect(badge).not.toBeVisible();
     });
   });
-
-  // Note: Testing badge with actual receipts would require either:
-  // 1. Mocking the API response
-  // 2. Creating real receipts via the S3 upload flow
-  // These are covered in the skipped tests below
-
-  test.describe.skip('Badge with receipts (requires test data setup)', () => {
-    test('should show badge with unprocessed count', async ({ page }) => {
-      // This would require:
-      // 1. Creating test receipts in the database
-      // 2. Or mocking the /api/v1/receipts/unprocessed endpoint
-      // Implementation deferred to when test data seeding is available
-    });
-
-    test('should update badge after processing a receipt', async ({
-      page,
-    }) => {
-      // This would require:
-      // 1. Having test receipts
-      // 2. Processing one
-      // 3. Verifying badge decrements
-    });
-  });
 });

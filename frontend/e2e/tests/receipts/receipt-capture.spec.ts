@@ -63,30 +63,4 @@ test.describe('Receipt Capture E2E Tests (AC-5.2.1)', () => {
     });
   });
 
-  // Note: Camera capture and actual upload tests require mock/stub approach
-  // as noted in the story. The following tests document what should be tested
-  // but may need additional infrastructure to fully implement.
-
-  test.describe.skip('Upload flow (requires file input mocking)', () => {
-    test('should show property tag modal after file selection', async ({ page }) => {
-      // This test requires mocking file input selection
-      // Implementation deferred - would need to:
-      // 1. Mock file input change event
-      // 2. Verify PropertyTagModalComponent opens
-      // 3. Test Skip and Save flows
-    });
-
-    test('should show success snackbar after upload', async ({ page }) => {
-      // This test requires mocking:
-      // 1. File input selection
-      // 2. S3 upload response
-      // 3. Receipt creation response
-    });
-
-    test('should show error snackbar on upload failure', async ({ page }) => {
-      // This test requires mocking:
-      // 1. File input selection
-      // 2. S3 upload failure
-    });
-  });
 });
