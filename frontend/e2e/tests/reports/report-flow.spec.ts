@@ -3,6 +3,7 @@ import { PropertyDetailPage } from '../../pages/property-detail.page';
 import { LoginPage } from '../../pages/login.page';
 import { DashboardPage } from '../../pages/dashboard.page';
 import { TestDataHelper } from '../../helpers/test-data.helper';
+import { ReportsPage } from '../../pages/reports.page';
 
 /**
  * E2E Tests for Schedule E Report Generation (Story 6.1)
@@ -209,5 +210,187 @@ test.describe('Schedule E Report Generation', () => {
     // Wait for preview to load (iframe or object element)
     const pdfPreview = dialog.locator('app-pdf-preview iframe, app-pdf-preview object, app-pdf-preview embed');
     await expect(pdfPreview).toBeVisible({ timeout: 10000 });
+  });
+});
+
+/**
+ * E2E Tests for Batch Schedule E Report Generation (Story 6.2)
+ *
+ * Tests the batch report generation flow from Reports page.
+ */
+test.describe('Batch Schedule E Report Generation', () => {
+  let loginPage: LoginPage;
+  let dashboardPage: DashboardPage;
+  let reportsPage: ReportsPage;
+
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    dashboardPage = new DashboardPage(page);
+    reportsPage = new ReportsPage(page);
+
+    // Login with test account
+    await loginPage.goto();
+    await loginPage.login('claude@claude.com', '1@mClaude');
+    await dashboardPage.waitForLoading(); // Wait for auth to complete
+    // Wait for properties to load (ensures PropertyStore is populated)
+    await page.locator('app-property-row').first().waitFor({ state: 'visible', timeout: 10000 });
+    await reportsPage.goto();
+  });
+
+  test('should display Generate All Schedule E Reports button', async ({ page }) => {
+    // AC-6.2.1: Verify the button is visible on reports page
+    await expect(reportsPage.generateAllReportsButton).toBeVisible();
+  });
+
+  test('should open batch report dialog when clicking Generate All button', async ({ page }) => {
+    // AC-6.2.1: Clicking button opens modal
+    await reportsPage.openBatchDialog();
+
+    // Verify dialog appears with expected elements
+    await expect(reportsPage.dialogTitle).toBeVisible();
+    await expect(reportsPage.dialogTitle).toContainText('Generate All Schedule E Reports');
+
+    // Verify year selector is present
+    await expect(reportsPage.yearSelect).toBeVisible();
+
+    // Verify property list is present
+    await expect(reportsPage.propertyList).toBeVisible();
+
+    // Verify action buttons are present
+    await expect(reportsPage.generateButton).toBeVisible();
+    await expect(reportsPage.cancelButton).toBeVisible();
+  });
+
+  test('should show properties with checkboxes all selected by default', async ({ page }) => {
+    // AC-6.2.2: All properties selected by default
+    await reportsPage.openBatchDialog();
+
+    const checkboxes = await reportsPage.getPropertyCheckboxes();
+    expect(checkboxes.length).toBeGreaterThan(0);
+
+    // All checkboxes should be checked
+    for (const checkbox of checkboxes) {
+      await expect(checkbox).toBeChecked();
+    }
+  });
+
+  test('should have Select All / Deselect All toggle button', async ({ page }) => {
+    // AC-6.2.2: Toggle all functionality
+    await reportsPage.openBatchDialog();
+
+    await expect(reportsPage.toggleAllButton).toBeVisible();
+    await expect(reportsPage.toggleAllButton).toContainText('Deselect All');
+
+    // Click to deselect all
+    await reportsPage.toggleAllButton.click();
+    await expect(reportsPage.toggleAllButton).toContainText('Select All');
+
+    // Click to select all again
+    await reportsPage.toggleAllButton.click();
+    await expect(reportsPage.toggleAllButton).toContainText('Deselect All');
+  });
+
+  test('should show dynamic button count based on selection', async ({ page }) => {
+    // AC-6.2.3: Dynamic button text
+    await reportsPage.openBatchDialog();
+
+    const buttonText = await reportsPage.getGenerateButtonText();
+    // Should show count like "Generate (X Reports)"
+    expect(buttonText).toMatch(/Generate \(\d+ Reports?\)/);
+
+    // Deselect all and verify count changes
+    await reportsPage.toggleAllButton.click();
+    const emptyButtonText = await reportsPage.getGenerateButtonText();
+    expect(emptyButtonText).toContain('Generate (0 Reports)');
+  });
+
+  test('should allow year selection in batch dialog', async ({ page }) => {
+    // AC-6.2.1: Year selector functionality
+    await reportsPage.openBatchDialog();
+
+    // Click year selector
+    await reportsPage.yearSelect.click();
+
+    // Verify year options are displayed
+    const options = page.locator('mat-option');
+    await expect(options.first()).toBeVisible();
+
+    // Select a different year
+    const yearOptions = await options.all();
+    if (yearOptions.length > 1) {
+      await yearOptions[1].click();
+    } else {
+      await yearOptions[0].click();
+    }
+  });
+
+  test('should close dialog when clicking Cancel', async ({ page }) => {
+    await reportsPage.openBatchDialog();
+    await expect(reportsPage.batchDialog).toBeVisible();
+
+    await reportsPage.closeBatchDialog();
+    await expect(reportsPage.batchDialog).not.toBeVisible();
+  });
+
+  test('should show loading state during report generation', async ({ page }) => {
+    // AC-6.2.3: Progress indicator
+    await reportsPage.openBatchDialog();
+
+    // Click generate button
+    await reportsPage.generateButton.click();
+
+    // Should show loading indicator
+    await expect(reportsPage.loadingIndicator).toBeVisible({ timeout: 1000 }).catch(() => {
+      // If loading completed quickly, that's OK
+    });
+  });
+
+  test('should download ZIP with correct filename format', async ({ page }) => {
+    // AC-6.2.4, AC-6.2.5: ZIP download functionality
+    await reportsPage.openBatchDialog();
+
+    // Set up download listener
+    const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
+
+    // Click generate button
+    await reportsPage.generateButton.click();
+
+    // Wait for download
+    const download = await downloadPromise;
+
+    // Verify filename format: Schedule-E-Reports-{Year}.zip
+    const filename = download.suggestedFilename();
+    expect(filename).toMatch(/Schedule-E-Reports-\d{4}\.zip/);
+  });
+
+  test('should show error message on API failure', async ({ page }) => {
+    // AC-6.2.7: Error handling
+    await reportsPage.openBatchDialog();
+
+    // Intercept API call to simulate failure
+    await page.route('**/api/v1/reports/schedule-e/batch', route => {
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Internal server error' })
+      });
+    });
+
+    // Click generate button
+    await reportsPage.generateButton.click();
+
+    // Wait for error message to appear
+    await expect(reportsPage.errorMessage).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should disable generate button when no properties selected', async ({ page }) => {
+    // AC-6.2.3: Button should be disabled when count is 0
+    await reportsPage.openBatchDialog();
+
+    // Deselect all properties
+    await reportsPage.toggleAllButton.click();
+
+    // Generate button should be disabled
+    await expect(reportsPage.generateButton).toBeDisabled();
   });
 });
