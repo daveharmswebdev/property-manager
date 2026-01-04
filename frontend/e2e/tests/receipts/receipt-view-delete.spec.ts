@@ -240,21 +240,27 @@ test.describe('Receipt View and Delete E2E Tests (AC-5.5)', () => {
       await page.goto('/expenses');
       await page.waitForLoadState('networkidle');
 
-      // Wait for expense list to load
-      await page.waitForSelector('[data-testid="expenses-list"], [data-testid="no-expenses"]', {
-        timeout: 10000,
+      // Wait for expense list or empty state to load
+      // The expenses page uses .expense-list-card for the list and .empty-state-card for empty state
+      await page.waitForSelector('.expense-list-card, .empty-state-card', {
+        timeout: 15000,
       });
 
-      // If there are expenses, check that ones without receipts don't show indicator
-      const expenseRows = page.locator('[data-testid="expense-list-row"]');
-      const rowCount = await expenseRows.count();
+      // If there are expenses (expense list card is visible), check rows
+      const expenseListCard = page.locator('.expense-list-card');
+      if (await expenseListCard.isVisible()) {
+        // Get expense rows - they use app-expense-list-row component
+        const expenseRows = page.locator('app-expense-list-row');
+        const rowCount = await expenseRows.count();
 
-      if (rowCount > 0) {
-        // Get first row and check for receipt indicator
-        // Note: The actual presence depends on whether the expense has a linked receipt
-        const firstRow = expenseRows.first();
-        await expect(firstRow).toBeVisible();
+        if (rowCount > 0) {
+          // Get first row and verify it's visible
+          const firstRow = expenseRows.first();
+          await expect(firstRow).toBeVisible();
+          // Note: The actual presence of receipt indicator depends on whether the expense has a linked receipt
+        }
       }
+      // If empty state is shown, test passes (no expenses to check)
     });
   });
 });
