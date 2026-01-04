@@ -130,13 +130,19 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
       .viewer-container {
         display: flex;
         flex-direction: column;
+        width: 100%;
         height: 100%;
         background: #f5f5f5;
         border-radius: 8px;
-        overflow: hidden;
       }
 
       .viewer-controls {
@@ -147,6 +153,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
         padding: 8px;
         background: rgba(0, 0, 0, 0.05);
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
       }
 
       .zoom-level {
@@ -158,6 +165,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
       .image-viewport {
         flex: 1;
+        min-height: 0;
         overflow: hidden;
         display: flex;
         align-items: center;

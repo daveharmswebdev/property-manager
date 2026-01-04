@@ -4,9 +4,12 @@ import { Router } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseListItemDto } from '../../services/expense.service';
-import { ApiClient } from '../../../../core/api/api.service';
+import {
+  ReceiptLightboxDialogComponent,
+  ReceiptLightboxDialogData,
+} from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
 
 /**
  * ExpenseListRowComponent (AC-3.4.2)
@@ -197,8 +200,7 @@ import { ApiClient } from '../../../../core/api/api.service';
 })
 export class ExpenseListRowComponent {
   private readonly router = inject(Router);
-  private readonly api = inject(ApiClient);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   expense = input.required<ExpenseListItemDto>();
 
@@ -233,8 +235,7 @@ export class ExpenseListRowComponent {
   }
 
   /**
-   * View the attached receipt image
-   * Fetches the receipt to get the presigned URL and opens in new tab
+   * View the attached receipt image in lightbox dialog (AC-5.5.1, AC-5.5.2)
    */
   viewReceipt(event: Event): void {
     event.stopPropagation(); // Prevent row click navigation
@@ -242,21 +243,12 @@ export class ExpenseListRowComponent {
     const receiptId = this.expense().receiptId;
     if (!receiptId) return;
 
-    this.api.receipts_GetReceipt(receiptId).subscribe({
-      next: (receipt) => {
-        if (receipt.viewUrl) {
-          window.open(receipt.viewUrl, '_blank');
-        } else {
-          this.snackBar.open('Receipt image not available', 'Close', {
-            duration: 3000,
-          });
-        }
-      },
-      error: () => {
-        this.snackBar.open('Failed to load receipt', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
+    this.dialog.open<ReceiptLightboxDialogComponent, ReceiptLightboxDialogData>(
+      ReceiptLightboxDialogComponent,
+      {
+        data: { receiptId },
+        panelClass: 'receipt-lightbox-panel',
+      }
+    );
   }
 }

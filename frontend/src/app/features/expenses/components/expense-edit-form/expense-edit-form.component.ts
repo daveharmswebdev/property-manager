@@ -1,4 +1,4 @@
-import { Component, inject, input, output, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, inject, input, output, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -13,10 +13,22 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { CategorySelectComponent } from '../category-select/category-select.component';
 import { ExpenseDto, UpdateExpenseRequest } from '../../services/expense.service';
 import { ExpenseStore } from '../../stores/expense.store';
 import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
+import { ApiClient, ReceiptDto } from '../../../../core/api/api.service';
+import {
+  ReceiptLightboxDialogComponent,
+  ReceiptLightboxDialogData,
+} from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * ExpenseEditFormComponent (AC-3.2.1, AC-3.2.2, AC-3.2.3, AC-3.2.5)
@@ -40,6 +52,7 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatTooltipModule,
     CategorySelectComponent,
     CurrencyInputDirective,
   ],
@@ -107,6 +120,52 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
             <mat-error>Description must be 500 characters or less</mat-error>
           }
         </mat-form-field>
+
+        <!-- Receipt Section (AC-5.5.4, AC-5.5.5) -->
+        @if (expense().receiptId) {
+          <div class="receipt-section" data-testid="receipt-section">
+            <div class="receipt-label">Attached Receipt</div>
+            <div class="receipt-content">
+              @if (receiptLoading()) {
+                <div class="receipt-loading">
+                  <mat-spinner diameter="24"></mat-spinner>
+                </div>
+              } @else if (receipt()) {
+                <button
+                  type="button"
+                  class="receipt-thumbnail"
+                  (click)="viewReceipt()"
+                  matTooltip="Click to view full size"
+                  data-testid="receipt-thumbnail"
+                >
+                  @if (isPdf()) {
+                    <mat-icon class="pdf-icon">description</mat-icon>
+                  } @else {
+                    <img [src]="receipt()!.viewUrl" alt="Receipt thumbnail" />
+                  }
+                </button>
+              }
+              <button
+                mat-stroked-button
+                color="warn"
+                type="button"
+                class="unlink-btn"
+                (click)="onUnlinkReceipt()"
+                [disabled]="isUnlinking()"
+                data-testid="unlink-receipt-btn"
+              >
+                @if (isUnlinking()) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                } @else {
+                  <ng-container>
+                    <mat-icon>link_off</mat-icon>
+                    Unlink Receipt
+                  </ng-container>
+                }
+              </button>
+            </div>
+          </div>
+        }
 
         <!-- Action Buttons (AC-3.2.3, AC-3.2.5) -->
         <div class="form-actions">
@@ -196,6 +255,73 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
       display: inline-block;
     }
 
+    .receipt-section {
+      padding: 12px;
+      background-color: var(--mat-sys-surface-container);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .receipt-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.6);
+      margin-bottom: 12px;
+    }
+
+    .receipt-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .receipt-loading {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .receipt-thumbnail {
+      width: 64px;
+      height: 64px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .pdf-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: #666;
+      }
+    }
+
+    .unlink-btn {
+      mat-icon {
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+    }
+
     @media (max-width: 600px) {
       .form-row {
         flex-direction: column;
@@ -214,12 +340,24 @@ import { CurrencyInputDirective } from '../../../../shared/directives/currency-i
       .form-actions button {
         width: 100%;
       }
+
+      .receipt-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .unlink-btn {
+        width: 100%;
+      }
     }
   `],
 })
 export class ExpenseEditFormComponent implements OnInit, OnChanges {
   protected readonly store = inject(ExpenseStore);
   private readonly fb = inject(FormBuilder);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly api = inject(ApiClient);
 
   // Input: Expense to edit (AC-3.2.2)
   expense = input.required<ExpenseDto>();
@@ -230,7 +368,15 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
   // Output: Edit saved
   saved = output<void>();
 
+  // Output: Receipt unlinked (AC-5.5.5)
+  receiptUnlinked = output<void>();
+
   protected readonly today = new Date();
+
+  // Receipt state (AC-5.5.4, AC-5.5.5)
+  protected receipt = signal<ReceiptDto | null>(null);
+  protected receiptLoading = signal(false);
+  protected isUnlinking = signal(false);
 
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
@@ -239,8 +385,15 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
     description: ['', [Validators.maxLength(500)]],
   });
 
+  /** Check if the receipt is a PDF (AC-5.5.4) */
+  protected isPdf(): boolean {
+    const r = this.receipt();
+    return r?.contentType === 'application/pdf';
+  }
+
   ngOnInit(): void {
     this.populateForm();
+    this.loadReceipt();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -319,5 +472,83 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Load receipt details if expense has a receiptId (AC-5.5.4)
+   */
+  private loadReceipt(): void {
+    const receiptId = this.expense().receiptId;
+    if (!receiptId) return;
+
+    this.receiptLoading.set(true);
+    this.api.receipts_GetReceipt(receiptId).subscribe({
+      next: (receipt) => {
+        this.receipt.set(receipt);
+        this.receiptLoading.set(false);
+      },
+      error: () => {
+        this.receiptLoading.set(false);
+        // Silently fail - just don't show the thumbnail
+      },
+    });
+  }
+
+  /**
+   * Open receipt in lightbox dialog (AC-5.5.4)
+   */
+  protected viewReceipt(): void {
+    const receiptId = this.expense().receiptId;
+    if (!receiptId) return;
+
+    this.dialog.open<ReceiptLightboxDialogComponent, ReceiptLightboxDialogData>(
+      ReceiptLightboxDialogComponent,
+      {
+        data: { receiptId },
+        panelClass: 'receipt-lightbox-panel',
+      }
+    );
+  }
+
+  /**
+   * Unlink receipt from expense with confirmation (AC-5.5.5)
+   */
+  protected onUnlinkReceipt(): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Unlink Receipt',
+      message: 'Are you sure you want to unlink this receipt from the expense? The receipt will return to the unprocessed queue.',
+      confirmText: 'Unlink',
+      cancelText: 'Cancel',
+      icon: 'link_off',
+      iconColor: 'warn',
+      confirmIcon: 'link_off',
+    };
+
+    this.dialog
+      .open(ConfirmDialogComponent, { data: dialogData })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.unlinkReceipt();
+        }
+      });
+  }
+
+  private unlinkReceipt(): void {
+    const expenseId = this.expense().id;
+    this.isUnlinking.set(true);
+
+    this.api.expenses_UnlinkReceipt(expenseId).subscribe({
+      next: () => {
+        this.isUnlinking.set(false);
+        this.receipt.set(null);
+        this.snackBar.open('Receipt unlinked', 'Close', { duration: 3000 });
+        this.receiptUnlinked.emit();
+      },
+      error: () => {
+        this.isUnlinking.set(false);
+        this.snackBar.open('Failed to unlink receipt', 'Close', { duration: 3000 });
+      },
+    });
   }
 }

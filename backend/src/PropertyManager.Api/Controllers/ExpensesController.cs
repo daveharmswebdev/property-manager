@@ -364,6 +364,32 @@ public class ExpensesController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Unlink a receipt from an expense (AC-5.5.5).
+    /// Sets the receipt's ExpenseId to null and returns it to the unprocessed queue.
+    /// </summary>
+    /// <param name="id">Expense GUID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Receipt unlinked successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If expense or linked receipt not found</response>
+    [HttpDelete("expenses/{id:guid}/receipt")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnlinkReceipt(Guid id)
+    {
+        var command = new UnlinkReceiptCommand(id);
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Receipt unlinked from expense: {ExpenseId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
+
+        return NoContent();
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors

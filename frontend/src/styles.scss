@@ -328,3 +328,12 @@ a {
     }
   }
 }
+
+// Receipt lightbox panel - large modal
+.receipt-lightbox-panel {
+  .mat-mdc-dialog-container {
+    .mdc-dialog__surface {
+      padding: 0;
+    }
+  }
+}

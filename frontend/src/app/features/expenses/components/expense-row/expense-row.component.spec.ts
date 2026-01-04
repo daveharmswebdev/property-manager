@@ -1,11 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ExpenseRowComponent } from './expense-row.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseDto } from '../../services/expense.service';
+import { ReceiptLightboxDialogComponent } from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
 
 describe('ExpenseRowComponent', () => {
   let component: ExpenseRowComponent;
   let fixture: ComponentFixture<ExpenseRowComponent>;
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
 
   const mockExpense: ExpenseDto = {
     id: 'expense-123',
@@ -13,15 +16,23 @@ describe('ExpenseRowComponent', () => {
     propertyName: 'Oak Street Duplex',
     categoryId: 'cat-789',
     categoryName: 'Repairs',
-    amount: 127.50,
+    amount: 127.5,
     date: '2025-11-28',
     description: 'Faucet replacement',
     createdAt: '2025-11-28T10:30:00Z',
   };
 
+  const mockExpenseWithReceipt: ExpenseDto = {
+    ...mockExpense,
+    receiptId: 'receipt-999',
+  };
+
   beforeEach(async () => {
+    mockDialog = { open: vi.fn() };
+
     await TestBed.configureTestingModule({
       imports: [ExpenseRowComponent, NoopAnimationsModule],
+      providers: [{ provide: MatDialog, useValue: mockDialog }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExpenseRowComponent);
@@ -45,16 +56,21 @@ describe('ExpenseRowComponent', () => {
     });
 
     it('should display expense description', () => {
-      const descElement = fixture.nativeElement.querySelector('.expense-description');
-      expect(descElement.textContent?.trim()).toBe('Faucet replacement');
+      const descElement =
+        fixture.nativeElement.querySelector('.expense-description');
+      expect(descElement.textContent).toContain('Faucet replacement');
     });
 
     it('should display "No description" when description is empty', () => {
-      fixture.componentRef.setInput('expense', { ...mockExpense, description: undefined });
+      fixture.componentRef.setInput('expense', {
+        ...mockExpense,
+        description: undefined,
+      });
       fixture.detectChanges();
 
-      const descElement = fixture.nativeElement.querySelector('.expense-description');
-      expect(descElement.textContent?.trim()).toBe('No description');
+      const descElement =
+        fixture.nativeElement.querySelector('.expense-description');
+      expect(descElement.textContent).toContain('No description');
     });
 
     it('should display category name in chip', () => {
@@ -63,7 +79,8 @@ describe('ExpenseRowComponent', () => {
     });
 
     it('should display amount as currency', () => {
-      const amountElement = fixture.nativeElement.querySelector('.expense-amount');
+      const amountElement =
+        fixture.nativeElement.querySelector('.expense-amount');
       expect(amountElement.textContent?.trim()).toBe('$127.50');
     });
 
@@ -73,7 +90,8 @@ describe('ExpenseRowComponent', () => {
     });
 
     it('should have delete button (AC-3.3.1)', () => {
-      const deleteButton = fixture.nativeElement.querySelector('.delete-button');
+      const deleteButton =
+        fixture.nativeElement.querySelector('.delete-button');
       expect(deleteButton).toBeTruthy();
     });
   });
@@ -95,11 +113,52 @@ describe('ExpenseRowComponent', () => {
       const deleteSpy = vi.fn();
       component.delete.subscribe(deleteSpy);
 
-      const deleteButton = fixture.nativeElement.querySelector('.delete-button');
+      const deleteButton =
+        fixture.nativeElement.querySelector('.delete-button');
       deleteButton.click();
 
       expect(deleteSpy).toHaveBeenCalledWith('expense-123');
     });
   });
 
+  describe('receipt indicator (AC-5.5.1)', () => {
+    it('should not show receipt indicator when expense has no receiptId', () => {
+      const receiptIndicator = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-indicator"]'
+      );
+      expect(receiptIndicator).toBeNull();
+    });
+
+    it('should show receipt indicator when expense has receiptId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithReceipt);
+      fixture.detectChanges();
+
+      const receiptIndicator = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-indicator"]'
+      );
+      expect(receiptIndicator).toBeTruthy();
+    });
+
+    it('should open lightbox dialog when receipt indicator is clicked', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithReceipt);
+      fixture.detectChanges();
+
+      const receiptIndicator = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-indicator"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      receiptIndicator.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        ReceiptLightboxDialogComponent,
+        {
+          data: { receiptId: 'receipt-999' },
+          panelClass: 'receipt-lightbox-panel',
+        }
+      );
+    });
+  });
 });

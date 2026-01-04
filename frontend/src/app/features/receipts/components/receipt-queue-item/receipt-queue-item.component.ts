@@ -2,6 +2,8 @@ import { Component, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 
 import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
@@ -19,7 +21,13 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
 @Component({
   selector: 'app-receipt-queue-item',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+  ],
   template: `
     <mat-card class="receipt-item" (click)="onClick()" data-testid="receipt-queue-item">
       <div class="receipt-content">
@@ -48,6 +56,15 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
             {{ receipt().propertyName || '(unassigned)' }}
           </span>
         </div>
+        <button
+          mat-icon-button
+          class="delete-btn"
+          (click)="onDelete($event)"
+          matTooltip="Delete receipt"
+          data-testid="delete-receipt-btn"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
         <mat-icon class="chevron">chevron_right</mat-icon>
       </div>
     </mat-card>
@@ -127,9 +144,31 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
         color: rgba(0, 0, 0, 0.38);
       }
 
+      .delete-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        color: rgba(0, 0, 0, 0.38);
+        flex-shrink: 0;
+
+        &:hover {
+          color: var(--mat-sys-error, #f44336);
+        }
+      }
+
+      .receipt-item:hover .delete-btn {
+        opacity: 1;
+      }
+
       .chevron {
         color: rgba(0, 0, 0, 0.38);
         flex-shrink: 0;
+      }
+
+      /* Mobile: always show delete button */
+      @media (max-width: 600px) {
+        .delete-btn {
+          opacity: 1;
+        }
       }
     `,
   ],
@@ -140,6 +179,9 @@ export class ReceiptQueueItemComponent {
 
   /** Emitted when the item is clicked */
   clicked = output<void>();
+
+  /** Emitted when delete button is clicked (AC-5.5.3) */
+  delete = output<string>();
 
   /** Whether the thumbnail image failed to load */
   imageError = signal(false);
@@ -162,5 +204,17 @@ export class ReceiptQueueItemComponent {
   onImageError(): void {
     // Set signal to show fallback icon instead of broken image
     this.imageError.set(true);
+  }
+
+  /**
+   * Handle delete button click (AC-5.5.3)
+   * Stops propagation to prevent navigation
+   */
+  onDelete(event: Event): void {
+    event.stopPropagation();
+    const receiptId = this.receipt().id;
+    if (receiptId) {
+      this.delete.emit(receiptId);
+    }
   }
 }

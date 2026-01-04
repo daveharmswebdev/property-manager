@@ -159,4 +159,49 @@ describe('ReceiptQueueItemComponent', () => {
       expect(typeof component.formattedDate()).toBe('string');
     });
   });
+
+  describe('delete button (AC-5.5.3)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ReceiptQueueItemComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('receipt', mockImageReceipt);
+      fixture.detectChanges();
+    });
+
+    it('should have delete button', () => {
+      const deleteBtn = fixture.debugElement.query(
+        By.css('[data-testid="delete-receipt-btn"]')
+      );
+      expect(deleteBtn).toBeTruthy();
+    });
+
+    it('should emit delete event with receipt id when delete button is clicked', () => {
+      const deleteSpy = vi.fn();
+      component.delete.subscribe(deleteSpy);
+
+      const deleteBtn = fixture.nativeElement.querySelector(
+        '[data-testid="delete-receipt-btn"]'
+      );
+      deleteBtn.click();
+
+      expect(deleteSpy).toHaveBeenCalledWith('receipt-1');
+    });
+
+    it('should stop propagation when delete button is clicked', () => {
+      const clickedSpy = vi.fn();
+      component.clicked.subscribe(clickedSpy);
+
+      const deleteBtn = fixture.nativeElement.querySelector(
+        '[data-testid="delete-receipt-btn"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      deleteBtn.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      // Should not trigger the clicked output since propagation is stopped
+      expect(clickedSpy).not.toHaveBeenCalled();
+    });
+  });
 });
