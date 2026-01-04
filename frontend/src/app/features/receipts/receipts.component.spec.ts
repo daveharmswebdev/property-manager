@@ -6,7 +6,9 @@ import { ReceiptStore } from './stores/receipt.store';
 import { ApiClient, UnprocessedReceiptDto } from '../../core/api/api.service';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 describe('ReceiptsComponent', () => {
   let component: ReceiptsComponent;
@@ -20,6 +22,13 @@ describe('ReceiptsComponent', () => {
     unprocessedCount: ReturnType<typeof signal<number>>;
     hasReceipts: ReturnType<typeof signal<boolean>>;
     loadUnprocessedReceipts: ReturnType<typeof vi.fn>;
+    removeFromQueue: ReturnType<typeof vi.fn>;
+  };
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
+  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockApiClient: {
+    receipts_GetUnprocessed: ReturnType<typeof vi.fn>;
+    receipts_DeleteReceipt: ReturnType<typeof vi.fn>;
   };
 
   const mockReceipts: UnprocessedReceiptDto[] = [
@@ -54,6 +63,22 @@ describe('ReceiptsComponent', () => {
       unprocessedCount: signal(0),
       hasReceipts: signal(false),
       loadUnprocessedReceipts: vi.fn().mockResolvedValue(undefined),
+      removeFromQueue: vi.fn(),
+    };
+
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of(false),
+      }),
+    };
+
+    mockSnackBar = {
+      open: vi.fn(),
+    };
+
+    mockApiClient = {
+      receipts_GetUnprocessed: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+      receipts_DeleteReceipt: vi.fn().mockReturnValue(of(undefined)),
     };
 
     await TestBed.configureTestingModule({
@@ -62,14 +87,9 @@ describe('ReceiptsComponent', () => {
         provideNoopAnimations(),
         { provide: Router, useValue: routerSpy },
         { provide: ReceiptStore, useValue: mockStore },
-        {
-          provide: ApiClient,
-          useValue: {
-            receipts_GetUnprocessed: vi
-              .fn()
-              .mockReturnValue(of({ items: [], totalCount: 0 })),
-          },
-        },
+        { provide: MatDialog, useValue: mockDialog },
+        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: ApiClient, useValue: mockApiClient },
       ],
     }).compileComponents();
 
@@ -185,6 +205,74 @@ describe('ReceiptsComponent', () => {
         '/receipts',
         'receipt-1',
       ]);
+    });
+  });
+
+  describe('delete receipt (AC-5.5.3)', () => {
+    it('should open confirmation dialog when delete is triggered', () => {
+      fixture.detectChanges();
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockDialog.open).toHaveBeenCalled();
+      const dialogConfig = mockDialog.open.mock.calls[0][1];
+      expect(dialogConfig.data.title).toBe('Delete Receipt');
+      expect(dialogConfig.data.confirmText).toBe('Delete');
+    });
+
+    it('should not delete receipt when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({
+        afterClosed: () => of(false),
+      });
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockApiClient.receipts_DeleteReceipt).not.toHaveBeenCalled();
+    });
+
+    it('should delete receipt when dialog is confirmed', () => {
+      mockDialog.open.mockReturnValue({
+        afterClosed: () => of(true),
+      });
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockApiClient.receipts_DeleteReceipt).toHaveBeenCalledWith('receipt-1');
+    });
+
+    it('should remove receipt from queue on successful delete', () => {
+      mockDialog.open.mockReturnValue({
+        afterClosed: () => of(true),
+      });
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockStore.removeFromQueue).toHaveBeenCalledWith('receipt-1');
+    });
+
+    it('should show success snackbar on successful delete', () => {
+      mockDialog.open.mockReturnValue({
+        afterClosed: () => of(true),
+      });
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Receipt deleted', 'Close', { duration: 3000 });
+    });
+
+    it('should show error snackbar on failed delete', () => {
+      mockDialog.open.mockReturnValue({
+        afterClosed: () => of(true),
+      });
+      mockApiClient.receipts_DeleteReceipt.mockReturnValue(throwError(() => new Error('API Error')));
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to delete receipt', 'Close', { duration: 3000 });
     });
   });
 });

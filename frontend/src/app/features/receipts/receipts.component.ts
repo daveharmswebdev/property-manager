@@ -3,10 +3,16 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ReceiptStore } from './stores/receipt.store';
 import { ReceiptQueueItemComponent } from './components/receipt-queue-item/receipt-queue-item.component';
-import { UnprocessedReceiptDto } from '../../core/api/api.service';
+import { ApiClient, UnprocessedReceiptDto } from '../../core/api/api.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Receipts Page Component (AC-5.3.2, AC-5.3.3)
@@ -46,6 +52,7 @@ import { UnprocessedReceiptDto } from '../../core/api/api.service';
             <app-receipt-queue-item
               [receipt]="receipt"
               (clicked)="onReceiptClick(receipt)"
+              (delete)="onDeleteReceipt($event)"
             />
           }
         </div>
@@ -114,6 +121,9 @@ import { UnprocessedReceiptDto } from '../../core/api/api.service';
 export class ReceiptsComponent implements OnInit {
   readonly store = inject(ReceiptStore);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly api = inject(ApiClient);
 
   ngOnInit(): void {
     this.store.loadUnprocessedReceipts();
@@ -122,5 +132,45 @@ export class ReceiptsComponent implements OnInit {
   onReceiptClick(receipt: UnprocessedReceiptDto): void {
     // Navigate to receipt processing view (Story 5.4)
     this.router.navigate(['/receipts', receipt.id]);
+  }
+
+  /**
+   * Handle delete receipt event from queue item (AC-5.5.3)
+   */
+  onDeleteReceipt(receiptId: string): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Delete Receipt',
+      message: 'Are you sure you want to delete this receipt? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'delete',
+      iconColor: 'warn',
+      confirmIcon: 'delete',
+    };
+
+    this.dialog
+      .open(ConfirmDialogComponent, { data: dialogData })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.deleteReceipt(receiptId);
+        }
+      });
+  }
+
+  private deleteReceipt(receiptId: string): void {
+    this.api.receipts_DeleteReceipt(receiptId).subscribe({
+      next: () => {
+        this.store.removeFromQueue(receiptId);
+        this.snackBar.open('Receipt deleted', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: () => {
+        this.snackBar.open('Failed to delete receipt', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
   }
 }

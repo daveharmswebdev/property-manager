@@ -1,11 +1,16 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseDto } from '../../services/expense.service';
+import {
+  ReceiptLightboxDialogComponent,
+  ReceiptLightboxDialogData,
+} from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
 
 /**
  * ExpenseRowComponent (AC-3.1.7, AC-3.2.1, AC-3.3.1)
@@ -38,6 +43,14 @@ import { ExpenseDto } from '../../services/expense.service';
       <div class="expense-details">
         <div class="expense-description">
           {{ expense().description || 'No description' }}
+          @if (expense().receiptId) {
+            <mat-icon
+              class="receipt-indicator"
+              matTooltip="View receipt"
+              (click)="viewReceipt($event)"
+              data-testid="receipt-indicator"
+            >receipt</mat-icon>
+          }
         </div>
         <mat-chip-set class="expense-category">
           <mat-chip>{{ expense().categoryName }}</mat-chip>
@@ -100,6 +113,22 @@ import { ExpenseDto } from '../../services/expense.service';
 
     .expense-description {
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .receipt-indicator {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      color: var(--mat-sys-on-surface-variant);
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--mat-sys-primary);
+      }
     }
 
     .expense-category {
@@ -167,6 +196,8 @@ import { ExpenseDto } from '../../services/expense.service';
   `],
 })
 export class ExpenseRowComponent {
+  private readonly dialog = inject(MatDialog);
+
   expense = input.required<ExpenseDto>();
 
   // Output: Edit clicked (AC-3.2.1)
@@ -200,5 +231,23 @@ export class ExpenseRowComponent {
    */
   protected onDeleteClick(): void {
     this.delete.emit(this.expense().id);
+  }
+
+  /**
+   * View the attached receipt image in lightbox dialog (AC-5.5.1)
+   */
+  protected viewReceipt(event: Event): void {
+    event.stopPropagation();
+
+    const receiptId = this.expense().receiptId;
+    if (!receiptId) return;
+
+    this.dialog.open<ReceiptLightboxDialogComponent, ReceiptLightboxDialogData>(
+      ReceiptLightboxDialogComponent,
+      {
+        data: { receiptId },
+        panelClass: 'receipt-lightbox-panel',
+      }
+    );
   }
 }
