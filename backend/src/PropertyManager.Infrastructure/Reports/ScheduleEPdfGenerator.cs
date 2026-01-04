@@ -58,7 +58,7 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
             column.Item().Row(row =>
             {
                 row.RelativeItem().Text("Rents received");
-                row.ConstantItem(100).AlignRight().Text(report.TotalIncome.ToString("C"));
+                row.ConstantItem(100).AlignRight().Text(FormatCurrency(report.TotalIncome));
             });
             column.Item().PaddingVertical(10).LineHorizontal(0.5f);
 
@@ -72,7 +72,7 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
                 {
                     row.ConstantItem(30).Text($"{line.LineNumber}.");
                     row.RelativeItem().Text(line.CategoryName);
-                    row.ConstantItem(100).AlignRight().Text(line.Amount.ToString("C"));
+                    row.ConstantItem(100).AlignRight().Text(FormatCurrency(line.Amount));
                 });
             }
 
@@ -80,7 +80,7 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
             column.Item().Row(row =>
             {
                 row.RelativeItem().Text("Total Expenses").Bold();
-                row.ConstantItem(100).AlignRight().Text(report.TotalExpenses.ToString("C")).Bold();
+                row.ConstantItem(100).AlignRight().Text(FormatCurrency(report.TotalExpenses)).Bold();
             });
 
             // Net Income
@@ -89,7 +89,7 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
             {
                 row.RelativeItem().Text("NET INCOME (LOSS)").Bold().FontSize(12);
                 row.ConstantItem(100).AlignRight()
-                    .Text(report.NetIncome.ToString("C"))
+                    .Text(FormatCurrency(report.NetIncome))
                     .Bold()
                     .FontColor(report.NetIncome >= 0 ? Colors.Green.Darken2 : Colors.Red.Medium);
             });
@@ -130,5 +130,10 @@ public class ScheduleEPdfGenerator : IScheduleEPdfGenerator
             .OrderBy(l => l.LineNumber);
 
         return allLines;
+    }
+
+    private static string FormatCurrency(decimal amount)
+    {
+        return amount.ToString("$#,##0.00");
     }
 }
