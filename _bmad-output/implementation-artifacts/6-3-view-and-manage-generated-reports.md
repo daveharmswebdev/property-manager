@@ -136,12 +136,17 @@ So that I can re-download them without regenerating.
   - [x] deleteReport() via api.reports_DeleteReport()
 
 - [x] Task 13: Write Backend Unit Tests
-  - [x] All 470 existing backend tests pass
-  - [x] New handlers follow tested MediatR patterns
+  - [x] All 491 backend tests pass (21 new tests added)
+  - [x] GetGeneratedReportsHandlerTests.cs - 7 tests
+  - [x] DeleteGeneratedReportHandlerTests.cs - 7 tests
+  - [x] GetReportDownloadHandlerTests.cs - 7 tests
   - [x] GlobalExceptionHandlerMiddleware covers error cases
 
 - [x] Task 14: Write Frontend Unit Tests
-  - [x] All 578 existing frontend tests pass
+  - [x] All 619 frontend tests pass (41 new tests added)
+  - [x] ReportsStore tests - 14 tests
+  - [x] ReportsComponent tests - 12 tests
+  - [x] DeleteReportDialogComponent tests - 8 tests
   - [x] BatchReportDialogComponent test updated for new return value
 
 - [x] Task 15: E2E Tests
@@ -1066,7 +1071,21 @@ N/A - No significant debugging required
 - Used inline mat-table in ReportsComponent instead of separate ReportListItemComponent for simplicity
 - ReportsStore uses NSwag-generated ApiClient directly (no separate ReportService CRUD methods needed)
 - Report generation persists in ReportsController after PDF/ZIP generation
-- All 470 backend tests + 578 frontend tests pass
+- All 491 backend tests + 619 frontend tests pass (62 new tests added)
+
+### Code Review Fixes (2026-01-04)
+
+**Critical Issues Fixed:**
+1. **Added missing backend unit tests** - Created GetGeneratedReportsHandlerTests.cs, DeleteGeneratedReportHandlerTests.cs, GetReportDownloadHandlerTests.cs (21 tests)
+2. **Added missing frontend unit tests** - Created reports.store.spec.ts, reports.component.spec.ts, delete-report-dialog.component.spec.ts (41 tests)
+3. **Added download snackbar (AC-6.3.2)** - ReportsComponent now shows "Report downloaded" snackbar on success
+4. **Fixed empty state text (AC-6.3.4)** - Changed to match AC exactly: "Generate your first Schedule E report to get started."
+
+**Security Enhancement:**
+5. **Added explicit AccountId check** - DeleteGeneratedReportHandler and GetReportDownloadHandler now explicitly filter by AccountId (defense-in-depth alongside global query filter)
+
+**Architecture Note:**
+- ReportStorageService creates its own S3 client (consistent with existing S3StorageService pattern)
 - Batch dialog updated to return `{ generated: true }` for proper list refresh
 
 ### File List
@@ -1080,6 +1099,9 @@ N/A - No significant debugging required
 - `backend/src/PropertyManager.Infrastructure/Storage/ReportStorageService.cs` - S3 implementation
 - `backend/src/PropertyManager.Infrastructure/Persistence/Configurations/GeneratedReportConfiguration.cs` - EF config
 - `backend/src/PropertyManager.Infrastructure/Persistence/Migrations/20260104212656_AddGeneratedReportsTable.cs` - Migration
+- `backend/tests/PropertyManager.Application.Tests/Reports/GetGeneratedReportsHandlerTests.cs` - Unit tests
+- `backend/tests/PropertyManager.Application.Tests/Reports/DeleteGeneratedReportHandlerTests.cs` - Unit tests
+- `backend/tests/PropertyManager.Application.Tests/Reports/GetReportDownloadHandlerTests.cs` - Unit tests
 
 **Backend - Modified Files:**
 - `backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs` - Added DbSet and query filter
@@ -1089,10 +1111,13 @@ N/A - No significant debugging required
 
 **Frontend - New Files:**
 - `frontend/src/app/features/reports/stores/reports.store.ts` - Signal store for reports
+- `frontend/src/app/features/reports/stores/reports.store.spec.ts` - Unit tests
+- `frontend/src/app/features/reports/reports.component.spec.ts` - Unit tests
 - `frontend/src/app/features/reports/components/delete-report-dialog/delete-report-dialog.component.ts` - Confirmation dialog
+- `frontend/src/app/features/reports/components/delete-report-dialog/delete-report-dialog.component.spec.ts` - Unit tests
 
 **Frontend - Modified Files:**
-- `frontend/src/app/features/reports/reports.component.ts` - Added report list table UI
+- `frontend/src/app/features/reports/reports.component.ts` - Added report list table UI, download snackbar (AC-6.3.2), empty state text (AC-6.3.4)
 - `frontend/src/app/features/reports/components/batch-report-dialog/batch-report-dialog.component.ts` - Return `{ generated: true }`
 - `frontend/src/app/features/reports/components/batch-report-dialog/batch-report-dialog.component.spec.ts` - Updated test
 - `frontend/src/app/core/api/api.service.ts` - NSwag regenerated with new endpoints

@@ -64,14 +64,13 @@ import { GeneratedReportDto } from '../../core/api/api.service';
           </div>
         }
 
-        <!-- Empty state -->
+        <!-- Empty state (AC-6.3.4) -->
         @if (store.isEmpty()) {
           <div class="empty-state" data-testid="reports-empty-state">
             <mat-icon>description</mat-icon>
             <p>No reports generated yet.</p>
             <p class="hint">
-              Click the button above to generate reports for all your
-              properties.
+              Generate your first Schedule E report to get started.
             </p>
           </div>
         }
@@ -308,8 +307,13 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  downloadReport(report: GeneratedReportDto): void {
-    this.store.downloadReport(report);
+  async downloadReport(report: GeneratedReportDto): Promise<void> {
+    const success = await this.store.downloadReport(report);
+    if (success) {
+      this.snackBar.open('Report downloaded', 'Dismiss', { duration: 3000 });
+    } else {
+      this.snackBar.open('Failed to download report', 'Dismiss', { duration: 3000 });
+    }
   }
 
   confirmDelete(report: GeneratedReportDto): void {

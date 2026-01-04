@@ -27,25 +27,29 @@ public record ReportDownloadResult(byte[] Content, string ContentType, string Fi
 public class GetReportDownloadHandler : IRequestHandler<GetReportDownloadQuery, ReportDownloadResult>
 {
     private readonly IAppDbContext _dbContext;
+    private readonly ICurrentUser _currentUser;
     private readonly IReportStorageService _storageService;
     private readonly ILogger<GetReportDownloadHandler> _logger;
 
     public GetReportDownloadHandler(
         IAppDbContext dbContext,
+        ICurrentUser currentUser,
         IReportStorageService storageService,
         ILogger<GetReportDownloadHandler> logger)
     {
         _dbContext = dbContext;
+        _currentUser = currentUser;
         _storageService = storageService;
         _logger = logger;
     }
 
     public async Task<ReportDownloadResult> Handle(GetReportDownloadQuery request, CancellationToken cancellationToken)
     {
-        // Find report - global query filter already applies tenant isolation
+        // Find report with explicit AccountId check (defense-in-depth alongside global query filter)
         var report = await _dbContext.GeneratedReports
             .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Id == request.ReportId, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == request.ReportId
+                && r.AccountId == _currentUser.AccountId, cancellationToken);
 
         if (report == null)
         {

@@ -36,9 +36,10 @@ public class DeleteGeneratedReportHandler : IRequestHandler<DeleteGeneratedRepor
 
     public async Task Handle(DeleteGeneratedReportCommand request, CancellationToken cancellationToken)
     {
-        // Find report - global query filter already applies tenant isolation
+        // Find report with explicit AccountId check (defense-in-depth alongside global query filter)
         var report = await _dbContext.GeneratedReports
-            .FirstOrDefaultAsync(r => r.Id == request.ReportId, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == request.ReportId
+                && r.AccountId == _currentUser.AccountId, cancellationToken);
 
         if (report == null)
         {

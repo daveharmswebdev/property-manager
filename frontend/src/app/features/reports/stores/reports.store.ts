@@ -90,9 +90,10 @@ export const ReportsStore = signalStore(
     /**
      * Download a report (AC-6.3.2)
      * @param report The report to download
+     * @returns true if download succeeded, false otherwise
      */
-    async downloadReport(report: GeneratedReportDto): Promise<void> {
-      if (!report.id) return;
+    async downloadReport(report: GeneratedReportDto): Promise<boolean> {
+      if (!report.id) return false;
 
       try {
         const response = await firstValueFrom(
@@ -108,9 +109,11 @@ export const ReportsStore = signalStore(
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        return true;
       } catch (error) {
         console.error('Error downloading report:', error);
         patchState(store, { error: 'Failed to download report' });
+        return false;
       }
     },
 
