@@ -62,6 +62,68 @@ export class ReportsPage extends BasePage {
     return this.batchDialog.locator('[data-testid="error-message"]');
   }
 
+  // Reports list elements
+  get reportsList(): Locator {
+    return this.page.locator('[data-testid="reports-list"]');
+  }
+
+  getPreviewButton(reportId: string): Locator {
+    return this.page.locator(`[data-testid="preview-report-${reportId}"]`);
+  }
+
+  getDownloadButton(reportId: string): Locator {
+    return this.page.locator(`[data-testid="download-report-${reportId}"]`);
+  }
+
+  getDeleteButton(reportId: string): Locator {
+    return this.page.locator(`[data-testid="delete-report-${reportId}"]`);
+  }
+
+  // Preview dialog elements
+  get previewDialog(): Locator {
+    return this.page.locator('[data-testid="report-preview-dialog"]');
+  }
+
+  get previewLoadingState(): Locator {
+    return this.previewDialog.locator('[data-testid="loading-state"]');
+  }
+
+  get previewErrorState(): Locator {
+    return this.previewDialog.locator('[data-testid="error-state"]');
+  }
+
+  get previewZoomLevel(): Locator {
+    return this.previewDialog.locator('[data-testid="zoom-level"]');
+  }
+
+  get previewZoomInBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="zoom-in-btn"]');
+  }
+
+  get previewZoomOutBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="zoom-out-btn"]');
+  }
+
+  get previewResetZoomBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="reset-zoom-btn"]');
+  }
+
+  get previewPrintBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="print-btn"]');
+  }
+
+  get previewDownloadBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="download-btn"]');
+  }
+
+  get previewCloseBtn(): Locator {
+    return this.previewDialog.locator('[data-testid="close-btn"]');
+  }
+
+  get previewFixDataLink(): Locator {
+    return this.previewDialog.locator('[data-testid="fix-data-link"]');
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Actions
   // ─────────────────────────────────────────────────────────────────────────────
@@ -98,5 +160,25 @@ export class ReportsPage extends BasePage {
   async hasNoDataWarning(propertyId: string): Promise<boolean> {
     const warning = this.batchDialog.locator(`[data-testid="no-data-warning-${propertyId}"]`);
     return warning.isVisible();
+  }
+
+  // Preview dialog actions
+  async openPreview(reportId: string): Promise<void> {
+    await this.getPreviewButton(reportId).click();
+    await this.previewDialog.waitFor({ state: 'visible' });
+  }
+
+  async closePreview(): Promise<void> {
+    await this.previewCloseBtn.click();
+    await this.previewDialog.waitFor({ state: 'hidden' });
+  }
+
+  async waitForPreviewLoaded(): Promise<void> {
+    // Wait for loading state to disappear
+    await this.previewLoadingState.waitFor({ state: 'hidden', timeout: 10000 });
+  }
+
+  async getZoomLevel(): Promise<string> {
+    return this.previewZoomLevel.innerText();
   }
 }

@@ -156,6 +156,18 @@ export const ReportsStore = signalStore(
     },
 
     /**
+     * Fetches the PDF/ZIP blob for a stored report (AC-6.4.1).
+     * Used for preview functionality.
+     * @param id The report ID
+     * @returns The report blob
+     */
+    async getReportBlob(id: string): Promise<Blob> {
+      const response = await firstValueFrom(api.reports_DownloadReport(id));
+      // The NSwag client returns FileResponse with data as Blob
+      return response.data;
+    },
+
+    /**
      * Clear error state
      */
     clearError(): void {

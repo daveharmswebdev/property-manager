@@ -211,4 +211,42 @@ describe('ReportsComponent', () => {
       expect(component.formatFileSize(undefined)).toBe('0 B');
     });
   });
+
+  describe('preview functionality (AC-6.4.1)', () => {
+    beforeEach(() => {
+      // Reset the signals to show reports (in case previous tests modified them)
+      mockReportsStore.isEmpty = signal(false);
+      mockReportsStore.hasReports = signal(true);
+      mockReportsStore.generatedReports = signal(mockReports);
+      fixture.detectChanges();
+    });
+
+    it('should open preview dialog when preview clicked', () => {
+      component.openPreview(mockReports[0]);
+
+      expect(mockDialog.open).toHaveBeenCalled();
+    });
+
+    it('should pass report data to preview dialog', () => {
+      component.openPreview(mockReports[0]);
+
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: { report: mockReports[0] }
+        })
+      );
+    });
+
+    it('should have preview button in actions column', () => {
+      const previewBtn = fixture.nativeElement.querySelector('[data-testid="preview-report-report-1"]');
+      expect(previewBtn).toBeTruthy();
+    });
+
+    it('should disable preview button for ZIP reports', () => {
+      const zipPreviewBtn = fixture.nativeElement.querySelector('[data-testid="preview-report-report-2"]');
+      expect(zipPreviewBtn).toBeTruthy();
+      expect(zipPreviewBtn.disabled).toBe(true);
+    });
+  });
 });

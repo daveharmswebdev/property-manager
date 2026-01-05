@@ -1,6 +1,6 @@
 # Story 6.3: View and Manage Generated Reports
 
-Status: ready-for-review
+Status: done
 
 ## Story
 

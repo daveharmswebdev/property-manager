@@ -98,5 +98,5 @@ development_status:
   6-1-generate-schedule-e-pdf-for-single-property: done
   6-2-generate-schedule-e-pdfs-for-all-properties: done
   6-3-view-and-manage-generated-reports: ready-for-review
-  6-4-report-preview-and-print: backlog
+  6-4-report-preview-and-print: done
   epic-6-retrospective: optional

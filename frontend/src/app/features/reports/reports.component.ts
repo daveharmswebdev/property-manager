@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BatchReportDialogComponent } from './components/batch-report-dialog/batch-report-dialog.component';
 import { DeleteReportDialogComponent } from './components/delete-report-dialog/delete-report-dialog.component';
+import { ReportPreviewDialogComponent } from './components/report-preview-dialog/report-preview-dialog.component';
 import { ReportsStore } from './stores/reports.store';
 import { GeneratedReportDto } from '../../core/api/api.service';
 
@@ -127,6 +128,16 @@ import { GeneratedReportDto } from '../../core/api/api.service';
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
               <td mat-cell *matCellDef="let report" class="actions-cell">
+                <button
+                  mat-icon-button
+                  color="primary"
+                  matTooltip="Preview report"
+                  (click)="openPreview(report)"
+                  [disabled]="report.fileType === 'ZIP'"
+                  [attr.data-testid]="'preview-report-' + report.id"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
                 <button
                   mat-icon-button
                   color="primary"
@@ -304,6 +315,19 @@ export class ReportsComponent implements OnInit {
       if (result?.generated) {
         this.store.loadReports();
       }
+    });
+  }
+
+  /**
+   * Open preview dialog for a report (AC-6.4.1)
+   */
+  openPreview(report: GeneratedReportDto): void {
+    this.dialog.open(ReportPreviewDialogComponent, {
+      width: '90vw',
+      maxWidth: '1200px',
+      height: '90vh',
+      panelClass: 'report-preview-panel',
+      data: { report },
     });
   }
 
