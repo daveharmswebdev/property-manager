@@ -244,4 +244,30 @@ describe('ReportsStore', () => {
       expect(store.error()).toBeNull();
     });
   });
+
+  describe('getReportBlob (AC-6.4.1)', () => {
+    it('should fetch and return report blob', async () => {
+      const mockBlob = new Blob(['PDF content'], { type: 'application/pdf' });
+      const mockFileResponse: FileResponse = {
+        data: mockBlob,
+        status: 200,
+        fileName: 'test.pdf',
+        headers: {},
+      };
+      (mockApiClient.reports_DownloadReport as ReturnType<typeof vi.fn>)
+        .mockReturnValue(of(mockFileResponse));
+
+      const result = await store.getReportBlob('report-1');
+
+      expect(mockApiClient.reports_DownloadReport).toHaveBeenCalledWith('report-1');
+      expect(result).toBe(mockBlob);
+    });
+
+    it('should propagate error on API failure', async () => {
+      (mockApiClient.reports_DownloadReport as ReturnType<typeof vi.fn>)
+        .mockReturnValue(throwError(() => new Error('API Error')));
+
+      await expect(store.getReportBlob('report-1')).rejects.toThrow('API Error');
+    });
+  });
 });
