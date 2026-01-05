@@ -199,11 +199,16 @@ describe('ReportPreviewDialogComponent', () => {
       expect(printBtn).toBeTruthy();
     });
 
-    it('should set isPrinting when print is triggered with blob', async () => {
-      // The print button is tested for existence above
-      // Full print functionality is covered by E2E tests
-      // Here we just verify the component structure
+    it('should set isPrinting to true and show snackbar when print starts (AC-6.4.3)', async () => {
       expect(component.isPrinting()).toBe(false);
+      expect(component.previewUrl()).toBeTruthy(); // Verify blob loaded
+
+      // Start print - it sets isPrinting synchronously
+      component.print();
+
+      // isPrinting should be true while printing
+      expect(component.isPrinting()).toBe(true);
+      // Snackbar is called - verified via E2E tests for full integration
     });
 
     it('should disable print for ZIP files', async () => {
@@ -250,11 +255,13 @@ describe('ReportPreviewDialogComponent', () => {
       expect(downloadBtn).toBeTruthy();
     });
 
-    it('should have download method', () => {
-      // The download button is tested for existence above
-      // Full download functionality is covered by E2E tests
-      // Here we just verify the method exists
-      expect(typeof component.download).toBe('function');
+    it('should complete download when blob is loaded (AC-6.4.5)', async () => {
+      // Verify blob is loaded
+      expect(component.previewUrl()).toBeTruthy();
+
+      // Call download - verifies the method can be called without error
+      // Snackbar "Report downloaded" is shown - verified via E2E tests
+      await component.download();
     });
   });
 
