@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, computed, signal } from '@angular/core';
+import { Injectable, inject, computed, signal, WritableSignal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError, BehaviorSubject, of } from 'rxjs';
 
 export interface LoginResponse {
@@ -33,6 +34,8 @@ export interface User {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/auth';
+
+  private readonly router = inject(Router);
 
   // Signals for state management (AC4.5)
   private readonly _accessToken = signal<string | null>(null);
@@ -138,6 +141,30 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  /**
+   * Centralized logout orchestration (AC-7.1.2).
+   * Handles API call, navigation, and optional loading state management.
+   * Used by ShellComponent (mobile) and SidebarNavComponent (desktop/tablet).
+   */
+  logoutAndRedirect(loadingSignal?: WritableSignal<boolean>): void {
+    if (loadingSignal) {
+      if (loadingSignal()) return; // Prevent double clicks
+      loadingSignal.set(true);
+    }
+
+    this.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+        loadingSignal?.set(false);
+      },
+      error: () => {
+        // Even on error, redirect to login (local state is cleared)
+        this.router.navigate(['/login']);
+        loadingSignal?.set(false);
+      },
+    });
   }
 
   /**

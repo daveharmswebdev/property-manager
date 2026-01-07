@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { ReceiptSignalRService } from '../../../features/receipts/services/recei
 import { SignalRService } from '../../signalr/signalr.service';
 import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
 import { AuthService } from '../../services/auth.service';
+import { BREAKPOINTS } from '../../constants/layout.constants';
 
 /**
  * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3, AC-5.6.1)
@@ -55,20 +56,19 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly signalR = inject(SignalRService);
   private readonly receiptStore = inject(ReceiptStore);
   private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
   // Breakpoint detection using CDK BreakpointObserver
   // Mobile: <768px, Tablet: 768-1023px, Desktop: ≥1024px
   private readonly isDesktop$ = this.breakpointObserver
-    .observe(['(min-width: 1024px)'])
+    .observe([BREAKPOINTS.DESKTOP_QUERY])
     .pipe(map((result) => result.matches));
 
   private readonly isTablet$ = this.breakpointObserver
-    .observe(['(min-width: 768px) and (max-width: 1023px)'])
+    .observe([BREAKPOINTS.TABLET_QUERY])
     .pipe(map((result) => result.matches));
 
   private readonly isMobile$ = this.breakpointObserver
-    .observe(['(max-width: 767px)'])
+    .observe([BREAKPOINTS.MOBILE_QUERY])
     .pipe(map((result) => result.matches));
 
   // Convert observables to signals for reactive template binding
@@ -156,17 +156,6 @@ export class ShellComponent implements OnInit, OnDestroy {
    * Calls auth service and redirects to login
    */
   logout(): void {
-    if (this.isLoggingOut()) return;
-
-    this.isLoggingOut.set(true);
-    this.authService.logout().subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        // Even on error, redirect to login (local state is cleared)
-        this.router.navigate(['/login']);
-      },
-    });
+    this.authService.logoutAndRedirect(this.isLoggingOut);
   }
 }

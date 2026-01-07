@@ -176,6 +176,7 @@ describe('ShellComponent', () => {
   describe('mobile logout button (AC-7.1.1, AC-7.1.2, AC-7.1.3)', () => {
     let mockAuthService: {
       logout: ReturnType<typeof vi.fn>;
+      logoutAndRedirect: ReturnType<typeof vi.fn>;
       accessToken: ReturnType<typeof vi.fn>;
       currentUser: ReturnType<typeof vi.fn>;
       isAuthenticated: ReturnType<typeof vi.fn>;
@@ -187,6 +188,7 @@ describe('ShellComponent', () => {
       const mockBreakpointObserver = createMockBreakpointObserver(false, false, true);
       mockAuthService = {
         logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
         accessToken: vi.fn().mockReturnValue(null),
         currentUser: vi.fn().mockReturnValue(null),
         isAuthenticated: vi.fn().mockReturnValue(false),
@@ -218,7 +220,7 @@ describe('ShellComponent', () => {
       expect(logoutButton).toBeTruthy();
     });
 
-    it('should call AuthService.logout() and navigate to /login when logout button clicked (AC-7.1.2)', async () => {
+    it('should call AuthService.logoutAndRedirect() when logout button clicked (AC-7.1.2)', async () => {
       const logoutButton = fixture.debugElement.query(
         By.css('[data-testid="mobile-logout-button"]')
       );
@@ -228,8 +230,7 @@ describe('ShellComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(mockAuthService.logout).toHaveBeenCalled();
-      expect(router.navigate).toHaveBeenCalledWith(['/login']);
+      expect(mockAuthService.logoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
     });
 
     it('should display spinner when isLoggingOut is true (AC-7.1.3)', () => {
@@ -265,15 +266,6 @@ describe('ShellComponent', () => {
         By.css('[data-testid="mobile-logout-button"]')
       );
       expect(logoutButton.nativeElement.disabled).toBe(true);
-    });
-
-    it('should not call logout() if already logging out', () => {
-      component.isLoggingOut.set(true);
-      fixture.detectChanges();
-
-      component.logout();
-
-      expect(mockAuthService.logout).not.toHaveBeenCalled();
     });
   });
 });

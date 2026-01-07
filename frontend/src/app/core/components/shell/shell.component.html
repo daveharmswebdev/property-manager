@@ -29,6 +29,20 @@
         <span class="header-title">Property Manager</span>
         <span class="spacer"></span>
         <app-year-selector class="light-theme" />
+        <button
+          mat-icon-button
+          (click)="logout()"
+          [disabled]="isLoggingOut()"
+          aria-label="Logout"
+          [attr.aria-busy]="isLoggingOut()"
+          data-testid="tablet-logout-button"
+        >
+          @if (isLoggingOut()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>logout</mat-icon>
+          }
+        </button>
       </mat-toolbar>
     }
 
@@ -43,6 +57,7 @@
           (click)="logout()"
           [disabled]="isLoggingOut()"
           aria-label="Logout"
+          [attr.aria-busy]="isLoggingOut()"
           data-testid="mobile-logout-button"
         >
           @if (isLoggingOut()) {

@@ -1,6 +1,12 @@
 // Shell Component Styles
 // Desktop sidebar + light content area layout
 
+// Breakpoints matching logic in shell.component.ts
+$mobile-max: 767px;
+$tablet-min: 768px;
+$tablet-max: 1023px;
+$desktop-min: 1024px;
+
 .shell-container {
   height: 100vh;
   width: 100%;
@@ -106,7 +112,7 @@
   }
 
   // Responsive padding adjustments
-  @media (max-width: 767px) {
+  @media (max-width: $mobile-max) {
     padding: 16px;
   }
 }

@@ -16,13 +16,13 @@ describe('SidebarNavComponent', () => {
   let component: SidebarNavComponent;
   let fixture: ComponentFixture<SidebarNavComponent>;
   let mockLogout: ReturnType<typeof vi.fn>;
+  let mockLogoutAndRedirect: ReturnType<typeof vi.fn>;
 
   const mockUser: User = {
     userId: 'test-user-id',
     accountId: 'test-account-id',
     role: 'Owner',
   };
-
   const mockReceiptStore = {
     unprocessedReceipts: signal([]),
     isLoading: signal(false),
@@ -35,10 +35,12 @@ describe('SidebarNavComponent', () => {
 
   beforeEach(async () => {
     mockLogout = vi.fn().mockReturnValue(of(undefined));
+    mockLogoutAndRedirect = vi.fn();
 
     const mockAuthService = {
       currentUser: signal<User | null>(mockUser),
       logout: mockLogout,
+      logoutAndRedirect: mockLogoutAndRedirect,
     };
 
     await TestBed.configureTestingModule({
@@ -120,7 +122,7 @@ describe('SidebarNavComponent', () => {
 
   it('should call logout on auth service when logout clicked (AC7.2)', () => {
     component.logout();
-    expect(mockLogout).toHaveBeenCalled();
+    expect(mockLogoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
   });
 
   it('should render all nav items in the DOM (AC7.1)', () => {
