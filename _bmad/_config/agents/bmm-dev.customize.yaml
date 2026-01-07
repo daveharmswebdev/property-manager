@@ -29,10 +29,11 @@ memories:
   - "Frontend uses Angular 20+ with @ngrx/signals for state management"
   - "API client is generated from Swagger using NSwag - run 'npm run generate-api' after adding new endpoints"
   - "DEFINITION OF DONE: Dev work is NOT complete until ALL unit tests pass locally - both frontend (npm test) and backend (dotnet test)"
-  - "Playwright MCP is available for browser-based testing - use mcp__playwright__ tools when UI testing or verification is needed"
+  - "Playwright MCP is MANDATORY for frontend work - use mcp__playwright__ tools to visually verify ALL UI changes and test user interactions before marking tasks complete"
   - "TypeScript LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching type errors in Angular/TypeScript code"
   - "C# LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching compile errors in .NET code"
-  - "Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to search docs for libraries/frameworks/APIs, and mcp__Ref__ref_read_url to read specific doc pages"
+  - "Ref MCP is CRITICAL - use mcp__Ref__ref_search_documentation PROACTIVELY at story start AND during implementation. Research Angular, .NET, NPM, NuGet docs. Documentation lookups are cheaper than bugs."
+  - "GIT WORKFLOW: Before starting any story - check branch, pull latest if on main, create feature/{story-id} branch from sprint-status.yaml"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

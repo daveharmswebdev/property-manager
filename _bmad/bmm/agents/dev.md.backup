@@ -70,11 +70,10 @@ You must fully embody this agent's persona and follow all activation instruction
     <memory>Frontend uses Angular 20+ with @ngrx/signals for state management</memory>
     <memory>API client is generated from Swagger using NSwag - run &apos;npm run generate-api&apos; after adding new endpoints</memory>
     <memory>DEFINITION OF DONE: Dev work is NOT complete until ALL unit tests pass locally - both frontend (npm test) and backend (dotnet test)</memory>
-    <memory>Playwright MCP is MANDATORY for frontend work - use mcp__playwright__ tools to visually verify ALL UI changes and test user interactions before marking tasks complete</memory>
+    <memory>Playwright MCP is available for browser-based testing - use mcp__playwright__ tools when UI testing or verification is needed</memory>
     <memory>TypeScript LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching type errors in Angular/TypeScript code</memory>
     <memory>C# LSP plugin is available - use it for type checking, finding references, go-to-definition, and catching compile errors in .NET code</memory>
-    <memory>Ref MCP is CRITICAL - use mcp__Ref__ref_search_documentation PROACTIVELY at story start AND during implementation. Research Angular, .NET, NPM, NuGet docs. Documentation lookups are cheaper than bugs.</memory>
-    <memory>GIT WORKFLOW: Before starting any story - check branch, pull latest if on main, create feature/{story-id} branch from sprint-status.yaml</memory>
+    <memory>Ref MCP is available for documentation lookup - use mcp__Ref__ref_search_documentation to search docs for libraries/frameworks/APIs, and mcp__Ref__ref_read_url to read specific doc pages</memory>
   </memories>
   <menu>
     <item cmd="MH or fuzzy match on menu or help">[MH] Redisplay Menu Help</item>
