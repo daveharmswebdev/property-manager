@@ -32,12 +32,25 @@
       </mat-toolbar>
     }
 
-    <!-- Mobile Header with Year Selector (AC-3.5.1) -->
+    <!-- Mobile Header with Year Selector (AC-3.5.1) and Logout (AC-7.1.1) -->
     @if (showBottomNav()) {
       <mat-toolbar class="mobile-header" color="primary">
         <span class="header-title">Property Manager</span>
         <span class="spacer"></span>
         <app-year-selector class="light-theme" />
+        <button
+          mat-icon-button
+          (click)="logout()"
+          [disabled]="isLoggingOut()"
+          aria-label="Logout"
+          data-testid="mobile-logout-button"
+        >
+          @if (isLoggingOut()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>logout</mat-icon>
+          }
+        </button>
       </mat-toolbar>
     }
 

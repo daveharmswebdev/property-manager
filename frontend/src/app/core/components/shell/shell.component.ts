@@ -1,10 +1,11 @@
 import { Component, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -16,6 +17,7 @@ import { MobileCaptureFabComponent } from '../../../features/receipts/components
 import { ReceiptSignalRService } from '../../../features/receipts/services/receipt-signalr.service';
 import { SignalRService } from '../../signalr/signalr.service';
 import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
+import { AuthService } from '../../services/auth.service';
 
 /**
  * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3, AC-5.6.1)
@@ -38,6 +40,7 @@ import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
     MatButtonModule,
     MatIconModule,
     MatToolbarModule,
+    MatProgressSpinnerModule,
     SidebarNavComponent,
     BottomNavComponent,
     YearSelectorComponent,
@@ -51,6 +54,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly receiptSignalR = inject(ReceiptSignalRService);
   private readonly signalR = inject(SignalRService);
   private readonly receiptStore = inject(ReceiptStore);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   // Breakpoint detection using CDK BreakpointObserver
   // Mobile: <768px, Tablet: 768-1023px, Desktop: ≥1024px
@@ -88,6 +93,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   // Computed: Show hamburger menu on tablet
   readonly showMenuButton = computed(() => this.isTablet());
+
+  // Logout state for mobile header (AC-7.1.3)
+  readonly isLoggingOut = signal(false);
 
   /** Track previous reconnecting state for detecting reconnection completion */
   private wasReconnecting = false;
@@ -141,5 +149,24 @@ export class ShellComponent implements OnInit, OnDestroy {
    */
   closeSidebar(): void {
     this.sidebarOpen.set(false);
+  }
+
+  /**
+   * Logout handler for mobile header (AC-7.1.2)
+   * Calls auth service and redirects to login
+   */
+  logout(): void {
+    if (this.isLoggingOut()) return;
+
+    this.isLoggingOut.set(true);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        // Even on error, redirect to login (local state is cleared)
+        this.router.navigate(['/login']);
+      },
+    });
   }
 }

@@ -103,8 +103,8 @@ development_status:
 
   # Epic 7: Bug Fixes & UX Improvements
   # GitHub Issues: #57, #59, #60, #61, #62
-  epic-7: backlog
-  7-1-mobile-logout-option: backlog              # Issue #60
+  epic-7: in-progress
+  7-1-mobile-logout-option: review               # Issue #60
   7-2-profile-display-with-user-name: backlog   # Issue #57
   7-3-year-selection-persistence: backlog       # Issue #59
   7-4-recent-expense-list-sorting-with-timestamps: backlog  # Issue #61

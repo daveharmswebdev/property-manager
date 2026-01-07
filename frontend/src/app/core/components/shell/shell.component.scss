@@ -57,7 +57,7 @@
   }
 }
 
-// Mobile header with year selector (AC-3.5.1)
+// Mobile header with year selector (AC-3.5.1) and logout button (AC-7.1.1)
 .mobile-header {
   position: sticky;
   top: 0;
@@ -73,6 +73,21 @@
 
   .spacer {
     flex: 1 1 auto;
+  }
+
+  // Logout button styling (AC-7.1.1)
+  button {
+    color: var(--pm-sidebar-text);
+
+    &:hover {
+      background-color: var(--pm-sidebar-hover);
+    }
+
+    mat-spinner {
+      ::ng-deep circle {
+        stroke: var(--pm-sidebar-text);
+      }
+    }
   }
 }
 
