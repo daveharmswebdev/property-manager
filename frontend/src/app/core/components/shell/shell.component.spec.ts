@@ -2,12 +2,13 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { ShellComponent } from './shell.component';
+import { AuthService } from '../../services/auth.service';
 
 describe('ShellComponent', () => {
   let component: ShellComponent;
@@ -169,6 +170,102 @@ describe('ShellComponent', () => {
 
     it('should not show menu button on mobile', () => {
       expect(component.showMenuButton()).toBe(false);
+    });
+  });
+
+  describe('mobile logout button (AC-7.1.1, AC-7.1.2, AC-7.1.3)', () => {
+    let mockAuthService: {
+      logout: ReturnType<typeof vi.fn>;
+      logoutAndRedirect: ReturnType<typeof vi.fn>;
+      accessToken: ReturnType<typeof vi.fn>;
+      currentUser: ReturnType<typeof vi.fn>;
+      isAuthenticated: ReturnType<typeof vi.fn>;
+      isInitializing: ReturnType<typeof vi.fn>;
+    };
+    let router: Router;
+
+    beforeEach(async () => {
+      const mockBreakpointObserver = createMockBreakpointObserver(false, false, true);
+      mockAuthService = {
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+        accessToken: vi.fn().mockReturnValue(null),
+        currentUser: vi.fn().mockReturnValue(null),
+        isAuthenticated: vi.fn().mockReturnValue(false),
+        isInitializing: vi.fn().mockReturnValue(false),
+      };
+
+      await TestBed.configureTestingModule({
+        imports: [ShellComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([{ path: 'login', component: ShellComponent }]),
+          { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: mockAuthService },
+        ],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(ShellComponent);
+      component = fixture.componentInstance;
+      router = TestBed.inject(Router);
+      vi.spyOn(router, 'navigate');
+      fixture.detectChanges();
+    });
+
+    it('should show logout button when showBottomNav() is true (AC-7.1.1)', () => {
+      const logoutButton = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"]')
+      );
+      expect(logoutButton).toBeTruthy();
+    });
+
+    it('should call AuthService.logoutAndRedirect() when logout button clicked (AC-7.1.2)', async () => {
+      const logoutButton = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"]')
+      );
+      expect(logoutButton).toBeTruthy();
+
+      logoutButton.nativeElement.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(mockAuthService.logoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
+    });
+
+    it('should display spinner when isLoggingOut is true (AC-7.1.3)', () => {
+      component.isLoggingOut.set(true);
+      fixture.detectChanges();
+
+      const spinner = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"] mat-spinner')
+      );
+      expect(spinner).toBeTruthy();
+
+      const logoutIcon = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"] mat-icon')
+      );
+      expect(logoutIcon).toBeFalsy();
+    });
+
+    it('should show logout icon when not logging out', () => {
+      expect(component.isLoggingOut()).toBe(false);
+
+      const logoutIcon = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"] mat-icon')
+      );
+      expect(logoutIcon).toBeTruthy();
+      expect(logoutIcon.nativeElement.textContent.trim()).toBe('logout');
+    });
+
+    it('should disable button when logging out', () => {
+      component.isLoggingOut.set(true);
+      fixture.detectChanges();
+
+      const logoutButton = fixture.debugElement.query(
+        By.css('[data-testid="mobile-logout-button"]')
+      );
+      expect(logoutButton.nativeElement.disabled).toBe(true);
     });
   });
 });

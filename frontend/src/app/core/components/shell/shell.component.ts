@@ -5,6 +5,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -16,6 +17,8 @@ import { MobileCaptureFabComponent } from '../../../features/receipts/components
 import { ReceiptSignalRService } from '../../../features/receipts/services/receipt-signalr.service';
 import { SignalRService } from '../../signalr/signalr.service';
 import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
+import { AuthService } from '../../services/auth.service';
+import { BREAKPOINTS } from '../../constants/layout.constants';
 
 /**
  * Shell Component - Main layout wrapper for authenticated views (AC7.1, AC7.3, AC-5.6.1)
@@ -38,6 +41,7 @@ import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
     MatButtonModule,
     MatIconModule,
     MatToolbarModule,
+    MatProgressSpinnerModule,
     SidebarNavComponent,
     BottomNavComponent,
     YearSelectorComponent,
@@ -51,19 +55,20 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly receiptSignalR = inject(ReceiptSignalRService);
   private readonly signalR = inject(SignalRService);
   private readonly receiptStore = inject(ReceiptStore);
+  private readonly authService = inject(AuthService);
 
   // Breakpoint detection using CDK BreakpointObserver
   // Mobile: <768px, Tablet: 768-1023px, Desktop: ≥1024px
   private readonly isDesktop$ = this.breakpointObserver
-    .observe(['(min-width: 1024px)'])
+    .observe([BREAKPOINTS.DESKTOP_QUERY])
     .pipe(map((result) => result.matches));
 
   private readonly isTablet$ = this.breakpointObserver
-    .observe(['(min-width: 768px) and (max-width: 1023px)'])
+    .observe([BREAKPOINTS.TABLET_QUERY])
     .pipe(map((result) => result.matches));
 
   private readonly isMobile$ = this.breakpointObserver
-    .observe(['(max-width: 767px)'])
+    .observe([BREAKPOINTS.MOBILE_QUERY])
     .pipe(map((result) => result.matches));
 
   // Convert observables to signals for reactive template binding
@@ -88,6 +93,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   // Computed: Show hamburger menu on tablet
   readonly showMenuButton = computed(() => this.isTablet());
+
+  // Logout state for mobile header (AC-7.1.3)
+  readonly isLoggingOut = signal(false);
 
   /** Track previous reconnecting state for detecting reconnection completion */
   private wasReconnecting = false;
@@ -141,5 +149,13 @@ export class ShellComponent implements OnInit, OnDestroy {
    */
   closeSidebar(): void {
     this.sidebarOpen.set(false);
+  }
+
+  /**
+   * Logout handler for mobile header (AC-7.1.2)
+   * Calls auth service and redirects to login
+   */
+  logout(): void {
+    this.authService.logoutAndRedirect(this.isLoggingOut);
   }
 }

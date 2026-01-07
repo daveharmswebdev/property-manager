@@ -1,7 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatBadgeModule } from '@angular/material/badge';
@@ -52,7 +51,6 @@ interface NavItem {
 })
 export class SidebarNavComponent implements OnInit {
   private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly receiptStore = inject(ReceiptStore);
 
   readonly currentUser = this.authService.currentUser;
@@ -103,17 +101,6 @@ export class SidebarNavComponent implements OnInit {
    * Logout handler (AC7.2) - calls auth service and redirects to login
    */
   logout(): void {
-    if (this.isLoggingOut()) return;
-
-    this.isLoggingOut.set(true);
-    this.authService.logout().subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        // Even on error, redirect to login (local state is cleared)
-        this.router.navigate(['/login']);
-      },
-    });
+    this.authService.logoutAndRedirect(this.isLoggingOut);
   }
 }

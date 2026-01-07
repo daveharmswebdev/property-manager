@@ -1,33 +1,3 @@
-# generated: 2026-01-07
-# project: property-manager
-# project_key: property-manager
-# tracking_system: file-system
-# story_location: docs/sprint-artifacts
-
-# STATUS DEFINITIONS:
-# ==================
-# Epic Status:
-#   - backlog: Epic exists in epic file but not contexted
-#   - contexted: Next epic tech context created by *epic-tech-context (required)
-#
-# Story Status:
-#   - backlog: Story only exists in epic file
-#   - drafted: Story file created in stories folder by *create-story
-#   - ready-for-dev: Draft approved and story context created by *story-ready
-#   - in-progress: Developer actively working on implementation by *dev-story
-#   - review: Implementation complete, ready for review by *code-review
-#   - done: Story completed by *story-done
-#
-# Retrospective Status:
-#   - optional: Can be completed but not required
-#   - completed: Retrospective has been done by *retrospective
-#
-# WORKFLOW NOTES:
-# ===============
-# - Epics should be 'contexted' before stories can be 'drafted'
-# - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
-
 generated: 2026-01-07
 project: property-manager
 project_key: property-manager
@@ -103,8 +73,8 @@ development_status:
 
   # Epic 7: Bug Fixes & UX Improvements
   # GitHub Issues: #57, #59, #60, #61, #62
-  epic-7: backlog
-  7-1-mobile-logout-option: backlog              # Issue #60
+  epic-7: in-progress
+  7-1-mobile-logout-option: done               # Issue #60 - Review Passed & Fixed
   7-2-profile-display-with-user-name: backlog   # Issue #57
   7-3-year-selection-persistence: backlog       # Issue #59
   7-4-recent-expense-list-sorting-with-timestamps: backlog  # Issue #61
