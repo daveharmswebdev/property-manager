@@ -164,3 +164,14 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `frontend/src/app/core/components/shell/shell.component.html` (modified)
 - `frontend/src/app/core/components/shell/shell.component.scss` (modified)
 - `frontend/src/app/core/components/shell/shell.component.spec.ts` (modified)
+- `frontend/src/app/core/services/auth.service.ts` (modified)
+- `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.ts` (modified)
+- `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.spec.ts` (modified)
+- `frontend/src/app/core/constants/layout.constants.ts` (new)
+
+### Code Review Fixes (2026-01-07)
+
+- **Refactoring**: Centralized logout logic into `AuthService.logoutAndRedirect()` to DRY up code between Shell and Sidebar components.
+- **UX**: Added logout button to Tablet header (previously missing).
+- **Standards**: Extracted breakpoint constants to `frontend/src/app/core/constants/layout.constants.ts` to avoid magic numbers.
+- **Accessibility**: Added `aria-busy` to logout buttons during loading state.
