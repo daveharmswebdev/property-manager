@@ -1,4 +1,4 @@
-# generated: 2025-12-04
+# generated: 2026-01-07
 # project: property-manager
 # project_key: property-manager
 # tracking_system: file-system
@@ -28,7 +28,7 @@
 # - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
 
-generated: 2025-12-04
+generated: 2026-01-07
 project: property-manager
 project_key: property-manager
 tracking_system: file-system
@@ -84,7 +84,7 @@ development_status:
   td-6-invitation-only-registration: done            # Remove public registration, add email invitation system (PR #42)
 
   # Epic 5: Receipt Capture
-  epic-5: in-progress
+  epic-5: done
   5-1-receipt-upload-infrastructure-s3-presigned-urls: done
   5-2-mobile-receipt-capture-with-camera: done
   5-3-unprocessed-receipt-queue: done
@@ -94,9 +94,19 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Tax Reports
-  epic-6: in-progress
+  epic-6: done
   6-1-generate-schedule-e-pdf-for-single-property: done
   6-2-generate-schedule-e-pdfs-for-all-properties: done
   6-3-view-and-manage-generated-reports: done
   6-4-report-preview-and-print: done
   epic-6-retrospective: optional
+
+  # Epic 7: Bug Fixes & UX Improvements
+  # GitHub Issues: #57, #59, #60, #61, #62
+  epic-7: backlog
+  7-1-mobile-logout-option: backlog              # Issue #60
+  7-2-profile-display-with-user-name: backlog   # Issue #57
+  7-3-year-selection-persistence: backlog       # Issue #59
+  7-4-recent-expense-list-sorting-with-timestamps: backlog  # Issue #61
+  7-5-expense-list-pagination: backlog          # Issue #62
+  epic-7-retrospective: optional

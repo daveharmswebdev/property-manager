@@ -1,0 +1,180 @@
+# Epic 7: Bug Fixes & UX Improvements
+
+**Goal:** Address usability issues and missing functionality identified during production use. These fixes improve the day-to-day experience without adding major new features.
+
+**GitHub Issues:** #57, #59, #60, #61, #62
+
+**User Value:** "The app works smoothly without friction points"
+
+---
+
+## Story 7.1: Mobile Logout Option
+
+**GitHub Issue:** #60
+
+**As a** user on mobile,
+**I want** to log out of the application,
+**So that** I can securely end my session from any device.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in on mobile (< 768px viewport)
+**When** I look at the navigation
+**Then** I see a logout option accessible from the mobile UI
+
+**Given** I tap the logout option
+**When** the action completes
+**Then** I am logged out and redirected to the login page
+**And** my session is terminated securely
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Add logout to mobile bottom nav or hamburger menu
+- Reuse existing logout API endpoint `POST /api/v1/auth/logout`
+- Test on both mobile breakpoints
+
+---
+
+## Story 7.2: Profile Display with User Name
+
+**GitHub Issue:** #57
+
+**As a** logged-in user,
+**I want** to see my name displayed in my profile/account area,
+**So that** I can confirm I'm logged into the correct account.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in
+**When** I view the sidebar footer or profile area
+**Then** I see my name displayed (not just email)
+
+**Given** my name is not set
+**When** I view the profile area
+**Then** I see my email address as fallback
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- May require adding `Name` field to user profile
+- Update `GET /api/v1/users/me` to include name
+- Update sidebar component to display name
+
+---
+
+## Story 7.3: Year Selection Persistence
+
+**GitHub Issue:** #59
+
+**As a** property owner,
+**I want** my selected tax year to persist across page refreshes and browser sessions,
+**So that** I don't have to reselect the year I'm working on every time.
+
+**Acceptance Criteria:**
+
+**Given** I select a tax year (e.g., 2025)
+**When** I refresh the page
+**Then** the year remains set to 2025
+
+**Given** I close the browser tab and reopen the app
+**When** the dashboard loads
+**Then** the last selected year is restored
+
+**Given** I clear browser data
+**When** I open the app
+**Then** the year defaults to current year (graceful fallback)
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Store selected year in `localStorage`
+- Read on app initialization
+- Key: `propertyManager.selectedYear`
+
+---
+
+## Story 7.4: Recent Expense List Sorting with Timestamps
+
+**GitHub Issue:** #61
+
+**As a** property owner,
+**I want** the recent expense list on the Property Detail page to show timestamps and sort newest first,
+**So that** I can quickly see the most recent activity.
+
+**Acceptance Criteria:**
+
+**Given** I am on a Property Detail page
+**When** I view the Recent Expenses section
+**Then** each expense row shows the date/timestamp
+
+**And** expenses are sorted from newest to oldest
+
+**Given** two expenses have the same date
+**When** displayed in the list
+**Then** they are sorted by creation time (most recent first)
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Update `GET /api/v1/properties/{id}` recent expenses query
+- Add `ORDER BY Date DESC, CreatedAt DESC`
+- Ensure date format is user-friendly (e.g., "Dec 15, 2025")
+
+---
+
+## Story 7.5: Expense List Pagination
+
+**GitHub Issue:** #62
+
+**As a** property owner,
+**I want** the Previous Expense List on the Property Expenses View to be paginated,
+**So that** I can navigate through a large number of expenses efficiently.
+
+**Acceptance Criteria:**
+
+**Given** I am on the Property Expenses workspace
+**When** there are more expenses than the page size
+**Then** I see pagination controls below the list
+
+**Given** pagination controls
+**When** I view them
+**Then** I can select page size: 10, 25, or 50 items per page
+
+**And** I can navigate between pages
+**And** I see total count (e.g., "Showing 1-25 of 150")
+
+**Given** I change the page size
+**When** the list updates
+**Then** my preference persists during the session
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Use Angular Material `mat-paginator`
+- Update API to support `?page=1&pageSize=25`
+- Default page size: 25
+- Store page size preference in localStorage
+
+---
+
+## Epic 7 Summary
+
+| Story | Title | GitHub Issue | Prerequisites |
+|-------|-------|--------------|---------------|
+| 7.1 | Mobile Logout Option | #60 | None |
+| 7.2 | Profile Display with User Name | #57 | None |
+| 7.3 | Year Selection Persistence | #59 | None |
+| 7.4 | Recent Expense List Sorting | #61 | None |
+| 7.5 | Expense List Pagination | #62 | None |
+
+**Stories:** 5 | **All stories are independent - can be worked in parallel**
+
+**Epic 7 Milestone:** 🔧 *Polish and refinement. Small fixes that make daily use smoother.*
+
+---
+
+_Generated by BMAD Scrum Master_
+_Date: 2026-01-07_
+_For: Dave_
+_Project: property-manager_
