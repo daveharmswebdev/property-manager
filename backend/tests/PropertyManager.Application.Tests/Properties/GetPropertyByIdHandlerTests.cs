@@ -384,6 +384,122 @@ public class GetPropertyByIdHandlerTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// AC-7.4.1: Multiple expenses on same date sorted by CreatedAt descending (most recently created first)
+    /// </summary>
+    [Fact]
+    public async Task Handle_MultipleExpensesSameDate_OrdersByCreatedAtDescending()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var sameDate = new DateOnly(currentYear, 6, 15);
+        var baseTime = new DateTime(currentYear, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        // Create 3 expenses on same date with different CreatedAt times
+        var expense1 = CreateExpense(_testAccountId, property.Id, 100m, sameDate, "Created First", baseTime);
+        var expense2 = CreateExpense(_testAccountId, property.Id, 200m, sameDate, "Created Second", baseTime.AddHours(1));
+        var expense3 = CreateExpense(_testAccountId, property.Id, 300m, sameDate, "Created Third", baseTime.AddHours(2));
+
+        var expenses = new List<Expense> { expense1, expense2, expense3 };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
+        var query = new GetPropertyByIdQuery(property.Id);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert: Most recently created should be first (CreatedAt descending)
+        result.Should().NotBeNull();
+        result!.RecentExpenses.Should().HaveCount(3);
+        result.RecentExpenses[0].Description.Should().Be("Created Third");
+        result.RecentExpenses[1].Description.Should().Be("Created Second");
+        result.RecentExpenses[2].Description.Should().Be("Created First");
+    }
+
+    /// <summary>
+    /// AC-7.4.2: Multiple income entries on same date sorted by CreatedAt descending
+    /// </summary>
+    [Fact]
+    public async Task Handle_MultipleIncomeSameDate_OrdersByCreatedAtDescending()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var sameDate = new DateOnly(currentYear, 6, 15);
+        var baseTime = new DateTime(currentYear, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        // Create 3 income entries on same date with different CreatedAt times
+        var income1 = CreateIncome(_testAccountId, property.Id, 1000m, sameDate, "Created First", baseTime);
+        var income2 = CreateIncome(_testAccountId, property.Id, 2000m, sameDate, "Created Second", baseTime.AddHours(1));
+        var income3 = CreateIncome(_testAccountId, property.Id, 3000m, sameDate, "Created Third", baseTime.AddHours(2));
+
+        var income = new List<IncomeEntity> { income1, income2, income3 };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(new List<Expense>());
+        SetupIncomeDbSet(income);
+        var query = new GetPropertyByIdQuery(property.Id);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert: Most recently created should be first (CreatedAt descending)
+        result.Should().NotBeNull();
+        result!.RecentIncome.Should().HaveCount(3);
+        result.RecentIncome[0].Description.Should().Be("Created Third");
+        result.RecentIncome[1].Description.Should().Be("Created Second");
+        result.RecentIncome[2].Description.Should().Be("Created First");
+    }
+
+    /// <summary>
+    /// AC-7.4.3: Verify sorting is deterministic - date as primary, CreatedAt as secondary
+    /// </summary>
+    [Fact]
+    public async Task Handle_MixedDatesAndTimes_SortsByDateThenCreatedAt()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property", "Austin", "TX");
+        var properties = new List<Property> { property };
+
+        var currentYear = DateTime.UtcNow.Year;
+        var earlierDate = new DateOnly(currentYear, 6, 10);
+        var laterDate = new DateOnly(currentYear, 6, 15);
+        var baseTime = new DateTime(currentYear, 6, 10, 10, 0, 0, DateTimeKind.Utc);
+
+        // Create expenses with mixed dates and times
+        var expense1 = CreateExpense(_testAccountId, property.Id, 100m, earlierDate, "Earlier Date - Created First", baseTime);
+        var expense2 = CreateExpense(_testAccountId, property.Id, 200m, laterDate, "Later Date - Created Early", baseTime.AddDays(5));
+        var expense3 = CreateExpense(_testAccountId, property.Id, 300m, laterDate, "Later Date - Created Late", baseTime.AddDays(5).AddHours(2));
+        var expense4 = CreateExpense(_testAccountId, property.Id, 150m, earlierDate, "Earlier Date - Created Second", baseTime.AddHours(1));
+
+        var expenses = new List<Expense> { expense1, expense2, expense3, expense4 };
+
+        SetupPropertiesDbSet(properties);
+        SetupExpensesDbSet(expenses);
+        SetupIncomeDbSet(new List<IncomeEntity>());
+        var query = new GetPropertyByIdQuery(property.Id);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert: Primary sort by Date desc, secondary by CreatedAt desc
+        result.Should().NotBeNull();
+        result!.RecentExpenses.Should().HaveCount(4);
+        // Later date entries first (June 15), most recent CreatedAt first
+        result.RecentExpenses[0].Description.Should().Be("Later Date - Created Late");
+        result.RecentExpenses[1].Description.Should().Be("Later Date - Created Early");
+        // Earlier date entries next (June 10), most recent CreatedAt first
+        result.RecentExpenses[2].Description.Should().Be("Earlier Date - Created Second");
+        result.RecentExpenses[3].Description.Should().Be("Earlier Date - Created First");
+    }
+
     private Property CreateProperty(Guid accountId, string name, string city, string state)
     {
         return new Property
@@ -418,7 +534,7 @@ public class GetPropertyByIdHandlerTests
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 
-    private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date, string description)
+    private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date, string description, DateTime? createdAt = null)
     {
         return new Expense
         {
@@ -430,7 +546,23 @@ public class GetPropertyByIdHandlerTests
             Date = date,
             Description = description,
             CreatedByUserId = Guid.NewGuid(),
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = createdAt ?? DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    private IncomeEntity CreateIncome(Guid accountId, Guid propertyId, decimal amount, DateOnly date, string description, DateTime? createdAt = null)
+    {
+        return new IncomeEntity
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            PropertyId = propertyId,
+            Amount = amount,
+            Date = date,
+            Description = description,
+            CreatedByUserId = Guid.NewGuid(),
+            CreatedAt = createdAt ?? DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
     }
