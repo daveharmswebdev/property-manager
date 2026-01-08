@@ -104,6 +104,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         && e.DeletedAt == null
                         && e.Date >= yearStart && e.Date <= yearEnd)
                     .OrderByDescending(e => e.Date)
+                    .ThenByDescending(e => e.CreatedAt)
                     .Take(5)
                     .Select(e => new ExpenseSummaryDto(
                         e.Id,
@@ -118,6 +119,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         && i.DeletedAt == null
                         && i.Date >= yearStart && i.Date <= yearEnd)
                     .OrderByDescending(i => i.Date)
+                    .ThenByDescending(i => i.CreatedAt)
                     .Take(5)
                     .Select(i => new IncomeSummaryDto(
                         i.Id,

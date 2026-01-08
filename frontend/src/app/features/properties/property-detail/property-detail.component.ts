@@ -176,7 +176,8 @@ import {
                 <div class="activity-list">
                   @for (expense of propertyStore.selectedProperty()!.recentExpenses; track expense.id) {
                     <div class="activity-item">
-                      <span class="activity-description">{{ expense.description }}</span>
+                      <span class="activity-date">{{ formatDate(expense.date) }}</span>
+                      <span class="activity-description">{{ expense.description || 'No description' }}</span>
                       <span class="activity-amount expense">{{ expense.amount | currency }}</span>
                     </div>
                   }
@@ -201,7 +202,8 @@ import {
                 <div class="activity-list">
                   @for (income of propertyStore.selectedProperty()!.recentIncome; track income.id) {
                     <div class="activity-item">
-                      <span class="activity-description">{{ income.description }}</span>
+                      <span class="activity-date">{{ formatDate(income.date) }}</span>
+                      <span class="activity-description">{{ income.description || 'No description' }}</span>
                       <span class="activity-amount income">{{ income.amount | currency }}</span>
                     </div>
                   }
@@ -433,21 +435,32 @@ import {
 
         .activity-item {
           display: flex;
-          justify-content: space-between;
           align-items: center;
           padding: 8px 0;
           border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+          gap: 12px;
 
           &:last-child {
             border-bottom: none;
           }
 
+          .activity-date {
+            color: var(--pm-text-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            min-width: 80px;
+          }
+
           .activity-description {
             color: var(--pm-text-primary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .activity-amount {
             font-weight: 500;
+            white-space: nowrap;
 
             &.expense {
               color: #c62828;
@@ -525,6 +538,18 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/properties']);
+  }
+
+  /**
+   * Format date string to "Nov 28, 2025" format (AC-7.4.4, AC-7.4.5)
+   */
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
 
   /**
