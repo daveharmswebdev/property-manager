@@ -20,6 +20,8 @@ describe('DashboardComponent', () => {
     userId: 'test-user-id',
     accountId: 'test-account-id',
     role: 'Owner',
+    email: 'test@example.com',
+    displayName: 'Test User',
   };
 
   const mockProperties: PropertySummaryDto[] = [

@@ -29,6 +29,11 @@ public class ApplicationUser : IdentityUser<Guid>
     /// </summary>
     public DateTime UpdatedAt { get; set; }
 
+    /// <summary>
+    /// User's display name shown in the UI. Falls back to email if not set.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
     // Navigation property
     public Account Account { get; set; } = null!;
 }

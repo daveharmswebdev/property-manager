@@ -31,6 +31,8 @@ public class JwtService : IJwtService
         Guid userId,
         Guid accountId,
         string role,
+        string email,
+        string? displayName,
         CancellationToken cancellationToken = default)
     {
         var expiresIn = _settings.AccessTokenExpiryMinutes * 60; // Convert to seconds
@@ -45,7 +47,9 @@ public class JwtService : IJwtService
             new("userId", userId.ToString()),
             new("accountId", accountId.ToString()),
             new(ClaimTypes.Role, role),
-            new("role", role)
+            new("role", role),
+            new("email", email),
+            new("displayName", displayName ?? "")
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
@@ -96,7 +100,7 @@ public class JwtService : IJwtService
         return refreshToken;
     }
 
-    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role)> ValidateRefreshTokenAsync(
+    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName)> ValidateRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default)
     {
@@ -109,7 +113,7 @@ public class JwtService : IJwtService
 
         if (storedToken == null || !storedToken.IsValid)
         {
-            return (false, null, null, null);
+            return (false, null, null, null, null, null);
         }
 
         // Get user info
@@ -119,10 +123,10 @@ public class JwtService : IJwtService
 
         if (user == null)
         {
-            return (false, null, null, null);
+            return (false, null, null, null, null, null);
         }
 
-        return (true, storedToken.UserId, storedToken.AccountId, user.Role);
+        return (true, storedToken.UserId, storedToken.AccountId, user.Role, user.Email, user.DisplayName);
     }
 
     public async Task RevokeRefreshTokenAsync(

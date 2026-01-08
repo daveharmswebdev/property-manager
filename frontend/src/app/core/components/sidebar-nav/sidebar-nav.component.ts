@@ -87,14 +87,12 @@ export class SidebarNavComponent implements OnInit {
   }
 
   /**
-   * Get user display name - prefer email, fall back to role
+   * Get user display name - prefer displayName, fall back to email, then 'User' (AC-7.2.1, AC-7.2.2)
    */
   get userDisplayName(): string {
     const user = this.currentUser();
     if (!user) return 'User';
-    // Since User interface only has userId, accountId, role
-    // We'll display the role for now (email would be better)
-    return user.role || 'User';
+    return user.displayName || user.email || 'User';
   }
 
   /**

@@ -22,6 +22,8 @@ describe('SidebarNavComponent', () => {
     userId: 'test-user-id',
     accountId: 'test-account-id',
     role: 'Owner',
+    email: 'test@example.com',
+    displayName: 'John Doe',
   };
   const mockReceiptStore = {
     unprocessedReceipts: signal([]),
@@ -109,8 +111,8 @@ describe('SidebarNavComponent', () => {
     expect(component.getBadgeCount(receiptsItem!)).toBe(5);
   });
 
-  it('should display user role in footer (AC7.2)', () => {
-    expect(component.userDisplayName).toBe('Owner');
+  it('should display displayName when available (AC-7.2.1)', () => {
+    expect(component.userDisplayName).toBe('John Doe');
   });
 
   it('should render logout button (AC7.2)', () => {
@@ -128,5 +130,125 @@ describe('SidebarNavComponent', () => {
   it('should render all nav items in the DOM (AC7.1)', () => {
     const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
     expect(navItems.length).toBe(7);
+  });
+
+  describe('userDisplayName fallback logic (AC-7.2.2)', () => {
+    it('should fall back to email when displayName is null', async () => {
+      const userWithoutDisplayName: User = {
+        userId: 'test-user-id',
+        accountId: 'test-account-id',
+        role: 'Owner',
+        email: 'fallback@example.com',
+        displayName: null,
+      };
+
+      const mockAuthServiceNoDisplayName = {
+        currentUser: signal<User | null>(userWithoutDisplayName),
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+      };
+
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [SidebarNavComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: AuthService, useValue: mockAuthServiceNoDisplayName },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          {
+            provide: ApiClient,
+            useValue: {
+              receipts_GetUnprocessed: vi
+                .fn()
+                .mockReturnValue(of({ items: [], totalCount: 0 })),
+            },
+          },
+        ],
+      }).compileComponents();
+
+      const testFixture = TestBed.createComponent(SidebarNavComponent);
+      const testComponent = testFixture.componentInstance;
+      testFixture.detectChanges();
+
+      expect(testComponent.userDisplayName).toBe('fallback@example.com');
+    });
+
+    it('should fall back to "User" when both displayName and email are missing', async () => {
+      const userWithNothing: User = {
+        userId: 'test-user-id',
+        accountId: 'test-account-id',
+        role: 'Owner',
+        email: '',
+        displayName: null,
+      };
+
+      const mockAuthServiceNoEmail = {
+        currentUser: signal<User | null>(userWithNothing),
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+      };
+
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [SidebarNavComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: AuthService, useValue: mockAuthServiceNoEmail },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          {
+            provide: ApiClient,
+            useValue: {
+              receipts_GetUnprocessed: vi
+                .fn()
+                .mockReturnValue(of({ items: [], totalCount: 0 })),
+            },
+          },
+        ],
+      }).compileComponents();
+
+      const testFixture = TestBed.createComponent(SidebarNavComponent);
+      const testComponent = testFixture.componentInstance;
+      testFixture.detectChanges();
+
+      expect(testComponent.userDisplayName).toBe('User');
+    });
+
+    it('should return "User" when currentUser is null', async () => {
+      const mockAuthServiceNullUser = {
+        currentUser: signal<User | null>(null),
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+      };
+
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [SidebarNavComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: AuthService, useValue: mockAuthServiceNullUser },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          {
+            provide: ApiClient,
+            useValue: {
+              receipts_GetUnprocessed: vi
+                .fn()
+                .mockReturnValue(of({ items: [], totalCount: 0 })),
+            },
+          },
+        ],
+      }).compileComponents();
+
+      const testFixture = TestBed.createComponent(SidebarNavComponent);
+      const testComponent = testFixture.componentInstance;
+      testFixture.detectChanges();
+
+      expect(testComponent.userDisplayName).toBe('User');
+    });
   });
 });

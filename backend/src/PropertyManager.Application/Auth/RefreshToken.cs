@@ -40,11 +40,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         // Validate the refresh token
-        var (isValid, userId, accountId, role) = await _jwtService.ValidateRefreshTokenAsync(
+        var (isValid, userId, accountId, role, email, displayName) = await _jwtService.ValidateRefreshTokenAsync(
             request.RefreshToken,
             cancellationToken);
 
-        if (!isValid || userId == null || accountId == null || role == null)
+        if (!isValid || userId == null || accountId == null || role == null || email == null)
         {
             _logger.LogWarning("Invalid or expired refresh token used at {Timestamp}", DateTime.UtcNow);
             throw new UnauthorizedAccessException("Invalid or expired refresh token");
@@ -55,6 +55,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             userId.Value,
             accountId.Value,
             role,
+            email,
+            displayName,
             cancellationToken);
 
         _logger.LogInformation(
