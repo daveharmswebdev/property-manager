@@ -18,6 +18,14 @@
     <!-- Tablet Header with Hamburger Menu -->
     @if (showMenuButton()) {
       <mat-toolbar class="tablet-header" color="primary">
+        <button
+          mat-icon-button
+          (click)="toggleSidebar()"
+          aria-label="Toggle menu"
+          data-testid="menu-toggle-button"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
         <span class="header-title">Property Manager</span>
         <span class="spacer"></span>
         <app-year-selector class="light-theme" />
