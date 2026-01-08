@@ -1,6 +1,6 @@
 # Story 7.4: Recent Expense List Sorting with Timestamps
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -268,4 +268,5 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Change Log
 
 - 2026-01-08: Implemented story 7.4 - Recent expense list sorting with timestamps and date display (Issue #61)
+- 2026-01-08: Code Review Fixes - Added deterministic tie-breaker sorting and unit tests for frontend date display.
 
