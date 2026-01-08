@@ -1,6 +1,6 @@
 # Story 7.2: Profile Display with User Name
 
-Status: ready-for-review
+Status: done
 
 ## Story
 
@@ -288,4 +288,34 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.ts` - Updated userDisplayName getter
 - `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.spec.ts` - Added fallback tests
 - `frontend/src/app/features/dashboard/dashboard.component.spec.ts` - Updated mockUser
+- `frontend/src/app/core/components/shell/shell.component.ts` - Added userDisplayName getter
+- `frontend/src/app/core/components/shell/shell.component.html` - Added userDisplayName to headers
+- `frontend/src/app/core/components/shell/shell.component.scss` - Added header user name styling
+- `frontend/src/app/core/components/shell/shell.component.spec.ts` - Added tests for headers and mocked services
 
+## Change Log
+
+### 2026-01-08 - Senior Developer Review (AI)
+- **Reviewer:** Amelia (Senior Software Engineer)
+- **Outcome:** Approved with Fixes
+- **Fixes Applied:**
+  - Added `[MaxLength(100)]` to `ApplicationUser.DisplayName` for entity consistency.
+  - Updated `JwtService` to omit `displayName` claim if null instead of sending empty string.
+  - Updated `ShellComponent` to display user name in mobile and tablet headers (AC-7.2.3 fix).
+  - Added comprehensive unit tests for `ShellComponent` name display.
+  - Added mocks to `ShellComponent` tests to fix unhandled SignalR errors.
+- **Verification:** All 495 backend tests and 658 frontend tests passed.
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Amelia
+**Date:** 2026-01-08
+**Status:** Approved
+
+**Findings:**
+- AC-7.2.3 was initially incomplete (name missing from mobile/tablet headers). Fixed during review.
+- Code quality is high, with strong test coverage (100% pass rate).
+- Architecture compliance is maintained (Clean Architecture, reactive frontend).
+- Entity model was synced with EF configuration.
+
+**Conclusion:** The story is complete and ready for merge.

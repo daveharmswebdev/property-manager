@@ -48,9 +48,13 @@ public class JwtService : IJwtService
             new("accountId", accountId.ToString()),
             new(ClaimTypes.Role, role),
             new("role", role),
-            new("email", email),
-            new("displayName", displayName ?? "")
+            new("email", email)
         };
+
+        if (!string.IsNullOrEmpty(displayName))
+        {
+            claims.Add(new("displayName", displayName));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

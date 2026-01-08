@@ -74,7 +74,7 @@ public class JwtServiceTests
     }
 
     [Fact]
-    public async Task GenerateAccessToken_IncludesEmptyDisplayNameClaim_WhenNull()
+    public async Task GenerateAccessToken_OmitsDisplayNameClaim_WhenNull()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -91,8 +91,8 @@ public class JwtServiceTests
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(accessToken);
 
-        // displayName should be empty string when null is passed
-        token.Claims.Should().Contain(c => c.Type == "displayName" && c.Value == "");
+        // displayName claim should be omitted when null is passed
+        token.Claims.Should().NotContain(c => c.Type == "displayName");
     }
 
     [Fact]

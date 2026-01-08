@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using PropertyManager.Domain.Entities;
 
@@ -32,6 +33,7 @@ public class ApplicationUser : IdentityUser<Guid>
     /// <summary>
     /// User's display name shown in the UI. Falls back to email if not set.
     /// </summary>
+    [MaxLength(100)]
     public string? DisplayName { get; set; }
 
     // Navigation property
