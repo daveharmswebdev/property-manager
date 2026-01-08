@@ -7,12 +7,20 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
 import { ShellComponent } from './shell.component';
 import { AuthService } from '../../services/auth.service';
+import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
+import { ReceiptSignalRService } from '../../../features/receipts/services/receipt-signalr.service';
+import { SignalRService } from '../../signalr/signalr.service';
 
 describe('ShellComponent', () => {
   let component: ShellComponent;
   let fixture: ComponentFixture<ShellComponent>;
+  let mockAuthService: any;
+  let mockReceiptStore: any;
+  let mockReceiptSignalR: any;
+  let mockSignalR: any;
 
   const createBreakpointState = (matches: boolean): BreakpointState => ({
     matches,
@@ -35,6 +43,30 @@ describe('ShellComponent', () => {
     }),
   });
 
+  beforeEach(() => {
+    mockAuthService = {
+      logout: vi.fn().mockReturnValue(of(undefined)),
+      logoutAndRedirect: vi.fn(),
+      accessToken: vi.fn().mockReturnValue('token'),
+      currentUser: vi.fn().mockReturnValue({ email: 'test@example.com', displayName: 'Test User' }),
+      isAuthenticated: vi.fn().mockReturnValue(true),
+      isInitializing: vi.fn().mockReturnValue(false),
+    };
+    mockReceiptStore = {
+      loadUnprocessedReceipts: vi.fn(),
+      unprocessedCount: signal(0),
+    };
+    mockReceiptSignalR = {
+      initialize: vi.fn(),
+      handleReconnection: vi.fn(),
+    };
+    mockSignalR = {
+      disconnect: vi.fn(),
+      isReconnecting: vi.fn().mockReturnValue(false),
+      isConnected: vi.fn().mockReturnValue(true),
+    };
+  });
+
   describe('desktop view', () => {
     beforeEach(async () => {
       const mockBreakpointObserver = createMockBreakpointObserver(true, false, false);
@@ -46,6 +78,10 @@ describe('ShellComponent', () => {
           provideHttpClientTesting(),
           provideRouter([]),
           { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          { provide: ReceiptSignalRService, useValue: mockReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
         ],
       }).compileComponents();
 
@@ -90,6 +126,10 @@ describe('ShellComponent', () => {
           provideHttpClientTesting(),
           provideRouter([]),
           { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          { provide: ReceiptSignalRService, useValue: mockReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
         ],
       }).compileComponents();
 
@@ -152,6 +192,10 @@ describe('ShellComponent', () => {
           provideHttpClientTesting(),
           provideRouter([]),
           { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          { provide: ReceiptSignalRService, useValue: mockReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
         ],
       }).compileComponents();
 
@@ -174,26 +218,10 @@ describe('ShellComponent', () => {
   });
 
   describe('mobile logout button (AC-7.1.1, AC-7.1.2, AC-7.1.3)', () => {
-    let mockAuthService: {
-      logout: ReturnType<typeof vi.fn>;
-      logoutAndRedirect: ReturnType<typeof vi.fn>;
-      accessToken: ReturnType<typeof vi.fn>;
-      currentUser: ReturnType<typeof vi.fn>;
-      isAuthenticated: ReturnType<typeof vi.fn>;
-      isInitializing: ReturnType<typeof vi.fn>;
-    };
     let router: Router;
 
     beforeEach(async () => {
       const mockBreakpointObserver = createMockBreakpointObserver(false, false, true);
-      mockAuthService = {
-        logout: vi.fn().mockReturnValue(of(undefined)),
-        logoutAndRedirect: vi.fn(),
-        accessToken: vi.fn().mockReturnValue(null),
-        currentUser: vi.fn().mockReturnValue(null),
-        isAuthenticated: vi.fn().mockReturnValue(false),
-        isInitializing: vi.fn().mockReturnValue(false),
-      };
 
       await TestBed.configureTestingModule({
         imports: [ShellComponent, NoopAnimationsModule],
@@ -203,6 +231,9 @@ describe('ShellComponent', () => {
           provideRouter([{ path: 'login', component: ShellComponent }]),
           { provide: BreakpointObserver, useValue: mockBreakpointObserver },
           { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          { provide: ReceiptSignalRService, useValue: mockReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
         ],
       }).compileComponents();
 
@@ -266,6 +297,48 @@ describe('ShellComponent', () => {
         By.css('[data-testid="mobile-logout-button"]')
       );
       expect(logoutButton.nativeElement.disabled).toBe(true);
+    });
+  });
+
+  describe('userDisplayName in header (AC-7.2.3)', () => {
+    beforeEach(async () => {
+      // Mock mobile view to test mobile header
+      const mockBreakpointObserver = createMockBreakpointObserver(false, false, true);
+
+      await TestBed.configureTestingModule({
+        imports: [ShellComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          { provide: ReceiptSignalRService, useValue: mockReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
+        ],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(ShellComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    });
+
+    it('should display user name in mobile header', () => {
+      const nameElement = fixture.debugElement.query(By.css('[data-testid="mobile-user-name"]'));
+      expect(nameElement).toBeTruthy();
+      expect(nameElement.nativeElement.textContent).toContain('Test User');
+    });
+
+    it('should fall back to email if displayName is missing', () => {
+      mockAuthService.currentUser.mockReturnValue({ 
+        email: 'test@example.com', 
+        displayName: null 
+      });
+      fixture.detectChanges();
+      
+      const nameElement = fixture.debugElement.query(By.css('[data-testid="mobile-user-name"]'));
+      expect(nameElement.nativeElement.textContent).toContain('test@example.com');
     });
   });
 });

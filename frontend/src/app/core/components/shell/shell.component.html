@@ -21,14 +21,15 @@
         <button
           mat-icon-button
           (click)="toggleSidebar()"
-          aria-label="Toggle navigation menu"
+          aria-label="Toggle menu"
           data-testid="menu-toggle-button"
         >
-          <mat-icon>{{ sidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+          <mat-icon>menu</mat-icon>
         </button>
         <span class="header-title">Property Manager</span>
         <span class="spacer"></span>
         <app-year-selector class="light-theme" />
+        <span class="user-name" data-testid="tablet-user-name">{{ userDisplayName }}</span>
         <button
           mat-icon-button
           (click)="logout()"
@@ -52,6 +53,7 @@
         <span class="header-title">Property Manager</span>
         <span class="spacer"></span>
         <app-year-selector class="light-theme" />
+        <span class="user-name" data-testid="mobile-user-name">{{ userDisplayName }}</span>
         <button
           mat-icon-button
           (click)="logout()"

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using PropertyManager.Domain.Entities;
 
@@ -28,6 +29,12 @@ public class ApplicationUser : IdentityUser<Guid>
     /// Timestamp when the user was last updated.
     /// </summary>
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// User's display name shown in the UI. Falls back to email if not set.
+    /// </summary>
+    [MaxLength(100)]
+    public string? DisplayName { get; set; }
 
     // Navigation property
     public Account Account { get; set; } = null!;

@@ -61,6 +61,18 @@ $desktop-min: 1024px;
   .spacer {
     flex: 1 1 auto;
   }
+
+  .user-name {
+    margin-right: 12px;
+    font-size: 14px;
+    font-weight: 400;
+    white-space: nowrap;
+    
+    // Hide on very small screens to prevent overflow
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
 }
 
 // Mobile header with year selector (AC-3.5.1) and logout button (AC-7.1.1)
@@ -79,6 +91,18 @@ $desktop-min: 1024px;
 
   .spacer {
     flex: 1 1 auto;
+  }
+
+  .user-name {
+    margin-right: 8px;
+    font-size: 14px;
+    font-weight: 400;
+    white-space: nowrap;
+    
+    // Hide on small mobile screens
+    @media (max-width: 480px) {
+      display: none;
+    }
   }
 
   // Logout button styling (AC-7.1.1)
