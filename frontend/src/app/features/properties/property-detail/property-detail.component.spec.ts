@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { PropertyDetailComponent } from './property-detail.component';
@@ -227,6 +228,48 @@ describe('PropertyDetailComponent', () => {
       const activityCards = fixture.nativeElement.querySelectorAll('.activity-card');
       const incomeCard = activityCards[1];
       expect(incomeCard.textContent).toContain('No income recorded yet');
+    });
+  });
+
+  describe('recent activity display (AC-7.4.4, AC-7.4.5)', () => {
+    const mockPropertyWithActivity = {
+      ...mockProperty,
+      recentExpenses: [
+        {
+          id: 'exp1',
+          description: 'Paint',
+          amount: 50,
+          date: '2025-11-28'
+        }
+      ],
+      recentIncome: [
+        {
+          id: 'inc1',
+          description: 'Rent',
+          amount: 1000,
+          date: '2025-11-28'
+        }
+      ]
+    };
+
+    beforeEach(() => {
+      mockPropertyStore.selectedProperty = signal(mockPropertyWithActivity);
+      mockPropertyStore.selectedPropertyFullAddress = signal('123 Oak St, Austin, TX 78701');
+      mockPropertyStore.selectedPropertyNetIncome = signal(950);
+      fixture = TestBed.createComponent(PropertyDetailComponent);
+      fixture.detectChanges();
+    });
+
+    it('should display formatted date for expenses', () => {
+      const expenseDate = fixture.nativeElement.querySelector('.activity-item .activity-date');
+      expect(expenseDate.textContent).toContain('Nov 28, 2025');
+    });
+
+    it('should display formatted date for income', () => {
+      const incomeCards = fixture.nativeElement.querySelectorAll('.activity-card');
+      const incomeList = incomeCards[1].querySelector('.activity-list');
+      const incomeDate = incomeList.querySelector('.activity-date');
+      expect(incomeDate.textContent).toContain('Nov 28, 2025');
     });
   });
 

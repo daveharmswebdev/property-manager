@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, effect } from '@angular/core';
-import { CommonModule, CurrencyPipe, Location } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -42,6 +42,7 @@ import {
     MatTooltipModule,
     MatDialogModule,
     CurrencyPipe,
+    DatePipe,
   ],
   template: `
     <div class="property-detail-container">
@@ -176,7 +177,7 @@ import {
                 <div class="activity-list">
                   @for (expense of propertyStore.selectedProperty()!.recentExpenses; track expense.id) {
                     <div class="activity-item">
-                      <span class="activity-date">{{ formatDate(expense.date) }}</span>
+                      <span class="activity-date">{{ expense.date | date:'mediumDate' }}</span>
                       <span class="activity-description">{{ expense.description || 'No description' }}</span>
                       <span class="activity-amount expense">{{ expense.amount | currency }}</span>
                     </div>
@@ -202,7 +203,7 @@ import {
                 <div class="activity-list">
                   @for (income of propertyStore.selectedProperty()!.recentIncome; track income.id) {
                     <div class="activity-item">
-                      <span class="activity-date">{{ formatDate(income.date) }}</span>
+                      <span class="activity-date">{{ income.date | date:'mediumDate' }}</span>
                       <span class="activity-description">{{ income.description || 'No description' }}</span>
                       <span class="activity-amount income">{{ income.amount | currency }}</span>
                     </div>
@@ -538,18 +539,6 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/properties']);
-  }
-
-  /**
-   * Format date string to "Nov 28, 2025" format (AC-7.4.4, AC-7.4.5)
-   */
-  formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   }
 
   /**
