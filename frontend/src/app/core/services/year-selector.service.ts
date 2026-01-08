@@ -31,10 +31,15 @@ export class YearSelectorService {
 
   /**
    * Set the selected year (AC-3.5.5, AC-7.3.1, AC-7.3.2).
+   * Validates year is within available range before setting.
    * Persists to localStorage for cross-session persistence.
    * @param year The year to select
    */
   setYear(year: number): void {
+    if (!this.isValidYear(year)) {
+      console.warn(`YearSelectorService: Invalid year ${year}, ignoring`);
+      return;
+    }
     this._selectedYear.set(year);
     this.saveToStorage(year);
   }
@@ -62,12 +67,14 @@ export class YearSelectorService {
           this._selectedYear.set(year);
           return;
         }
+        // Invalid or out-of-range stored value - log warning and replace (AC-7.3.4, AC-7.3.5)
+        console.warn(`YearSelectorService: Invalid stored year "${stored}", falling back to current year`);
       }
       // Fall through: empty or invalid - save current year to normalize storage
       this.saveToStorage(this._selectedYear());
     } catch {
       // localStorage may be unavailable (private browsing, disabled) - AC-7.3.3
-      // Silently use default current year
+      console.warn('YearSelectorService: localStorage unavailable, using default year');
     }
   }
 
@@ -84,15 +91,15 @@ export class YearSelectorService {
 
   /**
    * Save year to localStorage (AC-7.3.1, AC-7.3.2).
-   * Silently ignores errors (best-effort persistence).
+   * Logs warning on failure (best-effort persistence).
    * @param year Year to save
    */
   private saveToStorage(year: number): void {
     try {
       localStorage.setItem(STORAGE_KEY, year.toString());
     } catch {
-      // Silently ignore - persistence is best-effort
       // May fail in private browsing or if quota exceeded
+      console.warn('YearSelectorService: Failed to save year to localStorage');
     }
   }
 }

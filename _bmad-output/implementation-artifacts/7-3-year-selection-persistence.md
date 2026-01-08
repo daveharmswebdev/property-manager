@@ -1,6 +1,6 @@
 # Story 7.3: Year Selection Persistence
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -268,3 +268,28 @@ None - implementation completed without issues.
 ### Change Log
 
 - 2026-01-08: Implemented year selection persistence (Story 7.3) - All ACs satisfied
+- 2026-01-07: Code Review - Fixed 4 issues, added 3 tests (Dave)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Dave | **Date:** 2026-01-07 | **Outcome:** APPROVED (after fixes)
+
+### Issues Found & Fixed
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | CRITICAL | Task 2.3 marked [x] but logging not implemented | Added `console.warn` in `initializeFromStorage()` and `saveToStorage()` fallback paths |
+| 2 | MEDIUM | `setYear()` accepted invalid years | Added `isValidYear()` check before setting/persisting |
+| 3 | MEDIUM | `reset()` localStorage write not tested | Added test verifying `setItemSpy` called with current year |
+| 4 | LOW | Out-of-range tests didn't verify storage replacement | Added `setItemSpy` assertions to AC-7.3.5 tests |
+
+### Test Coverage
+
+- **Before:** 19 tests
+- **After:** 22 tests (+3 new tests)
+- **All 672 frontend tests pass**
+
+### Files Modified During Review
+
+- `frontend/src/app/core/services/year-selector.service.ts` - Added logging, input validation
+- `frontend/src/app/core/services/year-selector.service.spec.ts` - Added 3 tests for coverage gaps

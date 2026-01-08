@@ -98,6 +98,28 @@ describe('YearSelectorService', () => {
       service.setYear(testYear);
       expect(service.selectedYear()).toBe(testYear);
     });
+
+    it('should reject year outside available range', () => {
+      service = createService();
+      const invalidYear = currentYear - 10; // Too old
+      const originalYear = service.selectedYear();
+
+      service.setYear(invalidYear);
+
+      // Should not have changed
+      expect(service.selectedYear()).toBe(originalYear);
+    });
+
+    it('should reject future years', () => {
+      service = createService();
+      const futureYear = currentYear + 5;
+      const originalYear = service.selectedYear();
+
+      service.setYear(futureYear);
+
+      // Should not have changed
+      expect(service.selectedYear()).toBe(originalYear);
+    });
   });
 
   describe('reset', () => {
@@ -106,6 +128,16 @@ describe('YearSelectorService', () => {
       service.setYear(currentYear - 3);
       service.reset();
       expect(service.selectedYear()).toBe(currentYear);
+    });
+
+    it('should write current year to localStorage on reset', () => {
+      service = createService();
+      service.setYear(currentYear - 2);
+      setItemSpy.mockClear(); // Clear previous calls
+
+      service.reset();
+
+      expect(setItemSpy).toHaveBeenCalledWith(STORAGE_KEY, currentYear.toString());
     });
   });
 
@@ -161,6 +193,8 @@ describe('YearSelectorService', () => {
       service = createService();
 
       expect(service.selectedYear()).toBe(currentYear);
+      // Should have replaced the invalid value with current year in localStorage
+      expect(setItemSpy).toHaveBeenCalledWith(STORAGE_KEY, currentYear.toString());
     });
 
     it('should fall back to current year when stored year is in the future (AC-7.3.5)', () => {
@@ -169,6 +203,8 @@ describe('YearSelectorService', () => {
       service = createService();
 
       expect(service.selectedYear()).toBe(currentYear);
+      // Should have replaced the invalid value with current year in localStorage
+      expect(setItemSpy).toHaveBeenCalledWith(STORAGE_KEY, currentYear.toString());
     });
 
     it('should handle localStorage getItem exception gracefully (AC-7.3.3)', () => {

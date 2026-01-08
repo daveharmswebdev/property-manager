@@ -76,7 +76,7 @@ development_status:
   epic-7: in-progress
   7-1-mobile-logout-option: done               # Issue #60 - Review Passed & Fixed
   7-2-profile-display-with-user-name: done   # Issue #57
-  7-3-year-selection-persistence: review # Issue #59
+  7-3-year-selection-persistence: done # Issue #59 - Code Review Passed
   7-4-recent-expense-list-sorting-with-timestamps: backlog  # Issue #61
   7-5-expense-list-pagination: backlog          # Issue #62
   epic-7-retrospective: optional
