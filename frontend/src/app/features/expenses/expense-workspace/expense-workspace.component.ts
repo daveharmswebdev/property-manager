@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { ExpenseStore } from '../stores/expense.store';
 import { ExpenseFormComponent } from '../components/expense-form/expense-form.component';
@@ -39,6 +40,7 @@ import {
     MatIconModule,
     MatProgressSpinnerModule,
     MatDividerModule,
+    MatPaginatorModule,
     CurrencyPipe,
     ExpenseFormComponent,
     ExpenseRowComponent,
@@ -120,6 +122,24 @@ import {
                   }
                 }
               </div>
+
+              <!-- Pagination (AC-7.5.1, AC-7.5.2, AC-7.5.3) -->
+              @if (store.totalCount() > 10) {
+                <div class="pagination-container">
+                  <div class="pagination-info">
+                    Showing {{ paginationStart() }}-{{ paginationEnd() }} of {{ store.totalCount() }} expenses
+                  </div>
+                  <mat-paginator
+                    [length]="store.totalCount()"
+                    [pageSize]="store.pageSize()"
+                    [pageIndex]="store.page() - 1"
+                    [pageSizeOptions]="[10, 25, 50]"
+                    [showFirstLastButtons]="true"
+                    (page)="onPageChange($event)"
+                    aria-label="Select page of expenses"
+                  />
+                </div>
+              }
             }
           </mat-card-content>
         </mat-card>
@@ -237,6 +257,22 @@ import {
       font-size: 0.9rem;
       margin-top: 8px;
     }
+
+    /* Pagination styles (AC-7.5.1) */
+    .pagination-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+      margin-top: 8px;
+    }
+
+    .pagination-info {
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 8px;
+    }
   `],
 })
 export class ExpenseWorkspaceComponent implements OnInit {
@@ -250,6 +286,27 @@ export class ExpenseWorkspaceComponent implements OnInit {
   protected readonly propertyName = signal<string>('');
   protected readonly isLoadingProperty = signal(true);
   protected readonly propertyError = signal<string | null>(null);
+
+  /**
+   * Computed: First item number on current page (AC-7.5.3)
+   */
+  protected readonly paginationStart = computed(() => {
+    const page = this.store.page();
+    const pageSize = this.store.pageSize();
+    const totalCount = this.store.totalCount();
+    if (totalCount === 0) return 0;
+    return (page - 1) * pageSize + 1;
+  });
+
+  /**
+   * Computed: Last item number on current page (AC-7.5.3)
+   */
+  protected readonly paginationEnd = computed(() => {
+    const page = this.store.page();
+    const pageSize = this.store.pageSize();
+    const totalCount = this.store.totalCount();
+    return Math.min(page * pageSize, totalCount);
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -317,6 +374,19 @@ export class ExpenseWorkspaceComponent implements OnInit {
    */
   protected onEditSaved(): void {
     // Store handles the update and snackbar
+  }
+
+  /**
+   * Handle pagination change (AC-7.5.3)
+   */
+  protected onPageChange(event: PageEvent): void {
+    // Check if page size changed
+    if (event.pageSize !== this.store.pageSize()) {
+      this.store.setPageSize(event.pageSize);
+    } else {
+      // Page changed (pageIndex is 0-based, our store uses 1-based)
+      this.store.goToPage(event.pageIndex + 1);
+    }
   }
 
   /**

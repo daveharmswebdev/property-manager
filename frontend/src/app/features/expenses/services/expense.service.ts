@@ -56,11 +56,14 @@ export interface ExpenseDto {
 }
 
 /**
- * Response model for expenses by property
+ * Paginated response model for expenses by property (AC-7.5.1, AC-7.5.2, AC-7.5.3)
  */
-export interface ExpenseListResponse {
+export interface PagedExpenseListResponse {
   items: ExpenseDto[];
   totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
   ytdTotal: number;
 }
 
@@ -162,14 +165,27 @@ export class ExpenseService {
   }
 
   /**
-   * Get expenses for a property (AC-3.1.7)
+   * Get paginated expenses for a property (AC-3.1.7, AC-7.5.1, AC-7.5.2, AC-7.5.3)
    * @param propertyId Property GUID
    * @param year Optional tax year filter
-   * @returns Observable with expenses list and YTD total
+   * @param page Page number (default: 1)
+   * @param pageSize Items per page (default: 25)
+   * @returns Observable with paginated expenses list and YTD total
    */
-  getExpensesByProperty(propertyId: string, year?: number): Observable<ExpenseListResponse> {
-    const params = year ? { year: year.toString() } : undefined;
-    return this.http.get<ExpenseListResponse>(
+  getExpensesByProperty(
+    propertyId: string,
+    year?: number,
+    page: number = 1,
+    pageSize: number = 25
+  ): Observable<PagedExpenseListResponse> {
+    const params: Record<string, string> = {
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    };
+    if (year) {
+      params['year'] = year.toString();
+    }
+    return this.http.get<PagedExpenseListResponse>(
       `${this.baseUrl}/properties/${propertyId}/expenses`,
       { params }
     );
