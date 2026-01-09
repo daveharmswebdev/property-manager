@@ -371,86 +371,114 @@ export const ExpenseStore = signalStore(
 
     /**
      * Go to a specific page (AC-7.5.3)
-     * @param page The page number to navigate to
+     * Uses rxMethod for proper request cancellation and loading state.
      */
-    goToPage(page: number): void {
-      const propertyId = store.currentPropertyId();
-      const propertyName = store.currentPropertyName();
-      const year = store.currentYear();
+    goToPage: rxMethod<number>(
+      pipe(
+        tap((page) => {
+          const propertyId = store.currentPropertyId();
+          if (!propertyId) {
+            console.warn('Cannot go to page: no property selected');
+            return;
+          }
+          patchState(store, { page, isLoading: true, error: null });
+        }),
+        switchMap((page) => {
+          const propertyId = store.currentPropertyId();
+          const year = store.currentYear();
 
-      if (!propertyId || !propertyName) {
-        console.warn('Cannot go to page: no property selected');
-        return;
-      }
+          if (!propertyId) {
+            return of(null);
+          }
 
-      patchState(store, { page });
-      // Trigger reload with new page
-      expenseService.getExpensesByProperty(propertyId, year ?? undefined, page, store.pageSize())
-        .subscribe({
-          next: (response) => {
-            patchState(store, {
-              expenses: response.items,
-              ytdTotal: response.ytdTotal,
-              totalCount: response.totalCount,
-              page: response.page,
-              totalPages: response.totalPages,
-              isLoading: false,
-            });
-          },
-          error: (error) => {
-            console.error('Error loading expenses:', error);
-            patchState(store, {
-              isLoading: false,
-              error: 'Failed to load expenses. Please try again.',
-            });
-          },
-        });
-    },
+          return expenseService.getExpensesByProperty(propertyId, year ?? undefined, page, store.pageSize()).pipe(
+            tap((response) => {
+              if (response) {
+                patchState(store, {
+                  expenses: response.items,
+                  ytdTotal: response.ytdTotal,
+                  totalCount: response.totalCount,
+                  page: response.page,
+                  totalPages: response.totalPages,
+                  isLoading: false,
+                });
+              }
+            }),
+            catchError((error) => {
+              console.error('Error loading expenses:', error);
+              patchState(store, {
+                isLoading: false,
+                error: 'Failed to load expenses. Please try again.',
+              });
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
 
     /**
      * Set page size and persist to localStorage (AC-7.5.2, AC-7.5.4)
      * Resets to page 1 when page size changes.
+     * Uses rxMethod for proper request cancellation and loading state.
      * @param pageSize The new page size (10, 25, or 50)
      */
-    setPageSize(pageSize: number): void {
-      const propertyId = store.currentPropertyId();
-      const propertyName = store.currentPropertyName();
-      const year = store.currentYear();
+    setPageSize: rxMethod<number>(
+      pipe(
+        tap((pageSize) => {
+          // Validate pageSize is one of the allowed values
+          if (![10, 25, 50].includes(pageSize)) {
+            console.warn(`Invalid pageSize ${pageSize}, must be 10, 25, or 50`);
+            return;
+          }
 
-      // Persist to localStorage (AC-7.5.4)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(PAGE_SIZE_STORAGE_KEY, pageSize.toString());
-      }
+          // Persist to localStorage (AC-7.5.4)
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(PAGE_SIZE_STORAGE_KEY, pageSize.toString());
+          }
 
-      // Reset to page 1 when page size changes
-      patchState(store, { pageSize, page: 1 });
+          // Reset to page 1 when page size changes
+          patchState(store, { pageSize, page: 1, isLoading: true, error: null });
+        }),
+        switchMap((pageSize) => {
+          // Validate pageSize is one of the allowed values
+          if (![10, 25, 50].includes(pageSize)) {
+            return of(null);
+          }
 
-      if (!propertyId || !propertyName) {
-        return; // No property selected, just update state
-      }
+          const propertyId = store.currentPropertyId();
+          const year = store.currentYear();
 
-      // Reload expenses with new page size
-      expenseService.getExpensesByProperty(propertyId, year ?? undefined, 1, pageSize)
-        .subscribe({
-          next: (response) => {
-            patchState(store, {
-              expenses: response.items,
-              ytdTotal: response.ytdTotal,
-              totalCount: response.totalCount,
-              page: response.page,
-              totalPages: response.totalPages,
-              isLoading: false,
-            });
-          },
-          error: (error) => {
-            console.error('Error loading expenses:', error);
-            patchState(store, {
-              isLoading: false,
-              error: 'Failed to load expenses. Please try again.',
-            });
-          },
-        });
-    },
+          if (!propertyId) {
+            patchState(store, { isLoading: false });
+            return of(null); // No property selected, just update state
+          }
+
+          return expenseService.getExpensesByProperty(propertyId, year ?? undefined, 1, pageSize).pipe(
+            tap((response) => {
+              if (response) {
+                patchState(store, {
+                  expenses: response.items,
+                  ytdTotal: response.ytdTotal,
+                  totalCount: response.totalCount,
+                  page: response.page,
+                  totalPages: response.totalPages,
+                  isLoading: false,
+                });
+              }
+            }),
+            catchError((error) => {
+              console.error('Error loading expenses:', error);
+              patchState(store, {
+                isLoading: false,
+                error: 'Failed to load expenses. Please try again.',
+              });
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
 
     /**
      * Start editing an expense (AC-3.2.1)

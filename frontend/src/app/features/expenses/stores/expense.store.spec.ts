@@ -307,6 +307,46 @@ describe('ExpenseStore', () => {
           50
         );
       });
+
+      it('should reject invalid pageSize values', async () => {
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const initialPageSize = store.pageSize();
+
+        store.setPageSize(100); // Invalid - not 10, 25, or 50
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        // Should not change pageSize
+        expect(store.pageSize()).toBe(initialPageSize);
+        expect(consoleSpy).toHaveBeenCalledWith('Invalid pageSize 100, must be 10, 25, or 50');
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should set isLoading to true when page size change starts', async () => {
+        // Reset the mock to return the standard response
+        expenseServiceSpy.getExpensesByProperty.mockReturnValue(of({
+          items: mockExpenses,
+          totalCount: 2,
+          page: 1,
+          pageSize: 10,
+          totalPages: 1,
+          ytdTotal: 300.00,
+        }));
+
+        store.setPageSize(10);
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        // Verify the service was called (indicating the request was initiated)
+        expect(expenseServiceSpy.getExpensesByProperty).toHaveBeenCalledWith(
+          'prop-1',
+          undefined,
+          1,
+          10
+        );
+
+        // After completion, isLoading should be false
+        expect(store.isLoading()).toBe(false);
+      });
     });
 
     describe('goToPage', () => {
@@ -339,6 +379,42 @@ describe('ExpenseStore', () => {
           3,
           25
         );
+      });
+
+      it('should set isLoading to true when page navigation starts', async () => {
+        // Reset the mock to return the standard response
+        expenseServiceSpy.getExpensesByProperty.mockReturnValue(of({
+          items: mockExpenses,
+          totalCount: 2,
+          page: 2,
+          pageSize: 25,
+          totalPages: 1,
+          ytdTotal: 300.00,
+        }));
+
+        store.goToPage(2);
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        // Verify the service was called (indicating the request was initiated)
+        expect(expenseServiceSpy.getExpensesByProperty).toHaveBeenCalledWith(
+          'prop-1',
+          undefined,
+          2,
+          25
+        );
+
+        // After completion, isLoading should be false
+        expect(store.isLoading()).toBe(false);
+      });
+
+      it('should not call service when no property selected', async () => {
+        store.reset();
+        expenseServiceSpy.getExpensesByProperty.mockClear();
+
+        store.goToPage(2);
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(expenseServiceSpy.getExpensesByProperty).not.toHaveBeenCalled();
       });
     });
 

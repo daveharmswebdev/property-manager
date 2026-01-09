@@ -56,15 +56,6 @@ export interface ExpenseDto {
 }
 
 /**
- * Response model for expenses by property (deprecated - use PagedExpenseListResponse)
- */
-export interface ExpenseListResponse {
-  items: ExpenseDto[];
-  totalCount: number;
-  ytdTotal: number;
-}
-
-/**
  * Paginated response model for expenses by property (AC-7.5.1, AC-7.5.2, AC-7.5.3)
  */
 export interface PagedExpenseListResponse {

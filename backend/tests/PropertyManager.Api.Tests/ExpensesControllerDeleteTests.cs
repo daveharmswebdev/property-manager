@@ -162,7 +162,7 @@ public class ExpensesControllerDeleteTests : IClassFixture<PropertyManagerWebApp
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var content = await response.Content.ReadFromJsonAsync<ExpenseListDto>();
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListDto>();
         content.Should().NotBeNull();
         content!.Items.Should().HaveCount(1);
         content.Items[0].Id.Should().Be(expenseId1);

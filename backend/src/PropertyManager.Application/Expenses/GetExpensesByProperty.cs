@@ -17,15 +17,6 @@ public record GetExpensesByPropertyQuery(
 ) : IRequest<PagedExpenseListDto>;
 
 /// <summary>
-/// Response DTO for expenses by property (deprecated - use PagedExpenseListDto).
-/// </summary>
-public record ExpenseListDto(
-    List<ExpenseDto> Items,
-    int TotalCount,
-    decimal YtdTotal
-);
-
-/// <summary>
 /// Paginated response DTO for expenses by property (AC-7.5.1, AC-7.5.2, AC-7.5.3).
 /// YtdTotal is calculated from ALL matching expenses, independent of pagination.
 /// </summary>
