@@ -28,6 +28,10 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
         builder.Property(e => e.UpdatedAt)
             .IsRequired();
 
+        // Display name for UI (optional, falls back to email)
+        builder.Property(e => e.DisplayName)
+            .HasMaxLength(100);
+
         // Relationship to Account
         builder.HasOne(e => e.Account)
             .WithMany()

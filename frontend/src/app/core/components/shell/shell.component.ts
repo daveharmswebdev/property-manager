@@ -57,6 +57,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly receiptStore = inject(ReceiptStore);
   private readonly authService = inject(AuthService);
 
+  readonly currentUser = this.authService.currentUser;
+
   // Breakpoint detection using CDK BreakpointObserver
   // Mobile: <768px, Tablet: 768-1023px, Desktop: ≥1024px
   private readonly isDesktop$ = this.breakpointObserver
@@ -135,6 +137,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Disconnect SignalR when shell is destroyed (logout)
     this.signalR.disconnect();
+  }
+
+  /**
+   * Get user display name - prefer displayName, fall back to email, then 'User' (AC-7.2.3)
+   */
+  get userDisplayName(): string {
+    const user = this.currentUser();
+    if (!user) return 'User';
+    return user.displayName || user.email || 'User';
   }
 
   /**

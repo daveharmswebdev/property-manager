@@ -28,6 +28,8 @@ export interface User {
   userId: string;
   accountId: string;
   role: string;
+  email: string;
+  displayName: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -201,6 +203,8 @@ export class AuthService {
         userId: payload.userId,
         accountId: payload.accountId,
         role: payload.role,
+        email: payload.email,
+        displayName: payload.displayName || null,
       };
     } catch {
       return null;

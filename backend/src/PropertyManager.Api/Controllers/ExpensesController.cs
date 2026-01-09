@@ -242,28 +242,36 @@ public class ExpensesController : ControllerBase
     }
 
     /// <summary>
-    /// Get expenses for a property (AC-3.1.7).
+    /// Get paginated expenses for a property (AC-3.1.7, AC-7.5.1, AC-7.5.2, AC-7.5.3).
     /// </summary>
     /// <param name="id">Property GUID</param>
     /// <param name="year">Optional tax year filter</param>
-    /// <returns>List of expenses with YTD total</returns>
-    /// <response code="200">Returns the list of expenses</response>
+    /// <param name="page">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 25, max: 100)</param>
+    /// <returns>Paginated list of expenses with YTD total</returns>
+    /// <response code="200">Returns the paginated list of expenses</response>
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If property not found</response>
     [HttpGet("properties/{id:guid}/expenses")]
-    [ProducesResponseType(typeof(ExpenseListDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedExpenseListDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetExpensesByProperty(Guid id, [FromQuery] int? year = null)
+    public async Task<IActionResult> GetExpensesByProperty(
+        Guid id,
+        [FromQuery] int? year = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25)
     {
-        var query = new GetExpensesByPropertyQuery(id, year);
+        var query = new GetExpensesByPropertyQuery(id, year, page, pageSize);
         var response = await _mediator.Send(query);
 
         _logger.LogInformation(
-            "Retrieved {Count} expenses for property {PropertyId}, year {Year} at {Timestamp}",
-            response.TotalCount,
+            "Retrieved {Count} expenses for property {PropertyId}, year {Year}, page {Page}/{TotalPages} at {Timestamp}",
+            response.Items.Count,
             id,
             year?.ToString() ?? "all",
+            response.Page,
+            response.TotalPages,
             DateTime.UtcNow);
 
         return Ok(response);

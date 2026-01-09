@@ -18,13 +18,43 @@ import {
 } from '../services/expense.service';
 
 /**
- * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8, AC-3.2, AC-3.3)
+ * localStorage key for expense workspace page size persistence (AC-7.5.4)
+ */
+const PAGE_SIZE_STORAGE_KEY = 'propertyManager.expenseWorkspace.pageSize';
+
+/**
+ * Default page size for expense workspace
+ */
+const DEFAULT_PAGE_SIZE = 25;
+
+/**
+ * Read page size from localStorage, defaulting to 25 (AC-7.5.4)
+ */
+function getStoredPageSize(): number {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  const stored = localStorage.getItem(PAGE_SIZE_STORAGE_KEY);
+  if (!stored) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  const parsed = parseInt(stored, 10);
+  // Validate it's a valid page size option
+  if ([10, 25, 50].includes(parsed)) {
+    return parsed;
+  }
+  return DEFAULT_PAGE_SIZE;
+}
+
+/**
+ * Expense Store State Interface (AC-3.1.6, AC-3.1.7, AC-3.1.8, AC-3.2, AC-3.3, AC-7.5)
  */
 interface ExpenseState {
   expenses: ExpenseDto[];
   categories: ExpenseCategoryDto[];
   currentPropertyId: string | null;
   currentPropertyName: string | null;
+  currentYear: number | null;
   ytdTotal: number;
   isLoading: boolean;
   isSaving: boolean;
@@ -36,6 +66,11 @@ interface ExpenseState {
   isUpdating: boolean;
   // Delete state (AC-3.3)
   isDeleting: boolean;
+  // Pagination state (AC-7.5.1, AC-7.5.2, AC-7.5.3)
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 /**
@@ -46,6 +81,7 @@ const initialState: ExpenseState = {
   categories: [],
   currentPropertyId: null,
   currentPropertyName: null,
+  currentYear: null,
   ytdTotal: 0,
   isLoading: false,
   isSaving: false,
@@ -57,6 +93,11 @@ const initialState: ExpenseState = {
   isUpdating: false,
   // Delete state (AC-3.3)
   isDeleting: false,
+  // Pagination state (AC-7.5.1, AC-7.5.2, AC-7.5.3)
+  page: 1,
+  pageSize: getStoredPageSize(),
+  totalCount: 0,
+  totalPages: 1,
 };
 
 /**
@@ -165,7 +206,8 @@ export const ExpenseStore = signalStore(
     ),
 
     /**
-     * Load expenses for a property (AC-3.1.7)
+     * Load expenses for a property with pagination (AC-3.1.7, AC-7.5.1, AC-7.5.3)
+     * Uses current page and pageSize from store state.
      * @param params Object with propertyId, propertyName, and optional year
      */
     loadExpensesByProperty: rxMethod<{
@@ -174,20 +216,24 @@ export const ExpenseStore = signalStore(
       year?: number;
     }>(
       pipe(
-        tap(({ propertyId, propertyName }) =>
+        tap(({ propertyId, propertyName, year }) =>
           patchState(store, {
             isLoading: true,
             error: null,
             currentPropertyId: propertyId,
             currentPropertyName: propertyName,
+            currentYear: year ?? null,
           })
         ),
         switchMap(({ propertyId, year }) =>
-          expenseService.getExpensesByProperty(propertyId, year).pipe(
+          expenseService.getExpensesByProperty(propertyId, year, store.page(), store.pageSize()).pipe(
             tap((response) =>
               patchState(store, {
                 expenses: response.items,
                 ytdTotal: response.ytdTotal,
+                totalCount: response.totalCount,
+                page: response.page,
+                totalPages: response.totalPages,
                 isLoading: false,
               })
             ),
@@ -243,11 +289,16 @@ export const ExpenseStore = signalStore(
               };
 
               // Prepend to expenses list and update YTD total (AC-3.1.7)
+              // Also update totalCount for pagination (AC-7.5.3)
               const currentExpenses = store.expenses();
               const currentYtdTotal = store.ytdTotal();
+              const newTotalCount = store.totalCount() + 1;
+              const newTotalPages = Math.ceil(newTotalCount / store.pageSize());
               patchState(store, {
                 expenses: [newExpense, ...currentExpenses],
                 ytdTotal: currentYtdTotal + request.amount,
+                totalCount: newTotalCount,
+                totalPages: newTotalPages,
                 isSaving: false,
               });
 
@@ -306,14 +357,128 @@ export const ExpenseStore = signalStore(
     },
 
     /**
-     * Set current property context
+     * Set current property context (AC-7.5.5)
+     * Resets page to 1 when property changes.
      */
     setCurrentProperty(propertyId: string, propertyName: string): void {
+      // Reset page to 1 when property changes (AC-7.5.5)
       patchState(store, {
         currentPropertyId: propertyId,
         currentPropertyName: propertyName,
+        page: 1, // Reset pagination when property changes
       });
     },
+
+    /**
+     * Go to a specific page (AC-7.5.3)
+     * Uses rxMethod for proper request cancellation and loading state.
+     */
+    goToPage: rxMethod<number>(
+      pipe(
+        tap((page) => {
+          const propertyId = store.currentPropertyId();
+          if (!propertyId) {
+            console.warn('Cannot go to page: no property selected');
+            return;
+          }
+          patchState(store, { page, isLoading: true, error: null });
+        }),
+        switchMap((page) => {
+          const propertyId = store.currentPropertyId();
+          const year = store.currentYear();
+
+          if (!propertyId) {
+            return of(null);
+          }
+
+          return expenseService.getExpensesByProperty(propertyId, year ?? undefined, page, store.pageSize()).pipe(
+            tap((response) => {
+              if (response) {
+                patchState(store, {
+                  expenses: response.items,
+                  ytdTotal: response.ytdTotal,
+                  totalCount: response.totalCount,
+                  page: response.page,
+                  totalPages: response.totalPages,
+                  isLoading: false,
+                });
+              }
+            }),
+            catchError((error) => {
+              console.error('Error loading expenses:', error);
+              patchState(store, {
+                isLoading: false,
+                error: 'Failed to load expenses. Please try again.',
+              });
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
+
+    /**
+     * Set page size and persist to localStorage (AC-7.5.2, AC-7.5.4)
+     * Resets to page 1 when page size changes.
+     * Uses rxMethod for proper request cancellation and loading state.
+     * @param pageSize The new page size (10, 25, or 50)
+     */
+    setPageSize: rxMethod<number>(
+      pipe(
+        tap((pageSize) => {
+          // Validate pageSize is one of the allowed values
+          if (![10, 25, 50].includes(pageSize)) {
+            console.warn(`Invalid pageSize ${pageSize}, must be 10, 25, or 50`);
+            return;
+          }
+
+          // Persist to localStorage (AC-7.5.4)
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(PAGE_SIZE_STORAGE_KEY, pageSize.toString());
+          }
+
+          // Reset to page 1 when page size changes
+          patchState(store, { pageSize, page: 1, isLoading: true, error: null });
+        }),
+        switchMap((pageSize) => {
+          // Validate pageSize is one of the allowed values
+          if (![10, 25, 50].includes(pageSize)) {
+            return of(null);
+          }
+
+          const propertyId = store.currentPropertyId();
+          const year = store.currentYear();
+
+          if (!propertyId) {
+            patchState(store, { isLoading: false });
+            return of(null); // No property selected, just update state
+          }
+
+          return expenseService.getExpensesByProperty(propertyId, year ?? undefined, 1, pageSize).pipe(
+            tap((response) => {
+              if (response) {
+                patchState(store, {
+                  expenses: response.items,
+                  ytdTotal: response.ytdTotal,
+                  totalCount: response.totalCount,
+                  page: response.page,
+                  totalPages: response.totalPages,
+                  isLoading: false,
+                });
+              }
+            }),
+            catchError((error) => {
+              console.error('Error loading expenses:', error);
+              patchState(store, {
+                isLoading: false,
+                error: 'Failed to load expenses. Please try again.',
+              });
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
 
     /**
      * Start editing an expense (AC-3.2.1)
@@ -448,9 +613,15 @@ export const ExpenseStore = signalStore(
               const deletedAmount = expenseToDelete?.amount || 0;
               const newYtdTotal = store.ytdTotal() - deletedAmount;
 
+              // Update totalCount for pagination (AC-7.5.3)
+              const newTotalCount = Math.max(0, store.totalCount() - 1);
+              const newTotalPages = Math.max(1, Math.ceil(newTotalCount / store.pageSize()));
+
               patchState(store, {
                 expenses: updatedExpenses,
                 ytdTotal: newYtdTotal,
+                totalCount: newTotalCount,
+                totalPages: newTotalPages,
                 isDeleting: false,
               });
 

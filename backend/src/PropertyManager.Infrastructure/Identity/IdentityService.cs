@@ -144,7 +144,7 @@ public class IdentityService : IIdentityService
         }
     }
 
-    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? ErrorMessage)> ValidateCredentialsAsync(
+    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, string? ErrorMessage)> ValidateCredentialsAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
@@ -159,23 +159,23 @@ public class IdentityService : IIdentityService
 
         if (user == null)
         {
-            return (false, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, invalidCredentialsError);
         }
 
         // Check if email is verified per AC4.4
         if (!user.EmailConfirmed)
         {
-            return (false, null, null, null, "Please verify your email before logging in");
+            return (false, null, null, null, null, null, "Please verify your email before logging in");
         }
 
         // Validate password
         var passwordValid = await _userManager.CheckPasswordAsync(user, password);
         if (!passwordValid)
         {
-            return (false, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, invalidCredentialsError);
         }
 
-        return (true, user.Id, user.AccountId, user.Role, null);
+        return (true, user.Id, user.AccountId, user.Role, user.Email, user.DisplayName, null);
     }
 
     public async Task<Guid?> GetUserIdByEmailAsync(string email, CancellationToken cancellationToken = default)

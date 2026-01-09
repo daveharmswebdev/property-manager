@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, effect } from '@angular/core';
-import { CommonModule, CurrencyPipe, Location } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -42,6 +42,7 @@ import {
     MatTooltipModule,
     MatDialogModule,
     CurrencyPipe,
+    DatePipe,
   ],
   template: `
     <div class="property-detail-container">
@@ -176,7 +177,8 @@ import {
                 <div class="activity-list">
                   @for (expense of propertyStore.selectedProperty()!.recentExpenses; track expense.id) {
                     <div class="activity-item">
-                      <span class="activity-description">{{ expense.description }}</span>
+                      <span class="activity-date">{{ expense.date | date:'mediumDate' }}</span>
+                      <span class="activity-description">{{ expense.description || 'No description' }}</span>
                       <span class="activity-amount expense">{{ expense.amount | currency }}</span>
                     </div>
                   }
@@ -201,7 +203,8 @@ import {
                 <div class="activity-list">
                   @for (income of propertyStore.selectedProperty()!.recentIncome; track income.id) {
                     <div class="activity-item">
-                      <span class="activity-description">{{ income.description }}</span>
+                      <span class="activity-date">{{ income.date | date:'mediumDate' }}</span>
+                      <span class="activity-description">{{ income.description || 'No description' }}</span>
                       <span class="activity-amount income">{{ income.amount | currency }}</span>
                     </div>
                   }
@@ -433,21 +436,32 @@ import {
 
         .activity-item {
           display: flex;
-          justify-content: space-between;
           align-items: center;
           padding: 8px 0;
           border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+          gap: 12px;
 
           &:last-child {
             border-bottom: none;
           }
 
+          .activity-date {
+            color: var(--pm-text-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            min-width: 80px;
+          }
+
           .activity-description {
             color: var(--pm-text-primary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .activity-amount {
             font-weight: 500;
+            white-space: nowrap;
 
             &.expense {
               color: #c62828;
