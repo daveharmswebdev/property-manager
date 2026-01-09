@@ -946,6 +946,311 @@ ng serve
 
 ---
 
+## Phase 2: Work Orders and Vendors
+
+_Extension to Phase 1 Architecture - Date: 2026-01-08_
+
+### Decision Summary (Phase 2)
+
+| # | Category | Decision | Rationale |
+|---|----------|----------|-----------|
+| 14 | Person Entity | TPT (Table-per-Type) inheritance | Future-proofs for Tenant, clean separation |
+| 15 | Phone/Email Storage | JSONB columns on Person | Simple for 1-3 values, PostgreSQL native |
+| 16 | Polymorphic Notes | Single table + discriminator | `EntityType` + `EntityId` pattern |
+| 17 | Taxonomy Structure | Hierarchical categories, flat trade tags, mapping table | Independent evolution, AI-ready |
+| 18 | Work Order ↔ Expense | FK on Expense (`WorkOrderId`) | 1:N relationship, simple |
+| 19 | Work Order Status | C# Enum stored as string | Type-safe, readable in DB |
+| 20 | Work Order Tags | Separate table (M:M) | Tag reuse, clean autocomplete |
+| 21 | Assigned To | Nullable `VendorId` | NULL = DIY/Self |
+| 22 | Photo Attachments | Reuse Receipt pattern | `WorkOrderPhotos` table, S3 presigned URLs |
+| 23 | Category Hierarchy | Flat API with `ParentId` | Client builds tree |
+| 24 | Dashboard View | List with status filters | Kanban deferred to Growth |
+| 25 | Tag Input | Angular Material Chips + Autocomplete | Built-in components |
+
+### New Domain Entities
+
+#### Person (Base Entity)
+
+```csharp
+public class Person : AuditableEntity, ITenantEntity
+{
+    public Guid AccountId { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string? MiddleName { get; set; }
+    public string LastName { get; set; } = string.Empty;
+
+    // JSONB columns
+    public List<PhoneNumber> Phones { get; set; } = [];
+    public List<string> Emails { get; set; } = [];
+
+    // Navigation
+    public Account Account { get; set; } = null!;
+}
+
+public record PhoneNumber(string Number, string? Label);
+```
+
+#### Vendor (Extends Person - TPT)
+
+```csharp
+public class Vendor : Person, ISoftDeletable
+{
+    public DateTime? DeletedAt { get; set; }
+
+    // Navigation
+    public ICollection<VendorTradeTag> TradeTags { get; set; } = [];
+    public ICollection<WorkOrder> WorkOrders { get; set; } = [];
+}
+```
+
+#### WorkOrder
+
+```csharp
+public class WorkOrder : AuditableEntity, ITenantEntity, ISoftDeletable
+{
+    public Guid AccountId { get; set; }
+    public Guid PropertyId { get; set; }
+    public Guid? VendorId { get; set; }  // NULL = DIY/Self
+    public Guid? CategoryId { get; set; }
+    public Guid CreatedByUserId { get; set; }
+
+    public WorkOrderStatus Status { get; set; } = WorkOrderStatus.Reported;
+    public string Description { get; set; } = string.Empty;
+    public DateTime? DeletedAt { get; set; }
+
+    // Navigation
+    public Account Account { get; set; } = null!;
+    public Property Property { get; set; } = null!;
+    public Vendor? Vendor { get; set; }
+    public ExpenseCategory? Category { get; set; }
+    public ICollection<WorkOrderTag> Tags { get; set; } = [];
+    public ICollection<WorkOrderPhoto> Photos { get; set; } = [];
+    public ICollection<Note> Notes { get; set; } = [];
+    public ICollection<Expense> Expenses { get; set; } = [];
+}
+
+public enum WorkOrderStatus { Reported, Assigned, Completed }
+```
+
+### New Database Tables
+
+```sql
+-- Person (base table for TPT)
+Persons (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    AccountId UUID NOT NULL REFERENCES Accounts(Id),
+    FirstName VARCHAR(100) NOT NULL,
+    MiddleName VARCHAR(100),
+    LastName VARCHAR(100) NOT NULL,
+    Phones JSONB DEFAULT '[]',
+    Emails JSONB DEFAULT '[]',
+    CreatedAt TIMESTAMP NOT NULL,
+    UpdatedAt TIMESTAMP NOT NULL
+)
+
+-- Vendor (extends Person via TPT)
+Vendors (
+    Id UUID PRIMARY KEY REFERENCES Persons(Id),
+    DeletedAt TIMESTAMP NULL
+)
+
+-- Vendor Trade Tags (flat taxonomy)
+VendorTradeTags (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    Name VARCHAR(100) NOT NULL,
+    AccountId UUID NOT NULL REFERENCES Accounts(Id),
+    CreatedAt TIMESTAMP NOT NULL,
+    UNIQUE(AccountId, Name)
+)
+
+-- Vendor ↔ Trade Tag junction
+VendorTradeTagAssignments (
+    VendorId UUID NOT NULL REFERENCES Vendors(Id),
+    TradeTagId UUID NOT NULL REFERENCES VendorTradeTags(Id),
+    PRIMARY KEY (VendorId, TradeTagId)
+)
+
+-- Category ↔ Trade Tag mapping (for AI recommendations)
+CategoryTradeTagMappings (
+    CategoryId UUID NOT NULL REFERENCES ExpenseCategories(Id),
+    TradeTagId UUID NOT NULL REFERENCES VendorTradeTags(Id),
+    PRIMARY KEY (CategoryId, TradeTagId)
+)
+
+-- Work Orders
+WorkOrders (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    AccountId UUID NOT NULL REFERENCES Accounts(Id),
+    PropertyId UUID NOT NULL REFERENCES Properties(Id),
+    VendorId UUID NULL REFERENCES Vendors(Id),
+    CategoryId UUID NULL REFERENCES ExpenseCategories(Id),
+    CreatedByUserId UUID NOT NULL REFERENCES Users(Id),
+    Status VARCHAR(50) NOT NULL DEFAULT 'Reported',
+    Description TEXT NOT NULL,
+    CreatedAt TIMESTAMP NOT NULL,
+    UpdatedAt TIMESTAMP NOT NULL,
+    DeletedAt TIMESTAMP NULL
+)
+
+-- Work Order Tags
+WorkOrderTags (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    Name VARCHAR(100) NOT NULL,
+    AccountId UUID NOT NULL REFERENCES Accounts(Id),
+    CreatedAt TIMESTAMP NOT NULL,
+    UNIQUE(AccountId, Name)
+)
+
+-- Work Order ↔ Tag junction
+WorkOrderTagAssignments (
+    WorkOrderId UUID NOT NULL REFERENCES WorkOrders(Id),
+    TagId UUID NOT NULL REFERENCES WorkOrderTags(Id),
+    PRIMARY KEY (WorkOrderId, TagId)
+)
+
+-- Work Order Photos (mirrors Receipt pattern)
+WorkOrderPhotos (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    WorkOrderId UUID NOT NULL REFERENCES WorkOrders(Id),
+    StorageKey VARCHAR(500) NOT NULL,
+    OriginalFileName VARCHAR(255),
+    ContentType VARCHAR(100),
+    FileSizeBytes BIGINT,
+    CreatedByUserId UUID NOT NULL REFERENCES Users(Id),
+    CreatedAt TIMESTAMP NOT NULL
+)
+
+-- Polymorphic Notes
+Notes (
+    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    AccountId UUID NOT NULL REFERENCES Accounts(Id),
+    EntityType VARCHAR(50) NOT NULL,  -- 'WorkOrder', 'Vendor', etc.
+    EntityId UUID NOT NULL,
+    Content TEXT NOT NULL,
+    CreatedByUserId UUID NOT NULL REFERENCES Users(Id),
+    CreatedAt TIMESTAMP NOT NULL,
+    UpdatedAt TIMESTAMP NOT NULL,
+    DeletedAt TIMESTAMP NULL
+)
+
+-- Add to existing Expenses table
+ALTER TABLE Expenses ADD COLUMN WorkOrderId UUID NULL REFERENCES WorkOrders(Id);
+
+-- Add to existing ExpenseCategories table (for hierarchy)
+ALTER TABLE ExpenseCategories ADD COLUMN ParentId UUID NULL REFERENCES ExpenseCategories(Id);
+```
+
+### API Extensions
+
+#### Work Orders
+
+```
+GET    /api/v1/work-orders                    List (paginated, filterable)
+POST   /api/v1/work-orders                    Create
+GET    /api/v1/work-orders/{id}               Get detail
+PUT    /api/v1/work-orders/{id}               Update
+DELETE /api/v1/work-orders/{id}               Soft delete
+GET    /api/v1/work-orders/{id}/expenses      Get linked expenses
+POST   /api/v1/work-orders/{id}/expenses      Link expense
+DELETE /api/v1/work-orders/{id}/expenses/{expenseId}  Unlink expense
+POST   /api/v1/work-orders/{id}/photos/upload-url     Get presigned upload URL
+POST   /api/v1/work-orders/{id}/photos        Confirm photo upload
+DELETE /api/v1/work-orders/{id}/photos/{photoId}      Delete photo
+GET    /api/v1/work-orders/{id}/notes         Get notes
+POST   /api/v1/work-orders/{id}/notes         Add note
+
+Query parameters for GET /work-orders:
+?status=Reported,Assigned
+?propertyId={guid}
+?vendorId={guid}
+?dateFrom=2026-01-01
+?dateTo=2026-01-31
+?search=plumbing
+?page=1&pageSize=20
+```
+
+#### Vendors
+
+```
+GET    /api/v1/vendors                        List (filterable)
+POST   /api/v1/vendors                        Create
+GET    /api/v1/vendors/{id}                   Get detail
+PUT    /api/v1/vendors/{id}                   Update
+DELETE /api/v1/vendors/{id}                   Soft delete
+GET    /api/v1/vendors/{id}/work-orders       Get work history
+
+Query parameters for GET /vendors:
+?search=joe
+?tradeTagId={guid}
+?page=1&pageSize=20
+```
+
+#### Supporting Endpoints
+
+```
+GET    /api/v1/vendor-trade-tags              List trade tags
+POST   /api/v1/vendor-trade-tags              Create trade tag
+GET    /api/v1/work-order-tags                List work order tags
+POST   /api/v1/work-order-tags                Create work order tag
+GET    /api/v1/properties/{id}/work-orders    Work orders for property
+```
+
+### Frontend Structure (Phase 2 Additions)
+
+```
+src/app/features/
+├── work-orders/
+│   ├── components/
+│   │   ├── work-order-form/
+│   │   ├── work-order-list/
+│   │   ├── work-order-detail/
+│   │   ├── work-order-filters/
+│   │   ├── work-order-status-badge/
+│   │   └── work-order-tag-input/
+│   ├── services/
+│   │   └── work-order.service.ts
+│   ├── stores/
+│   │   └── work-order.store.ts
+│   └── work-orders.routes.ts
+├── vendors/
+│   ├── components/
+│   │   ├── vendor-form/
+│   │   ├── vendor-list/
+│   │   ├── vendor-detail/
+│   │   ├── vendor-picker/
+│   │   └── trade-tag-input/
+│   ├── services/
+│   │   └── vendor.service.ts
+│   ├── stores/
+│   │   └── vendor.store.ts
+│   └── vendors.routes.ts
+```
+
+### Implementation Phases
+
+| Phase | Deliverables |
+|-------|--------------|
+| **A - Foundation** | Person entity, VendorTradeTags, CategoryTradeTagMappings, Notes table, ExpenseCategory hierarchy |
+| **B - Core Entities** | Vendor entity, WorkOrder entity, WorkOrderTags |
+| **C - Attachments & Links** | WorkOrderPhotos, Notes on WorkOrder, Expense.WorkOrderId FK |
+| **D - Integration** | Receipt processing dropdown, bidirectional linking UI |
+| **E - Output** | Work Order PDF generation |
+
+### FR Category to Architecture Mapping (Phase 2)
+
+| PRD Category | Backend Module | Frontend Feature | Database Tables |
+|--------------|----------------|------------------|-----------------|
+| Person Management (FR1-5) | Persons | (shared) | Persons |
+| Vendor Management (FR6-14) | Vendors | features/vendors | Vendors, VendorTradeTags, VendorTradeTagAssignments |
+| Work Order Management (FR15-28) | WorkOrders | features/work-orders | WorkOrders, WorkOrderTags, WorkOrderTagAssignments |
+| Work Order-Expense Integration (FR29-37) | WorkOrders, Expenses | features/work-orders, features/expenses | Expenses (WorkOrderId FK) |
+| Taxonomy Management (FR38-41) | Categories, TradeTags | shared/components | ExpenseCategories (ParentId), CategoryTradeTagMappings |
+| Notes & Attachments (FR42-47) | Notes, Photos | features/work-orders | Notes, WorkOrderPhotos |
+| Document Generation (FR48-51) | Reports | features/work-orders | (PDF generation) |
+
+---
+
 _Generated by BMAD Architecture Workflow_
-_Date: 2025-11-29_
+_Phase 1: 2025-11-29_
+_Phase 2: 2026-01-08_
 _For: Dave_
