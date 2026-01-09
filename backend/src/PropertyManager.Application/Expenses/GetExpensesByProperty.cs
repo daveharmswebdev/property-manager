@@ -7,15 +7,17 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.Expenses;
 
 /// <summary>
-/// Query to get expenses for a specific property (AC-3.1.7).
+/// Query to get expenses for a specific property with pagination (AC-3.1.7, AC-7.5.1, AC-7.5.2, AC-7.5.3).
 /// </summary>
 public record GetExpensesByPropertyQuery(
     Guid PropertyId,
-    int? Year = null
-) : IRequest<ExpenseListDto>;
+    int? Year = null,
+    int Page = 1,
+    int PageSize = 25
+) : IRequest<PagedExpenseListDto>;
 
 /// <summary>
-/// Response DTO for expenses by property.
+/// Response DTO for expenses by property (deprecated - use PagedExpenseListDto).
 /// </summary>
 public record ExpenseListDto(
     List<ExpenseDto> Items,
@@ -24,11 +26,24 @@ public record ExpenseListDto(
 );
 
 /// <summary>
-/// Handler for GetExpensesByPropertyQuery.
-/// Returns expenses for a property, ordered by Date descending (newest first).
-/// Optionally filtered by year.
+/// Paginated response DTO for expenses by property (AC-7.5.1, AC-7.5.2, AC-7.5.3).
+/// YtdTotal is calculated from ALL matching expenses, independent of pagination.
 /// </summary>
-public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPropertyQuery, ExpenseListDto>
+public record PagedExpenseListDto(
+    List<ExpenseDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages,
+    decimal YtdTotal
+);
+
+/// <summary>
+/// Handler for GetExpensesByPropertyQuery.
+/// Returns paginated expenses for a property, ordered by Date descending (newest first).
+/// Optionally filtered by year. YtdTotal is calculated from ALL matching expenses.
+/// </summary>
+public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPropertyQuery, PagedExpenseListDto>
 {
     private readonly IAppDbContext _dbContext;
 
@@ -37,7 +52,7 @@ public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPr
         _dbContext = dbContext;
     }
 
-    public async Task<ExpenseListDto> Handle(GetExpensesByPropertyQuery request, CancellationToken cancellationToken)
+    public async Task<PagedExpenseListDto> Handle(GetExpensesByPropertyQuery request, CancellationToken cancellationToken)
     {
         // Validate property exists (global query filter handles account isolation)
         var propertyExists = await _dbContext.Properties
@@ -59,9 +74,24 @@ public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPr
             query = query.Where(e => e.Date >= startDate && e.Date <= endDate);
         }
 
+        // Calculate YtdTotal from ALL matching expenses before pagination (AC-7.5.3)
+        var ytdTotal = await query.SumAsync(e => e.Amount, cancellationToken);
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Calculate pagination with clamping (AC-7.5.2)
+        var pageSize = Math.Clamp(request.PageSize, 1, 100);
+        var page = Math.Max(1, request.Page);
+        var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+        var skip = (page - 1) * pageSize;
+
+        // Execute query with sorting and pagination
         var expenses = await query
             .OrderByDescending(e => e.Date)
             .ThenByDescending(e => e.CreatedAt)
+            .Skip(skip)
+            .Take(pageSize)
             .Select(e => new ExpenseDto(
                 e.Id,
                 e.PropertyId,
@@ -78,11 +108,12 @@ public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPr
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        var ytdTotal = expenses.Sum(e => e.Amount);
-
-        return new ExpenseListDto(
+        return new PagedExpenseListDto(
             Items: expenses,
-            TotalCount: expenses.Count,
+            TotalCount: totalCount,
+            Page: page,
+            PageSize: pageSize,
+            TotalPages: totalPages,
             YtdTotal: ytdTotal
         );
     }
