@@ -5,7 +5,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ReceiptCaptureService } from '../../services/receipt-capture.service';
 import { PropertyStore } from '../../../properties/stores/property.store';
-import { of, BehaviorSubject, NEVER } from 'rxjs';
+import { Router, NavigationEnd } from '@angular/router';
+import { of, BehaviorSubject, NEVER, Subject } from 'rxjs';
 import { signal } from '@angular/core';
 
 describe('MobileCaptureFabComponent', () => {
@@ -29,6 +30,11 @@ describe('MobileCaptureFabComponent', () => {
   let propertyStoreSpy: {
     properties: ReturnType<typeof signal>;
     loadProperties: ReturnType<typeof vi.fn>;
+  };
+  let routerEventsSubject: Subject<any>;
+  let routerSpy: {
+    url: string;
+    events: Subject<any>;
   };
 
   beforeEach(() => {
@@ -67,6 +73,13 @@ describe('MobileCaptureFabComponent', () => {
       loadProperties: vi.fn(),
     };
 
+    // Mock Router - simulate being on dashboard for FAB visibility tests
+    routerEventsSubject = new Subject<any>();
+    routerSpy = {
+      url: '/dashboard',
+      events: routerEventsSubject,
+    };
+
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [MobileCaptureFabComponent],
@@ -76,6 +89,7 @@ describe('MobileCaptureFabComponent', () => {
         { provide: MatSnackBar, useValue: snackBarSpy },
         { provide: ReceiptCaptureService, useValue: receiptCaptureServiceSpy },
         { provide: PropertyStore, useValue: propertyStoreSpy },
+        { provide: Router, useValue: routerSpy },
       ],
     });
 
@@ -97,6 +111,34 @@ describe('MobileCaptureFabComponent', () => {
       fixture.detectChanges();
 
       expect(component.isMobile()).toBe(false);
+    });
+
+    it('should detect dashboard route on init', () => {
+      expect(component.isOnDashboard()).toBe(true);
+    });
+
+    it('should hide FAB when not on dashboard route', () => {
+      // Simulate navigation away from dashboard
+      routerSpy.url = '/properties';
+      routerEventsSubject.next(new NavigationEnd(1, '/properties', '/properties'));
+      fixture.detectChanges();
+
+      expect(component.isOnDashboard()).toBe(false);
+      const fabElement = fixture.nativeElement.querySelector('.capture-fab');
+      expect(fabElement).toBeNull();
+    });
+
+    it('should show FAB when navigating back to dashboard', () => {
+      // Navigate away first
+      routerEventsSubject.next(new NavigationEnd(1, '/properties', '/properties'));
+      fixture.detectChanges();
+      expect(component.isOnDashboard()).toBe(false);
+
+      // Navigate back to dashboard
+      routerEventsSubject.next(new NavigationEnd(2, '/dashboard', '/dashboard'));
+      fixture.detectChanges();
+
+      expect(component.isOnDashboard()).toBe(true);
     });
   });
 

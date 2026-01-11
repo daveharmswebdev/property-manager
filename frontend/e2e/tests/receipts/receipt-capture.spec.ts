@@ -28,18 +28,24 @@ test.describe('Receipt Capture E2E Tests (AC-5.2.1)', () => {
       await expect(fab).not.toBeVisible();
     });
 
-    test('should show FAB on all authenticated pages', async ({ page, authenticatedUser }) => {
+    test('should show FAB only on Dashboard (Issue #73)', async ({ page, authenticatedUser }) => {
       // Set mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
 
-      const pages = ['/dashboard', '/properties', '/expenses', '/income', '/receipts'];
+      const fab = page.locator('app-mobile-capture-fab button.capture-fab');
 
-      for (const pagePath of pages) {
+      // FAB should be visible on Dashboard
+      await page.goto('/dashboard');
+      await page.waitForLoadState('networkidle');
+      await expect(fab).toBeVisible();
+
+      // FAB should NOT be visible on other authenticated pages (Issue #73)
+      const otherPages = ['/properties', '/expenses', '/income', '/receipts'];
+
+      for (const pagePath of otherPages) {
         await page.goto(pagePath);
         await page.waitForLoadState('networkidle');
-
-        const fab = page.locator('app-mobile-capture-fab button.capture-fab');
-        await expect(fab).toBeVisible();
+        await expect(fab).not.toBeVisible();
       }
     });
   });

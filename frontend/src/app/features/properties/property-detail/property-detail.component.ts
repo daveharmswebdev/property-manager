@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, OnDestroy, effect } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe, Location } from '@angular/common';
+import { Component, inject, OnInit, OnDestroy, effect, signal } from '@angular/core';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
 import { PropertyStore } from '../stores/property.store';
 import { YearSelectorService } from '../../../core/services/year-selector.service';
 import {
@@ -41,6 +44,7 @@ import {
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatDialogModule,
+    MatMenuModule,
     CurrencyPipe,
     DatePipe,
   ],
@@ -81,40 +85,77 @@ import {
           </div>
           <!-- Action Buttons (AC-2.3.4, AC-3.1.1, AC-6.1.1) -->
           <div class="action-buttons">
+            <!-- Primary actions - always visible -->
             <button mat-stroked-button
                     color="primary"
                     [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'expenses']">
               <mat-icon>add</mat-icon>
-              Add Expense
+              <span class="button-text">Add Expense</span>
             </button>
             <button mat-stroked-button
                     color="primary"
                     [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'income']">
               <mat-icon>add</mat-icon>
-              Add Income
+              <span class="button-text">Add Income</span>
             </button>
-            <button mat-flat-button
-                    color="primary"
-                    (click)="openReportDialog()"
-                    data-testid="generate-report-button">
-              <mat-icon>description</mat-icon>
-              Generate Report
-            </button>
-            <button mat-stroked-button color="primary" [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'edit']">
-              <mat-icon>edit</mat-icon>
-              Edit
-            </button>
-            <button mat-stroked-button
-                    color="warn"
-                    (click)="onDeleteClick()"
-                    [disabled]="propertyStore.isDeleting()">
-              @if (propertyStore.isDeleting()) {
-                <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
-              } @else {
-                <mat-icon>delete</mat-icon>
-              }
-              Delete
-            </button>
+
+            <!-- Desktop: Show all buttons -->
+            @if (!isMobile()) {
+              <button mat-flat-button
+                      color="primary"
+                      (click)="openReportDialog()"
+                      data-testid="generate-report-button">
+                <mat-icon>description</mat-icon>
+                Generate Report
+              </button>
+              <button mat-stroked-button color="primary" [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'edit']">
+                <mat-icon>edit</mat-icon>
+                Edit
+              </button>
+              <button mat-stroked-button
+                      color="warn"
+                      (click)="onDeleteClick()"
+                      [disabled]="propertyStore.isDeleting()">
+                @if (propertyStore.isDeleting()) {
+                  <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+                } @else {
+                  <mat-icon>delete</mat-icon>
+                }
+                Delete
+              </button>
+            }
+
+            <!-- Mobile: More menu for secondary actions -->
+            @if (isMobile()) {
+              <button mat-stroked-button
+                      color="primary"
+                      [matMenuTriggerFor]="moreMenu"
+                      aria-label="More actions">
+                <mat-icon>more_vert</mat-icon>
+                <span class="button-text">More</span>
+              </button>
+              <mat-menu #moreMenu="matMenu">
+                <button mat-menu-item (click)="openReportDialog()" data-testid="generate-report-menu-item">
+                  <mat-icon>description</mat-icon>
+                  <span>Generate Report</span>
+                </button>
+                <button mat-menu-item [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'edit']">
+                  <mat-icon>edit</mat-icon>
+                  <span>Edit</span>
+                </button>
+                <button mat-menu-item
+                        (click)="onDeleteClick()"
+                        [disabled]="propertyStore.isDeleting()"
+                        class="delete-menu-item">
+                  @if (propertyStore.isDeleting()) {
+                    <mat-spinner diameter="18"></mat-spinner>
+                  } @else {
+                    <mat-icon color="warn">delete</mat-icon>
+                  }
+                  <span>Delete</span>
+                </button>
+              </mat-menu>
+            }
           </div>
         </header>
 
@@ -492,6 +533,16 @@ import {
           button {
             flex: 1;
             min-width: 0;
+            max-width: none;
+            padding: 0 12px;
+
+            .button-text {
+              display: inline;
+            }
+
+            mat-icon {
+              margin-right: 4px;
+            }
           }
         }
       }
@@ -504,17 +555,26 @@ import {
         grid-template-columns: 1fr;
       }
     }
+
+    // Menu item styling for delete action
+    .delete-menu-item {
+      color: var(--pm-error, #c62828);
+    }
   `]
 })
 export class PropertyDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly location = inject(Location);
   private readonly dialog = inject(MatDialog);
+  private readonly breakpointObserver = inject(BreakpointObserver);
   readonly propertyStore = inject(PropertyStore);
   readonly yearService = inject(YearSelectorService);
 
   private propertyId: string | null = null;
+  private readonly destroy$ = new Subject<void>();
+
+  /** Mobile viewport detection for responsive action buttons */
+  readonly isMobile = signal(false);
 
   constructor() {
     // React to year changes and reload property detail (AC-3.5.6)
@@ -530,11 +590,21 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     // Get property ID from route and load (AC-2.3.1)
     this.propertyId = this.route.snapshot.paramMap.get('id');
     // Initial load happens via effect when selectedYear signal is read
+
+    // Mobile breakpoint detection for responsive action buttons
+    this.breakpointObserver
+      .observe('(max-width: 767px)')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result) => {
+        this.isMobile.set(result.matches);
+      });
   }
 
   ngOnDestroy(): void {
     // Clear selected property when leaving the page
     this.propertyStore.clearSelectedProperty();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   goBack(): void {
