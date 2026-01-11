@@ -30,8 +30,9 @@ $desktop-min: 1024px;
   min-height: 100vh;
 
   // Add padding at bottom when bottom nav is visible
+  // Extra 24px ensures content scrolls above the nav with breathing room
   &.with-bottom-nav {
-    padding-bottom: var(--pm-bottom-nav-height);
+    padding-bottom: calc(var(--pm-bottom-nav-height) + 24px);
   }
 }
 
@@ -138,6 +139,9 @@ $desktop-min: 1024px;
   // Responsive padding adjustments
   @media (max-width: $mobile-max) {
     padding: 16px;
+    // Extra bottom padding to ensure content doesn't get hidden behind
+    // bottom nav (56px) + FAB (56px + 24px gap) = ~80px clearance from FAB
+    padding-bottom: 96px;
   }
 }
 

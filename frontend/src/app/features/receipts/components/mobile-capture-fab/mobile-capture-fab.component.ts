@@ -1,11 +1,12 @@
 import { Component, ElementRef, inject, signal, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, NavigationEnd } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Subject, takeUntil, firstValueFrom } from 'rxjs';
+import { Subject, takeUntil, firstValueFrom, filter } from 'rxjs';
 import { ReceiptCaptureService } from '../../services/receipt-capture.service';
 import { PropertyTagModalComponent, PropertyTagResult } from '../property-tag-modal/property-tag-modal.component';
 
@@ -13,7 +14,7 @@ import { PropertyTagModalComponent, PropertyTagResult } from '../property-tag-mo
  * Mobile Capture FAB Component (AC-5.2.1)
  *
  * Floating action button for quick receipt capture on mobile devices.
- * - Only visible on mobile viewports (< 768px)
+ * - Only visible on mobile viewports (< 768px) AND on Dashboard route
  * - Positioned bottom-right, above bottom navigation
  * - Triggers camera/file picker for receipt capture
  */
@@ -26,7 +27,7 @@ import { PropertyTagModalComponent, PropertyTagResult } from '../property-tag-mo
     MatIconModule,
   ],
   template: `
-    @if (isMobile()) {
+    @if (isMobile() && isOnDashboard()) {
       <button
         mat-fab
         class="capture-fab"
@@ -72,6 +73,7 @@ import { PropertyTagModalComponent, PropertyTagResult } from '../property-tag-mo
 export class MobileCaptureFabComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
+  private readonly router = inject(Router);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
@@ -80,17 +82,33 @@ export class MobileCaptureFabComponent implements OnInit, OnDestroy {
 
   readonly isMobile = signal(false);
   readonly isUploading = signal(false);
+  /** FAB should only appear on Dashboard route */
+  readonly isOnDashboard = signal(false);
 
   private pendingFile: File | null = null;
   private pendingPropertyId: string | undefined = undefined;
   private activeSnackBarRef: MatSnackBarRef<TextOnlySnackBar> | null = null;
 
   ngOnInit(): void {
+    // Breakpoint detection for mobile viewport
     this.breakpointObserver
       .observe('(max-width: 767px)')
       .pipe(takeUntil(this.destroy$))
       .subscribe((result) => {
         this.isMobile.set(result.matches);
+      });
+
+    // Check initial route
+    this.isOnDashboard.set(this.router.url === '/dashboard');
+
+    // Listen for route changes to show FAB only on Dashboard
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((event) => {
+        this.isOnDashboard.set(event.url === '/dashboard');
       });
   }
 
