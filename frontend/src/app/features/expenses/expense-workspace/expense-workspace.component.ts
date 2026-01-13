@@ -17,6 +17,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { formatDateShort } from '../../../shared/utils/date.utils';
 
 /**
  * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2, AC-3.3)
@@ -421,14 +422,10 @@ export class ExpenseWorkspaceComponent implements OnInit {
 
   /**
    * Format date as "Nov 28, 2025"
+   * Uses formatDateShort utility for correct timezone handling
    */
   private formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDateShort(dateString);
   }
 
   /**

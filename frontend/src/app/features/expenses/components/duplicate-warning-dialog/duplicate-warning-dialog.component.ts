@@ -7,6 +7,7 @@ import {
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { formatDateShort } from '../../../../shared/utils/date.utils';
 
 /**
  * Data interface for DuplicateWarningDialogComponent (AC-3.6.2)
@@ -167,14 +168,10 @@ export class DuplicateWarningDialogComponent {
 
   /**
    * Format date as "Nov 28, 2025"
+   * Uses formatDateShort utility for correct timezone handling
    */
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDateShort(dateString);
   }
 
   /**
