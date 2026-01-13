@@ -10,6 +10,7 @@ import {
   ReceiptLightboxDialogComponent,
   ReceiptLightboxDialogData,
 } from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
+import { formatDateShort } from '../../../../shared/utils/date.utils';
 
 /**
  * ExpenseListRowComponent (AC-3.4.2)
@@ -206,14 +207,10 @@ export class ExpenseListRowComponent {
 
   /**
    * Format date as "Dec 08, 2025" (AC-3.4.2)
+   * Uses formatDateShort utility for correct timezone handling
    */
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-    });
+    return formatDateShort(dateString);
   }
 
   /**
