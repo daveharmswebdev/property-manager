@@ -13,4 +13,5 @@ public class ExpenseCategory
 
     // Navigation properties
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+    public ICollection<CategoryTradeTagMapping> TradeTagMappings { get; set; } = new List<CategoryTradeTagMapping>();
 }

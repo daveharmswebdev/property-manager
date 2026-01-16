@@ -41,6 +41,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<GeneratedReport> GeneratedReports => Set<GeneratedReport>();
     public DbSet<Person> Persons => Set<Person>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<VendorTradeTag> VendorTradeTags => Set<VendorTradeTag>();
+    public DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings => Set<CategoryTradeTagMapping>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +99,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         // support query filters on derived types in TPT.
         // Tenant isolation is inherited from Person filter.
         modelBuilder.Entity<Person>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to VendorTradeTag (no soft delete)
+        modelBuilder.Entity<VendorTradeTag>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 

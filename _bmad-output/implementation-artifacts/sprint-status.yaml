@@ -91,7 +91,7 @@ development_status:
   # User Outcome: "I have my vendor network in the system with their trade specialties"
   epic-8: in-progress
   8-1-person-vendor-entity-foundation: done
-  8-2-trade-tag-taxonomy-setup: backlog
+  8-2-trade-tag-taxonomy-setup: review
   8-3-create-vendor-minimal: backlog
   8-4-add-vendor-details-trade-tags: backlog
   8-5-view-vendor-list: backlog
