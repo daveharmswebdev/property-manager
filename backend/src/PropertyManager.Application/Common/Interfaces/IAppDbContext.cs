@@ -18,6 +18,8 @@ public interface IAppDbContext
     DbSet<ExpenseCategory> ExpenseCategories { get; }
     DbSet<Invitation> Invitations { get; }
     DbSet<GeneratedReport> GeneratedReports { get; }
+    DbSet<Person> Persons { get; }
+    DbSet<Vendor> Vendors { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -80,3 +80,72 @@ development_status:
   7-4-recent-expense-list-sorting-with-timestamps: done  # Issue #61
   7-5-expense-list-pagination: done    # Issue #62
   epic-7-retrospective: optional
+
+  # ============================================================
+  # PHASE 2: WORK ORDERS & VENDORS
+  # Source: epics-work-orders-vendors.md
+  # Added: 2026-01-16
+  # ============================================================
+
+  # Epic 8: Vendor Management
+  # User Outcome: "I have my vendor network in the system with their trade specialties"
+  epic-8: in-progress
+  8-1-person-vendor-entity-foundation: done
+  8-2-trade-tag-taxonomy-setup: backlog
+  8-3-create-vendor-minimal: backlog
+  8-4-add-vendor-details-trade-tags: backlog
+  8-5-view-vendor-list: backlog
+  8-6-search-filter-vendors: backlog
+  8-7-edit-vendor: backlog
+  8-8-delete-vendor: backlog
+  8-9-vendor-detail-page: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Work Order Tracking
+  # User Outcome: "I can track maintenance issues across my properties"
+  epic-9: backlog
+  9-1-work-order-entity-category-hierarchy: backlog
+  9-2-create-work-order: backlog
+  9-3-add-work-order-tags: backlog
+  9-4-assign-work-order-vendor-or-diy: backlog
+  9-5-inline-vendor-creation: backlog
+  9-6-work-order-dashboard: backlog
+  9-7-filter-work-orders: backlog
+  9-8-work-order-detail-page: backlog
+  9-9-edit-work-order: backlog
+  9-10-delete-work-order: backlog
+  9-11-property-work-order-history: backlog
+  epic-9-retrospective: optional
+
+  # Epic 10: Work Order Context
+  # User Outcome: "I can document everything about a repair with photos and notes"
+  epic-10: backlog
+  10-1-polymorphic-notes-entity: backlog
+  10-2-add-notes-to-work-order: backlog
+  10-3-delete-notes: backlog
+  10-4-work-order-photos-entity: backlog
+  10-5-upload-photos-to-work-order: backlog
+  10-6-view-work-order-photos: backlog
+  10-7-delete-work-order-photos: backlog
+  epic-10-retrospective: optional
+
+  # Epic 11: Work Order-Expense Integration
+  # User Outcome: "I know the story behind every expense - which work order it came from"
+  epic-11: backlog
+  11-1-expense-workorder-relationship: backlog
+  11-2-link-expense-to-work-order: backlog
+  11-3-link-work-order-to-expense: backlog
+  11-4-view-linked-work-order-on-expense: backlog
+  11-5-view-linked-expenses-on-work-order: backlog
+  11-6-create-work-order-from-expense: backlog
+  11-7-create-expense-from-work-order: backlog
+  11-8-work-order-dropdown-on-receipt-processing: backlog
+  epic-11-retrospective: optional
+
+  # Epic 12: Work Order Output
+  # User Outcome: "I can generate a professional work order PDF to share with vendors"
+  epic-12: backlog
+  12-1-work-order-pdf-generation-service: backlog
+  12-2-download-work-order-pdf: backlog
+  12-3-preview-work-order-pdf: backlog
+  epic-12-retrospective: optional

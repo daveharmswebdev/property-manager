@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PropertyManager.Domain.ValueObjects;
@@ -13,9 +14,11 @@ using PropertyManager.Infrastructure.Persistence;
 namespace PropertyManager.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260116120529_AddPersonAndVendorEntities")]
+    partial class AddPersonAndVendorEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -831,9 +834,6 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.HasIndex("DeletedAt")
-                        .HasDatabaseName("IX_Vendors_DeletedAt");
 
                     b.ToTable("Vendors", (string)null);
                 });
