@@ -150,6 +150,21 @@ export const routes: Routes = [
             (m) => m.SettingsComponent
           ),
       },
+      // Vendors (Story 8.3 - AC #1)
+      {
+        path: 'vendors',
+        loadComponent: () =>
+          import('./features/vendors/vendors.component').then(
+            (m) => m.VendorsComponent
+          ),
+      },
+      {
+        path: 'vendors/new',
+        loadComponent: () =>
+          import('./features/vendors/components/vendor-form/vendor-form.component').then(
+            (m) => m.VendorFormComponent
+          ),
+      },
       // Default child redirect to dashboard
       {
         path: '',
