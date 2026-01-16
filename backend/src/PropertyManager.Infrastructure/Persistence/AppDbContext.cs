@@ -39,6 +39,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<GeneratedReport> GeneratedReports => Set<GeneratedReport>();
+    public DbSet<Person> Persons => Set<Person>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +91,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         modelBuilder.Entity<GeneratedReport>()
             .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
                                  && e.DeletedAt == null);
+
+        // Note: For TPT inheritance, query filters can only be applied to the root entity.
+        // Vendor soft delete filter is handled explicitly in queries since EF Core doesn't
+        // support query filters on derived types in TPT.
+        // Tenant isolation is inherited from Person filter.
+        modelBuilder.Entity<Person>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 
     private void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)
