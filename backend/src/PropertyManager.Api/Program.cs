@@ -46,8 +46,13 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 // Npgsql expects: Host=host;Port=port;Database=database;Username=user;Password=password
 connectionString = ConvertPostgresConnectionString(connectionString);
 
+// Configure Npgsql data source with dynamic JSON for JSONB columns (ADR #15)
+var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.EnableDynamicJson(); // Required for List<T> and complex types in JSONB columns
+var dataSource = dataSourceBuilder.Build();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(dataSource));
 
 // Register Application layer interfaces
 builder.Services.AddHttpContextAccessor();

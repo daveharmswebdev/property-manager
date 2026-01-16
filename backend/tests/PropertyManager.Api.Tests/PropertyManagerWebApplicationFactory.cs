@@ -42,10 +42,14 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
                 services.Remove(appDbContextDescriptor);
             }
 
-            // Add test database
+            // Add test database with dynamic JSON for JSONB columns (ADR #15)
+            var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(_postgres.GetConnectionString());
+            dataSourceBuilder.EnableDynamicJson();
+            var dataSource = dataSourceBuilder.Build();
+
             services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseNpgsql(_postgres.GetConnectionString());
+                options.UseNpgsql(dataSource);
             });
 
             services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
@@ -75,7 +79,7 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<FakeStorageService>());
         });
 
-        builder.UseEnvironment("Testing");
+        builder.UseEnvironment("Development"); // Use Development for detailed error messages in tests
     }
 
     public async Task InitializeAsync()

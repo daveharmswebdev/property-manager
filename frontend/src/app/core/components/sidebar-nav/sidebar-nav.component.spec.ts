@@ -73,17 +73,18 @@ describe('SidebarNavComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should have 7 navigation items (AC7.1)', () => {
-    expect(component.navItems.length).toBe(7);
+  it('should have 8 navigation items (AC7.1, Story 8.3)', () => {
+    expect(component.navItems.length).toBe(8);
   });
 
-  it('should have correct navigation items in order (AC7.1)', () => {
+  it('should have correct navigation items in order (AC7.1, Story 8.3)', () => {
     const expectedLabels = [
       'Dashboard',
       'Properties',
       'Expenses',
       'Income',
       'Receipts',
+      'Vendors',
       'Reports',
       'Settings',
     ];
@@ -127,9 +128,9 @@ describe('SidebarNavComponent', () => {
     expect(mockLogoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
   });
 
-  it('should render all nav items in the DOM (AC7.1)', () => {
+  it('should render all nav items in the DOM (AC7.1, Story 8.3)', () => {
     const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
-    expect(navItems.length).toBe(7);
+    expect(navItems.length).toBe(8);
   });
 
   describe('userDisplayName fallback logic (AC-7.2.2)', () => {
