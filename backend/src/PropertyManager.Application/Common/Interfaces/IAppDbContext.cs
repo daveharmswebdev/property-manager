@@ -20,6 +20,8 @@ public interface IAppDbContext
     DbSet<GeneratedReport> GeneratedReports { get; }
     DbSet<Person> Persons { get; }
     DbSet<Vendor> Vendors { get; }
+    DbSet<VendorTradeTag> VendorTradeTags { get; }
+    DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
