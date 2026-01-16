@@ -155,7 +155,7 @@ jobs:
         working-directory: backend
         env:
           ConnectionStrings__Default: Host=localhost;Database=propertymanager;Username=postgres;Password=localdev
-        run: dotnet ef database update --project src/PropertyManager.Infrastructure --startup-project src/PropertyManager.Api
+        run: dotnet ef database update --project src/PropertyManager.Infrastructure --startup-project src/PropertyManager.Api --no-build
 
       - name: Start backend API
         working-directory: backend
