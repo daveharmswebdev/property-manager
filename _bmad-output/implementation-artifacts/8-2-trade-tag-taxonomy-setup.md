@@ -1,6 +1,6 @@
 # Story 8.2: Trade Tag Taxonomy Setup
 
-Status: review
+Status: done
 
 ## Story
 
@@ -343,4 +343,37 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - backend/src/PropertyManager.Domain/Entities/ExpenseCategory.cs (added TradeTagMappings navigation)
 - backend/src/PropertyManager.Application/Common/Interfaces/IAppDbContext.cs (added DbSets)
 - backend/src/PropertyManager.Infrastructure/Persistence/AppDbContext.cs (added DbSets and query filter)
+- backend/src/PropertyManager.Api/Controllers/VendorTradeTagsController.cs (code review fixes)
+- backend/src/PropertyManager.Infrastructure/Persistence/Migrations/20260116190445_FixVendorTradeTagCaseInsensitiveIndex.cs (NEW - code review fix)
+- backend/src/PropertyManager.Infrastructure/Persistence/Migrations/20260116190445_FixVendorTradeTagCaseInsensitiveIndex.Designer.cs (NEW - code review fix)
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Amelia (Dev Agent) - Claude Opus 4.5
+**Date:** 2026-01-16
+**Outcome:** APPROVED with fixes applied
+
+### Issues Found and Fixed
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| 1 | MEDIUM | Database unique index was case-sensitive but handler checked case-insensitively - data integrity gap | Created migration `FixVendorTradeTagCaseInsensitiveIndex` with functional index `LOWER(Name)` |
+| 2 | MEDIUM | Controller actions missing `CancellationToken` - server continues on client disconnect | Added `CancellationToken` parameter to both GET and POST actions |
+| 3 | LOW | `CreatedAtAction` had unused route parameter `{ id = tradeTagId }` | Changed to `null` since no GetById endpoint exists |
+| 4 | LOW | Redundant `DateTime.UtcNow` in log messages | Removed - structured logging adds timestamps automatically |
+| 5 | LOW | Missing null check on `[FromBody]` request | Added null check with proper ProblemDetails response |
+
+### Verification
+
+- All 544 backend tests pass (353 Application + 33 Infrastructure + 158 Api)
+- Migration applies cleanly
+- Build succeeds with no new errors
+
+### Change Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-01-16 | Dev Agent (Claude Opus 4.5) | Code review fixes: case-insensitive DB index, CancellationToken support, controller improvements |
 

@@ -33,21 +33,21 @@ public class VendorTradeTagsController : ControllerBase
     /// <summary>
     /// Get all vendor trade tags for the current user's account (AC #3).
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of trade tags sorted alphabetically by name</returns>
     /// <response code="200">Returns the list of trade tags</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
     [ProducesResponseType(typeof(GetAllVendorTradeTagsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllVendorTradeTags()
+    public async Task<IActionResult> GetAllVendorTradeTags(CancellationToken cancellationToken)
     {
         var query = new GetAllVendorTradeTagsQuery();
-        var response = await _mediator.Send(query);
+        var response = await _mediator.Send(query, cancellationToken);
 
         _logger.LogInformation(
-            "Retrieved {Count} vendor trade tags at {Timestamp}",
-            response.TotalCount,
-            DateTime.UtcNow);
+            "Retrieved {Count} vendor trade tags",
+            response.TotalCount);
 
         return Ok(response);
     }
@@ -56,6 +56,7 @@ public class VendorTradeTagsController : ControllerBase
     /// Create a new vendor trade tag (AC #4, #5).
     /// </summary>
     /// <param name="request">Trade tag creation request with name</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created trade tag ID</returns>
     /// <response code="201">Trade tag created successfully</response>
     /// <response code="400">If validation fails (name required, max 100 chars)</response>
@@ -66,12 +67,26 @@ public class VendorTradeTagsController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreateVendorTradeTag([FromBody] CreateVendorTradeTagRequest request)
+    public async Task<IActionResult> CreateVendorTradeTag(
+        [FromBody] CreateVendorTradeTagRequest? request,
+        CancellationToken cancellationToken)
     {
+        if (request is null)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Invalid request",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "Request body is required",
+                Instance = HttpContext.Request.Path
+            });
+        }
+
         var command = new CreateVendorTradeTagCommand(request.Name);
 
         // Validate command
-        var validationResult = await _createValidator.ValidateAsync(command);
+        var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors
@@ -93,19 +108,18 @@ public class VendorTradeTagsController : ControllerBase
             return BadRequest(problemDetails);
         }
 
-        var tradeTagId = await _mediator.Send(command);
+        var tradeTagId = await _mediator.Send(command, cancellationToken);
 
         _logger.LogInformation(
-            "Trade tag created: {TradeTagId}, name '{Name}' at {Timestamp}",
+            "Trade tag created: {TradeTagId}, name '{Name}'",
             tradeTagId,
-            request.Name,
-            DateTime.UtcNow);
+            request.Name);
 
         var response = new CreateVendorTradeTagResponse(tradeTagId);
 
         return CreatedAtAction(
             nameof(GetAllVendorTradeTags),
-            new { id = tradeTagId },
+            null,
             response);
     }
 }
