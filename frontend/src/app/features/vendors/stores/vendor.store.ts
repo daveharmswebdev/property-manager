@@ -28,6 +28,7 @@ interface VendorState {
   tradeTags: VendorTradeTagDto[];
   isLoading: boolean;
   isSaving: boolean;
+  isDeleting: boolean;
   error: string | null;
   // Filter state (Story 8-6)
   searchTerm: string;
@@ -43,6 +44,7 @@ const initialState: VendorState = {
   tradeTags: [],
   isLoading: false,
   isSaving: false,
+  isDeleting: false,
   error: null,
   // Filter state (Story 8-6)
   searchTerm: '',
@@ -302,6 +304,54 @@ export const VendorStore = signalStore(
                   verticalPosition: 'bottom',
                 });
                 console.error('Error updating vendor:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Delete a vendor (soft delete) (FR12)
+       * @param id Vendor ID to delete
+       */
+      deleteVendor: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isDeleting: true,
+              error: null,
+            })
+          ),
+          switchMap((id) =>
+            apiService.vendors_DeleteVendor(id).pipe(
+              tap(() => {
+                // Remove from local vendors array
+                patchState(store, {
+                  vendors: store.vendors().filter((v) => v.id !== id),
+                  isDeleting: false,
+                });
+                snackBar.open('Vendor deleted', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+              }),
+              catchError((error) => {
+                let errorMessage = 'Failed to delete vendor. Please try again.';
+                if (error.status === 404) {
+                  errorMessage = 'Vendor not found.';
+                }
+                patchState(store, {
+                  isDeleting: false,
+                  error: errorMessage,
+                });
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                console.error('Error deleting vendor:', error);
                 return of(null);
               })
             )

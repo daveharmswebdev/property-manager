@@ -15,6 +15,7 @@ describe('VendorsComponent', () => {
     vendors: ReturnType<typeof signal<VendorDto[]>>;
     isLoading: ReturnType<typeof signal<boolean>>;
     isSaving: ReturnType<typeof signal<boolean>>;
+    isDeleting: ReturnType<typeof signal<boolean>>;
     error: ReturnType<typeof signal<string | null>>;
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasVendors: ReturnType<typeof signal<boolean>>;
@@ -29,6 +30,7 @@ describe('VendorsComponent', () => {
     loadVendors: ReturnType<typeof vi.fn>;
     loadTradeTags: ReturnType<typeof vi.fn>;
     createVendor: ReturnType<typeof vi.fn>;
+    deleteVendor: ReturnType<typeof vi.fn>;
     clearError: ReturnType<typeof vi.fn>;
     reset: ReturnType<typeof vi.fn>;
     // Story 8-6: Filter methods
@@ -79,6 +81,7 @@ describe('VendorsComponent', () => {
       vendors: signal<VendorDto[]>([]),
       isLoading: signal(false),
       isSaving: signal(false),
+      isDeleting: signal(false),
       error: signal<string | null>(null),
       isEmpty: signal(true),
       hasVendors: signal(false),
@@ -96,6 +99,7 @@ describe('VendorsComponent', () => {
       loadVendors: vi.fn(),
       loadTradeTags: vi.fn(),
       createVendor: vi.fn(),
+      deleteVendor: vi.fn(),
       clearError: vi.fn(),
       reset: vi.fn(),
       // Story 8-6: Filter methods
@@ -573,6 +577,57 @@ describe('VendorsComponent', () => {
         fixture.detectChanges();
         expect(mockVendorStore.loadTradeTags).toHaveBeenCalled();
       });
+    });
+  });
+
+  // Story 8-8: Delete Vendor Tests
+  describe('Delete Button (Story 8-8)', () => {
+    beforeEach(() => {
+      mockVendorStore.isEmpty.set(false);
+      mockVendorStore.hasVendors.set(true);
+      mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors);
+      mockVendorStore.totalCount.set(2);
+    });
+
+    it('should display delete button for each vendor (AC #1)', () => {
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.debugElement.queryAll(
+        By.css('.delete-button')
+      );
+      expect(deleteButtons.length).toBe(2);
+    });
+
+    it('should have delete icon in button', () => {
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      const icon = deleteButton.query(By.css('mat-icon'));
+      expect(icon.nativeElement.textContent).toContain('delete');
+    });
+
+    it('should have aria-label on delete button for accessibility', () => {
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      expect(deleteButton.attributes['aria-label']).toBe('Delete vendor');
+    });
+
+    it('should disable delete button when isDeleting is true (AC #1)', () => {
+      mockVendorStore.isDeleting.set(true);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      expect(deleteButton.nativeElement.disabled).toBe(true);
+    });
+
+    it('should not disable delete button when isDeleting is false', () => {
+      mockVendorStore.isDeleting.set(false);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      expect(deleteButton.nativeElement.disabled).toBe(false);
     });
   });
 });

@@ -9,8 +9,15 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { VendorStore } from './stores/vendor.store';
+import { VendorDto } from '../../core/api/api.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Vendors Component (AC #1, #2, #4)
@@ -31,6 +38,8 @@ import { VendorStore } from './stores/vendor.store';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatDialogModule,
+    MatTooltipModule,
   ],
   template: `
     <div class="vendors-container">
@@ -175,6 +184,17 @@ import { VendorStore } from './stores/vendor.store';
                       </div>
                     }
                   </div>
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    class="delete-button"
+                    (click)="onDeleteClick(vendor, $event)"
+                    [disabled]="store.isDeleting()"
+                    aria-label="Delete vendor"
+                    matTooltip="Delete vendor"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
                   <mat-icon class="edit-icon">chevron_right</mat-icon>
                 </div>
               </mat-card-content>
@@ -349,6 +369,20 @@ import { VendorStore } from './stores/vendor.store';
         flex-shrink: 0;
       }
 
+      .delete-button {
+        flex-shrink: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+
+      .delete-button:hover {
+        opacity: 1;
+      }
+
+      .vendor-card:hover .delete-button {
+        opacity: 0.8;
+      }
+
       /* Filter Bar (Story 8-6) */
       .filter-bar {
         display: flex;
@@ -431,6 +465,7 @@ import { VendorStore } from './stores/vendor.store';
 export class VendorsComponent implements OnInit {
   protected readonly store = inject(VendorStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
 
   /** Subject for debounced search input (Story 8-6 AC #1) */
   private searchSubject = new Subject<string>();
@@ -473,5 +508,36 @@ export class VendorsComponent implements OnInit {
    */
   onTagFilterChange(event: { value: string[] }): void {
     this.store.setTradeTagFilter(event.value);
+  }
+
+  /**
+   * Handle delete button click - opens confirmation dialog (Story 8-8 AC #1-#4)
+   * @param vendor The vendor to potentially delete
+   * @param event The click event to prevent row navigation
+   */
+  onDeleteClick(vendor: VendorDto, event: Event): void {
+    event.stopPropagation(); // Prevent row click navigation
+
+    const dialogData: ConfirmDialogData = {
+      title: `Delete ${vendor.fullName}?`,
+      message:
+        "This vendor will be removed from your list. Work orders assigned to this vendor will show 'Deleted Vendor'.",
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '450px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed && vendor.id) {
+        this.store.deleteVendor(vendor.id);
+      }
+    });
   }
 }

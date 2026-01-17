@@ -15,6 +15,7 @@ describe('VendorStore', () => {
   let mockApiClient: {
     vendors_GetAllVendors: ReturnType<typeof vi.fn>;
     vendors_CreateVendor: ReturnType<typeof vi.fn>;
+    vendors_DeleteVendor: ReturnType<typeof vi.fn>;
   };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockSnackBar: { open: ReturnType<typeof vi.fn> };
@@ -38,6 +39,7 @@ describe('VendorStore', () => {
     mockApiClient = {
       vendors_GetAllVendors: vi.fn(),
       vendors_CreateVendor: vi.fn(),
+      vendors_DeleteVendor: vi.fn(),
     };
     mockRouter = { navigate: vi.fn() };
     mockSnackBar = { open: vi.fn() };
@@ -564,6 +566,106 @@ describe('VendorStore', () => {
 
         expect(store.selectedTradeTagIds()).toEqual([]);
       });
+    });
+  });
+
+  // Story 8-8: Delete Vendor Tests
+  describe('deleteVendor (Story 8-8)', () => {
+    beforeEach(() => {
+      // Load vendors first
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(
+        of({ items: mockVendors, totalCount: 2 })
+      );
+      store.loadVendors();
+    });
+
+    it('should have isDeleting false initially', () => {
+      expect(store.isDeleting()).toBe(false);
+    });
+
+    it('should call API with vendor id (AC #5)', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor('1');
+
+      expect(mockApiClient.vendors_DeleteVendor).toHaveBeenCalledWith('1');
+    });
+
+    it('should remove vendor from local state on success (AC #3)', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+      expect(store.vendors().length).toBe(2);
+
+      store.deleteVendor('1');
+
+      expect(store.vendors().length).toBe(1);
+      expect(store.vendors().find((v) => v.id === '1')).toBeUndefined();
+      expect(store.vendors().find((v) => v.id === '2')).toBeDefined();
+    });
+
+    it('should show success snackbar on delete (AC #4)', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor('1');
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        'Vendor deleted',
+        'Close',
+        expect.objectContaining({ duration: 3000 })
+      );
+    });
+
+    it('should set isDeleting false after success', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor('1');
+
+      expect(store.isDeleting()).toBe(false);
+    });
+
+    it('should handle 404 error with specific message (AC #6)', () => {
+      const error = { status: 404 };
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(throwError(() => error));
+
+      store.deleteVendor('nonexistent');
+
+      expect(store.error()).toBe('Vendor not found.');
+      expect(store.isDeleting()).toBe(false);
+    });
+
+    it('should handle generic error', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      store.deleteVendor('1');
+
+      expect(store.error()).toBe('Failed to delete vendor. Please try again.');
+      expect(store.isDeleting()).toBe(false);
+    });
+
+    it('should show error snackbar on failure', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      store.deleteVendor('1');
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        'Failed to delete vendor. Please try again.',
+        'Close',
+        expect.objectContaining({ duration: 5000 })
+      );
+    });
+
+    it('should not remove vendor from local state on error', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+      expect(store.vendors().length).toBe(2);
+
+      store.deleteVendor('1');
+
+      expect(store.vendors().length).toBe(2);
     });
   });
 });
