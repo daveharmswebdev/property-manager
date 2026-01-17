@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/test-fixtures';
 
 /**
- * Vendor Edit E2E Tests (Story 8.4 AC #1-#15)
+ * Vendor Edit E2E Tests (Story 8.4 AC #1-#15, Story 8.7 AC #1-#5)
  *
  * Tests the complete vendor edit flow including:
  * - Navigation from vendor list to edit form (AC #1)
@@ -12,6 +12,7 @@ import { test, expect } from '../../fixtures/test-fixtures';
  * - Saving changes and verification (AC #12-#13)
  * - Cancel navigation (AC #14)
  * - Trade tag assignments persistence (AC #15)
+ * - Unsaved changes confirmation dialog (Story 8.7 AC #4, #5)
  */
 test.describe('Vendor Edit E2E Tests', () => {
   /**
@@ -392,5 +393,170 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.expectPhoneCount(2);
     await vendorPage.expectEmailCount(2);
     await vendorPage.expectTagSelected(tagName);
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Story 8.7: Unsaved Changes Confirmation (AC #4, #5)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  test('should cancel without confirmation when form is pristine (AC #5)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Don't make any changes - just click cancel
+    await vendorPage.clickCancel();
+
+    // Should navigate directly to vendor list without dialog
+    await expect(page).toHaveURL('/vendors');
+    await vendorPage.expectUnsavedChangesDialogHidden();
+  });
+
+  test('should show confirmation dialog when canceling with unsaved name changes (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Make a change to the form
+    await vendorPage.firstNameInput.fill('ChangedName');
+
+    // Click cancel
+    await vendorPage.clickCancel();
+
+    // Should show confirmation dialog
+    await vendorPage.expectUnsavedChangesDialogVisible();
+  });
+
+  test('should show confirmation dialog when canceling with added phone (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Add a phone
+    await vendorPage.addPhone('512-555-9999');
+
+    // Click cancel
+    await vendorPage.clickCancel();
+
+    // Should show confirmation dialog
+    await vendorPage.expectUnsavedChangesDialogVisible();
+  });
+
+  test('should show confirmation dialog when canceling with trade tag changes (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Add a trade tag
+    const tagName = `UnsavedTest${Date.now()}`;
+    await vendorPage.createAndSelectTag(tagName);
+
+    // Wait for tag chip to be visible confirming the selection completed
+    await vendorPage.expectTagSelected(tagName);
+
+    // Click cancel
+    await vendorPage.clickCancel();
+
+    // Should show confirmation dialog
+    await vendorPage.expectUnsavedChangesDialogVisible();
+  });
+
+  test('should navigate to vendor list when clicking Discard in dialog (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Make a change
+    await vendorPage.firstNameInput.fill('WillBeDiscarded');
+
+    // Click cancel
+    await vendorPage.clickCancel();
+
+    // Dialog should appear
+    await vendorPage.expectUnsavedChangesDialogVisible();
+
+    // Click Discard
+    await vendorPage.clickDiscardInDialog();
+
+    // Should navigate to vendor list
+    await expect(page).toHaveURL('/vendors');
+
+    // Verify changes were NOT saved
+    await vendorPage.gotoEdit(vendorId);
+    const firstName = await vendorPage.firstNameInput.inputValue();
+    expect(firstName).not.toBe('WillBeDiscarded');
+  });
+
+  test('should stay on edit form when clicking Cancel in dialog (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Make a change
+    await vendorPage.firstNameInput.fill('WillBeKept');
+
+    // Click cancel
+    await vendorPage.clickCancel();
+
+    // Dialog should appear
+    await vendorPage.expectUnsavedChangesDialogVisible();
+
+    // Click Cancel in dialog to stay on page
+    await vendorPage.clickCancelInDialog();
+
+    // Should still be on edit page
+    await expect(page).toHaveURL(`/vendors/${vendorId}`);
+
+    // Changes should still be in the form
+    await expect(vendorPage.firstNameInput).toHaveValue('WillBeKept');
+  });
+
+  test('should show confirmation dialog when navigating via sidebar with unsaved changes (AC #4)', async ({
+    page,
+    authenticatedUser,
+    vendorPage,
+  }) => {
+    // Create a vendor
+    const vendorId = await createTestVendor(vendorPage, page);
+    await vendorPage.gotoEdit(vendorId);
+
+    // Make a change
+    await vendorPage.addEmail('test@unsaved.com');
+
+    // Try to navigate away using sidebar navigation (triggers Angular router)
+    await page.locator('a[href="/dashboard"]').click();
+
+    // Dialog should appear (guard intercepts navigation)
+    await vendorPage.expectUnsavedChangesDialogVisible();
+
+    // Cancel the navigation
+    await vendorPage.clickCancelInDialog();
+
+    // Should still be on vendor edit page
+    await expect(page).toHaveURL(`/vendors/${vendorId}`);
   });
 });
