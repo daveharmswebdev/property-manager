@@ -159,9 +159,9 @@ export class VendorPage extends BasePage {
     return this.page.locator('button[type="submit"]');
   }
 
-  /** Cancel button */
+  /** Cancel button in form actions */
   get cancelButton(): Locator {
-    return this.page.locator('button', { hasText: 'Cancel' });
+    return this.page.locator('.form-actions button', { hasText: 'Cancel' });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -411,6 +411,10 @@ export class VendorPage extends BasePage {
     await this.page.waitForTimeout(300);
     // Click the "Create" option
     await this.autocompleteOptions.filter({ hasText: `Create "${tagName}"` }).click();
+    // Wait for the chip to appear (async tag creation to complete)
+    await expect(this.selectedTagChips.filter({ hasText: tagName })).toBeVisible({
+      timeout: 5000,
+    });
   }
 
   /**
@@ -434,6 +438,55 @@ export class VendorPage extends BasePage {
    */
   async clickCancel(): Promise<void> {
     await this.cancelButton.click();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Unsaved Changes Dialog (Story 8.7 - AC #4, #5)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Unsaved changes dialog */
+  get unsavedChangesDialog(): Locator {
+    return this.page.locator('mat-dialog-container');
+  }
+
+  /** Discard button in unsaved changes dialog */
+  get discardButton(): Locator {
+    return this.page.locator('mat-dialog-container button', { hasText: 'Discard' });
+  }
+
+  /** Cancel button in unsaved changes dialog */
+  get dialogCancelButton(): Locator {
+    return this.page.locator('mat-dialog-container button', { hasText: 'Cancel' });
+  }
+
+  /**
+   * Click Discard in the unsaved changes dialog
+   */
+  async clickDiscardInDialog(): Promise<void> {
+    await this.discardButton.click();
+  }
+
+  /**
+   * Click Cancel in the unsaved changes dialog to stay on page
+   */
+  async clickCancelInDialog(): Promise<void> {
+    await this.dialogCancelButton.click();
+  }
+
+  /**
+   * Assert unsaved changes dialog is visible
+   */
+  async expectUnsavedChangesDialogVisible(): Promise<void> {
+    await expect(this.unsavedChangesDialog).toBeVisible();
+    await expect(this.unsavedChangesDialog).toContainText('Unsaved Changes');
+    await expect(this.unsavedChangesDialog).toContainText('Discard');
+  }
+
+  /**
+   * Assert unsaved changes dialog is not visible
+   */
+  async expectUnsavedChangesDialogHidden(): Promise<void> {
+    await expect(this.unsavedChangesDialog).not.toBeVisible();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

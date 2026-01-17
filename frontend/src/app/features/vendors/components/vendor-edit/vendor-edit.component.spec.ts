@@ -358,4 +358,76 @@ describe('VendorEditComponent', () => {
       expect(mockVendorStore.clearSelectedVendor).toHaveBeenCalled();
     });
   });
+
+  describe('unsaved changes detection (AC #4, #5)', () => {
+    beforeEach(() => {
+      setupWithVendor();
+    });
+
+    it('should implement HasUnsavedChanges interface', () => {
+      expect(typeof component.hasUnsavedChanges).toBe('function');
+    });
+
+    it('should return false when form is pristine and tags unchanged', () => {
+      // Form just loaded - should be pristine
+      expect(component.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('should return true when form field is modified (dirty)', () => {
+      component['form'].get('firstName')?.setValue('Jane');
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should return true when phone is added', () => {
+      component['addPhone']();
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should return true when email is added', () => {
+      component['addEmail']();
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should return true when trade tag is added', () => {
+      const newTag = { id: 'tag-3', name: 'HVAC' };
+      component['selectedTags'].update(tags => [...tags, newTag]);
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should return true when trade tag is removed', () => {
+      const tagToRemove = component['selectedTags']()[0];
+      component['removeTag'](tagToRemove);
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should return false after form is reset to original values', () => {
+      // Modify form
+      component['form'].get('firstName')?.setValue('Jane');
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+
+      // Reset to original
+      component['form'].get('firstName')?.setValue('John');
+      component['form'].markAsPristine();
+      expect(component.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('should return false when save is in progress (allow navigation on success)', () => {
+      // Make form dirty
+      component['form'].get('firstName')?.setValue('Jane');
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+
+      // Simulate save in progress - should allow navigation
+      mockVendorStore.isSaving.set(true);
+      expect(component.hasUnsavedChanges()).toBe(false);
+
+      // Save failed - should warn again
+      mockVendorStore.isSaving.set(false);
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+  });
 });

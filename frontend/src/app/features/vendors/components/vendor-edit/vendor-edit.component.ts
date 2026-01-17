@@ -21,6 +21,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { VendorStore } from '../../stores/vendor.store';
 import { VendorTradeTagDto, VendorDetailDto, PhoneNumberDto, UpdateVendorRequest } from '../../../../core/api/api.service';
 import { MatChipInputEvent } from '@angular/material/chips';
+import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
 
 /**
  * Vendor Edit Component (AC #1-#14)
@@ -360,7 +361,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
     `,
   ],
 })
-export class VendorEditComponent implements OnInit, OnDestroy {
+export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly store = inject(VendorStore);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -392,6 +393,7 @@ export class VendorEditComponent implements OnInit, OnDestroy {
 
   private vendorId: string | null = null;
   private formPopulated = false;
+  private originalTradeTagIds: string[] = [];
 
   constructor() {
     // Use effect to react to selectedVendor changes
@@ -446,8 +448,41 @@ export class VendorEditComponent implements OnInit, OnDestroy {
       this.emailsArray.push(this.fb.control(email, [Validators.required, Validators.email, Validators.maxLength(255)]));
     });
 
-    // Set selected tags
-    this.selectedTags.set(vendor.tradeTags || []);
+    // Set selected tags and store original IDs for dirty detection
+    const tradeTags = vendor.tradeTags || [];
+    this.selectedTags.set(tradeTags);
+    this.originalTradeTagIds = tradeTags
+      .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
+      .map(t => t.id)
+      .sort();
+  }
+
+  /**
+   * Check if form has unsaved changes (AC #4, #5)
+   * Required by HasUnsavedChanges interface for CanDeactivate guard
+   *
+   * Returns false when:
+   * - Form is pristine AND no trade tag changes
+   * - Currently saving (allow navigation on successful save)
+   */
+  hasUnsavedChanges(): boolean {
+    // Allow navigation when save is in progress (store navigates on success)
+    if (this.store.isSaving()) {
+      return false;
+    }
+
+    // Check reactive form dirty state
+    if (this.form.dirty) {
+      return true;
+    }
+
+    // Check trade tag changes (added or removed)
+    const currentIds = this.selectedTags()
+      .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
+      .map(t => t.id)
+      .sort();
+
+    return JSON.stringify(currentIds) !== JSON.stringify(this.originalTradeTagIds);
   }
 
   protected addPhone(): void {
@@ -511,6 +546,16 @@ export class VendorEditComponent implements OnInit, OnDestroy {
       this.form.markAllAsTouched();
       return;
     }
+
+    // Mark form as pristine before save to allow navigation after success.
+    // Combined with the isSaving check in hasUnsavedChanges(), this ensures:
+    // - Successful save: navigates without dialog (form pristine)
+    // - Failed save: user sees error snackbar, can retry or navigate with warning
+    this.form.markAsPristine();
+    this.originalTradeTagIds = this.selectedTags()
+      .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
+      .map(t => t.id)
+      .sort();
 
     const request: UpdateVendorRequest = {
       firstName: this.form.value.firstName?.trim(),
