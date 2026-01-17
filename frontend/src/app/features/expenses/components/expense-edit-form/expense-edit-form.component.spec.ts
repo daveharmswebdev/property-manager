@@ -276,6 +276,9 @@ describe('ExpenseEditFormComponent', () => {
       expect(mockDialog.open).toHaveBeenCalled();
       const dialogConfig = mockDialog.open.mock.calls[0][1];
       expect(dialogConfig.data.receiptId).toBe('receipt-1');
+      expect(dialogConfig.width).toBe('90vw');
+      expect(dialogConfig.maxWidth).toBe('1400px');
+      expect(dialogConfig.height).toBe('90vh');
       expect(dialogConfig.panelClass).toBe('receipt-lightbox-panel');
     });
   });
