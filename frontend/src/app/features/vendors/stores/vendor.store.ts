@@ -100,7 +100,7 @@ export const VendorStore = signalStore(
         // Trade tag filter: vendor must have at least one of selected tags (OR logic)
         const matchesTags =
           selectedTagIds.length === 0 ||
-          (vendor.tradeTags?.some((tag: VendorTradeTagDto) => selectedTagIds.includes(tag.id!)) ??
+          (vendor.tradeTags?.some((tag: VendorTradeTagDto) => tag.id && selectedTagIds.includes(tag.id)) ??
             false);
 
         // AND logic: must match both
@@ -116,43 +116,19 @@ export const VendorStore = signalStore(
         store.searchTerm().trim().length > 0 ||
         store.selectedTradeTagIds().length > 0
     ),
-
+  })),
+  // Second withComputed block so noMatchesFound can reference filteredVendors
+  withComputed((store) => ({
     /**
      * Whether we have vendors but the filter returned empty results (Story 8-6 AC #4)
      * Distinct from isEmpty which means no vendors exist at all
      */
     noMatchesFound: computed(() => {
       const hasVendors = store.vendors().length > 0;
-      const searchTerm = store.searchTerm().toLowerCase().trim();
-      const selectedTagIds = store.selectedTradeTagIds();
+      const hasFilters = store.hasActiveFilters();
 
-      if (!hasVendors) {
-        return false; // No vendors at all, not a filter issue
-      }
-
-      const hasFilters =
-        searchTerm.length > 0 || selectedTagIds.length > 0;
-      if (!hasFilters) {
-        return false; // No filters applied
-      }
-
-      // Check if filtered result is empty
-      const filteredCount = store.vendors().filter((vendor) => {
-        const matchesSearch =
-          !searchTerm ||
-          vendor.firstName?.toLowerCase().includes(searchTerm) ||
-          vendor.lastName?.toLowerCase().includes(searchTerm) ||
-          vendor.fullName?.toLowerCase().includes(searchTerm);
-
-        const matchesTags =
-          selectedTagIds.length === 0 ||
-          (vendor.tradeTags?.some((tag: VendorTradeTagDto) => selectedTagIds.includes(tag.id!)) ??
-            false);
-
-        return matchesSearch && matchesTags;
-      }).length;
-
-      return filteredCount === 0;
+      // Use existing filteredVendors signal to avoid duplicating filter logic
+      return hasVendors && hasFilters && store.filteredVendors().length === 0;
     }),
   })),
   withMethods(

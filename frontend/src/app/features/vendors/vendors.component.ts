@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { VendorStore } from './stores/vendor.store';
 
 /**
@@ -427,27 +428,28 @@ import { VendorStore } from './stores/vendor.store';
     `,
   ],
 })
-export class VendorsComponent implements OnInit, OnDestroy {
+export class VendorsComponent implements OnInit {
   protected readonly store = inject(VendorStore);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Subject for debounced search input (Story 8-6 AC #1) */
   private searchSubject = new Subject<string>();
-  private searchSubscription?: Subscription;
 
   ngOnInit(): void {
     this.store.loadVendors();
     this.store.loadTradeTags();
 
     // Debounced search - 300ms delay (Story 8-6 AC #1)
-    this.searchSubscription = this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged())
+    // Uses takeUntilDestroyed for automatic cleanup on component destruction
+    this.searchSubject
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe((term) => {
         this.store.setSearchTerm(term);
       });
-  }
-
-  ngOnDestroy(): void {
-    this.searchSubscription?.unsubscribe();
   }
 
   /**
