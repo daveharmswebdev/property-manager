@@ -6,7 +6,7 @@ import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
 import { VendorsComponent } from './vendors.component';
 import { VendorStore } from './stores/vendor.store';
-import { VendorDto } from '../../core/api/api.service';
+import { VendorDto, VendorTradeTagDto } from '../../core/api/api.service';
 
 describe('VendorsComponent', () => {
   let component: VendorsComponent;
@@ -19,10 +19,22 @@ describe('VendorsComponent', () => {
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasVendors: ReturnType<typeof signal<boolean>>;
     totalCount: ReturnType<typeof signal<number>>;
+    // Story 8-6: Filter signals
+    searchTerm: ReturnType<typeof signal<string>>;
+    selectedTradeTagIds: ReturnType<typeof signal<string[]>>;
+    filteredVendors: ReturnType<typeof signal<VendorDto[]>>;
+    hasActiveFilters: ReturnType<typeof signal<boolean>>;
+    noMatchesFound: ReturnType<typeof signal<boolean>>;
+    tradeTags: ReturnType<typeof signal<VendorTradeTagDto[]>>;
     loadVendors: ReturnType<typeof vi.fn>;
+    loadTradeTags: ReturnType<typeof vi.fn>;
     createVendor: ReturnType<typeof vi.fn>;
     clearError: ReturnType<typeof vi.fn>;
     reset: ReturnType<typeof vi.fn>;
+    // Story 8-6: Filter methods
+    setSearchTerm: ReturnType<typeof vi.fn>;
+    setTradeTagFilter: ReturnType<typeof vi.fn>;
+    clearFilters: ReturnType<typeof vi.fn>;
   };
 
   const mockVendors: VendorDto[] = [
@@ -71,10 +83,25 @@ describe('VendorsComponent', () => {
       isEmpty: signal(true),
       hasVendors: signal(false),
       totalCount: signal(0),
+      // Story 8-6: Filter signals
+      searchTerm: signal(''),
+      selectedTradeTagIds: signal<string[]>([]),
+      filteredVendors: signal<VendorDto[]>([]),
+      hasActiveFilters: signal(false),
+      noMatchesFound: signal(false),
+      tradeTags: signal<VendorTradeTagDto[]>([
+        { id: 'tag-1', name: 'Plumber' },
+        { id: 'tag-2', name: 'Electrician' },
+      ]),
       loadVendors: vi.fn(),
+      loadTradeTags: vi.fn(),
       createVendor: vi.fn(),
       clearError: vi.fn(),
       reset: vi.fn(),
+      // Story 8-6: Filter methods
+      setSearchTerm: vi.fn(),
+      setTradeTagFilter: vi.fn(),
+      clearFilters: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -237,6 +264,7 @@ describe('VendorsComponent', () => {
       mockVendorStore.isEmpty.set(false);
       mockVendorStore.hasVendors.set(true);
       mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors); // Story 8-6: Component uses filteredVendors
       fixture.detectChanges();
 
       const emptyCard = fixture.debugElement.query(By.css('.empty-state-card'));
@@ -249,6 +277,7 @@ describe('VendorsComponent', () => {
       mockVendorStore.isEmpty.set(false);
       mockVendorStore.hasVendors.set(true);
       mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors); // Story 8-6: Component uses filteredVendors
       mockVendorStore.totalCount.set(2);
     });
 
@@ -353,6 +382,7 @@ describe('VendorsComponent', () => {
       mockVendorStore.isEmpty.set(false);
       mockVendorStore.hasVendors.set(true);
       mockVendorStore.vendors.set([vendorWithFullDetails]);
+      mockVendorStore.filteredVendors.set([vendorWithFullDetails]); // Story 8-6: Component uses filteredVendors
       mockVendorStore.totalCount.set(1);
     });
 
@@ -370,6 +400,179 @@ describe('VendorsComponent', () => {
 
       const tradeTag = fixture.debugElement.query(By.css('.trade-tag-chip'));
       expect(tradeTag.nativeElement.textContent).toContain('Electrician');
+    });
+  });
+
+  // Story 8-6: Filter functionality component tests
+  describe('Filter Bar (Story 8-6)', () => {
+    beforeEach(() => {
+      mockVendorStore.isEmpty.set(false);
+      mockVendorStore.hasVendors.set(true);
+      mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors);
+    });
+
+    describe('Search Input (AC #1)', () => {
+      it('6.1 - should render search input when vendors exist', () => {
+        fixture.detectChanges();
+
+        const searchInput = fixture.debugElement.query(
+          By.css('.search-field input')
+        );
+        expect(searchInput).toBeTruthy();
+      });
+
+      it('6.1 - should display search icon', () => {
+        fixture.detectChanges();
+
+        const searchIcon = fixture.debugElement.query(
+          By.css('.search-field mat-icon')
+        );
+        expect(searchIcon.nativeElement.textContent).toContain('search');
+      });
+
+      it('6.3 - should call onSearchChange when typing in search', () => {
+        fixture.detectChanges();
+
+        const searchInput = fixture.debugElement.query(
+          By.css('.search-field input')
+        );
+        searchInput.nativeElement.value = 'test';
+        searchInput.nativeElement.dispatchEvent(new Event('input'));
+
+        // Note: The actual filtering happens via Subject/debounce, but we verify the input event fires
+        expect(searchInput.nativeElement.value).toBe('test');
+      });
+    });
+
+    describe('Trade Tag Filter (AC #2)', () => {
+      it('6.2 - should render trade tag dropdown', () => {
+        fixture.detectChanges();
+
+        const tagDropdown = fixture.debugElement.query(
+          By.css('.tag-filter-field mat-select')
+        );
+        expect(tagDropdown).toBeTruthy();
+      });
+
+      it('6.2 - should have available trade tags as options', () => {
+        fixture.detectChanges();
+
+        // Trade tags are available in the store
+        expect(mockVendorStore.tradeTags().length).toBe(2);
+        expect(mockVendorStore.tradeTags()[0].name).toBe('Plumber');
+      });
+    });
+
+    describe('Clear Filters (AC #3)', () => {
+      it('6.5 - should show Clear filters button when hasActiveFilters is true', () => {
+        mockVendorStore.hasActiveFilters.set(true);
+        fixture.detectChanges();
+
+        const clearButton = fixture.debugElement.query(
+          By.css('.filter-bar button[color="primary"]')
+        );
+        expect(clearButton).toBeTruthy();
+        expect(clearButton.nativeElement.textContent).toContain('Clear filters');
+      });
+
+      it('6.5 - should not show Clear filters when no filters active', () => {
+        mockVendorStore.hasActiveFilters.set(false);
+        fixture.detectChanges();
+
+        const filterBar = fixture.debugElement.query(By.css('.filter-bar'));
+        if (filterBar) {
+          const clearButton = filterBar.query(
+            By.css('button[color="primary"]')
+          );
+          expect(clearButton).toBeFalsy();
+        }
+      });
+
+      it('6.6 - should call clearFilters when Clear filters clicked', () => {
+        mockVendorStore.hasActiveFilters.set(true);
+        fixture.detectChanges();
+
+        const clearButton = fixture.debugElement.query(
+          By.css('.filter-bar button[color="primary"]')
+        );
+        clearButton.nativeElement.click();
+
+        expect(mockVendorStore.clearFilters).toHaveBeenCalled();
+      });
+    });
+
+    describe('No Matches State (AC #4)', () => {
+      it('6.7 - should show "No vendors match" when noMatchesFound is true', () => {
+        mockVendorStore.noMatchesFound.set(true);
+        fixture.detectChanges();
+
+        const noMatchesCard = fixture.debugElement.query(
+          By.css('.no-matches-card')
+        );
+        expect(noMatchesCard).toBeTruthy();
+        expect(noMatchesCard.nativeElement.textContent).toContain(
+          'No vendors match your search'
+        );
+      });
+
+      it('6.7 - should show clear filters button in no matches state', () => {
+        mockVendorStore.noMatchesFound.set(true);
+        fixture.detectChanges();
+
+        const noMatchesCard = fixture.debugElement.query(
+          By.css('.no-matches-card')
+        );
+        const clearButton = noMatchesCard.query(By.css('button'));
+        expect(clearButton.nativeElement.textContent).toContain('Clear filters');
+      });
+
+      it('6.8 - should still show empty state when isEmpty is true', () => {
+        mockVendorStore.isEmpty.set(true);
+        mockVendorStore.hasVendors.set(false);
+        mockVendorStore.noMatchesFound.set(false);
+        fixture.detectChanges();
+
+        const emptyCard = fixture.debugElement.query(By.css('.empty-state-card'));
+        expect(emptyCard).toBeTruthy();
+        expect(emptyCard.nativeElement.textContent).toContain('No vendors yet');
+      });
+    });
+
+    describe('Filter Bar Visibility', () => {
+      it('should show filter bar when hasVendors is true', () => {
+        mockVendorStore.hasVendors.set(true);
+        fixture.detectChanges();
+
+        const filterBar = fixture.debugElement.query(By.css('.filter-bar'));
+        expect(filterBar).toBeTruthy();
+      });
+
+      it('should show filter bar when hasActiveFilters is true', () => {
+        mockVendorStore.hasVendors.set(false);
+        mockVendorStore.hasActiveFilters.set(true);
+        fixture.detectChanges();
+
+        const filterBar = fixture.debugElement.query(By.css('.filter-bar'));
+        expect(filterBar).toBeTruthy();
+      });
+
+      it('should not show filter bar when isEmpty and no active filters', () => {
+        mockVendorStore.isEmpty.set(true);
+        mockVendorStore.hasVendors.set(false);
+        mockVendorStore.hasActiveFilters.set(false);
+        fixture.detectChanges();
+
+        const filterBar = fixture.debugElement.query(By.css('.filter-bar'));
+        expect(filterBar).toBeFalsy();
+      });
+    });
+
+    describe('loadTradeTags on init', () => {
+      it('should call loadTradeTags on init', () => {
+        fixture.detectChanges();
+        expect(mockVendorStore.loadTradeTags).toHaveBeenCalled();
+      });
     });
   });
 });

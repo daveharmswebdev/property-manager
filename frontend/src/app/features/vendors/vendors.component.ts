@@ -1,10 +1,14 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { VendorStore } from './stores/vendor.store';
 
 /**
@@ -23,6 +27,9 @@ import { VendorStore } from './stores/vendor.store';
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
   ],
   template: `
     <div class="vendors-container">
@@ -43,6 +50,50 @@ import { VendorStore } from './stores/vendor.store';
         </button>
       </div>
 
+      <!-- Filter Bar (Story 8-6 AC #1-#3) -->
+      @if (store.hasVendors() || store.hasActiveFilters()) {
+        <div class="filter-bar">
+          <!-- Search Input (AC #1) -->
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search vendors</mat-label>
+            <input
+              matInput
+              [value]="store.searchTerm()"
+              (input)="onSearchChange($event)"
+              placeholder="Search by name..."
+            />
+            <mat-icon matPrefix>search</mat-icon>
+            @if (store.searchTerm()) {
+              <button matSuffix mat-icon-button (click)="clearSearch()">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+
+          <!-- Trade Tag Filter (AC #2) -->
+          <mat-form-field appearance="outline" class="tag-filter-field">
+            <mat-label>Filter by trade</mat-label>
+            <mat-select
+              multiple
+              [value]="store.selectedTradeTagIds()"
+              (selectionChange)="onTagFilterChange($event)"
+            >
+              @for (tag of store.tradeTags(); track tag.id) {
+                <mat-option [value]="tag.id">{{ tag.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Clear Filters (AC #3) -->
+          @if (store.hasActiveFilters()) {
+            <button mat-button color="primary" (click)="store.clearFilters()">
+              <mat-icon>clear</mat-icon>
+              Clear filters
+            </button>
+          }
+        </div>
+      }
+
       <!-- Loading State -->
       @if (store.isLoading()) {
         <div class="loading-container">
@@ -62,7 +113,7 @@ import { VendorStore } from './stores/vendor.store';
         </mat-card>
       }
 
-      <!-- Empty State (AC #2) -->
+      <!-- Empty State (AC #2) - No vendors at all -->
       @if (store.isEmpty()) {
         <mat-card class="empty-state-card">
           <mat-icon class="empty-icon">person_off</mat-icon>
@@ -75,10 +126,26 @@ import { VendorStore } from './stores/vendor.store';
         </mat-card>
       }
 
-      <!-- Vendor List (AC #1, #3, #4) -->
-      @if (store.hasVendors()) {
+      <!-- No Matches State (Story 8-6 AC #4) - Has vendors but filter returns empty -->
+      @if (store.noMatchesFound()) {
+        <mat-card class="no-matches-card">
+          <mat-icon class="no-matches-icon">search_off</mat-icon>
+          <h2>No vendors match your search</h2>
+          <p>Try adjusting your filters</p>
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="store.clearFilters()"
+          >
+            Clear filters
+          </button>
+        </mat-card>
+      }
+
+      <!-- Vendor List (AC #1, #3, #4) - Use filteredVendors for search/filter -->
+      @if (store.hasVendors() && !store.noMatchesFound()) {
         <div class="vendor-list">
-          @for (vendor of store.vendors(); track vendor.id) {
+          @for (vendor of store.filteredVendors(); track vendor.id) {
             <mat-card class="vendor-card" [routerLink]="['/vendors', vendor.id]">
               <mat-card-content>
                 <div class="vendor-row">
@@ -281,6 +348,51 @@ import { VendorStore } from './stores/vendor.store';
         flex-shrink: 0;
       }
 
+      /* Filter Bar (Story 8-6) */
+      .filter-bar {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .search-field {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .tag-filter-field {
+        min-width: 180px;
+      }
+
+      /* No Matches State (Story 8-6 AC #4) */
+      .no-matches-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 48px;
+        text-align: center;
+      }
+
+      .no-matches-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: rgba(0, 0, 0, 0.3);
+        margin-bottom: 16px;
+      }
+
+      .no-matches-card h2 {
+        margin: 0 0 8px;
+        font-weight: 500;
+      }
+
+      .no-matches-card p {
+        color: rgba(0, 0, 0, 0.6);
+        margin: 0 0 24px;
+      }
+
       /* Responsive adjustments */
       @media (max-width: 600px) {
         .vendors-container {
@@ -300,14 +412,64 @@ import { VendorStore } from './stores/vendor.store';
           flex-direction: column;
           gap: 4px;
         }
+
+        /* Filter bar responsive (Story 8-6) */
+        .filter-bar {
+          flex-direction: column;
+        }
+
+        .search-field,
+        .tag-filter-field {
+          width: 100%;
+          min-width: unset;
+        }
       }
     `,
   ],
 })
-export class VendorsComponent implements OnInit {
+export class VendorsComponent implements OnInit, OnDestroy {
   protected readonly store = inject(VendorStore);
+
+  /** Subject for debounced search input (Story 8-6 AC #1) */
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
 
   ngOnInit(): void {
     this.store.loadVendors();
+    this.store.loadTradeTags();
+
+    // Debounced search - 300ms delay (Story 8-6 AC #1)
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((term) => {
+        this.store.setSearchTerm(term);
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
+  }
+
+  /**
+   * Handle search input change - pushes to debounced subject (Story 8-6 AC #1)
+   */
+  onSearchChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchSubject.next(value);
+  }
+
+  /**
+   * Clear search input (Story 8-6 AC #1)
+   */
+  clearSearch(): void {
+    this.searchSubject.next('');
+    this.store.setSearchTerm('');
+  }
+
+  /**
+   * Handle trade tag filter selection change (Story 8-6 AC #2)
+   */
+  onTagFilterChange(event: { value: string[] }): void {
+    this.store.setTradeTagFilter(event.value);
   }
 }
