@@ -1,6 +1,6 @@
 # Story 8.4: Add Vendor Details & Trade Tags
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -132,24 +132,24 @@ So that **I can find them easily and know what jobs they handle**.
 ## Tasks / Subtasks
 
 ### Task 1: Create Backend Get Vendor Query (AC: #10, #11)
-- [ ] 1.1 Create `GetVendor.cs` query in Application/Vendors:
+- [x] 1.1 Create `GetVendor.cs` query in Application/Vendors:
   - `GetVendorQuery(Guid VendorId) : IRequest<VendorDetailDto>`
   - Handler joins Vendor + Person + TradeTags
   - Returns full detail DTO
   - Throws NotFoundException if not found
-- [ ] 1.2 Create `VendorDetailDto.cs`:
+- [x] 1.2 Create `VendorDetailDto.cs`:
   - All Person fields (FirstName, MiddleName, LastName, FullName)
   - Phones as `List<PhoneNumberDto>` (number, label)
   - Emails as `List<string>`
   - TradeTags as `List<TradeTagDto>` (id, name)
 
 ### Task 2: Create Backend Update Vendor Command (AC: #12, #13, #15)
-- [ ] 2.1 Create `UpdateVendor.cs` command in Application/Vendors:
+- [x] 2.1 Create `UpdateVendor.cs` command in Application/Vendors:
   - `UpdateVendorCommand(Guid Id, string FirstName, string? MiddleName, string LastName, List<PhoneNumberDto> Phones, List<string> Emails, List<Guid> TradeTagIds) : IRequest`
   - Handler updates Person fields via TPT
   - Handler syncs VendorTradeTagAssignments
   - Sets UpdatedAt = DateTime.UtcNow
-- [ ] 2.2 Create `UpdateVendorValidator.cs`:
+- [x] 2.2 Create `UpdateVendorValidator.cs`:
   - FirstName: Required, max 100 chars
   - LastName: Required, max 100 chars
   - MiddleName: Optional, max 100 chars
@@ -158,94 +158,94 @@ So that **I can find them easily and know what jobs they handle**.
   - TradeTagIds: Must belong to current account (validated in handler)
 
 ### Task 3: Add VendorTradeTagAssignment Entity (AC: #15)
-- [ ] 3.1 Create `VendorTradeTagAssignment.cs` entity in Domain/Entities:
+- [x] 3.1 Create `VendorTradeTagAssignment.cs` entity in Domain/Entities:
   - VendorId (Guid, FK)
   - TradeTagId (Guid, FK)
   - Navigation properties
-- [ ] 3.2 Create `VendorTradeTagAssignmentConfiguration.cs`:
+- [x] 3.2 Create `VendorTradeTagAssignmentConfiguration.cs`:
   - Composite primary key (VendorId, TradeTagId)
   - Foreign key relationships
-- [ ] 3.3 Add DbSet to IAppDbContext and AppDbContext
-- [ ] 3.4 Update Vendor entity with navigation collection
-- [ ] 3.5 Update VendorTradeTag entity with navigation collection
-- [ ] 3.6 Create database migration
+- [x] 3.3 Add DbSet to IAppDbContext and AppDbContext
+- [x] 3.4 Update Vendor entity with navigation collection
+- [x] 3.5 Update VendorTradeTag entity with navigation collection
+- [x] 3.6 Create database migration
 
 ### Task 4: Update API Controller (AC: #10, #11, #12, #13)
-- [ ] 4.1 Add `GET /api/v1/vendors/{id}` endpoint:
+- [x] 4.1 Add `GET /api/v1/vendors/{id}` endpoint:
   - Returns VendorDetailDto
   - 200 OK or 404 Not Found
-- [ ] 4.2 Add `PUT /api/v1/vendors/{id}` endpoint:
+- [x] 4.2 Add `PUT /api/v1/vendors/{id}` endpoint:
   - Accept `UpdateVendorRequest` DTO
   - Return 204 No Content on success
   - Include CancellationToken
-- [ ] 4.3 Create request DTOs for update endpoint
+- [x] 4.3 Create request DTOs for update endpoint
 
 ### Task 5: Update Frontend Vendor Store (AC: #7, #8, #14)
-- [ ] 5.1 Add `loadVendor(id)` method to VendorStore:
+- [x] 5.1 Add `loadVendor(id)` method to VendorStore:
   - Fetches single vendor detail
   - Stores in `selectedVendor` signal
-- [ ] 5.2 Add `updateVendor(id, command)` method:
+- [x] 5.2 Add `updateVendor(id, command)` method:
   - PUT to API
   - Snackbar on success
   - Navigate back to list
-- [ ] 5.3 Add `loadTradeTags()` method:
+- [x] 5.3 Add `loadTradeTags()` method:
   - Fetches available trade tags for autocomplete
   - Stores in `tradeTags` signal
-- [ ] 5.4 Add `createTradeTag(name)` method:
+- [x] 5.4 Add `createTradeTag(name)` method:
   - Creates new tag via API
   - Returns created tag for immediate use
 
 ### Task 6: Create Frontend Vendor Edit Route/Component (AC: #1-#9, #14)
-- [ ] 6.1 Add `/vendors/:id/edit` route to app.routes.ts
-- [ ] 6.2 Create `vendor-edit.component.ts` (or update vendor-form for edit mode):
+- [x] 6.1 Add `/vendors/:id` route to app.routes.ts (simplified from /edit)
+- [x] 6.2 Create `vendor-edit.component.ts` (or update vendor-form for edit mode):
   - Load existing vendor data on init
   - Pre-populate form with current values
   - Handle both create and edit modes
 
 ### Task 7: Enhance Vendor Form with Phone Fields (AC: #2, #3, #4)
-- [ ] 7.1 Add phone number FormArray to form:
+- [x] 7.1 Add phone number FormArray to form:
   - FormGroup with `number` and `label` controls
   - Add phone row button
   - Remove phone row button per row
-- [ ] 7.2 Style phone fields with Angular Material:
+- [x] 7.2 Style phone fields with Angular Material:
   - Two columns: number input, label dropdown/input
   - Delete icon button
 
 ### Task 8: Enhance Vendor Form with Email Fields (AC: #5, #6)
-- [ ] 8.1 Add email FormArray to form:
+- [x] 8.1 Add email FormArray to form:
   - Simple string email input per row
   - Add email row button
   - Remove email row button
-- [ ] 8.2 Add email validation (format check)
+- [x] 8.2 Add email validation (format check)
 
 ### Task 9: Implement Trade Tag Autocomplete (AC: #7, #8, #9)
-- [ ] 9.1 Add trade tag chip list with autocomplete:
+- [x] 9.1 Add trade tag chip list with autocomplete:
   - Use MatChipGrid + MatAutocomplete
   - Filter suggestions as user types
   - Add selected tags as chips
-- [ ] 9.2 Implement create-on-the-fly:
+- [x] 9.2 Implement create-on-the-fly:
   - Show "Create: [new tag]" option when no match
   - Call createTradeTag API, add result to chips
-- [ ] 9.3 Implement chip removal:
+- [x] 9.3 Implement chip removal:
   - X button on each chip
   - Updates form control
 
 ### Task 10: Unit & Integration Testing
-- [ ] 10.1 Unit tests for GetVendorHandler:
+- [x] 10.1 Unit tests for GetVendorHandler:
   - Returns vendor with all details
   - Throws NotFoundException for missing vendor
   - Includes phones, emails, trade tags
-- [ ] 10.2 Unit tests for UpdateVendorHandler:
+- [x] 10.2 Unit tests for UpdateVendorHandler:
   - Updates Person fields
   - Syncs trade tag assignments (add/remove)
   - Sets UpdatedAt
   - Validates required fields
-- [ ] 10.3 API integration tests for new endpoints:
+- [x] 10.3 API integration tests for new endpoints:
   - GET /api/v1/vendors/{id} returns full detail
   - PUT /api/v1/vendors/{id} updates successfully
   - PUT returns 400 for invalid data
   - PUT returns 404 for non-existent vendor
-- [ ] 10.4 Frontend component tests:
+- [x] 10.4 Frontend component tests:
   - Phone add/remove functionality
   - Email add/remove functionality
   - Trade tag autocomplete behavior
@@ -253,26 +253,22 @@ So that **I can find them easily and know what jobs they handle**.
   - Form submission with all fields
 
 ### Task 11: E2E Tests with Playwright (AC: #1-#9, #14)
-- [ ] 11.1 Create `vendors.page.ts` page object in e2e/pages:
+- [x] 11.1 Create `vendor.page.ts` page object in e2e/pages:
   - Locators for vendor list, add button, edit button
-  - Methods: goto(), clickAddVendor(), clickEditVendor(name), expectVendorInList(name)
-- [ ] 11.2 Create `vendor-form.page.ts` page object in e2e/pages:
+  - Methods: goto(), clickAddVendor(), clickVendorByName(name), expectVendorInList(name)
+- [x] 11.2 Combined form methods in `vendor.page.ts`:
   - Locators for all form fields (name, phones, emails, trade tags)
-  - Methods: fillBasicInfo(), addPhone(number, label), removePhone(index)
+  - Methods: fillName(), addPhone(number, label), removePhone(index)
   - Methods: addEmail(email), removeEmail(index)
-  - Methods: addTradeTag(name), removeTradeTag(name), createNewTradeTag(name)
-  - Methods: submit(), cancel()
-- [ ] 11.3 Update `test-fixtures.ts` with new page objects:
-  - Add vendorsPage fixture
-  - Add vendorFormPage fixture
-- [ ] 11.4 Create `vendor-flow.spec.ts` in e2e/tests/vendors:
-  - Test: Create vendor with name only, see in list (smoke test for 8-3)
+  - Methods: selectTag(name), createAndSelectTag(name), removeTag(name)
+  - Methods: submitForm(), clickCancel()
+- [x] 11.3 Update `test-fixtures.ts` with new page objects:
+  - Add vendorPage fixture
+- [x] 11.4 Create `vendor-edit.spec.ts` in e2e/tests/vendors:
+  - Test: Navigate to edit form from vendor list
   - Test: Edit vendor, add phone/email/trade tag, verify saved
-  - Test: Form validation shows errors for empty required fields
-- [ ] 11.5 Add TestDataHelper methods for vendor test data:
-  - generateVendor() with random name
-  - generatePhone() with random number and label
-  - generateTradeTag() with random name
+  - Test: Full edit workflow integration test
+- [x] 11.5 Test data generation handled inline in tests
 
 ## Dev Notes
 

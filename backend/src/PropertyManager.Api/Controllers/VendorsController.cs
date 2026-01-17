@@ -36,16 +36,17 @@ public class VendorsController : ControllerBase
     /// <summary>
     /// Get all vendors for the current user's account.
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of vendors</returns>
     /// <response code="200">Returns the list of vendors</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
     [ProducesResponseType(typeof(GetAllVendorsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllVendors()
+    public async Task<IActionResult> GetAllVendors(CancellationToken cancellationToken)
     {
         var query = new GetAllVendorsQuery();
-        var response = await _mediator.Send(query);
+        var response = await _mediator.Send(query, cancellationToken);
 
         _logger.LogInformation(
             "Retrieved {Count} vendors at {Timestamp}",

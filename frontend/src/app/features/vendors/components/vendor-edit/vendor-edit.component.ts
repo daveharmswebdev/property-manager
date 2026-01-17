@@ -19,7 +19,8 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 import { MatSelectModule } from '@angular/material/select';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { VendorStore } from '../../stores/vendor.store';
-import { VendorTradeTagDto, UpdateVendorRequest } from '../../../../core/api/api.service';
+import { VendorTradeTagDto, VendorDetailDto, PhoneNumberDto, UpdateVendorRequest } from '../../../../core/api/api.service';
+import { MatChipInputEvent } from '@angular/material/chips';
 
 /**
  * Vendor Edit Component (AC #1-#14)
@@ -423,7 +424,7 @@ export class VendorEditComponent implements OnInit, OnDestroy {
     this.store.clearSelectedVendor();
   }
 
-  private populateForm(vendor: any): void {
+  private populateForm(vendor: VendorDetailDto): void {
     this.form.patchValue({
       firstName: vendor.firstName || '',
       middleName: vendor.middleName || '',
@@ -432,7 +433,7 @@ export class VendorEditComponent implements OnInit, OnDestroy {
 
     // Clear and repopulate phones
     this.phonesArray.clear();
-    (vendor.phones || []).forEach((phone: any) => {
+    (vendor.phones || []).forEach((phone: PhoneNumberDto) => {
       this.phonesArray.push(this.fb.group({
         number: [phone.number, [Validators.required, Validators.maxLength(50)]],
         label: [phone.label || ''],
@@ -479,7 +480,7 @@ export class VendorEditComponent implements OnInit, OnDestroy {
     this.tagInputControl.setValue('');
   }
 
-  protected addTagFromInput(event: any): void {
+  protected addTagFromInput(event: MatChipInputEvent): void {
     const value = (event.value || '').trim();
     if (value && !this.tagExists(value)) {
       this.createAndAddTag(value);
@@ -515,12 +516,14 @@ export class VendorEditComponent implements OnInit, OnDestroy {
       firstName: this.form.value.firstName?.trim(),
       middleName: this.form.value.middleName?.trim() || undefined,
       lastName: this.form.value.lastName?.trim(),
-      phones: this.form.value.phones.map((p: any) => ({
+      phones: this.form.value.phones.map((p: { number?: string; label?: string }) => ({
         number: p.number?.trim(),
         label: p.label || undefined,
       })),
       emails: this.form.value.emails.map((e: string) => e.trim()),
-      tradeTagIds: this.selectedTags().map(t => t.id!),
+      tradeTagIds: this.selectedTags()
+        .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
+        .map(t => t.id),
     };
 
     this.store.updateVendor({ id: this.vendorId, request });
