@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upkeep - Logo Exploration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3651d4;
+      --secondary: #7c3aed;
+      --sidebar-bg: #1e2340;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc;
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+      font-size: 1.125rem;
+    }
+
+    .section {
+      margin-bottom: 64px;
+    }
+
+    .section h2 {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+    }
+
+    .logo-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    .logo-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .logo-card p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .logo-display {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .logo-display.dark {
+      background: var(--sidebar-bg);
+      border-radius: 12px;
+      margin: -16px -16px 16px -16px;
+      padding: 32px;
+      height: 140px;
+    }
+
+    /* Favicon sizes demo */
+    .favicon-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .favicon-size {
+      text-align: center;
+    }
+
+    .favicon-size span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* Wordmark styles */
+    .wordmark {
+      font-weight: 700;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .wordmark.gradient {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .wordmark.blue {
+      color: var(--primary);
+    }
+
+    .wordmark.white {
+      color: white;
+    }
+
+    .wordmark.dark {
+      color: var(--sidebar-bg);
+    }
+
+    /* Logo with icon */
+    .logo-with-icon {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-with-icon .wordmark {
+      font-size: 1.75rem;
+    }
+
+    /* Full width wordmark section */
+    .wordmark-display {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-items: center;
+    }
+
+    /* Application preview */
+    .app-preview {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .app-preview-sidebar {
+      width: 240px;
+      background: var(--sidebar-bg);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      float: left;
+      height: 200px;
+    }
+
+    .app-preview-content {
+      margin-left: 240px;
+      padding: 32px;
+      background: linear-gradient(to top, #eef2ff 0%, #ffffff 70%);
+      height: 200px;
+    }
+
+    /* Comparison row */
+    .comparison-row {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .comparison-item {
+      text-align: center;
+    }
+
+    .comparison-item span {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upkeep Logo Exploration</h1>
+  <p class="subtitle">The Roof U — Property meets identity</p>
+
+  <!-- Concept A: Classic Roof U -->
+  <div class="section">
+    <h2>Concept A: Classic Roof U</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Simple, symmetrical roof forming a U shape. Clean and immediately readable.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>Gradient Version</h3>
+        <p>Primary brand mark</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4361ee"/>
+                <stop offset="100%" style="stop-color:#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <!-- Roof U shape -->
+            <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+          </svg>
+        </div>
+        <div class="favicon-row">
+          <div class="favicon-size">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+            </svg>
+            <span>48px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+            </svg>
+            <span>32px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+            </svg>
+            <span>16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>Solid Blue</h3>
+        <p>Single color application</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="#4361ee"/>
+          </svg>
+        </div>
+        <div class="favicon-row">
+          <div class="favicon-size">
+            <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="#4361ee"/>
+            </svg>
+            <span>32px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="#4361ee"/>
+            </svg>
+            <span>16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Dark Background</h3>
+        <p>Sidebar / dark mode usage</p>
+        <div class="logo-display dark">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Concept B: Modern Roof U (Rounded) -->
+  <div class="section">
+    <h2>Concept B: Modern Roof U (Softer)</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Same concept with softer angles and more rounded corners. Friendlier feel.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>Gradient Version</h3>
+        <p>Softer, more approachable</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4361ee"/>
+                <stop offset="100%" style="stop-color:#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <!-- Rounded Roof U -->
+            <path d="M12 38 Q12 32 18 28 L36 14 Q40 11 44 14 L62 28 Q68 32 68 38 L68 66 Q68 74 60 74 L54 74 Q52 74 52 72 L52 48 Q52 40 40 40 Q28 40 28 48 L28 72 Q28 74 26 74 L20 74 Q12 74 12 66 Z" fill="url(#grad2)"/>
+          </svg>
+        </div>
+        <div class="favicon-row">
+          <div class="favicon-size">
+            <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+              <path d="M12 38 Q12 32 18 28 L36 14 Q40 11 44 14 L62 28 Q68 32 68 38 L68 66 Q68 74 60 74 L54 74 Q52 74 52 72 L52 48 Q52 40 40 40 Q28 40 28 48 L28 72 Q28 74 26 74 L20 74 Q12 74 12 66 Z" fill="url(#grad2)"/>
+            </svg>
+            <span>32px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+              <path d="M12 38 Q12 32 18 28 L36 14 Q40 11 44 14 L62 28 Q68 32 68 38 L68 66 Q68 74 60 74 L54 74 Q52 74 52 72 L52 48 Q52 40 40 40 Q28 40 28 48 L28 72 Q28 74 26 74 L20 74 Q12 74 12 66 Z" fill="url(#grad2)"/>
+            </svg>
+            <span>16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Dark Background</h3>
+        <p>Sidebar usage</p>
+        <div class="logo-display dark">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <path d="M12 38 Q12 32 18 28 L36 14 Q40 11 44 14 L62 28 Q68 32 68 38 L68 66 Q68 74 60 74 L54 74 Q52 74 52 72 L52 48 Q52 40 40 40 Q28 40 28 48 L28 72 Q28 74 26 74 L20 74 Q12 74 12 66 Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Concept C: Minimal Roof U -->
+  <div class="section">
+    <h2>Concept C: Minimal Roof U (Outline)</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Line-based version. More refined, works well at larger sizes.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>Outline Gradient</h3>
+        <p>Elegant, minimal</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4361ee"/>
+                <stop offset="100%" style="stop-color:#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 36 L40 12 L68 36 L68 68 L52 68 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 68 L12 68 Z" stroke="url(#grad3)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="favicon-row">
+          <div class="favicon-size">
+            <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+              <path d="M12 36 L40 12 L68 36 L68 68 L52 68 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 68 L12 68 Z" stroke="url(#grad3)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>32px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+              <path d="M12 36 L40 12 L68 36 L68 68 L52 68 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 68 L12 68 Z" stroke="#4361ee" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Dark Background</h3>
+        <p>Outline on dark</p>
+        <div class="logo-display dark">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <path d="M12 36 L40 12 L68 36 L68 68 L52 68 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 68 L12 68 Z" stroke="white" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Concept D: Contained -->
+  <div class="section">
+    <h2>Concept D: Contained (App Icon Style)</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Icon in a rounded square container. Great for app icons, social media, favicons.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>Gradient Container</h3>
+        <p>App icon style</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4361ee"/>
+                <stop offset="100%" style="stop-color:#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="4" width="72" height="72" rx="16" fill="url(#grad4)"/>
+            <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="favicon-row">
+          <div class="favicon-size">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <rect x="4" y="4" width="72" height="72" rx="16" fill="url(#grad4)"/>
+              <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="white"/>
+            </svg>
+            <span>48px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+              <rect x="4" y="4" width="72" height="72" rx="16" fill="url(#grad4)"/>
+              <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="white"/>
+            </svg>
+            <span>32px</span>
+          </div>
+          <div class="favicon-size">
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+              <rect x="4" y="4" width="72" height="72" rx="16" fill="url(#grad4)"/>
+              <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="white"/>
+            </svg>
+            <span>16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>Dark Container</h3>
+        <p>Alternative app icon</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="4" y="4" width="72" height="72" rx="16" fill="#1e2340"/>
+            <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="url(#grad4)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>Circle Container</h3>
+        <p>Social media avatar</p>
+        <div class="logo-display">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" fill="url(#grad4)"/>
+            <path d="M20 40 L40 24 L60 40 L60 56 C60 57.7 58.7 59 57 59 L52 59 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 59 L23 59 C21.3 59 20 57.7 20 56 Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logo + Wordmark Combinations -->
+  <div class="section">
+    <h2>Logo + Wordmark Combinations</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">How the icon pairs with the "upkeep" wordmark.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>Horizontal Lockup</h3>
+        <p>Primary brand usage</p>
+        <div class="logo-display">
+          <div class="logo-with-icon">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+            </svg>
+            <span class="wordmark dark">upkeep</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>Gradient Wordmark</h3>
+        <p>Marketing / hero usage</p>
+        <div class="logo-display">
+          <div class="logo-with-icon">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+            </svg>
+            <span class="wordmark gradient">upkeep</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Dark (Sidebar)</h3>
+        <p>Navigation usage</p>
+        <div class="logo-display dark">
+          <div class="logo-with-icon">
+            <svg width="40" height="40" viewBox="0 0 80 80" fill="none">
+              <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="white"/>
+            </svg>
+            <span class="wordmark white" style="font-size: 1.5rem;">upkeep</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App Preview -->
+  <div class="section">
+    <h2>In-App Preview</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">How the logo appears in the actual application context.</p>
+    <div class="app-preview">
+      <div class="app-preview-sidebar">
+        <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+          <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="white"/>
+        </svg>
+        <span style="color: white; font-weight: 600; font-size: 1.125rem;">upkeep</span>
+      </div>
+      <div class="app-preview-content">
+        <h3 style="color: #0f172a; margin-bottom: 8px;">Dashboard</h3>
+        <p style="color: #64748b;">Welcome back! Here's your property overview.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison -->
+  <div class="section">
+    <h2>Side-by-Side: Which Roof U?</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Compare the four icon styles at favicon size.</p>
+    <div class="comparison-row">
+      <div class="comparison-item">
+        <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+          <path d="M8 35 L40 10 L72 35 L72 70 C72 73.3 69.3 76 66 76 L56 76 L56 50 C56 41.2 48.8 34 40 34 C31.2 34 24 41.2 24 50 L24 76 L14 76 C10.7 76 8 73.3 8 70 L8 35Z" fill="url(#grad1)"/>
+        </svg>
+        <span>A: Classic</span>
+      </div>
+      <div class="comparison-item">
+        <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+          <path d="M12 38 Q12 32 18 28 L36 14 Q40 11 44 14 L62 28 Q68 32 68 38 L68 66 Q68 74 60 74 L54 74 Q52 74 52 72 L52 48 Q52 40 40 40 Q28 40 28 48 L28 72 Q28 74 26 74 L20 74 Q12 74 12 66 Z" fill="url(#grad2)"/>
+        </svg>
+        <span>B: Soft/Modern</span>
+      </div>
+      <div class="comparison-item">
+        <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+          <path d="M12 36 L40 12 L68 36 L68 68 L52 68 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 68 L12 68 Z" stroke="url(#grad3)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>C: Outline</span>
+      </div>
+      <div class="comparison-item">
+        <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+          <rect x="4" y="4" width="72" height="72" rx="16" fill="url(#grad4)"/>
+          <path d="M18 38 L40 20 L62 38 L62 58 C62 60.2 60.2 62 58 62 L52 62 L52 46 C52 39.4 46.6 34 40 34 C33.4 34 28 39.4 28 46 L28 62 L22 62 C19.8 62 18 60.2 18 58 Z" fill="white"/>
+        </svg>
+        <span>D: Contained</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
