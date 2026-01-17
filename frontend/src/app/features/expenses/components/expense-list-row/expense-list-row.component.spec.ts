@@ -81,6 +81,9 @@ describe('ExpenseListRowComponent', () => {
         ReceiptLightboxDialogComponent,
         {
           data: { receiptId: 'receipt-789' },
+          width: '90vw',
+          maxWidth: '1400px',
+          height: '90vh',
           panelClass: 'receipt-lightbox-panel',
         }
       );

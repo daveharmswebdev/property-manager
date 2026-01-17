@@ -73,7 +73,8 @@ export interface ReceiptLightboxDialogData {
   styles: [
     `
       .lightbox-container {
-        width: 75vw;
+        width: 90vw;
+        max-width: 1400px;
         height: 90vh;
         display: flex;
         flex-direction: column;
@@ -96,6 +97,7 @@ export interface ReceiptLightboxDialogData {
       .lightbox-content {
         flex: 1;
         min-height: 0;
+        overflow: hidden;
         display: flex;
         width: 100%;
       }
@@ -119,6 +121,8 @@ export interface ReceiptLightboxDialogData {
 
       app-receipt-image-viewer {
         display: block;
+        flex: 1;
+        min-width: 0;
         width: 100%;
         height: 100%;
       }

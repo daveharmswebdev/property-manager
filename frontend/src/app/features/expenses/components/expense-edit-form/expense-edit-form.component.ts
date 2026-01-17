@@ -505,6 +505,9 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
       ReceiptLightboxDialogComponent,
       {
         data: { receiptId },
+        width: '90vw',
+        maxWidth: '1400px',
+        height: '90vh',
         panelClass: 'receipt-lightbox-panel',
       }
     );
