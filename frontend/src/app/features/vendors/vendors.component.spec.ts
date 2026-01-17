@@ -31,14 +31,36 @@ describe('VendorsComponent', () => {
       firstName: 'John',
       lastName: 'Doe',
       fullName: 'John Doe',
-    } as VendorDto,
+      phones: [
+        { number: '512-555-1234', label: 'Mobile' },
+        { number: '512-555-5678', label: 'Office' },
+      ],
+      emails: ['john@example.com', 'john.doe@work.com'],
+      tradeTags: [
+        { id: 'tag-1', name: 'Plumber' },
+        { id: 'tag-2', name: 'General Contractor' },
+      ],
+    },
     {
       id: '2',
       firstName: 'Jane',
       lastName: 'Smith',
       fullName: 'Jane Smith',
-    } as VendorDto,
+      phones: [],
+      emails: [],
+      tradeTags: [],
+    },
   ];
+
+  const vendorWithFullDetails: VendorDto = {
+    id: '3',
+    firstName: 'Bob',
+    lastName: 'Builder',
+    fullName: 'Bob Builder',
+    phones: [{ number: '555-123-4567', label: 'Mobile' }],
+    emails: ['bob@builder.com'],
+    tradeTags: [{ id: 'tag-3', name: 'Electrician' }],
+  };
 
   beforeEach(async () => {
     mockVendorStore = {
@@ -257,6 +279,97 @@ describe('VendorsComponent', () => {
 
       const icons = fixture.debugElement.queryAll(By.css('.vendor-icon'));
       expect(icons.length).toBe(2);
+    });
+
+    it('should display trade tags as chips (AC #1)', () => {
+      fixture.detectChanges();
+
+      // First vendor has 2 trade tags
+      const tradeTagChips = fixture.debugElement.queryAll(By.css('.trade-tag-chip'));
+      expect(tradeTagChips.length).toBe(2); // Only John Doe has trade tags, Jane has none
+      expect(tradeTagChips[0].nativeElement.textContent).toContain('Plumber');
+      expect(tradeTagChips[1].nativeElement.textContent).toContain('General Contractor');
+    });
+
+    it('should display primary phone number (AC #1)', () => {
+      fixture.detectChanges();
+
+      const phoneSpans = fixture.debugElement.queryAll(By.css('.vendor-phone'));
+      // Only John Doe has phones
+      expect(phoneSpans.length).toBe(1);
+      expect(phoneSpans[0].nativeElement.textContent).toContain('512-555-1234');
+    });
+
+    it('should display primary email (AC #1)', () => {
+      fixture.detectChanges();
+
+      const emailSpans = fixture.debugElement.queryAll(By.css('.vendor-email'));
+      // Only John Doe has emails
+      expect(emailSpans.length).toBe(1);
+      expect(emailSpans[0].nativeElement.textContent).toContain('john@example.com');
+    });
+
+    it('should not display phone/email when vendor has none (AC #1)', () => {
+      // Jane Smith has no phones or emails
+      fixture.detectChanges();
+
+      const vendorCards = fixture.debugElement.queryAll(By.css('.vendor-card'));
+      const janeCard = vendorCards[1]; // Second vendor is Jane
+
+      const phoneInJane = janeCard.query(By.css('.vendor-phone'));
+      const emailInJane = janeCard.query(By.css('.vendor-email'));
+      const tagsInJane = janeCard.query(By.css('.trade-tags'));
+
+      expect(phoneInJane).toBeFalsy();
+      expect(emailInJane).toBeFalsy();
+      expect(tagsInJane).toBeFalsy();
+    });
+
+    it('should not display trade tags section when vendor has none (AC #1)', () => {
+      fixture.detectChanges();
+
+      const vendorCards = fixture.debugElement.queryAll(By.css('.vendor-card'));
+      const janeCard = vendorCards[1]; // Jane has no trade tags
+
+      const tradeTags = janeCard.query(By.css('.trade-tags'));
+      expect(tradeTags).toBeFalsy();
+    });
+
+    it('should have cursor pointer for clickable cards (AC #4)', () => {
+      fixture.detectChanges();
+
+      const vendorCards = fixture.debugElement.queryAll(By.css('.vendor-card'));
+      expect(vendorCards.length).toBe(2);
+
+      // Verify cards have the cursor: pointer style for clickability
+      const johnCard = vendorCards[0];
+      const styles = getComputedStyle(johnCard.nativeElement);
+      expect(styles.cursor).toBe('pointer');
+    });
+  });
+
+  describe('Vendor with Full Details Display', () => {
+    beforeEach(() => {
+      mockVendorStore.isEmpty.set(false);
+      mockVendorStore.hasVendors.set(true);
+      mockVendorStore.vendors.set([vendorWithFullDetails]);
+      mockVendorStore.totalCount.set(1);
+    });
+
+    it('should display all vendor details correctly', () => {
+      fixture.detectChanges();
+
+      const vendorName = fixture.debugElement.query(By.css('.vendor-name'));
+      expect(vendorName.nativeElement.textContent).toContain('Bob Builder');
+
+      const phone = fixture.debugElement.query(By.css('.vendor-phone'));
+      expect(phone.nativeElement.textContent).toContain('555-123-4567');
+
+      const email = fixture.debugElement.query(By.css('.vendor-email'));
+      expect(email.nativeElement.textContent).toContain('bob@builder.com');
+
+      const tradeTag = fixture.debugElement.query(By.css('.trade-tag-chip'));
+      expect(tradeTag.nativeElement.textContent).toContain('Electrician');
     });
   });
 });

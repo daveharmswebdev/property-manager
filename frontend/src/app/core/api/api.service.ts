@@ -3668,14 +3668,6 @@ export interface VendorDto {
     firstName?: string;
     lastName?: string;
     fullName?: string;
-}
-
-export interface VendorDetailDto {
-    id?: string;
-    firstName?: string;
-    middleName?: string | undefined;
-    lastName?: string;
-    fullName?: string;
     phones?: PhoneNumberDto[];
     emails?: string[];
     tradeTags?: VendorTradeTagDto[];
@@ -3689,6 +3681,17 @@ export interface PhoneNumberDto {
 export interface VendorTradeTagDto {
     id?: string;
     name?: string;
+}
+
+export interface VendorDetailDto {
+    id?: string;
+    firstName?: string;
+    middleName?: string | undefined;
+    lastName?: string;
+    fullName?: string;
+    phones?: PhoneNumberDto[];
+    emails?: string[];
+    tradeTags?: VendorTradeTagDto[];
 }
 
 export interface UpdateVendorRequest {

@@ -26,6 +26,21 @@ export class VendorPage extends BasePage {
     return this.page.locator('.vendor-card');
   }
 
+  /** Trade tag chips displayed in vendor list */
+  get listTradeTagChips(): Locator {
+    return this.page.locator('.vendor-list .trade-tag-chip');
+  }
+
+  /** Phone numbers displayed in vendor list */
+  get listPhoneNumbers(): Locator {
+    return this.page.locator('.vendor-list .vendor-phone');
+  }
+
+  /** Email addresses displayed in vendor list */
+  get listEmails(): Locator {
+    return this.page.locator('.vendor-list .vendor-email');
+  }
+
   /** Add Vendor button in header (not the one in empty state) */
   get addVendorButton(): Locator {
     return this.page.locator('.page-header button', { hasText: 'Add Vendor' });
@@ -443,5 +458,68 @@ export class VendorPage extends BasePage {
    */
   async expectTagCount(count: number): Promise<void> {
     await expect(this.selectedTagChips).toHaveCount(count);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Assertions - Vendor List Display (Story 8.5)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assert a vendor card displays trade tags
+   * @param vendorName - Name of vendor to check
+   * @param tagNames - Expected tag names
+   */
+  async expectVendorHasTradeTags(vendorName: string, tagNames: string[]): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    for (const tagName of tagNames) {
+      await expect(vendorCard.locator('.trade-tag-chip', { hasText: tagName })).toBeVisible();
+    }
+  }
+
+  /**
+   * Assert a vendor card displays phone number
+   * @param vendorName - Name of vendor to check
+   * @param phoneNumber - Expected phone number text
+   */
+  async expectVendorHasPhone(vendorName: string, phoneNumber: string): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    await expect(vendorCard.locator('.vendor-phone')).toContainText(phoneNumber);
+  }
+
+  /**
+   * Assert a vendor card displays email
+   * @param vendorName - Name of vendor to check
+   * @param email - Expected email text
+   */
+  async expectVendorHasEmail(vendorName: string, email: string): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    await expect(vendorCard.locator('.vendor-email')).toContainText(email);
+  }
+
+  /**
+   * Assert a vendor card has no phone displayed
+   * @param vendorName - Name of vendor to check
+   */
+  async expectVendorHasNoPhone(vendorName: string): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    await expect(vendorCard.locator('.vendor-phone')).not.toBeVisible();
+  }
+
+  /**
+   * Assert a vendor card has no email displayed
+   * @param vendorName - Name of vendor to check
+   */
+  async expectVendorHasNoEmail(vendorName: string): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    await expect(vendorCard.locator('.vendor-email')).not.toBeVisible();
+  }
+
+  /**
+   * Assert a vendor card has no trade tags displayed
+   * @param vendorName - Name of vendor to check
+   */
+  async expectVendorHasNoTradeTags(vendorName: string): Promise<void> {
+    const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
+    await expect(vendorCard.locator('.trade-tags')).not.toBeVisible();
   }
 }
