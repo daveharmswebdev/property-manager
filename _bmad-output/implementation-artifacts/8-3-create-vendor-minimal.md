@@ -1,6 +1,6 @@
 # Story 8.3: Create Vendor (Minimal)
 
-Status: ready-for-review
+Status: done
 
 ## Story
 
