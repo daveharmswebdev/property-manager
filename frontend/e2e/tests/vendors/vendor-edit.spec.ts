@@ -23,7 +23,9 @@ test.describe('Vendor Edit E2E Tests', () => {
     await expect(page).toHaveURL('/vendors/new');
 
     const timestamp = Date.now();
-    await vendorPage.fillName(`Test${timestamp}`, `Vendor${timestamp}`);
+    const firstName = `Test${timestamp}`;
+    const lastName = `Vendor${timestamp}`;
+    await vendorPage.fillName(firstName, lastName);
     await vendorPage.submitForm();
 
     // Wait for redirect and extract vendor ID from URL
@@ -31,13 +33,16 @@ test.describe('Vendor Edit E2E Tests', () => {
     await expect(page).toHaveURL('/vendors');
 
     // Click on the newly created vendor to get its ID
-    await vendorPage.clickVendorByName(`Test${timestamp} Vendor${timestamp}`);
+    await vendorPage.clickVendorByName(`${firstName} ${lastName}`);
+
+    // Wait for navigation to edit page
+    await page.waitForURL(/\/vendors\/[a-f0-9-]+$/);
 
     // Extract vendor ID from URL
     const url = page.url();
     const match = url.match(/\/vendors\/([a-f0-9-]+)/);
     if (!match) {
-      throw new Error('Could not extract vendor ID from URL');
+      throw new Error(`Could not extract vendor ID from URL: ${url}`);
     }
     return match[1];
   }
