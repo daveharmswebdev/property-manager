@@ -240,7 +240,8 @@ export class VendorPage extends BasePage {
    * @param tagNames - Array of tag names to select
    */
   async selectTradeTagFilters(tagNames: string[]): Promise<void> {
-    await this.tradeTagFilter.click();
+    // Use force: true because mat-label can intercept clicks on mat-select
+    await this.tradeTagFilter.click({ force: true });
     for (const tagName of tagNames) {
       await this.page.locator('mat-option', { hasText: tagName }).click();
     }
