@@ -411,6 +411,10 @@ export class VendorPage extends BasePage {
     await this.page.waitForTimeout(300);
     // Click the "Create" option
     await this.autocompleteOptions.filter({ hasText: `Create "${tagName}"` }).click();
+    // Wait for the chip to appear (async tag creation to complete)
+    await expect(this.selectedTagChips.filter({ hasText: tagName })).toBeVisible({
+      timeout: 5000,
+    });
   }
 
   /**

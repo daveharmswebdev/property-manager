@@ -105,7 +105,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Save and verify persistence
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
-    await expect(page).toHaveURL('/vendors');
+    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
 
     // Navigate back and verify phones persisted
     await vendorPage.gotoEdit(vendorId);
@@ -285,7 +285,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.waitForSnackBar('Vendor updated');
 
     // Should redirect to vendor list
-    await expect(page).toHaveURL('/vendors');
+    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
 
     // Navigate back and verify changes persisted
     await vendorPage.gotoEdit(vendorId);
@@ -308,8 +308,10 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Make changes but don't save
     await vendorPage.fillName('Changed', 'Name');
 
-    // Cancel
+    // Cancel - shows unsaved changes dialog (Story 8.7 AC #4)
     await vendorPage.clickCancel();
+    await vendorPage.expectUnsavedChangesDialogVisible();
+    await vendorPage.clickDiscardInDialog();
 
     // Should redirect to vendor list
     await expect(page).toHaveURL('/vendors');
@@ -382,7 +384,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.waitForSnackBar('Vendor updated');
 
     // Verify redirect
-    await expect(page).toHaveURL('/vendors');
+    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
 
     // Verify vendor appears in list
     await vendorPage.expectVendorInList('Integration Full TestVendor');

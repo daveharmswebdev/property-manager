@@ -538,6 +538,14 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
       return;
     }
 
+    // Mark form as pristine before save to allow navigation after success
+    // (the unsavedChangesGuard checks hasUnsavedChanges() when store navigates)
+    this.form.markAsPristine();
+    this.originalTradeTagIds = this.selectedTags()
+      .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
+      .map(t => t.id)
+      .sort();
+
     const request: UpdateVendorRequest = {
       firstName: this.form.value.firstName?.trim(),
       middleName: this.form.value.middleName?.trim() || undefined,
