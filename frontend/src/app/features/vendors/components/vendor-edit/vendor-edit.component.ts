@@ -460,8 +460,17 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
   /**
    * Check if form has unsaved changes (AC #4, #5)
    * Required by HasUnsavedChanges interface for CanDeactivate guard
+   *
+   * Returns false when:
+   * - Form is pristine AND no trade tag changes
+   * - Currently saving (allow navigation on successful save)
    */
   hasUnsavedChanges(): boolean {
+    // Allow navigation when save is in progress (store navigates on success)
+    if (this.store.isSaving()) {
+      return false;
+    }
+
     // Check reactive form dirty state
     if (this.form.dirty) {
       return true;
@@ -538,8 +547,10 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
       return;
     }
 
-    // Mark form as pristine before save to allow navigation after success
-    // (the unsavedChangesGuard checks hasUnsavedChanges() when store navigates)
+    // Mark form as pristine before save to allow navigation after success.
+    // Combined with the isSaving check in hasUnsavedChanges(), this ensures:
+    // - Successful save: navigates without dialog (form pristine)
+    // - Failed save: user sees error snackbar, can retry or navigate with warning
     this.form.markAsPristine();
     this.originalTradeTagIds = this.selectedTags()
       .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)

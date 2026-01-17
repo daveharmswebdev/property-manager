@@ -414,5 +414,20 @@ describe('VendorEditComponent', () => {
       component['form'].markAsPristine();
       expect(component.hasUnsavedChanges()).toBe(false);
     });
+
+    it('should return false when save is in progress (allow navigation on success)', () => {
+      // Make form dirty
+      component['form'].get('firstName')?.setValue('Jane');
+      component['form'].markAsDirty();
+      expect(component.hasUnsavedChanges()).toBe(true);
+
+      // Simulate save in progress - should allow navigation
+      mockVendorStore.isSaving.set(true);
+      expect(component.hasUnsavedChanges()).toBe(false);
+
+      // Save failed - should warn again
+      mockVendorStore.isSaving.set(false);
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
   });
 });
