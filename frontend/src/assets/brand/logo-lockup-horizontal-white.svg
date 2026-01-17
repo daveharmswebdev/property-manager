@@ -1,0 +1,11 @@
+<svg viewBox="0 0 200 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon -->
+  <path d="M7 20 Q7 16.5 10.5 14 L18 8 Q20 6.5 22 8 L29.5 14 Q33 16.5 33 20 L33 31 Q33 34 30 34 L27 34 L27 24 Q27 20 20 20 Q13 20 13 24 L13 34 L10 34 Q7 34 7 31 Z"
+        stroke="white"
+        stroke-width="2.5"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <!-- Wordmark -->
+  <text x="44" y="32" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="600" fill="white" letter-spacing="-0.02em">upkeep</text>
+</svg>
