@@ -4,6 +4,7 @@ using Moq;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Vendors;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Domain.ValueObjects;
 
 namespace PropertyManager.Application.Tests.Vendors;
 
@@ -170,6 +171,134 @@ public class GetAllVendorsHandlerTests
         result.Items.Should().OnlyContain(v => v.FirstName == "My");
     }
 
+    [Fact]
+    public async Task Handle_ReturnsVendorsWithPhones()
+    {
+        // Arrange
+        var vendor = CreateVendor(_testAccountId, "John", "Doe");
+        vendor.Phones = new List<PhoneNumber>
+        {
+            new PhoneNumber("512-555-1234", "Mobile"),
+            new PhoneNumber("512-555-5678", "Office")
+        };
+        SetupVendorsDbSet(new List<Vendor> { vendor });
+        var query = new GetAllVendorsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var dto = result.Items[0];
+        dto.Phones.Should().HaveCount(2);
+        dto.Phones[0].Number.Should().Be("512-555-1234");
+        dto.Phones[0].Label.Should().Be("Mobile");
+        dto.Phones[1].Number.Should().Be("512-555-5678");
+        dto.Phones[1].Label.Should().Be("Office");
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsVendorsWithEmails()
+    {
+        // Arrange
+        var vendor = CreateVendor(_testAccountId, "John", "Doe");
+        vendor.Emails = new List<string> { "john@example.com", "john.doe@work.com" };
+        SetupVendorsDbSet(new List<Vendor> { vendor });
+        var query = new GetAllVendorsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var dto = result.Items[0];
+        dto.Emails.Should().HaveCount(2);
+        dto.Emails[0].Should().Be("john@example.com");
+        dto.Emails[1].Should().Be("john.doe@work.com");
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsVendorsWithTradeTags()
+    {
+        // Arrange
+        var plumberTag = new VendorTradeTag { Id = Guid.NewGuid(), Name = "Plumber", AccountId = _testAccountId };
+        var electricianTag = new VendorTradeTag { Id = Guid.NewGuid(), Name = "Electrician", AccountId = _testAccountId };
+        var vendor = CreateVendor(_testAccountId, "John", "Doe");
+        vendor.TradeTagAssignments = new List<VendorTradeTagAssignment>
+        {
+            new VendorTradeTagAssignment { VendorId = vendor.Id, TradeTagId = plumberTag.Id, TradeTag = plumberTag },
+            new VendorTradeTagAssignment { VendorId = vendor.Id, TradeTagId = electricianTag.Id, TradeTag = electricianTag }
+        };
+        SetupVendorsDbSet(new List<Vendor> { vendor });
+        var query = new GetAllVendorsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var dto = result.Items[0];
+        dto.TradeTags.Should().HaveCount(2);
+        dto.TradeTags.Should().Contain(t => t.Name == "Plumber");
+        dto.TradeTags.Should().Contain(t => t.Name == "Electrician");
+    }
+
+    [Fact]
+    public async Task Handle_VendorWithNoContactInfo_ReturnsEmptyLists()
+    {
+        // Arrange
+        var vendor = CreateVendor(_testAccountId, "John", "Doe");
+        // Phones and Emails are already empty by default from CreateVendor
+        // TradeTagAssignments is empty collection by default
+        SetupVendorsDbSet(new List<Vendor> { vendor });
+        var query = new GetAllVendorsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var dto = result.Items[0];
+        dto.Phones.Should().BeEmpty();
+        dto.Emails.Should().BeEmpty();
+        dto.TradeTags.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_VendorsSortedByLastNameThenFirstName_WithEnhancedData()
+    {
+        // Arrange - verify sorting still works with phones/emails/tags populated
+        var plumberTag = new VendorTradeTag { Id = Guid.NewGuid(), Name = "Plumber", AccountId = _testAccountId };
+
+        var vendor1 = CreateVendor(_testAccountId, "Zach", "Anderson");
+        vendor1.Phones = new List<PhoneNumber> { new PhoneNumber("111-111-1111", "Mobile") };
+        vendor1.TradeTagAssignments = new List<VendorTradeTagAssignment>
+        {
+            new VendorTradeTagAssignment { VendorId = vendor1.Id, TradeTagId = plumberTag.Id, TradeTag = plumberTag }
+        };
+
+        var vendor2 = CreateVendor(_testAccountId, "Alex", "Brown");
+        vendor2.Emails = new List<string> { "alex@example.com" };
+
+        var vendor3 = CreateVendor(_testAccountId, "Mike", "Anderson");
+
+        SetupVendorsDbSet(new List<Vendor> { vendor1, vendor2, vendor3 });
+        var query = new GetAllVendorsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert - sorted by LastName, then FirstName
+        result.Items.Should().HaveCount(3);
+        result.Items[0].FullName.Should().Be("Mike Anderson");
+        result.Items[0].Phones.Should().BeEmpty();
+        result.Items[1].FullName.Should().Be("Zach Anderson");
+        result.Items[1].Phones.Should().HaveCount(1);
+        result.Items[1].TradeTags.Should().HaveCount(1);
+        result.Items[2].FullName.Should().Be("Alex Brown");
+        result.Items[2].Emails.Should().HaveCount(1);
+    }
+
     private Vendor CreateVendor(Guid accountId, string firstName, string lastName, string? middleName = null)
     {
         return new Vendor
@@ -179,8 +308,9 @@ public class GetAllVendorsHandlerTests
             FirstName = firstName,
             MiddleName = middleName,
             LastName = lastName,
-            Phones = new List<Domain.ValueObjects.PhoneNumber>(),
+            Phones = new List<PhoneNumber>(),
             Emails = new List<string>(),
+            TradeTagAssignments = new List<VendorTradeTagAssignment>(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

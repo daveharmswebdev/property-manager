@@ -75,7 +75,7 @@ import { VendorStore } from './stores/vendor.store';
         </mat-card>
       }
 
-      <!-- Vendor List (AC #4) -->
+      <!-- Vendor List (AC #1, #3, #4) -->
       @if (store.hasVendors()) {
         <div class="vendor-list">
           @for (vendor of store.vendors(); track vendor.id) {
@@ -85,6 +85,27 @@ import { VendorStore } from './stores/vendor.store';
                   <mat-icon class="vendor-icon">person</mat-icon>
                   <div class="vendor-info">
                     <span class="vendor-name">{{ vendor.fullName }}</span>
+                    <div class="vendor-details">
+                      @if (vendor.phones && vendor.phones.length > 0) {
+                        <span class="vendor-phone">
+                          <mat-icon class="detail-icon">phone</mat-icon>
+                          {{ vendor.phones![0].number }}
+                        </span>
+                      }
+                      @if (vendor.emails && vendor.emails.length > 0) {
+                        <span class="vendor-email">
+                          <mat-icon class="detail-icon">email</mat-icon>
+                          {{ vendor.emails![0] }}
+                        </span>
+                      }
+                    </div>
+                    @if (vendor.tradeTags && vendor.tradeTags.length > 0) {
+                      <div class="trade-tags">
+                        @for (tag of vendor.tradeTags!; track tag.id) {
+                          <span class="trade-tag-chip">{{ tag.name }}</span>
+                        }
+                      </div>
+                    }
                   </div>
                   <mat-icon class="edit-icon">chevron_right</mat-icon>
                 </div>
@@ -207,14 +228,78 @@ import { VendorStore } from './stores/vendor.store';
 
       .vendor-info {
         flex: 1;
+        min-width: 0;
       }
 
       .vendor-name {
+        font-weight: 500;
+        display: block;
+      }
+
+      .vendor-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 4px;
+        font-size: 13px;
+        color: rgba(0, 0, 0, 0.6);
+      }
+
+      .vendor-phone,
+      .vendor-email {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .detail-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: rgba(0, 0, 0, 0.4);
+      }
+
+      .trade-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .trade-tag-chip {
+        display: inline-block;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 12px;
         font-weight: 500;
       }
 
       .edit-icon {
         color: rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 600px) {
+        .vendors-container {
+          padding: 16px;
+        }
+
+        .page-header {
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .add-button {
+          width: 100%;
+        }
+
+        .vendor-details {
+          flex-direction: column;
+          gap: 4px;
+        }
       }
     `,
   ],

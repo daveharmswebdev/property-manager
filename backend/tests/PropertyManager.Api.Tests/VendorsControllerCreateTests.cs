@@ -276,5 +276,15 @@ public class VendorsControllerCreateTests : IClassFixture<PropertyManagerWebAppl
 
 // Response records for deserialization
 public record CreateVendorResponse(Guid Id);
-public record VendorDto(Guid Id, string FirstName, string LastName, string FullName);
+public record PhoneNumberDto(string Number, string? Label);
+public record VendorTradeTagDto(Guid Id, string Name);
+public record VendorDto(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string FullName,
+    IReadOnlyList<PhoneNumberDto> Phones,
+    IReadOnlyList<string> Emails,
+    IReadOnlyList<VendorTradeTagDto> TradeTags
+);
 public record GetAllVendorsResponse(IReadOnlyList<VendorDto> Items, int TotalCount);

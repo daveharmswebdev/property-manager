@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Application.VendorTradeTags;
 
 namespace PropertyManager.Application.Vendors;
 
@@ -42,19 +43,25 @@ public class GetAllVendorsQueryHandler : IRequestHandler<GetAllVendorsQuery, Get
     {
         var vendors = await _dbContext.Vendors
             .Where(v => v.AccountId == _currentUser.AccountId && v.DeletedAt == null)
+            .Include(v => v.TradeTagAssignments)
+                .ThenInclude(a => a.TradeTag)
             .OrderBy(v => v.LastName)
             .ThenBy(v => v.FirstName)
-            .Select(v => new VendorDto(
-                v.Id,
-                v.FirstName,
-                v.LastName,
-                string.IsNullOrWhiteSpace(v.MiddleName)
-                    ? v.FirstName + " " + v.LastName
-                    : v.FirstName + " " + v.MiddleName + " " + v.LastName
-            ))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new GetAllVendorsResponse(vendors, vendors.Count);
+        var vendorDtos = vendors.Select(v => new VendorDto(
+            v.Id,
+            v.FirstName,
+            v.LastName,
+            v.FullName,
+            v.Phones.Select(p => new PhoneNumberDto(p.Number, p.Label)).ToList(),
+            v.Emails.ToList(),
+            v.TradeTagAssignments
+                .Select(a => new VendorTradeTagDto(a.TradeTag.Id, a.TradeTag.Name))
+                .ToList()
+        )).ToList();
+
+        return new GetAllVendorsResponse(vendorDtos, vendorDtos.Count);
     }
 }
