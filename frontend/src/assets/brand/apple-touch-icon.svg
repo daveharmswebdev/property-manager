@@ -1,0 +1,15 @@
+<svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="touch-icon-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4361ee"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" fill="url(#touch-icon-bg)"/>
+  <path d="M45 94 Q45 81 58 72 L81 54 Q90 47 99 54 L122 72 Q135 81 135 94 L135 130 Q135 140 125 140 L113 140 L113 108 Q113 90 90 90 Q67 90 67 108 L67 140 L55 140 Q45 140 45 130 Z"
+        stroke="white"
+        stroke-width="8"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

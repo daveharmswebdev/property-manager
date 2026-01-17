@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upkeep - Final Logo Direction</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3651d4;
+      --secondary: #7c3aed;
+      --sidebar-bg: #1e2340;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --gradient-start: #eef2ff;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc;
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+      font-size: 1.125rem;
+    }
+
+    .section {
+      margin-bottom: 64px;
+    }
+
+    .section h2 {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .section > p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .logo-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .logo-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .logo-card > p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .logo-display {
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .logo-display.light {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+    }
+
+    .logo-display.dark {
+      background: var(--sidebar-bg);
+    }
+
+    .logo-display.gradient {
+      background: linear-gradient(to top, var(--gradient-start) 0%, #ffffff 70%);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Wordmark styles */
+    .wordmark {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    /* Logo with icon */
+    .logo-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-lockup.vertical {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Favicon demos */
+    .favicon-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px;
+      background: #f8fafc;
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .favicon-item {
+      text-align: center;
+    }
+
+    .favicon-item span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .favicon-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    .favicon-container.with-bg {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      padding: 4px;
+    }
+
+    /* Browser tab mockup */
+    .browser-mockup {
+      background: #f1f3f4;
+      border-radius: 8px 8px 0 0;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: -1px;
+    }
+
+    .browser-tab {
+      background: white;
+      border-radius: 8px 8px 0 0;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+      border: 1px solid #e5e7eb;
+      border-bottom: none;
+    }
+
+    .browser-content {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0 0 8px 8px;
+      height: 120px;
+      display: flex;
+    }
+
+    .browser-sidebar {
+      width: 200px;
+      background: var(--sidebar-bg);
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border-radius: 0 0 0 8px;
+    }
+
+    .browser-main {
+      flex: 1;
+      background: linear-gradient(to top, var(--gradient-start) 0%, #ffffff 70%);
+      padding: 16px;
+      border-radius: 0 0 8px 0;
+    }
+
+    /* App icon grid */
+    .app-icon-grid {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .app-icon {
+      text-align: center;
+    }
+
+    .app-icon-box {
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .app-icon-box.gradient-bg {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    }
+
+    .app-icon-box.dark-bg {
+      background: var(--sidebar-bg);
+    }
+
+    .app-icon-box.white-bg {
+      background: white;
+      border: 1px solid #e5e7eb;
+    }
+
+    .app-icon span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    /* Specifications */
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .specs-table th,
+    .specs-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .specs-table th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: #f8fafc;
+    }
+
+    .specs-table code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8125rem;
+    }
+
+    /* Color swatch inline */
+    .color-swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-right: 8px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Hero section */
+    .hero {
+      text-align: center;
+      padding: 80px 40px;
+      background: var(--sidebar-bg);
+      border-radius: 24px;
+      margin-bottom: 64px;
+    }
+
+    .hero-logo {
+      margin-bottom: 24px;
+    }
+
+    .hero h2 {
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      color: #94a3b8;
+      font-size: 1.125rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upkeep Logo — Final Direction</h1>
+  <p class="subtitle">Soft Roof U, outline style. Modern, approachable, refined.</p>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-logo">
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+              stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>upkeep</h2>
+    <p>Property management made simple for landlords who have better things to do.</p>
+  </div>
+
+  <!-- Primary Logo Lockups -->
+  <div class="section">
+    <h2>Primary Logo Lockups</h2>
+    <p>The main ways the logo appears across the brand.</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <h3>On Dark (Primary)</h3>
+        <p>Sidebar, dark backgrounds, hero sections</p>
+        <div class="logo-display dark">
+          <div class="logo-lockup">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="wordmark" style="color: white; font-size: 1.75rem;">upkeep</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Light</h3>
+        <p>Light backgrounds, documentation, print</p>
+        <div class="logo-display light">
+          <div class="logo-lockup">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <defs>
+                <linearGradient id="grad-outline" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#4361ee"/>
+                  <stop offset="100%" style="stop-color:#7c3aed"/>
+                </linearGradient>
+              </defs>
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="url(#grad-outline)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="wordmark" style="color: #0f172a; font-size: 1.75rem;">upkeep</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>On Gradient Background</h3>
+        <p>Main app content area</p>
+        <div class="logo-display gradient">
+          <div class="logo-lockup">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="url(#grad-outline)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="wordmark" style="color: #0f172a; font-size: 1.75rem;">upkeep</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card">
+        <h3>Icon Only</h3>
+        <p>When space is limited or brand is established</p>
+        <div class="logo-display dark">
+          <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+            <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                  stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App Context -->
+  <div class="section">
+    <h2>In-App Context</h2>
+    <p>How the logo appears in the actual application.</p>
+
+    <div class="logo-card" style="max-width: 700px; margin: 0 auto;">
+      <h3>Browser Tab + Sidebar</h3>
+      <p>The full experience</p>
+
+      <div class="browser-mockup">
+        <div style="display: flex; gap: 6px;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57;"></div>
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></div>
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #28ca41;"></div>
+        </div>
+        <div class="browser-tab">
+          <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <linearGradient id="favicon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4361ee"/>
+                <stop offset="100%" style="stop-color:#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="4" width="72" height="72" rx="14" fill="url(#favicon-grad)"/>
+            <path d="M20 42 Q20 36 26 32 L36 24 Q40 21 44 24 L54 32 Q60 36 60 42 L60 56 Q60 60 56 60 L52 60 L52 48 Q52 42 40 42 Q28 42 28 48 L28 60 L24 60 Q20 60 20 56 Z"
+                  stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Dashboard - Upkeep
+        </div>
+      </div>
+      <div class="browser-content">
+        <div class="browser-sidebar">
+          <svg width="24" height="24" viewBox="0 0 80 80" fill="none">
+            <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                  stroke="white" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span style="color: white; font-weight: 600; font-size: 1rem;">upkeep</span>
+        </div>
+        <div class="browser-main">
+          <div style="font-weight: 600; color: #0f172a; margin-bottom: 4px;">Dashboard</div>
+          <div style="font-size: 0.875rem; color: #64748b;">Welcome back! Here's your property overview.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Favicon & App Icons -->
+  <div class="section">
+    <h2>Favicon & App Icons</h2>
+    <p>For browser tabs, bookmarks, and mobile home screens. Uses a contained version for better readability at small sizes.</p>
+
+    <div class="logo-card">
+      <h3>Favicon Sizes</h3>
+      <p>The contained gradient version ensures visibility in browser tabs</p>
+      <div class="favicon-row">
+        <div class="favicon-item">
+          <svg width="48" height="48" viewBox="0 0 80 80" fill="none">
+            <rect x="4" y="4" width="72" height="72" rx="14" fill="url(#favicon-grad)"/>
+            <path d="M20 42 Q20 36 26 32 L36 24 Q40 21 44 24 L54 32 Q60 36 60 42 L60 56 Q60 60 56 60 L52 60 L52 48 Q52 42 40 42 Q28 42 28 48 L28 60 L24 60 Q20 60 20 56 Z"
+                  stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="favicon-item">
+          <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+            <rect x="4" y="4" width="72" height="72" rx="14" fill="url(#favicon-grad)"/>
+            <path d="M20 42 Q20 36 26 32 L36 24 Q40 21 44 24 L54 32 Q60 36 60 42 L60 56 Q60 60 56 60 L52 60 L52 48 Q52 42 40 42 Q28 42 28 48 L28 60 L24 60 Q20 60 20 56 Z"
+                  stroke="white" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="favicon-item">
+          <svg width="16" height="16" viewBox="0 0 80 80" fill="none">
+            <rect x="4" y="4" width="72" height="72" rx="14" fill="url(#favicon-grad)"/>
+            <path d="M20 42 Q20 36 26 32 L36 24 Q40 21 44 24 L54 32 Q60 36 60 42 L60 56 Q60 60 56 60 L52 60 L52 48 Q52 42 40 42 Q28 42 28 48 L28 60 L24 60 Q20 60 20 56 Z"
+                  stroke="white" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>16px</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="logo-card" style="margin-top: 24px;">
+      <h3>App Icon Variations</h3>
+      <p>For mobile apps, desktop shortcuts, social media profiles</p>
+      <div class="app-icon-grid" style="margin-top: 24px;">
+        <div class="app-icon">
+          <div class="app-icon-box gradient-bg">
+            <svg width="44" height="44" viewBox="0 0 80 80" fill="none">
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Gradient</span>
+        </div>
+        <div class="app-icon">
+          <div class="app-icon-box dark-bg">
+            <svg width="44" height="44" viewBox="0 0 80 80" fill="none">
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Dark</span>
+        </div>
+        <div class="app-icon">
+          <div class="app-icon-box white-bg">
+            <svg width="44" height="44" viewBox="0 0 80 80" fill="none">
+              <path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40 L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48 L26 68 L20 68 Q14 68 14 62 Z"
+                    stroke="url(#grad-outline)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Light</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specifications -->
+  <div class="section">
+    <h2>Logo Specifications</h2>
+    <div class="logo-card">
+      <table class="specs-table">
+        <tr>
+          <th>Element</th>
+          <th>Specification</th>
+        </tr>
+        <tr>
+          <td>Logo Style</td>
+          <td>Soft Roof U, outline/stroke</td>
+        </tr>
+        <tr>
+          <td>Stroke Weight</td>
+          <td>4px at 80px size (scales proportionally)</td>
+        </tr>
+        <tr>
+          <td>Stroke Caps</td>
+          <td><code>round</code></td>
+        </tr>
+        <tr>
+          <td>Stroke Joins</td>
+          <td><code>round</code></td>
+        </tr>
+        <tr>
+          <td>On Dark</td>
+          <td><span class="color-swatch" style="background: white;"></span><code>#FFFFFF</code> (white)</td>
+        </tr>
+        <tr>
+          <td>On Light</td>
+          <td><span class="color-swatch" style="background: linear-gradient(135deg, #4361ee, #7c3aed);"></span>Gradient: <code>#4361ee</code> → <code>#7c3aed</code></td>
+        </tr>
+        <tr>
+          <td>Wordmark</td>
+          <td><code>upkeep</code> (lowercase), Inter 600, -0.02em tracking</td>
+        </tr>
+        <tr>
+          <td>Favicon</td>
+          <td>Contained in rounded square with gradient background</td>
+        </tr>
+        <tr>
+          <td>Minimum Size</td>
+          <td>16px (use contained/filled version below 24px)</td>
+        </tr>
+        <tr>
+          <td>Clear Space</td>
+          <td>Minimum 25% of logo width on all sides</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SVG Code -->
+  <div class="section">
+    <h2>SVG Code</h2>
+    <p>Copy-paste ready SVG for implementation.</p>
+    <div class="logo-card">
+      <h3>Logo Icon (White on Dark)</h3>
+      <pre style="background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.8125rem; margin-top: 16px;"><code>&lt;svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M14 40 Q14 33 21 28 L36 16 Q40 13 44 16 L59 28 Q66 33 66 40
+           L66 62 Q66 68 60 68 L54 68 L54 48 Q54 40 40 40 Q26 40 26 48
+           L26 68 L20 68 Q14 68 14 62 Z"
+        stroke="white"
+        stroke-width="4"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/&gt;
+&lt;/svg&gt;</code></pre>
+    </div>
+    <div class="logo-card" style="margin-top: 24px;">
+      <h3>Favicon (Contained with Gradient)</h3>
+      <pre style="background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.8125rem; margin-top: 16px;"><code>&lt;svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;defs&gt;
+    &lt;linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"&gt;
+      &lt;stop offset="0%" stop-color="#4361ee"/&gt;
+      &lt;stop offset="100%" stop-color="#7c3aed"/&gt;
+    &lt;/linearGradient&gt;
+  &lt;/defs&gt;
+  &lt;rect x="4" y="4" width="72" height="72" rx="14" fill="url(#bg)"/&gt;
+  &lt;path d="M20 42 Q20 36 26 32 L36 24 Q40 21 44 24 L54 32 Q60 36 60 42
+           L60 56 Q60 60 56 60 L52 60 L52 48 Q52 42 40 42 Q28 42 28 48
+           L28 60 L24 60 Q20 60 20 56 Z"
+        stroke="white"
+        stroke-width="4"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/&gt;
+&lt;/svg&gt;</code></pre>
+    </div>
+  </div>
+
+</body>
+</html>

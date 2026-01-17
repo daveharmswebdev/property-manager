@@ -101,6 +101,23 @@ development_status:
   8-9-vendor-detail-page: backlog
   epic-8-retrospective: optional
 
+  # ============================================================
+  # INTERJECTION: UX Design Refresh (Mini-Epic 8.5)
+  # Source: epic-8.5-ux-design-refresh.md
+  # Design Spec: ux-design-refresh-2026.md
+  # Added: 2026-01-17
+  # ============================================================
+
+  # Epic 8.5: UX Design Refresh - "Upkeep" Brand Launch
+  # User Outcome: "The app feels modern, polished, and distinctly mine"
+  epic-8.5: backlog
+  8.5-1-angular-material-theme-migration: backlog
+  8.5-2-sidebar-styling-update: backlog
+  8.5-3-logo-and-favicon-implementation: backlog
+  8.5-4-receipt-lightbox-fix: backlog           # GitHub Issue #83
+  8.5-5-visual-polish-and-qa: backlog
+  epic-8.5-retrospective: optional
+
   # Epic 9: Work Order Tracking
   # User Outcome: "I can track maintenance issues across my properties"
   epic-9: backlog
