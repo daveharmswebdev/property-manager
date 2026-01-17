@@ -4,7 +4,11 @@ import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { VendorStore } from './vendor.store';
-import { ApiClient, VendorDto } from '../../../core/api/api.service';
+import {
+  ApiClient,
+  VendorDto,
+  VendorTradeTagDto,
+} from '../../../core/api/api.service';
 
 describe('VendorStore', () => {
   let store: InstanceType<typeof VendorStore>;
@@ -297,6 +301,269 @@ describe('VendorStore', () => {
       expect(store.isLoading()).toBe(false);
       expect(store.isSaving()).toBe(false);
       expect(store.error()).toBeNull();
+    });
+  });
+
+  // Story 8-6: Search & Filter Vendors Tests
+  describe('filter functionality (Story 8-6)', () => {
+    const plumberTag: VendorTradeTagDto = { id: 'tag-1', name: 'Plumber' };
+    const electricianTag: VendorTradeTagDto = {
+      id: 'tag-2',
+      name: 'Electrician',
+    };
+    const hvacTag: VendorTradeTagDto = { id: 'tag-3', name: 'HVAC' };
+
+    const vendorsWithTags: VendorDto[] = [
+      {
+        id: '1',
+        firstName: 'John',
+        lastName: 'Doe',
+        fullName: 'John Doe',
+        tradeTags: [plumberTag],
+      } as VendorDto,
+      {
+        id: '2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        fullName: 'Jane Smith',
+        tradeTags: [electricianTag],
+      } as VendorDto,
+      {
+        id: '3',
+        firstName: 'Bob',
+        lastName: 'Johnson',
+        fullName: 'Bob Johnson',
+        tradeTags: [plumberTag, hvacTag],
+      } as VendorDto,
+      {
+        id: '4',
+        firstName: 'Alice',
+        lastName: 'Williams',
+        fullName: 'Alice Williams',
+        tradeTags: [],
+      } as VendorDto,
+    ];
+
+    beforeEach(() => {
+      // Load vendors with trade tags for filter tests
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(
+        of({ items: vendorsWithTags, totalCount: 4 })
+      );
+      store.loadVendors();
+    });
+
+    describe('initial filter state', () => {
+      it('should have empty searchTerm', () => {
+        expect(store.searchTerm()).toBe('');
+      });
+
+      it('should have empty selectedTradeTagIds', () => {
+        expect(store.selectedTradeTagIds()).toEqual([]);
+      });
+
+      it('should have hasActiveFilters false when no filters set', () => {
+        expect(store.hasActiveFilters()).toBe(false);
+      });
+
+      it('should return all vendors in filteredVendors when no filters', () => {
+        expect(store.filteredVendors()).toEqual(vendorsWithTags);
+      });
+    });
+
+    describe('filteredVendors with search term (AC #1)', () => {
+      it('5.1 - should filter by first name (case-insensitive)', () => {
+        store.setSearchTerm('john');
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(2); // John Doe and Bob Johnson
+        expect(filtered.map((v) => v.firstName)).toContain('John');
+        expect(filtered.map((v) => v.lastName)).toContain('Johnson');
+      });
+
+      it('5.2 - should filter by last name (case-insensitive)', () => {
+        store.setSearchTerm('smith');
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].lastName).toBe('Smith');
+      });
+
+      it('5.3 - should filter by full name (case-insensitive)', () => {
+        store.setSearchTerm('jane smith');
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].fullName).toBe('Jane Smith');
+      });
+
+      it('should handle partial name matching', () => {
+        store.setSearchTerm('jo');
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(2); // John Doe, Bob Johnson
+      });
+
+      it('should handle whitespace in search term', () => {
+        store.setSearchTerm('  jane  ');
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].firstName).toBe('Jane');
+      });
+    });
+
+    describe('filteredVendors with trade tag filter (AC #2)', () => {
+      it('5.4 - should filter by single trade tag', () => {
+        store.setTradeTagFilter(['tag-1']); // Plumber
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(2); // John Doe, Bob Johnson
+        expect(filtered.every((v) => v.tradeTags?.some((t) => t.id === 'tag-1'))).toBe(true);
+      });
+
+      it('5.5 - should filter by multiple trade tags (OR logic)', () => {
+        store.setTradeTagFilter(['tag-1', 'tag-2']); // Plumber OR Electrician
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(3); // John, Jane, Bob
+        expect(filtered.map((v) => v.firstName).sort()).toEqual([
+          'Bob',
+          'Jane',
+          'John',
+        ]);
+      });
+
+      it('should not include vendors with no matching tags', () => {
+        store.setTradeTagFilter(['tag-2']); // Electrician only
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].firstName).toBe('Jane');
+      });
+
+      it('should not include vendors with empty trade tags', () => {
+        store.setTradeTagFilter(['tag-1']); // Plumber
+
+        const filtered = store.filteredVendors();
+        expect(filtered.find((v) => v.firstName === 'Alice')).toBeUndefined();
+      });
+    });
+
+    describe('filteredVendors with combined filters (AC #3)', () => {
+      it('5.6 - should apply AND logic for search + trade tag', () => {
+        store.setSearchTerm('bob');
+        store.setTradeTagFilter(['tag-1']); // Plumber
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].firstName).toBe('Bob');
+      });
+
+      it('should return empty when combined filters have no match', () => {
+        store.setSearchTerm('jane');
+        store.setTradeTagFilter(['tag-1']); // Plumber - Jane is Electrician
+
+        const filtered = store.filteredVendors();
+        expect(filtered.length).toBe(0);
+      });
+    });
+
+    describe('clearFilters (AC #3)', () => {
+      it('5.7 - should reset both searchTerm and selectedTradeTagIds', () => {
+        store.setSearchTerm('test');
+        store.setTradeTagFilter(['tag-1', 'tag-2']);
+
+        store.clearFilters();
+
+        expect(store.searchTerm()).toBe('');
+        expect(store.selectedTradeTagIds()).toEqual([]);
+        expect(store.filteredVendors()).toEqual(vendorsWithTags);
+      });
+    });
+
+    describe('hasActiveFilters (AC #3)', () => {
+      it('5.8 - should return true when searchTerm is set', () => {
+        store.setSearchTerm('test');
+
+        expect(store.hasActiveFilters()).toBe(true);
+      });
+
+      it('5.8 - should return true when trade tags are selected', () => {
+        store.setTradeTagFilter(['tag-1']);
+
+        expect(store.hasActiveFilters()).toBe(true);
+      });
+
+      it('5.8 - should return true when both filters are set', () => {
+        store.setSearchTerm('test');
+        store.setTradeTagFilter(['tag-1']);
+
+        expect(store.hasActiveFilters()).toBe(true);
+      });
+
+      it('should return false when searchTerm is only whitespace', () => {
+        store.setSearchTerm('   ');
+
+        expect(store.hasActiveFilters()).toBe(false);
+      });
+    });
+
+    describe('noMatchesFound (AC #4)', () => {
+      it('5.9 - should return false when vendors list is empty (no vendors at all)', () => {
+        mockApiClient.vendors_GetAllVendors.mockReturnValue(
+          of({ items: [], totalCount: 0 })
+        );
+        store.loadVendors();
+        store.setSearchTerm('test');
+
+        expect(store.noMatchesFound()).toBe(false);
+      });
+
+      it('5.9 - should return false when no filters are active', () => {
+        expect(store.noMatchesFound()).toBe(false);
+      });
+
+      it('5.9 - should return true when filters return no results but vendors exist', () => {
+        store.setSearchTerm('nonexistent');
+
+        expect(store.noMatchesFound()).toBe(true);
+      });
+
+      it('5.9 - should return false when filters return some results', () => {
+        store.setSearchTerm('john');
+
+        expect(store.noMatchesFound()).toBe(false);
+      });
+
+      it('should return true when combined filters return no results', () => {
+        store.setSearchTerm('jane');
+        store.setTradeTagFilter(['tag-1']); // Jane is Electrician, not Plumber
+
+        expect(store.noMatchesFound()).toBe(true);
+      });
+    });
+
+    describe('setSearchTerm', () => {
+      it('should update searchTerm state', () => {
+        store.setSearchTerm('new term');
+
+        expect(store.searchTerm()).toBe('new term');
+      });
+    });
+
+    describe('setTradeTagFilter', () => {
+      it('should update selectedTradeTagIds state', () => {
+        store.setTradeTagFilter(['tag-1', 'tag-2']);
+
+        expect(store.selectedTradeTagIds()).toEqual(['tag-1', 'tag-2']);
+      });
+
+      it('should handle empty array', () => {
+        store.setTradeTagFilter(['tag-1']);
+        store.setTradeTagFilter([]);
+
+        expect(store.selectedTradeTagIds()).toEqual([]);
+      });
     });
   });
 });

@@ -29,6 +29,9 @@ interface VendorState {
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
+  // Filter state (Story 8-6)
+  searchTerm: string;
+  selectedTradeTagIds: string[];
 }
 
 /**
@@ -41,6 +44,9 @@ const initialState: VendorState = {
   isLoading: false,
   isSaving: false,
   error: null,
+  // Filter state (Story 8-6)
+  searchTerm: '',
+  selectedTradeTagIds: [],
 };
 
 /**
@@ -71,6 +77,59 @@ export const VendorStore = signalStore(
     hasVendors: computed(
       () => !store.isLoading() && store.vendors().length > 0
     ),
+
+    /**
+     * Filtered vendors based on search term and trade tag filters (Story 8-6 AC #1-#4)
+     * Search matches first name, last name, or full name (case-insensitive)
+     * Trade tag filter uses OR logic (vendor matches if they have ANY selected tag)
+     * Combined filters use AND logic (must match both search AND tags)
+     */
+    filteredVendors: computed(() => {
+      const vendors = store.vendors();
+      const searchTerm = store.searchTerm().toLowerCase().trim();
+      const selectedTagIds = store.selectedTradeTagIds();
+
+      return vendors.filter((vendor) => {
+        // Search filter: match first, last, or full name
+        const matchesSearch =
+          !searchTerm ||
+          vendor.firstName?.toLowerCase().includes(searchTerm) ||
+          vendor.lastName?.toLowerCase().includes(searchTerm) ||
+          vendor.fullName?.toLowerCase().includes(searchTerm);
+
+        // Trade tag filter: vendor must have at least one of selected tags (OR logic)
+        const matchesTags =
+          selectedTagIds.length === 0 ||
+          (vendor.tradeTags?.some((tag: VendorTradeTagDto) => tag.id && selectedTagIds.includes(tag.id)) ??
+            false);
+
+        // AND logic: must match both
+        return matchesSearch && matchesTags;
+      });
+    }),
+
+    /**
+     * Whether any filter is currently active (Story 8-6 AC #3)
+     */
+    hasActiveFilters: computed(
+      () =>
+        store.searchTerm().trim().length > 0 ||
+        store.selectedTradeTagIds().length > 0
+    ),
+  })),
+  // Second withComputed block so noMatchesFound can reference filteredVendors
+  withComputed((store) => ({
+    /**
+     * Whether we have vendors but the filter returned empty results (Story 8-6 AC #4)
+     * Distinct from isEmpty which means no vendors exist at all
+     */
+    noMatchesFound: computed(() => {
+      const hasVendors = store.vendors().length > 0;
+      const hasFilters = store.hasActiveFilters();
+
+      // Use existing filteredVendors signal to avoid duplicating filter logic
+      return hasVendors && hasFilters && store.filteredVendors().length === 0;
+    }),
   })),
   withMethods(
     (
@@ -324,6 +383,29 @@ export const VendorStore = signalStore(
        */
       reset(): void {
         patchState(store, initialState);
+      },
+
+      /**
+       * Set search term for filtering vendors (Story 8-6 AC #1)
+       * @param term Search text to filter by
+       */
+      setSearchTerm(term: string): void {
+        patchState(store, { searchTerm: term });
+      },
+
+      /**
+       * Set trade tag filter for filtering vendors (Story 8-6 AC #2)
+       * @param tagIds Array of trade tag IDs to filter by
+       */
+      setTradeTagFilter(tagIds: string[]): void {
+        patchState(store, { selectedTradeTagIds: tagIds });
+      },
+
+      /**
+       * Clear all filters (Story 8-6 AC #3)
+       */
+      clearFilters(): void {
+        patchState(store, { searchTerm: '', selectedTradeTagIds: [] });
       },
     })
   )

@@ -52,6 +52,35 @@ export class VendorPage extends BasePage {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Locators - Filter Bar (Story 8-6)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Filter bar container */
+  get filterBar(): Locator {
+    return this.page.locator('.filter-bar');
+  }
+
+  /** Search input field */
+  get searchInput(): Locator {
+    return this.page.locator('.search-field input');
+  }
+
+  /** Trade tag filter dropdown */
+  get tradeTagFilter(): Locator {
+    return this.page.locator('.tag-filter-field mat-select');
+  }
+
+  /** Clear filters button */
+  get clearFiltersButton(): Locator {
+    return this.page.locator('.filter-bar button', { hasText: 'Clear filters' });
+  }
+
+  /** No matches card (when filters return empty) */
+  get noMatchesCard(): Locator {
+    return this.page.locator('.no-matches-card');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Locators - Vendor Form (Create/Edit)
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -182,6 +211,51 @@ export class VendorPage extends BasePage {
    */
   async clickAddVendor(): Promise<void> {
     await this.addVendorButton.click();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Actions - Filter Bar (Story 8-6)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Search for vendors by name
+   * @param searchTerm - Text to search for
+   */
+  async searchVendors(searchTerm: string): Promise<void> {
+    await this.searchInput.fill(searchTerm);
+    // Wait for debounce (300ms)
+    await this.page.waitForTimeout(400);
+  }
+
+  /**
+   * Clear the search input
+   */
+  async clearSearch(): Promise<void> {
+    await this.searchInput.clear();
+    await this.page.waitForTimeout(400);
+  }
+
+  /**
+   * Select trade tags to filter by
+   * @param tagNames - Array of tag names to select
+   */
+  async selectTradeTagFilters(tagNames: string[]): Promise<void> {
+    // Use force: true because mat-label can intercept clicks on mat-select
+    await this.tradeTagFilter.click({ force: true });
+    for (const tagName of tagNames) {
+      await this.page.locator('mat-option', { hasText: tagName }).click();
+    }
+    // Close dropdown by clicking outside
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(100);
+  }
+
+  /**
+   * Click clear filters button
+   */
+  async clickClearFilters(): Promise<void> {
+    await this.clearFiltersButton.click();
+    await this.page.waitForTimeout(100);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -521,5 +595,61 @@ export class VendorPage extends BasePage {
   async expectVendorHasNoTradeTags(vendorName: string): Promise<void> {
     const vendorCard = this.vendorCards.filter({ hasText: vendorName }).first();
     await expect(vendorCard.locator('.trade-tags')).not.toBeVisible();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Assertions - Filter Bar (Story 8-6)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assert filter bar is visible
+   */
+  async expectFilterBarVisible(): Promise<void> {
+    await expect(this.filterBar).toBeVisible();
+  }
+
+  /**
+   * Assert search input has value
+   * @param value - Expected search input value
+   */
+  async expectSearchValue(value: string): Promise<void> {
+    await expect(this.searchInput).toHaveValue(value);
+  }
+
+  /**
+   * Assert no matches card is visible
+   */
+  async expectNoMatchesState(): Promise<void> {
+    await expect(this.noMatchesCard).toBeVisible();
+    await expect(this.noMatchesCard).toContainText('No vendors match your search');
+  }
+
+  /**
+   * Assert no matches card is not visible
+   */
+  async expectNoMatchesStateHidden(): Promise<void> {
+    await expect(this.noMatchesCard).not.toBeVisible();
+  }
+
+  /**
+   * Assert clear filters button is visible
+   */
+  async expectClearFiltersVisible(): Promise<void> {
+    await expect(this.clearFiltersButton).toBeVisible();
+  }
+
+  /**
+   * Assert clear filters button is not visible
+   */
+  async expectClearFiltersHidden(): Promise<void> {
+    await expect(this.clearFiltersButton).not.toBeVisible();
+  }
+
+  /**
+   * Assert the number of vendors visible in the list
+   * @param count - Expected number of vendor cards
+   */
+  async expectVendorCount(count: number): Promise<void> {
+    await expect(this.vendorCards).toHaveCount(count);
   }
 }
