@@ -62,6 +62,8 @@ export interface IApiClient {
     reports_DeleteReport(id: string): Observable<void>;
     vendors_GetAllVendors(): Observable<GetAllVendorsResponse>;
     vendors_CreateVendor(request?: CreateVendorRequest | undefined): Observable<CreateVendorResponse>;
+    vendors_GetVendor(id: string): Observable<VendorDetailDto>;
+    vendors_UpdateVendor(id: string, request?: UpdateVendorRequest | undefined): Observable<void>;
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse>;
     vendorTradeTags_CreateVendorTradeTag(request?: CreateVendorTradeTagRequest | undefined): Observable<CreateVendorTradeTagResponse>;
 }
@@ -3009,6 +3011,139 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    vendors_GetVendor(id: string): Observable<VendorDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendors_GetVendor(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendors_GetVendor(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VendorDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VendorDetailDto>;
+        }));
+    }
+
+    protected processVendors_GetVendor(response: HttpResponseBase): Observable<VendorDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as VendorDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendors_UpdateVendor(id: string, request?: UpdateVendorRequest | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendors_UpdateVendor(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendors_UpdateVendor(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processVendors_UpdateVendor(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse> {
         let url_ = this.baseUrl + "/api/v1/vendor-trade-tags";
         url_ = url_.replace(/[?&]$/, "");
@@ -3535,6 +3670,41 @@ export interface VendorDto {
     fullName?: string;
 }
 
+export interface VendorDetailDto {
+    id?: string;
+    firstName?: string;
+    middleName?: string | undefined;
+    lastName?: string;
+    fullName?: string;
+    phones?: PhoneNumberDto[];
+    emails?: string[];
+    tradeTags?: VendorTradeTagDto[];
+}
+
+export interface PhoneNumberDto {
+    number?: string;
+    label?: string | undefined;
+}
+
+export interface VendorTradeTagDto {
+    id?: string;
+    name?: string;
+}
+
+export interface UpdateVendorRequest {
+    firstName?: string;
+    middleName?: string | undefined;
+    lastName?: string;
+    phones?: PhoneNumberRequest[];
+    emails?: string[];
+    tradeTagIds?: string[];
+}
+
+export interface PhoneNumberRequest {
+    number?: string;
+    label?: string | undefined;
+}
+
 export interface CreateVendorResponse {
     id?: string;
 }
@@ -3548,11 +3718,6 @@ export interface CreateVendorRequest {
 export interface GetAllVendorTradeTagsResponse {
     items?: VendorTradeTagDto[];
     totalCount?: number;
-}
-
-export interface VendorTradeTagDto {
-    id?: string;
-    name?: string;
 }
 
 export interface CreateVendorTradeTagResponse {

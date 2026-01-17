@@ -57,10 +57,10 @@ public class GlobalExceptionHandlerMiddlewareTests
     }
 
     [Fact]
-    public async Task ValidationException_Returns400WithCorrectProblemDetails()
+    public async Task FluentValidationException_Returns400WithCorrectProblemDetails()
     {
         // Arrange
-        var exception = new ValidationException("Validation failed");
+        var exception = new FluentValidation.ValidationException("Validation failed");
         var middleware = CreateMiddleware(exception, Environments.Production);
 
         // Act
@@ -72,9 +72,35 @@ public class GlobalExceptionHandlerMiddlewareTests
         var problemDetails = await DeserializeProblemDetails();
         problemDetails.Should().NotBeNull();
         problemDetails!.Type.Should().Be("https://tools.ietf.org/html/rfc7231#section-6.5.1");
-        problemDetails.Title.Should().Be("Validation error");
+        problemDetails.Title.Should().Be("Validation failed");
         problemDetails.Status.Should().Be(400);
         problemDetails.Detail.Should().Be("Validation failed");
+    }
+
+    [Fact]
+    public async Task DomainValidationException_Returns400WithErrorsDictionary()
+    {
+        // Arrange
+        var errors = new Dictionary<string, string[]>
+        {
+            { "firstName", new[] { "First name is required" } },
+            { "tradeTagIds", new[] { "Invalid trade tag IDs" } }
+        };
+        var exception = new PropertyManager.Domain.Exceptions.ValidationException(errors);
+        var middleware = CreateMiddleware(exception, Environments.Production);
+
+        // Act
+        await middleware.InvokeAsync(_httpContext);
+
+        // Assert
+        _httpContext.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+
+        var problemDetails = await DeserializeProblemDetails();
+        problemDetails.Should().NotBeNull();
+        problemDetails!.Type.Should().Be("https://tools.ietf.org/html/rfc7231#section-6.5.1");
+        problemDetails.Title.Should().Be("Validation failed");
+        problemDetails.Status.Should().Be(400);
+        problemDetails.Extensions.Should().ContainKey("errors");
     }
 
     [Fact]

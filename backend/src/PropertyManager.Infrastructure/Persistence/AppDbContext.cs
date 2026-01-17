@@ -43,6 +43,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<VendorTradeTag> VendorTradeTags => Set<VendorTradeTag>();
     public DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings => Set<CategoryTradeTagMapping>();
+    public DbSet<VendorTradeTagAssignment> VendorTradeTagAssignments => Set<VendorTradeTagAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

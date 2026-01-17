@@ -2,6 +2,7 @@ using System.Net;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Domain.Exceptions;
+using DomainValidationException = PropertyManager.Domain.Exceptions.ValidationException;
 
 namespace PropertyManager.Api.Middleware;
 
@@ -72,6 +73,22 @@ public class GlobalExceptionHandlerMiddleware
         // Add traceId for correlation
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
+        // Add validation errors if present
+        if (exception is DomainValidationException domainValidationEx && domainValidationEx.Errors.Count > 0)
+        {
+            problemDetails.Extensions["errors"] = domainValidationEx.Errors;
+        }
+        else if (exception is FluentValidation.ValidationException fluentValidationEx)
+        {
+            var errors = fluentValidationEx.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            if (errors.Count > 0)
+            {
+                problemDetails.Extensions["errors"] = errors;
+            }
+        }
+
         // Include stack trace only in Development mode
         if (_environment.IsDevelopment())
         {
@@ -109,10 +126,15 @@ public class GlobalExceptionHandlerMiddleware
                 "https://propertymanager.app/errors/bad-request",
                 "Bad request"
             ),
-            ValidationException => (
+            DomainValidationException => (
                 StatusCodes.Status400BadRequest,
                 "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                "Validation error"
+                "Validation failed"
+            ),
+            FluentValidation.ValidationException => (
+                StatusCodes.Status400BadRequest,
+                "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                "Validation failed"
             ),
             _ => (
                 StatusCodes.Status500InternalServerError,
