@@ -26,9 +26,9 @@ export class VendorPage extends BasePage {
     return this.page.locator('.vendor-card');
   }
 
-  /** Add Vendor button in header */
+  /** Add Vendor button in header (not the one in empty state) */
   get addVendorButton(): Locator {
-    return this.page.locator('button', { hasText: 'Add Vendor' });
+    return this.page.locator('.page-header button', { hasText: 'Add Vendor' });
   }
 
   /** Empty state card when no vendors exist */
@@ -70,9 +70,9 @@ export class VendorPage extends BasePage {
     return this.page.locator('.section-header button').filter({ has: this.page.locator('mat-icon:has-text("add")') }).first();
   }
 
-  /** Delete phone buttons */
+  /** Delete phone buttons (buttons with delete icon in phone rows) */
   get deletePhoneButtons(): Locator {
-    return this.page.locator('.phone-row button[color="warn"]');
+    return this.page.locator('.phone-row button').filter({ has: this.page.locator('mat-icon:has-text("delete")') });
   }
 
   /** Email inputs - using the formArrayName approach */
@@ -85,9 +85,9 @@ export class VendorPage extends BasePage {
     return this.page.locator('.section-header button').filter({ has: this.page.locator('mat-icon:has-text("add")') }).nth(1);
   }
 
-  /** Delete email buttons */
+  /** Delete email buttons (buttons with delete icon in email rows) */
   get deleteEmailButtons(): Locator {
-    return this.page.locator('.email-row button[color="warn"]');
+    return this.page.locator('.email-row button').filter({ has: this.page.locator('mat-icon:has-text("delete")') });
   }
 
   /** Trade tag chip input */
@@ -190,17 +190,22 @@ export class VendorPage extends BasePage {
    * @param label - Optional label (Mobile, Home, Work, Office, Fax)
    */
   async addPhone(number: string, label?: string): Promise<void> {
+    // Get current phone row count before clicking
+    const phoneRows = this.page.locator('.phone-row');
+    const currentCount = await phoneRows.count();
+
     // Click add phone button
     await this.addPhoneButton.click();
 
-    // Fill in the last phone row
-    const phoneInputs = this.phoneNumberInputs;
-    const count = await phoneInputs.count();
-    await phoneInputs.nth(count - 1).fill(number);
+    // Wait for new phone row to appear
+    await expect(phoneRows).toHaveCount(currentCount + 1);
+
+    // Get the last phone row explicitly and fill its input
+    const lastPhoneRow = phoneRows.last();
+    await lastPhoneRow.locator('input[formControlName="number"]').fill(number);
 
     if (label) {
-      const labelSelects = this.phoneLabelSelects;
-      await labelSelects.nth(count - 1).click();
+      await lastPhoneRow.locator('mat-select[formControlName="label"]').click();
       await this.page.locator('mat-option', { hasText: label }).click();
     }
   }
@@ -224,7 +229,24 @@ export class VendorPage extends BasePage {
    * @param index - Index of the phone row to remove
    */
   async removePhone(index: number): Promise<void> {
-    await this.deletePhoneButtons.nth(index).click();
+    const phoneRows = this.page.locator('.phone-row');
+    const currentCount = await phoneRows.count();
+
+    // Get the value of the phone input we want to delete
+    const targetValue = await this.phoneNumberInputs.nth(index).inputValue();
+
+    // Find and click the delete button in the row with this phone number
+    for (let i = 0; i < currentCount; i++) {
+      const row = phoneRows.nth(i);
+      const inputValue = await row.locator('input[formControlName="number"]').inputValue();
+      if (inputValue === targetValue) {
+        await row.locator('button').click();
+        break;
+      }
+    }
+
+    // Wait for phone row to be removed
+    await expect(phoneRows).toHaveCount(currentCount - 1);
   }
 
   /**
@@ -232,10 +254,19 @@ export class VendorPage extends BasePage {
    * @param email - Email address
    */
   async addEmail(email: string): Promise<void> {
+    // Get current email row count before clicking
+    const emailRows = this.page.locator('.email-row');
+    const currentCount = await emailRows.count();
+
+    // Click add email button
     await this.addEmailButton.click();
-    const emailInputs = this.emailInputs;
-    const count = await emailInputs.count();
-    await emailInputs.nth(count - 1).fill(email);
+
+    // Wait for new email row to appear
+    await expect(emailRows).toHaveCount(currentCount + 1);
+
+    // Get the last email row explicitly and fill its input
+    const lastEmailRow = emailRows.last();
+    await lastEmailRow.locator('input').fill(email);
   }
 
   /**
@@ -252,7 +283,24 @@ export class VendorPage extends BasePage {
    * @param index - Index of the email row to remove
    */
   async removeEmail(index: number): Promise<void> {
-    await this.deleteEmailButtons.nth(index).click();
+    const emailRows = this.page.locator('.email-row');
+    const currentCount = await emailRows.count();
+
+    // Get the value of the email input we want to delete
+    const targetValue = await this.emailInputs.nth(index).inputValue();
+
+    // Find and click the delete button in the row with this email
+    for (let i = 0; i < currentCount; i++) {
+      const row = emailRows.nth(i);
+      const inputValue = await row.locator('input').inputValue();
+      if (inputValue === targetValue) {
+        await row.locator('button').click();
+        break;
+      }
+    }
+
+    // Wait for email row to be removed
+    await expect(emailRows).toHaveCount(currentCount - 1);
   }
 
   /**
@@ -308,7 +356,8 @@ export class VendorPage extends BasePage {
    * @param vendorName - Full name to look for
    */
   async expectVendorInList(vendorName: string): Promise<void> {
-    await expect(this.vendorCards.filter({ hasText: vendorName })).toBeVisible();
+    // Use first() to handle multiple matches (e.g., from previous test runs)
+    await expect(this.vendorCards.filter({ hasText: vendorName }).first()).toBeVisible();
   }
 
   /**

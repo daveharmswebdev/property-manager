@@ -91,8 +91,8 @@ import { VendorTradeTagDto, UpdateVendorRequest } from '../../../../core/api/api
                   </button>
                 </div>
                 <div formArrayName="phones" class="array-items">
-                  @for (phone of phonesArray.controls; track $index) {
-                    <div [formGroupName]="$index" class="phone-row">
+                  @for (phone of phonesArray.controls; track phone; let i = $index) {
+                    <div [formGroupName]="i" class="phone-row">
                       <mat-form-field appearance="outline" class="phone-number">
                         <mat-label>Phone Number</mat-label>
                         <input matInput formControlName="number" placeholder="512-555-1234" />
@@ -111,7 +111,7 @@ import { VendorTradeTagDto, UpdateVendorRequest } from '../../../../core/api/api
                           <mat-option value="Fax">Fax</mat-option>
                         </mat-select>
                       </mat-form-field>
-                      <button mat-icon-button type="button" (click)="removePhone($index)" color="warn">
+                      <button mat-icon-button type="button" (click)="removePhone(i)" color="warn">
                         <mat-icon>delete</mat-icon>
                       </button>
                     </div>
@@ -131,11 +131,11 @@ import { VendorTradeTagDto, UpdateVendorRequest } from '../../../../core/api/api
                   </button>
                 </div>
                 <div formArrayName="emails" class="array-items">
-                  @for (email of emailsArray.controls; track $index) {
+                  @for (email of emailsArray.controls; track email; let i = $index) {
                     <div class="email-row">
                       <mat-form-field appearance="outline" class="email-field">
                         <mat-label>Email Address</mat-label>
-                        <input matInput [formControlName]="$index" placeholder="vendor@example.com" />
+                        <input matInput [formControlName]="i" placeholder="vendor@example.com" />
                         @if (email.hasError('required') && email.touched) {
                           <mat-error>Email is required</mat-error>
                         }
@@ -143,7 +143,7 @@ import { VendorTradeTagDto, UpdateVendorRequest } from '../../../../core/api/api
                           <mat-error>Invalid email format</mat-error>
                         }
                       </mat-form-field>
-                      <button mat-icon-button type="button" (click)="removeEmail($index)" color="warn">
+                      <button mat-icon-button type="button" (click)="removeEmail(i)" color="warn">
                         <mat-icon>delete</mat-icon>
                       </button>
                     </div>
