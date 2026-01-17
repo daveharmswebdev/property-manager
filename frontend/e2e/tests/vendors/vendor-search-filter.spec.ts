@@ -37,6 +37,8 @@ test.describe('Vendor Search & Filter E2E Tests (Story 8-6)', () => {
 
     // Click on the vendor to edit and add trade tag
     const fullName = `${firstName} ${lastName}`;
+    // Wait for the newly created vendor to appear in the list before clicking
+    await vendorPage.expectVendorInList(fullName);
     await vendorPage.clickVendorByName(fullName);
     await page.waitForURL(/\/vendors\/[a-f0-9-]+$/);
 
