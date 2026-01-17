@@ -79,13 +79,14 @@ import { VendorStore } from './stores/vendor.store';
       @if (store.hasVendors()) {
         <div class="vendor-list">
           @for (vendor of store.vendors(); track vendor.id) {
-            <mat-card class="vendor-card">
+            <mat-card class="vendor-card" [routerLink]="['/vendors', vendor.id]">
               <mat-card-content>
                 <div class="vendor-row">
                   <mat-icon class="vendor-icon">person</mat-icon>
                   <div class="vendor-info">
                     <span class="vendor-name">{{ vendor.fullName }}</span>
                   </div>
+                  <mat-icon class="edit-icon">chevron_right</mat-icon>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -186,7 +187,12 @@ import { VendorStore } from './stores/vendor.store';
       }
 
       .vendor-card {
-        cursor: default;
+        cursor: pointer;
+        transition: box-shadow 0.2s;
+      }
+
+      .vendor-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
       }
 
       .vendor-row {
@@ -205,6 +211,10 @@ import { VendorStore } from './stores/vendor.store';
 
       .vendor-name {
         font-weight: 500;
+      }
+
+      .edit-icon {
+        color: rgba(0, 0, 0, 0.3);
       }
     `,
   ],

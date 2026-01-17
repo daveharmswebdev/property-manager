@@ -27,6 +27,7 @@ import { PropertyFormPage } from '../pages/property-form.page';
 import { PropertyDetailPage } from '../pages/property-detail.page';
 import { ExpenseWorkspacePage } from '../pages/expense-workspace.page';
 import { IncomeWorkspacePage } from '../pages/income-workspace.page';
+import { VendorPage } from '../pages/vendor.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 
@@ -54,6 +55,8 @@ type Fixtures = {
   expenseWorkspacePage: ExpenseWorkspacePage;
   /** Income workspace page object */
   incomeWorkspacePage: IncomeWorkspacePage;
+  /** Vendor page object for vendor list/create/edit */
+  vendorPage: VendorPage;
   /** Authentication helper for login flows */
   authHelper: AuthHelper;
   /** MailHog helper for email verification (invitation flow) */
@@ -95,6 +98,10 @@ export const test = base.extend<Fixtures>({
 
   incomeWorkspacePage: async ({ page }, use) => {
     await use(new IncomeWorkspacePage(page));
+  },
+
+  vendorPage: async ({ page }, use) => {
+    await use(new VendorPage(page));
   },
 
   authHelper: async ({ page }, use) => {

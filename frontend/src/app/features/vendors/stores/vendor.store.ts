@@ -8,19 +8,24 @@ import {
   withState,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, firstValueFrom, map } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   ApiClient,
   VendorDto,
+  VendorDetailDto,
+  VendorTradeTagDto,
   CreateVendorRequest,
+  UpdateVendorRequest,
 } from '../../../core/api/api.service';
 
 /**
- * Vendor Store State Interface (AC #1-#6)
+ * Vendor Store State Interface (AC #1-#14)
  */
 interface VendorState {
   vendors: VendorDto[];
+  selectedVendor: VendorDetailDto | null;
+  tradeTags: VendorTradeTagDto[];
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -31,6 +36,8 @@ interface VendorState {
  */
 const initialState: VendorState = {
   vendors: [],
+  selectedVendor: null,
+  tradeTags: [],
   isLoading: false,
   isSaving: false,
   error: null,
@@ -151,6 +158,159 @@ export const VendorStore = signalStore(
           )
         )
       ),
+
+      /**
+       * Load a single vendor by ID (AC #10)
+       * @param id Vendor ID to load
+       */
+      loadVendor: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isLoading: true,
+              error: null,
+              selectedVendor: null,
+            })
+          ),
+          switchMap((id) =>
+            apiService.vendors_GetVendor(id).pipe(
+              tap((vendor) =>
+                patchState(store, {
+                  selectedVendor: vendor,
+                  isLoading: false,
+                })
+              ),
+              catchError((error) => {
+                patchState(store, {
+                  isLoading: false,
+                  error: 'Failed to load vendor. Please try again.',
+                });
+                console.error('Error loading vendor:', error);
+                if (error.status === 404) {
+                  router.navigate(['/vendors']);
+                  snackBar.open('Vendor not found', 'Close', {
+                    duration: 3000,
+                    horizontalPosition: 'center',
+                    verticalPosition: 'bottom',
+                  });
+                }
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Update an existing vendor (AC #12, #14)
+       * @param params Object containing id and request
+       */
+      updateVendor: rxMethod<{ id: string; request: UpdateVendorRequest }>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isSaving: true,
+              error: null,
+            })
+          ),
+          switchMap(({ id, request }) =>
+            apiService.vendors_UpdateVendor(id, request).pipe(
+              tap(() => {
+                patchState(store, { isSaving: false });
+                snackBar.open('Vendor updated \u2713', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                router.navigate(['/vendors']);
+              }),
+              catchError((error) => {
+                let errorMessage =
+                  'Failed to update vendor. Please try again.';
+                if (error.status === 400) {
+                  errorMessage =
+                    'Invalid vendor data. Please check your input.';
+                } else if (error.status === 404) {
+                  errorMessage = 'Vendor not found.';
+                }
+                patchState(store, {
+                  isSaving: false,
+                  error: errorMessage,
+                });
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                console.error('Error updating vendor:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Load all trade tags for autocomplete (AC #7)
+       */
+      loadTradeTags: rxMethod<void>(
+        pipe(
+          switchMap(() =>
+            apiService.vendorTradeTags_GetAllVendorTradeTags().pipe(
+              tap((response) =>
+                patchState(store, {
+                  tradeTags: response.items ?? [],
+                })
+              ),
+              catchError((error) => {
+                console.error('Error loading trade tags:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Create a new trade tag (AC #8)
+       * @param name Name of the new trade tag
+       * @returns Promise resolving to the created tag
+       */
+      async createTradeTag(name: string): Promise<VendorTradeTagDto | null> {
+        try {
+          const response = await firstValueFrom(
+            apiService.vendorTradeTags_CreateVendorTradeTag({ name }).pipe(
+              map((result) => {
+                const newTag: VendorTradeTagDto = {
+                  id: result.id,
+                  name: name,
+                };
+                // Add to local cache
+                patchState(store, {
+                  tradeTags: [...store.tradeTags(), newTag],
+                });
+                return newTag;
+              })
+            )
+          );
+          return response;
+        } catch (error) {
+          console.error('Error creating trade tag:', error);
+          snackBar.open('Failed to create trade tag', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+          return null;
+        }
+      },
+
+      /**
+       * Clear selected vendor
+       */
+      clearSelectedVendor(): void {
+        patchState(store, { selectedVendor: null });
+      },
 
       /**
        * Clear the error state

@@ -165,6 +165,14 @@ export const routes: Routes = [
             (m) => m.VendorFormComponent
           ),
       },
+      // Vendor Edit (Story 8.4 - AC #1)
+      {
+        path: 'vendors/:id',
+        loadComponent: () =>
+          import('./features/vendors/components/vendor-edit/vendor-edit.component').then(
+            (m) => m.VendorEditComponent
+          ),
+      },
       // Default child redirect to dashboard
       {
         path: '',

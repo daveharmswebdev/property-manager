@@ -22,6 +22,7 @@ public interface IAppDbContext
     DbSet<Vendor> Vendors { get; }
     DbSet<VendorTradeTag> VendorTradeTags { get; }
     DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings { get; }
+    DbSet<VendorTradeTagAssignment> VendorTradeTagAssignments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

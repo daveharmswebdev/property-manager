@@ -16,8 +16,8 @@ public class VendorTradeTag : ITenantEntity
     // Navigation to Account
     public Account Account { get; set; } = null!;
 
-    // Navigation to Vendors collection (via VendorTradeTagMapping junction table - future story)
-    // public ICollection<Vendor> Vendors { get; set; } = new List<Vendor>();
+    // Navigation to vendor assignments (junction table)
+    public ICollection<VendorTradeTagAssignment> VendorAssignments { get; set; } = new List<VendorTradeTagAssignment>();
 
     // Navigation to CategoryTradeTagMappings
     public ICollection<CategoryTradeTagMapping> CategoryMappings { get; set; } = new List<CategoryTradeTagMapping>();

@@ -10,6 +10,6 @@ public class Vendor : Person, ISoftDeletable
 {
     public DateTime? DeletedAt { get; set; }
 
-    // Navigation to TradeTags collection (placeholder for future story 8-2)
-    // public ICollection<TradeTag> TradeTags { get; set; } = new List<TradeTag>();
+    // Navigation to trade tag assignments (junction table)
+    public ICollection<VendorTradeTagAssignment> TradeTagAssignments { get; set; } = new List<VendorTradeTagAssignment>();
 }
