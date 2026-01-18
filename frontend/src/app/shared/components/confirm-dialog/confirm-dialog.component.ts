@@ -102,11 +102,11 @@ export interface ConfirmDialogData {
           }
 
           &.icon-primary {
-            color: var(--pm-primary, #66BB6A);
+            color: var(--pm-primary, #4361ee);
           }
 
           &.icon-accent {
-            color: var(--pm-accent, #FFA726);
+            color: var(--pm-secondary, #7c3aed);
           }
         }
 

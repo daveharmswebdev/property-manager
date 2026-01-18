@@ -57,11 +57,11 @@ import { PropertyTagModalComponent, PropertyTagResult } from '../property-tag-mo
     }
 
     .capture-fab {
-      background-color: var(--pm-primary, #66BB6A);
+      background-color: var(--pm-primary, #4361ee);
       color: white;
 
       &:hover {
-        background-color: var(--pm-primary-dark, #4CAF50);
+        background-color: var(--pm-primary-dark, #2e4edc);
       }
 
       &:disabled {
