@@ -165,9 +165,17 @@ export const routes: Routes = [
             (m) => m.VendorFormComponent
           ),
       },
-      // Vendor Edit (Story 8.4 - AC #1, Story 8.7 - AC #4, #5)
+      // Vendor Detail (Story 8.9 - AC #1)
       {
         path: 'vendors/:id',
+        loadComponent: () =>
+          import('./features/vendors/components/vendor-detail/vendor-detail.component').then(
+            (m) => m.VendorDetailComponent
+          ),
+      },
+      // Vendor Edit (Story 8.4 - AC #1, Story 8.7 - AC #4, #5, Story 8.9 - AC #6)
+      {
+        path: 'vendors/:id/edit',
         loadComponent: () =>
           import('./features/vendors/components/vendor-edit/vendor-edit.component').then(
             (m) => m.VendorEditComponent

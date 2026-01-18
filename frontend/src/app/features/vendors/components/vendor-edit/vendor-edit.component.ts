@@ -575,6 +575,11 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
   }
 
   protected onCancel(): void {
-    this.router.navigate(['/vendors']);
+    // Navigate back to vendor detail page (Story 8.9 AC #6)
+    if (this.vendorId) {
+      this.router.navigate(['/vendors', this.vendorId]);
+    } else {
+      this.router.navigate(['/vendors']);
+    }
   }
 }

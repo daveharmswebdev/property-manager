@@ -15,6 +15,7 @@ import { test, expect } from '../../fixtures/test-fixtures';
 test.describe('Vendor Search & Filter E2E Tests (Story 8-6)', () => {
   /**
    * Helper to create a test vendor with trade tag
+   * After this function, user is on the vendor list page.
    */
   async function createVendorWithTag(
     vendorPage: any,
@@ -35,7 +36,7 @@ test.describe('Vendor Search & Filter E2E Tests (Story 8-6)', () => {
     await vendorPage.waitForSnackBar('Vendor added');
     await expect(page).toHaveURL('/vendors');
 
-    // Click on the vendor to edit and add trade tag
+    // Click on the vendor to go to detail page (Story 8.9)
     const fullName = `${firstName} ${lastName}`;
     // Wait for the newly created vendor to appear in the list before clicking
     await vendorPage.expectVendorInList(fullName);
@@ -50,10 +51,17 @@ test.describe('Vendor Search & Filter E2E Tests (Story 8-6)', () => {
     }
     const vendorId = match[1];
 
+    // Navigate to edit page from detail page to add trade tag
+    await vendorPage.clickEditFromDetail();
+    await page.waitForURL(/\/vendors\/[a-f0-9-]+\/edit$/);
+
     // Add trade tag
     await vendorPage.createAndSelectTag(tagName);
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
+
+    // After save, we're on detail page - go back to list
+    await vendorPage.goto();
 
     return vendorId;
   }
