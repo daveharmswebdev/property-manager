@@ -218,10 +218,12 @@ public class VendorsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     /// <response code="204">Vendor deleted successfully</response>
+    /// <response code="400">If validation fails (e.g., empty GUID)</response>
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If vendor not found or belongs to different account</response>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteVendor(

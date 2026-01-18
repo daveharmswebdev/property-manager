@@ -583,6 +583,10 @@ describe('VendorStore', () => {
       expect(store.isDeleting()).toBe(false);
     });
 
+    it('should have deletingVendorId null initially', () => {
+      expect(store.deletingVendorId()).toBeNull();
+    });
+
     it('should call API with vendor id (AC #5)', () => {
       mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
 
@@ -608,7 +612,7 @@ describe('VendorStore', () => {
       store.deleteVendor('1');
 
       expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Vendor deleted',
+        'Vendor deleted ✓',
         'Close',
         expect.objectContaining({ duration: 3000 })
       );
@@ -622,6 +626,14 @@ describe('VendorStore', () => {
       expect(store.isDeleting()).toBe(false);
     });
 
+    it('should set deletingVendorId to null after success', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor('1');
+
+      expect(store.deletingVendorId()).toBeNull();
+    });
+
     it('should handle 404 error with specific message (AC #6)', () => {
       const error = { status: 404 };
       mockApiClient.vendors_DeleteVendor.mockReturnValue(throwError(() => error));
@@ -630,6 +642,7 @@ describe('VendorStore', () => {
 
       expect(store.error()).toBe('Vendor not found.');
       expect(store.isDeleting()).toBe(false);
+      expect(store.deletingVendorId()).toBeNull();
     });
 
     it('should handle generic error', () => {
@@ -641,6 +654,7 @@ describe('VendorStore', () => {
 
       expect(store.error()).toBe('Failed to delete vendor. Please try again.');
       expect(store.isDeleting()).toBe(false);
+      expect(store.deletingVendorId()).toBeNull();
     });
 
     it('should show error snackbar on failure', () => {

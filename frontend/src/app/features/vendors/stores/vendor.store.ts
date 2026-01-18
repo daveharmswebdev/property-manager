@@ -28,7 +28,10 @@ interface VendorState {
   tradeTags: VendorTradeTagDto[];
   isLoading: boolean;
   isSaving: boolean;
+  /** @deprecated Use deletingVendorId instead for per-vendor delete tracking */
   isDeleting: boolean;
+  /** ID of the vendor currently being deleted, or null if none */
+  deletingVendorId: string | null;
   error: string | null;
   // Filter state (Story 8-6)
   searchTerm: string;
@@ -45,6 +48,7 @@ const initialState: VendorState = {
   isLoading: false,
   isSaving: false,
   isDeleting: false,
+  deletingVendorId: null,
   error: null,
   // Filter state (Story 8-6)
   searchTerm: '',
@@ -317,9 +321,10 @@ export const VendorStore = signalStore(
        */
       deleteVendor: rxMethod<string>(
         pipe(
-          tap(() =>
+          tap((id) =>
             patchState(store, {
               isDeleting: true,
+              deletingVendorId: id,
               error: null,
             })
           ),
@@ -330,8 +335,9 @@ export const VendorStore = signalStore(
                 patchState(store, {
                   vendors: store.vendors().filter((v) => v.id !== id),
                   isDeleting: false,
+                  deletingVendorId: null,
                 });
-                snackBar.open('Vendor deleted', 'Close', {
+                snackBar.open('Vendor deleted \u2713', 'Close', {
                   duration: 3000,
                   horizontalPosition: 'center',
                   verticalPosition: 'bottom',
@@ -344,6 +350,7 @@ export const VendorStore = signalStore(
                 }
                 patchState(store, {
                   isDeleting: false,
+                  deletingVendorId: null,
                   error: errorMessage,
                 });
                 snackBar.open(errorMessage, 'Close', {

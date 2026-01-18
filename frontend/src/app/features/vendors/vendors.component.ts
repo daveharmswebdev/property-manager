@@ -189,11 +189,15 @@ import {
                     color="warn"
                     class="delete-button"
                     (click)="onDeleteClick(vendor, $event)"
-                    [disabled]="store.isDeleting()"
+                    [disabled]="store.deletingVendorId() === vendor.id"
                     aria-label="Delete vendor"
                     matTooltip="Delete vendor"
                   >
-                    <mat-icon>delete</mat-icon>
+                    @if (store.deletingVendorId() === vendor.id) {
+                      <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                      <mat-icon>delete</mat-icon>
+                    }
                   </button>
                   <mat-icon class="edit-icon">chevron_right</mat-icon>
                 </div>
