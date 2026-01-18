@@ -1,6 +1,6 @@
 # Story 8.7: Edit Vendor
 
-Status: review
+Status: done
 
 ## Story
 
