@@ -17,6 +17,7 @@ import { test, expect } from '../../fixtures/test-fixtures';
 test.describe('Vendor Edit E2E Tests', () => {
   /**
    * Create a test vendor before each test that needs editing
+   * Returns vendor ID. After this function, user is on the vendor list page.
    */
   async function createTestVendor(vendorPage: any, page: any): Promise<string> {
     await vendorPage.goto();
@@ -33,10 +34,10 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.waitForSnackBar('Vendor added');
     await expect(page).toHaveURL('/vendors');
 
-    // Click on the newly created vendor to get its ID
+    // Click on the newly created vendor to navigate to detail page (Story 8.9)
     await vendorPage.clickVendorByName(`${firstName} ${lastName}`);
 
-    // Wait for navigation to edit page
+    // Wait for navigation to detail page (not edit page anymore)
     await page.waitForURL(/\/vendors\/[a-f0-9-]+$/);
 
     // Extract vendor ID from URL
@@ -48,7 +49,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     return match[1];
   }
 
-  test('should navigate to edit form from vendor list (AC #1)', async ({
+  test('should navigate to detail page from vendor list, then to edit form (AC #1)', async ({
     page,
     authenticatedUser,
     vendorPage,
@@ -56,10 +57,18 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Create a vendor first
     const vendorId = await createTestVendor(vendorPage, page);
 
-    // Verify we're on the edit page
+    // Verify we're on the detail page (Story 8.9 - clicking vendor goes to detail)
     await expect(page).toHaveURL(`/vendors/${vendorId}`);
 
-    // Verify form is displayed
+    // Verify detail page is displayed with edit button
+    await vendorPage.expectDetailPageVisible();
+    await vendorPage.expectDetailEditButtonVisible();
+
+    // Click Edit to go to edit form
+    await vendorPage.clickEditFromDetail();
+    await expect(page).toHaveURL(`/vendors/${vendorId}/edit`);
+
+    // Verify edit form is displayed
     await expect(vendorPage.firstNameInput).toBeVisible();
     await expect(vendorPage.lastNameInput).toBeVisible();
     await expect(vendorPage.saveButton).toBeVisible();
@@ -102,10 +111,10 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.addPhone('512-555-5678', 'Work');
     await vendorPage.expectPhoneCount(2);
 
-    // Save and verify persistence
+    // Save and verify persistence (Story 8.9 - now redirects to detail page)
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
-    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
+    await expect(page).toHaveURL(`/vendors/${vendorId}`, { timeout: 10000 });
 
     // Navigate back and verify phones persisted
     await vendorPage.gotoEdit(vendorId);
@@ -162,9 +171,10 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.addEmail('work@example.com');
     await vendorPage.expectEmailCount(2);
 
-    // Save and verify persistence
+    // Save and verify persistence (Story 8.9 - now redirects to detail page)
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
+    await expect(page).toHaveURL(`/vendors/${vendorId}`, { timeout: 10000 });
 
     await vendorPage.gotoEdit(vendorId);
     await vendorPage.expectEmailCount(2);
@@ -238,9 +248,10 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.expectTagSelected(newTagName);
     await vendorPage.expectTagCount(1);
 
-    // Save and verify persistence (AC #15)
+    // Save and verify persistence (AC #15) - Story 8.9 now redirects to detail page
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
+    await expect(page).toHaveURL(`/vendors/${vendorId}`, { timeout: 10000 });
 
     await vendorPage.gotoEdit(vendorId);
     await vendorPage.expectTagSelected(newTagName);
@@ -284,15 +295,15 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
 
-    // Should redirect to vendor list
-    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
+    // Should redirect to vendor detail page (Story 8.9)
+    await expect(page).toHaveURL(`/vendors/${vendorId}`, { timeout: 10000 });
 
     // Navigate back and verify changes persisted
     await vendorPage.gotoEdit(vendorId);
     await vendorPage.expectNameValues(newFirstName, newLastName, 'Middle');
   });
 
-  test('should cancel edit and return to vendor list (AC #14)', async ({
+  test('should cancel edit and return to vendor detail page (AC #14)', async ({
     page,
     authenticatedUser,
     vendorPage,
@@ -313,8 +324,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.expectUnsavedChangesDialogVisible();
     await vendorPage.clickDiscardInDialog();
 
-    // Should redirect to vendor list
-    await expect(page).toHaveURL('/vendors');
+    // Should redirect to vendor detail page (Story 8.9)
+    await expect(page).toHaveURL(`/vendors/${vendorId}`);
 
     // Navigate back and verify original values are intact
     await vendorPage.gotoEdit(vendorId);
@@ -329,8 +340,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Create a vendor
     const vendorId = await createTestVendor(vendorPage, page);
 
-    // Navigate to edit page with network throttling to observe loading
-    await page.goto(`/vendors/${vendorId}`);
+    // Navigate to edit page with network throttling to observe loading (Story 8.9 - now at /edit)
+    await page.goto(`/vendors/${vendorId}/edit`);
 
     // The form should eventually load
     await expect(vendorPage.firstNameInput).toBeVisible({ timeout: 10000 });
@@ -383,10 +394,11 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.submitForm();
     await vendorPage.waitForSnackBar('Vendor updated');
 
-    // Verify redirect
-    await expect(page).toHaveURL('/vendors', { timeout: 10000 });
+    // Verify redirect to detail page (Story 8.9)
+    await expect(page).toHaveURL(`/vendors/${vendorId}`, { timeout: 10000 });
 
-    // Verify vendor appears in list
+    // Go back to vendor list and verify vendor appears
+    await vendorPage.goto();
     await vendorPage.expectVendorInList('Integration Full TestVendor');
 
     // Navigate back and verify all data persisted
@@ -413,8 +425,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Don't make any changes - just click cancel
     await vendorPage.clickCancel();
 
-    // Should navigate directly to vendor list without dialog
-    await expect(page).toHaveURL('/vendors');
+    // Should navigate directly to vendor detail page without dialog (Story 8.9)
+    await expect(page).toHaveURL(`/vendors/${vendorId}`);
     await vendorPage.expectUnsavedChangesDialogHidden();
   });
 
@@ -479,7 +491,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     await vendorPage.expectUnsavedChangesDialogVisible();
   });
 
-  test('should navigate to vendor list when clicking Discard in dialog (AC #4)', async ({
+  test('should navigate to vendor detail when clicking Discard in dialog (AC #4)', async ({
     page,
     authenticatedUser,
     vendorPage,
@@ -500,8 +512,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Click Discard
     await vendorPage.clickDiscardInDialog();
 
-    // Should navigate to vendor list
-    await expect(page).toHaveURL('/vendors');
+    // Should navigate to vendor detail page (Story 8.9)
+    await expect(page).toHaveURL(`/vendors/${vendorId}`);
 
     // Verify changes were NOT saved
     await vendorPage.gotoEdit(vendorId);
@@ -530,8 +542,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Click Cancel in dialog to stay on page
     await vendorPage.clickCancelInDialog();
 
-    // Should still be on edit page
-    await expect(page).toHaveURL(`/vendors/${vendorId}`);
+    // Should still be on edit page (Story 8.9 - now at /edit path)
+    await expect(page).toHaveURL(`/vendors/${vendorId}/edit`);
 
     // Changes should still be in the form
     await expect(vendorPage.firstNameInput).toHaveValue('WillBeKept');
@@ -558,7 +570,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Cancel the navigation
     await vendorPage.clickCancelInDialog();
 
-    // Should still be on vendor edit page
-    await expect(page).toHaveURL(`/vendors/${vendorId}`);
+    // Should still be on vendor edit page (Story 8.9 - now at /edit path)
+    await expect(page).toHaveURL(`/vendors/${vendorId}/edit`);
   });
 });

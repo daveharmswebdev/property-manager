@@ -267,7 +267,7 @@ export const VendorStore = signalStore(
       ),
 
       /**
-       * Update an existing vendor (AC #12, #14)
+       * Update an existing vendor (AC #12, #14, Story 8.9 AC #6)
        * @param params Object containing id and request
        */
       updateVendor: rxMethod<{ id: string; request: UpdateVendorRequest }>(
@@ -287,7 +287,8 @@ export const VendorStore = signalStore(
                   horizontalPosition: 'center',
                   verticalPosition: 'bottom',
                 });
-                router.navigate(['/vendors']);
+                // Navigate to vendor detail page (Story 8.9 AC #6)
+                router.navigate(['/vendors', id]);
               }),
               catchError((error) => {
                 let errorMessage =

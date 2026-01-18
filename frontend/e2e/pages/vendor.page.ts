@@ -2,11 +2,12 @@ import { type Locator, expect } from '@playwright/test';
 import { BasePage } from './base.page';
 
 /**
- * VendorPage - Page object for Vendor list, create, and edit pages
+ * VendorPage - Page object for Vendor list, create, detail, and edit pages
  *
  * Provides methods for:
  * - Navigating to vendor list
  * - Creating new vendors
+ * - Viewing vendor details
  * - Editing existing vendors with phones, emails, and trade tags
  *
  * @extends BasePage
@@ -78,6 +79,50 @@ export class VendorPage extends BasePage {
   /** No matches card (when filters return empty) */
   get noMatchesCard(): Locator {
     return this.page.locator('.no-matches-card');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Locators - Vendor Detail Page (Story 8.9)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Vendor detail page container */
+  get vendorDetailPage(): Locator {
+    return this.page.locator('.vendor-detail-container');
+  }
+
+  /** Vendor name heading on detail page */
+  get vendorDetailName(): Locator {
+    return this.page.locator('.title-section h1');
+  }
+
+  /** Back button on detail page */
+  get detailBackButton(): Locator {
+    return this.page.locator('.back-button');
+  }
+
+  /** Edit button on detail page */
+  get detailEditButton(): Locator {
+    return this.page.locator('.action-buttons button', { hasText: 'Edit' });
+  }
+
+  /** Delete button on detail page */
+  get detailDeleteButton(): Locator {
+    return this.page.locator('.action-buttons button[color="warn"]');
+  }
+
+  /** Contact information section on detail page */
+  get detailContactSection(): Locator {
+    return this.page.locator('.section-card', { hasText: 'Contact Information' });
+  }
+
+  /** Trade tags section on detail page */
+  get detailTradeTagsSection(): Locator {
+    return this.page.locator('.section-card', { hasText: 'Trade Tags' });
+  }
+
+  /** Work order history section on detail page */
+  get detailWorkOrderSection(): Locator {
+    return this.page.locator('.section-card', { hasText: 'Work Order History' });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -185,11 +230,20 @@ export class VendorPage extends BasePage {
   }
 
   /**
-   * Navigate to edit vendor page
+   * Navigate to vendor detail page (Story 8.9)
+   * @param vendorId - Vendor ID
+   */
+  async gotoDetail(vendorId: string): Promise<void> {
+    await this.page.goto(`/vendors/${vendorId}`);
+    await this.waitForLoading();
+  }
+
+  /**
+   * Navigate to edit vendor page (Story 8.9 - now at /vendors/:id/edit)
    * @param vendorId - Vendor ID
    */
   async gotoEdit(vendorId: string): Promise<void> {
-    await this.page.goto(`/vendors/${vendorId}`);
+    await this.page.goto(`/vendors/${vendorId}/edit`);
     await this.waitForLoading();
   }
 
@@ -198,12 +252,37 @@ export class VendorPage extends BasePage {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Click on a vendor card by name to navigate to edit
+   * Click on a vendor card by name to navigate to detail page (Story 8.9)
    * @param vendorName - Full name of the vendor
    */
   async clickVendorByName(vendorName: string): Promise<void> {
     const card = this.vendorCards.filter({ hasText: vendorName });
     await card.click();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Actions - Vendor Detail Page (Story 8.9)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Click Edit button on vendor detail page to navigate to edit form
+   */
+  async clickEditFromDetail(): Promise<void> {
+    await this.detailEditButton.click();
+  }
+
+  /**
+   * Click Delete button on vendor detail page
+   */
+  async clickDeleteFromDetail(): Promise<void> {
+    await this.detailDeleteButton.click();
+  }
+
+  /**
+   * Click Back button on vendor detail page to return to list
+   */
+  async clickBackFromDetail(): Promise<void> {
+    await this.detailBackButton.click();
   }
 
   /**
@@ -704,5 +783,90 @@ export class VendorPage extends BasePage {
    */
   async expectVendorCount(count: number): Promise<void> {
     await expect(this.vendorCards).toHaveCount(count);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Assertions - Vendor Detail Page (Story 8.9)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assert vendor detail page is visible
+   */
+  async expectDetailPageVisible(): Promise<void> {
+    await expect(this.vendorDetailPage).toBeVisible();
+  }
+
+  /**
+   * Assert vendor name is displayed on detail page
+   * @param vendorName - Expected vendor name
+   */
+  async expectDetailVendorName(vendorName: string): Promise<void> {
+    await expect(this.vendorDetailName).toContainText(vendorName);
+  }
+
+  /**
+   * Assert contact section is visible on detail page
+   */
+  async expectDetailContactSectionVisible(): Promise<void> {
+    await expect(this.detailContactSection).toBeVisible();
+  }
+
+  /**
+   * Assert trade tags section is visible on detail page
+   */
+  async expectDetailTradeTagsSectionVisible(): Promise<void> {
+    await expect(this.detailTradeTagsSection).toBeVisible();
+  }
+
+  /**
+   * Assert work order section is visible on detail page
+   */
+  async expectDetailWorkOrderSectionVisible(): Promise<void> {
+    await expect(this.detailWorkOrderSection).toBeVisible();
+  }
+
+  /**
+   * Assert work order placeholder message is shown
+   */
+  async expectWorkOrderPlaceholder(): Promise<void> {
+    await expect(this.detailWorkOrderSection).toContainText('No work orders yet for this vendor');
+  }
+
+  /**
+   * Assert phone number is displayed on detail page
+   * @param phoneNumber - Expected phone number
+   */
+  async expectDetailHasPhone(phoneNumber: string): Promise<void> {
+    await expect(this.detailContactSection).toContainText(phoneNumber);
+  }
+
+  /**
+   * Assert email is displayed on detail page
+   * @param email - Expected email address
+   */
+  async expectDetailHasEmail(email: string): Promise<void> {
+    await expect(this.detailContactSection).toContainText(email);
+  }
+
+  /**
+   * Assert trade tag is displayed on detail page
+   * @param tagName - Expected tag name
+   */
+  async expectDetailHasTradeTag(tagName: string): Promise<void> {
+    await expect(this.detailTradeTagsSection.locator('.trade-tag-chip', { hasText: tagName })).toBeVisible();
+  }
+
+  /**
+   * Assert edit button is visible on detail page
+   */
+  async expectDetailEditButtonVisible(): Promise<void> {
+    await expect(this.detailEditButton).toBeVisible();
+  }
+
+  /**
+   * Assert delete button is visible on detail page
+   */
+  async expectDetailDeleteButtonVisible(): Promise<void> {
+    await expect(this.detailDeleteButton).toBeVisible();
   }
 }
