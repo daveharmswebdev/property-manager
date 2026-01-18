@@ -113,8 +113,8 @@ development_status:
   epic-8.5: in-progress
   8.5-1-angular-material-theme-migration: done
   8.5-2-sidebar-styling-update: done
-  8.5-3-logo-and-favicon-implementation: backlog
-  8.5-4-receipt-lightbox-fix: backlog           # GitHub Issue #83
+  8.5-3-logo-and-favicon-implementation: review
+  8.5-4-receipt-lightbox-fix: done           # GitHub Issue #83
   8.5-5-visual-polish-and-qa: backlog
   epic-8.5-retrospective: optional
 

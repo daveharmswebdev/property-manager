@@ -53,10 +53,10 @@ $desktop-min: 1024px;
     }
   }
 
-  .header-title {
+  .header-logo {
+    height: 32px;
+    width: auto;
     margin-left: 8px;
-    font-size: 18px;
-    font-weight: 500;
   }
 
   .spacer {
@@ -85,9 +85,9 @@ $desktop-min: 1024px;
   color: var(--pm-sidebar-text) !important;
   box-shadow: var(--pm-shadow-2);
 
-  .header-title {
-    font-size: 18px;
-    font-weight: 500;
+  .header-logo {
+    height: 32px;
+    width: auto;
   }
 
   .spacer {
