@@ -348,9 +348,10 @@ describe('VendorEditComponent', () => {
       setupWithVendor();
     });
 
-    it('should navigate to vendors list on cancel (AC #14)', () => {
+    it('should navigate to vendor detail on cancel (Story 8.9 AC #6)', () => {
       component['onCancel']();
-      expect(router.navigate).toHaveBeenCalledWith(['/vendors']);
+      // Now navigates to vendor detail instead of list
+      expect(router.navigate).toHaveBeenCalledWith(['/vendors', 'vendor-123']);
     });
 
     it('should clear selected vendor on destroy', () => {

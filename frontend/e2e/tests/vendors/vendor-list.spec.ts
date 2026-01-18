@@ -12,6 +12,7 @@ import { test, expect } from '../../fixtures/test-fixtures';
 test.describe('Vendor List E2E Tests', () => {
   /**
    * Helper to create a test vendor with full details
+   * After this function, user is on the vendor list page.
    */
   async function createVendorWithDetails(
     vendorPage: any,
@@ -37,7 +38,7 @@ test.describe('Vendor List E2E Tests', () => {
     await vendorPage.waitForSnackBar('Vendor added');
     await expect(page).toHaveURL('/vendors');
 
-    // Click on the vendor to edit and add details
+    // Click on the vendor to go to detail page (Story 8.9)
     const fullName = `${firstName} ${lastName}`;
     await vendorPage.clickVendorByName(fullName);
     await page.waitForURL(/\/vendors\/[a-f0-9-]+$/);
@@ -50,24 +51,30 @@ test.describe('Vendor List E2E Tests', () => {
     }
     const vendorId = match[1];
 
-    // Add details if provided
-    if (options?.phone) {
-      await vendorPage.addPhone(options.phone, options.phoneLabel);
-    }
-    if (options?.email) {
-      await vendorPage.addEmail(options.email);
-    }
-    if (options?.tagName) {
-      await vendorPage.createAndSelectTag(options.tagName);
-    }
-
-    // Save if we added any details
+    // Add details if provided - navigate to edit page first
     if (options?.phone || options?.email || options?.tagName) {
+      // Navigate to edit page from detail page
+      await vendorPage.clickEditFromDetail();
+      await page.waitForURL(/\/vendors\/[a-f0-9-]+\/edit$/);
+
+      if (options?.phone) {
+        await vendorPage.addPhone(options.phone, options.phoneLabel);
+      }
+      if (options?.email) {
+        await vendorPage.addEmail(options.email);
+      }
+      if (options?.tagName) {
+        await vendorPage.createAndSelectTag(options.tagName);
+      }
+
+      // Save and redirect to detail page
       await vendorPage.submitForm();
       await vendorPage.waitForSnackBar('Vendor updated');
+      // After save, we're on detail page - go back to list
+      await vendorPage.goto();
     } else {
-      // Navigate back to list
-      await vendorPage.clickCancel();
+      // Navigate back to list from detail page
+      await vendorPage.clickBackFromDetail();
     }
 
     return vendorId;
@@ -153,7 +160,7 @@ test.describe('Vendor List E2E Tests', () => {
     await vendorPage.expectVendorHasNoTradeTags(`NoDetails${timestamp} Vendor`);
   });
 
-  test('should navigate from vendor list to edit page on click (AC #4)', async ({
+  test('should navigate from vendor list to detail page on click (AC #4)', async ({
     page,
     authenticatedUser,
     vendorPage,
@@ -171,12 +178,13 @@ test.describe('Vendor List E2E Tests', () => {
     // Click on the vendor
     await vendorPage.clickVendorByName(`${firstName} ${lastName}`);
 
-    // Verify navigation to edit page
+    // Verify navigation to detail page (Story 8.9)
     await expect(page).toHaveURL(`/vendors/${vendorId}`);
 
-    // Verify form is displayed
-    await expect(vendorPage.firstNameInput).toBeVisible();
-    await expect(vendorPage.lastNameInput).toBeVisible();
+    // Verify detail page is displayed with vendor name and edit button
+    await vendorPage.expectDetailPageVisible();
+    await vendorPage.expectDetailVendorName(`${firstName} ${lastName}`);
+    await vendorPage.expectDetailEditButtonVisible();
   });
 
   test('should display vendor with all details in list (integration)', async ({
