@@ -19,17 +19,20 @@ public class VendorsController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateVendorCommand> _createValidator;
     private readonly IValidator<UpdateVendorCommand> _updateValidator;
+    private readonly IValidator<DeleteVendorCommand> _deleteValidator;
     private readonly ILogger<VendorsController> _logger;
 
     public VendorsController(
         IMediator mediator,
         IValidator<CreateVendorCommand> createValidator,
         IValidator<UpdateVendorCommand> updateValidator,
+        IValidator<DeleteVendorCommand> deleteValidator,
         ILogger<VendorsController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _deleteValidator = deleteValidator;
         _logger = logger;
     }
 
@@ -206,6 +209,45 @@ public class VendorsController : ControllerBase
 
         var locationUri = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/v1/vendors/{vendorId}";
         return Created(locationUri, response);
+    }
+
+    /// <summary>
+    /// Delete a vendor (soft delete) (FR12).
+    /// </summary>
+    /// <param name="id">Vendor ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Vendor deleted successfully</response>
+    /// <response code="400">If validation fails (e.g., empty GUID)</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If vendor not found or belongs to different account</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteVendor(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var command = new DeleteVendorCommand(id);
+
+        // Validate command
+        var validationResult = await _deleteValidator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation(
+            "Vendor deletion requested: {VendorId} at {Timestamp}",
+            id,
+            DateTime.UtcNow);
+
+        return NoContent();
     }
 
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)

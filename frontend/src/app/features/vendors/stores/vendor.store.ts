@@ -28,6 +28,10 @@ interface VendorState {
   tradeTags: VendorTradeTagDto[];
   isLoading: boolean;
   isSaving: boolean;
+  /** @deprecated Use deletingVendorId instead for per-vendor delete tracking */
+  isDeleting: boolean;
+  /** ID of the vendor currently being deleted, or null if none */
+  deletingVendorId: string | null;
   error: string | null;
   // Filter state (Story 8-6)
   searchTerm: string;
@@ -43,6 +47,8 @@ const initialState: VendorState = {
   tradeTags: [],
   isLoading: false,
   isSaving: false,
+  isDeleting: false,
+  deletingVendorId: null,
   error: null,
   // Filter state (Story 8-6)
   searchTerm: '',
@@ -302,6 +308,57 @@ export const VendorStore = signalStore(
                   verticalPosition: 'bottom',
                 });
                 console.error('Error updating vendor:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Delete a vendor (soft delete) (FR12)
+       * @param id Vendor ID to delete
+       */
+      deleteVendor: rxMethod<string>(
+        pipe(
+          tap((id) =>
+            patchState(store, {
+              isDeleting: true,
+              deletingVendorId: id,
+              error: null,
+            })
+          ),
+          switchMap((id) =>
+            apiService.vendors_DeleteVendor(id).pipe(
+              tap(() => {
+                // Remove from local vendors array
+                patchState(store, {
+                  vendors: store.vendors().filter((v) => v.id !== id),
+                  isDeleting: false,
+                  deletingVendorId: null,
+                });
+                snackBar.open('Vendor deleted \u2713', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+              }),
+              catchError((error) => {
+                let errorMessage = 'Failed to delete vendor. Please try again.';
+                if (error.status === 404) {
+                  errorMessage = 'Vendor not found.';
+                }
+                patchState(store, {
+                  isDeleting: false,
+                  deletingVendorId: null,
+                  error: errorMessage,
+                });
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                console.error('Error deleting vendor:', error);
                 return of(null);
               })
             )

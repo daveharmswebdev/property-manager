@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { VendorsComponent } from './vendors.component';
 import { VendorStore } from './stores/vendor.store';
 import { VendorDto, VendorTradeTagDto } from '../../core/api/api.service';
@@ -15,6 +17,8 @@ describe('VendorsComponent', () => {
     vendors: ReturnType<typeof signal<VendorDto[]>>;
     isLoading: ReturnType<typeof signal<boolean>>;
     isSaving: ReturnType<typeof signal<boolean>>;
+    isDeleting: ReturnType<typeof signal<boolean>>;
+    deletingVendorId: ReturnType<typeof signal<string | null>>;
     error: ReturnType<typeof signal<string | null>>;
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasVendors: ReturnType<typeof signal<boolean>>;
@@ -29,12 +33,16 @@ describe('VendorsComponent', () => {
     loadVendors: ReturnType<typeof vi.fn>;
     loadTradeTags: ReturnType<typeof vi.fn>;
     createVendor: ReturnType<typeof vi.fn>;
+    deleteVendor: ReturnType<typeof vi.fn>;
     clearError: ReturnType<typeof vi.fn>;
     reset: ReturnType<typeof vi.fn>;
     // Story 8-6: Filter methods
     setSearchTerm: ReturnType<typeof vi.fn>;
     setTradeTagFilter: ReturnType<typeof vi.fn>;
     clearFilters: ReturnType<typeof vi.fn>;
+  };
+  let mockDialog: {
+    open: ReturnType<typeof vi.fn>;
   };
 
   const mockVendors: VendorDto[] = [
@@ -79,6 +87,8 @@ describe('VendorsComponent', () => {
       vendors: signal<VendorDto[]>([]),
       isLoading: signal(false),
       isSaving: signal(false),
+      isDeleting: signal(false),
+      deletingVendorId: signal<string | null>(null),
       error: signal<string | null>(null),
       isEmpty: signal(true),
       hasVendors: signal(false),
@@ -96,6 +106,7 @@ describe('VendorsComponent', () => {
       loadVendors: vi.fn(),
       loadTradeTags: vi.fn(),
       createVendor: vi.fn(),
+      deleteVendor: vi.fn(),
       clearError: vi.fn(),
       reset: vi.fn(),
       // Story 8-6: Filter methods
@@ -104,13 +115,25 @@ describe('VendorsComponent', () => {
       clearFilters: vi.fn(),
     };
 
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of(false),
+      }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [VendorsComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: VendorStore, useValue: mockVendorStore },
       ],
-    }).compileComponents();
+    })
+      .overrideComponent(VendorsComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: mockDialog }],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(VendorsComponent);
     component = fixture.componentInstance;
@@ -573,6 +596,162 @@ describe('VendorsComponent', () => {
         fixture.detectChanges();
         expect(mockVendorStore.loadTradeTags).toHaveBeenCalled();
       });
+    });
+  });
+
+  // Story 8-8: Delete Vendor Tests
+  describe('Delete Button (Story 8-8)', () => {
+    beforeEach(() => {
+      mockVendorStore.isEmpty.set(false);
+      mockVendorStore.hasVendors.set(true);
+      mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors);
+      mockVendorStore.totalCount.set(2);
+    });
+
+    it('should display delete button for each vendor (AC #1)', () => {
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.debugElement.queryAll(
+        By.css('.delete-button')
+      );
+      expect(deleteButtons.length).toBe(2);
+    });
+
+    it('should have delete icon in button', () => {
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      const icon = deleteButton.query(By.css('mat-icon'));
+      expect(icon.nativeElement.textContent).toContain('delete');
+    });
+
+    it('should have aria-label on delete button for accessibility', () => {
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      expect(deleteButton.attributes['aria-label']).toBe('Delete vendor');
+    });
+
+    it('should disable delete button for specific vendor being deleted', () => {
+      mockVendorStore.deletingVendorId.set('1'); // First vendor being deleted
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.debugElement.queryAll(By.css('.delete-button'));
+      // First button (vendor id '1') should be disabled
+      expect(deleteButtons[0].nativeElement.disabled).toBe(true);
+      // Second button (vendor id '2') should NOT be disabled
+      expect(deleteButtons[1].nativeElement.disabled).toBe(false);
+    });
+
+    it('should not disable any delete button when deletingVendorId is null', () => {
+      mockVendorStore.deletingVendorId.set(null);
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.debugElement.queryAll(By.css('.delete-button'));
+      expect(deleteButtons[0].nativeElement.disabled).toBe(false);
+      expect(deleteButtons[1].nativeElement.disabled).toBe(false);
+    });
+
+    it('should show spinner instead of delete icon when vendor is being deleted', () => {
+      mockVendorStore.deletingVendorId.set('1');
+      fixture.detectChanges();
+
+      const firstVendorCard = fixture.debugElement.queryAll(By.css('.vendor-card'))[0];
+      const spinner = firstVendorCard.query(By.css('mat-spinner'));
+      expect(spinner).toBeTruthy();
+    });
+  });
+
+  // Story 8-8: Dialog Interaction Tests (Task 7.4-7.6)
+  describe('Delete Confirmation Dialog (Story 8-8 AC #2-#4)', () => {
+    beforeEach(() => {
+      mockVendorStore.isEmpty.set(false);
+      mockVendorStore.hasVendors.set(true);
+      mockVendorStore.vendors.set(mockVendors);
+      mockVendorStore.filteredVendors.set(mockVendors);
+      mockVendorStore.totalCount.set(2);
+    });
+
+    it('should open confirmation dialog when delete button clicked (Task 7.4)', () => {
+      // Setup dialog to return cancel (false)
+      const mockDialogRef = {
+        afterClosed: () => of(false),
+      };
+      mockDialog.open.mockReturnValue(mockDialogRef);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      deleteButton.nativeElement.click();
+
+      expect(mockDialog.open).toHaveBeenCalled();
+    });
+
+    it('should pass correct dialog data with vendor name (AC #2)', () => {
+      const mockDialogRef = {
+        afterClosed: () => of(false),
+      };
+      mockDialog.open.mockReturnValue(mockDialogRef);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      deleteButton.nativeElement.click();
+
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: 'Delete John Doe?',
+            message: expect.stringContaining('removed from your list'),
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+          }),
+          width: '450px',
+          disableClose: true,
+        })
+      );
+    });
+
+    it('should NOT call deleteVendor when dialog is cancelled (Task 7.5)', () => {
+      const mockDialogRef = {
+        afterClosed: () => of(false), // User clicked Cancel
+      };
+      mockDialog.open.mockReturnValue(mockDialogRef);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      deleteButton.nativeElement.click();
+
+      expect(mockVendorStore.deleteVendor).not.toHaveBeenCalled();
+    });
+
+    it('should call deleteVendor with vendor id when dialog is confirmed (Task 7.6)', () => {
+      const mockDialogRef = {
+        afterClosed: () => of(true), // User clicked Delete (confirm)
+      };
+      mockDialog.open.mockReturnValue(mockDialogRef);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      deleteButton.nativeElement.click();
+
+      expect(mockVendorStore.deleteVendor).toHaveBeenCalledWith('1');
+    });
+
+    it('should stop event propagation to prevent card navigation', () => {
+      const mockDialogRef = {
+        afterClosed: () => of(false),
+      };
+      mockDialog.open.mockReturnValue(mockDialogRef);
+      fixture.detectChanges();
+
+      const deleteButton = fixture.debugElement.query(By.css('.delete-button'));
+      const clickEvent = new MouseEvent('click', { bubbles: true });
+      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation');
+
+      deleteButton.nativeElement.dispatchEvent(clickEvent);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
     });
   });
 });
