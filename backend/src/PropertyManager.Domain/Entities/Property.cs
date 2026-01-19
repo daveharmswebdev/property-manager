@@ -21,4 +21,5 @@ public class Property : AuditableEntity, ITenantEntity, ISoftDeletable
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
     public ICollection<Income> Income { get; set; } = new List<Income>();
     public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
+    public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
 }

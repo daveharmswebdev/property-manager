@@ -12,4 +12,7 @@ public class Vendor : Person, ISoftDeletable
 
     // Navigation to trade tag assignments (junction table)
     public ICollection<VendorTradeTagAssignment> TradeTagAssignments { get; set; } = new List<VendorTradeTagAssignment>();
+
+    // Navigation to work orders
+    public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
 }

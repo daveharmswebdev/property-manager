@@ -23,6 +23,9 @@ public interface IAppDbContext
     DbSet<VendorTradeTag> VendorTradeTags { get; }
     DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings { get; }
     DbSet<VendorTradeTagAssignment> VendorTradeTagAssignments { get; }
+    DbSet<WorkOrder> WorkOrders { get; }
+    DbSet<WorkOrderTag> WorkOrderTags { get; }
+    DbSet<WorkOrderTagAssignment> WorkOrderTagAssignments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
