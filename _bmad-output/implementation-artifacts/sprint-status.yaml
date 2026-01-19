@@ -110,18 +110,18 @@ development_status:
 
   # Epic 8.5: UX Design Refresh - "Upkeep" Brand Launch
   # User Outcome: "The app feels modern, polished, and distinctly mine"
-  epic-8.5: in-progress
+  epic-8.5: done
   8.5-1-angular-material-theme-migration: done
   8.5-2-sidebar-styling-update: done
-  8.5-3-logo-and-favicon-implementation: review
+  8.5-3-logo-and-favicon-implementation: done
   8.5-4-receipt-lightbox-fix: done           # GitHub Issue #83
-  8.5-5-visual-polish-and-qa: backlog
+  8.5-5-visual-polish-and-qa: done
   epic-8.5-retrospective: optional
 
   # Epic 9: Work Order Tracking
   # User Outcome: "I can track maintenance issues across my properties"
-  epic-9: backlog
-  9-1-work-order-entity-category-hierarchy: backlog
+  epic-9: in-progress
+  9-1-work-order-entity-category-hierarchy: done
   9-2-create-work-order: backlog
   9-3-add-work-order-tags: backlog
   9-4-assign-work-order-vendor-or-diy: backlog

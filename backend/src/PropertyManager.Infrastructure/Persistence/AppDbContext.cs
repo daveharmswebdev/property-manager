@@ -44,6 +44,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<VendorTradeTag> VendorTradeTags => Set<VendorTradeTag>();
     public DbSet<CategoryTradeTagMapping> CategoryTradeTagMappings => Set<CategoryTradeTagMapping>();
     public DbSet<VendorTradeTagAssignment> VendorTradeTagAssignments => Set<VendorTradeTagAssignment>();
+    public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
+    public DbSet<WorkOrderTag> WorkOrderTags => Set<WorkOrderTag>();
+    public DbSet<WorkOrderTagAssignment> WorkOrderTagAssignments => Set<WorkOrderTagAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -104,6 +107,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         // Apply tenant filter to VendorTradeTag (no soft delete)
         modelBuilder.Entity<VendorTradeTag>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to WorkOrder (combined with soft delete)
+        modelBuilder.Entity<WorkOrder>()
+            .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
+                                 && e.DeletedAt == null);
+
+        // Apply tenant filter to WorkOrderTag (no soft delete)
+        modelBuilder.Entity<WorkOrderTag>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 

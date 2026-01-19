@@ -30,7 +30,8 @@ public class GetExpenseCategoriesQueryHandler : IRequestHandler<GetExpenseCatego
                 c.Id,
                 c.Name,
                 c.ScheduleELine,
-                c.SortOrder
+                c.SortOrder,
+                c.ParentId
             ))
             .AsNoTracking()
             .ToListAsync(cancellationToken);

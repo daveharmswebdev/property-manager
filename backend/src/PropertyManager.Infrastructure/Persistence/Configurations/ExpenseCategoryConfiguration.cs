@@ -25,6 +25,14 @@ public class ExpenseCategoryConfiguration : IEntityTypeConfiguration<ExpenseCate
         builder.Property(e => e.SortOrder)
             .IsRequired();
 
+        // Self-referential FK for category hierarchy (per Architecture ADR #23)
+        builder.Property(e => e.ParentId);
+
+        builder.HasOne(e => e.Parent)
+            .WithMany(e => e.Children)
+            .HasForeignKey(e => e.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Note: No AccountId - this is global data (seed data)
 
         // Seed the 15 IRS Schedule E categories
