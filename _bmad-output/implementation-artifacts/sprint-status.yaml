@@ -166,3 +166,17 @@ development_status:
   12-2-download-work-order-pdf: backlog
   12-3-preview-work-order-pdf: backlog
   epic-12-retrospective: optional
+
+  # ============================================================
+  # PHASE 3: PROPERTY PHOTOS
+  # Source: GitHub Issues #99, #100
+  # Added: 2026-01-19
+  # ============================================================
+
+  # Epic 13: Property Photos
+  # User Outcome: "I can add and view photos of my properties"
+  epic-13: in-progress
+  13-1-backend-photo-service: dev-complete   # GitHub Issue #99 Part 1 - Backend services + thumbnail
+  13-2-frontend-photo-components: ready-for-dev  # GitHub Issue #99 Part 2 - PhotoViewer, DragDrop, PhotoUpload (unblocked by 13.1)
+  13-3-property-photo-gallery: backlog       # GitHub Issue #100 - Property photos UI/Feature
+  epic-13-retrospective: optional

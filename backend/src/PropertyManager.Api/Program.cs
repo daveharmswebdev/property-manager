@@ -79,13 +79,18 @@ if (s3Configured)
 {
     builder.Services.AddScoped<IStorageService, S3StorageService>();
     builder.Services.AddScoped<IReportStorageService, ReportStorageService>();
+    builder.Services.AddHttpClient<IPhotoService, PhotoService>();
 }
 else
 {
     // Use NoOp implementations for local development and CI
     builder.Services.AddScoped<IStorageService, NoOpStorageService>();
     builder.Services.AddScoped<IReportStorageService, NoOpReportStorageService>();
+    builder.Services.AddScoped<IPhotoService, NoOpPhotoService>();
 }
+
+// Register thumbnail service (always available - no external dependencies)
+builder.Services.AddScoped<IThumbnailService, ImageSharpThumbnailService>();
 
 // Register PDF report generator (AC-6.1.4)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();
