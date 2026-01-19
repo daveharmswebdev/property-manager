@@ -182,6 +182,29 @@ export const routes: Routes = [
           ),
         canDeactivate: [unsavedChangesGuard],
       },
+      // Work Orders (Story 9.2 - AC #6)
+      {
+        path: 'work-orders',
+        loadComponent: () =>
+          import('./features/work-orders/work-orders.component').then(
+            (m) => m.WorkOrdersComponent
+          ),
+      },
+      {
+        path: 'work-orders/new',
+        loadComponent: () =>
+          import('./features/work-orders/pages/work-order-create/work-order-create.component').then(
+            (m) => m.WorkOrderCreateComponent
+          ),
+      },
+      {
+        path: 'work-orders/:id',
+        loadComponent: () =>
+          import('./features/work-orders/pages/work-order-detail/work-order-detail.component').then(
+            (m) => m.WorkOrderDetailComponent
+          ),
+        // Placeholder detail page - full implementation in story 9-8
+      },
       // Default child redirect to dashboard
       {
         path: '',

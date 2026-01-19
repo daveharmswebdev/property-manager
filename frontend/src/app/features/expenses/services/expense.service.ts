@@ -28,6 +28,7 @@ export interface ExpenseCategoryDto {
   name: string;
   scheduleELine?: string;
   sortOrder: number;
+  parentId?: string;
 }
 
 /**
