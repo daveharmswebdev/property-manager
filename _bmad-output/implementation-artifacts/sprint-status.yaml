@@ -122,7 +122,7 @@ development_status:
   # User Outcome: "I can track maintenance issues across my properties"
   epic-9: in-progress
   9-1-work-order-entity-category-hierarchy: done
-  9-2-create-work-order: backlog
+  9-2-create-work-order: done
   9-3-add-work-order-tags: backlog
   9-4-assign-work-order-vendor-or-diy: backlog
   9-5-inline-vendor-creation: backlog

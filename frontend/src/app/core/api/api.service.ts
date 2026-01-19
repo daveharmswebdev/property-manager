@@ -67,6 +67,9 @@ export interface IApiClient {
     vendors_DeleteVendor(id: string): Observable<void>;
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse>;
     vendorTradeTags_CreateVendorTradeTag(request?: CreateVendorTradeTagRequest | undefined): Observable<CreateVendorTradeTagResponse>;
+    workOrders_GetAllWorkOrders(status?: string | null | undefined, propertyId?: string | null | undefined): Observable<GetAllWorkOrdersResponse>;
+    workOrders_CreateWorkOrder(request: CreateWorkOrderRequest): Observable<CreateWorkOrderResponse>;
+    workOrders_GetWorkOrder(id: string): Observable<WorkOrderDto>;
 }
 
 @Injectable({
@@ -3185,6 +3188,12 @@ export class ApiClient implements IApiClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return _observableOf(null as any);
             }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
         } else if (status === 401) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result401: any = null;
@@ -3328,6 +3337,203 @@ export class ApiClient implements IApiClient {
         }
         return _observableOf(null as any);
     }
+
+    workOrders_GetAllWorkOrders(status?: string | null | undefined, propertyId?: string | null | undefined): Observable<GetAllWorkOrdersResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders?";
+        if (status !== undefined && status !== null)
+            url_ += "status=" + encodeURIComponent("" + status) + "&";
+        if (propertyId !== undefined && propertyId !== null)
+            url_ += "propertyId=" + encodeURIComponent("" + propertyId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_GetAllWorkOrders(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_GetAllWorkOrders(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetAllWorkOrdersResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetAllWorkOrdersResponse>;
+        }));
+    }
+
+    protected processWorkOrders_GetAllWorkOrders(response: HttpResponseBase): Observable<GetAllWorkOrdersResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetAllWorkOrdersResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrders_CreateWorkOrder(request: CreateWorkOrderRequest): Observable<CreateWorkOrderResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_CreateWorkOrder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_CreateWorkOrder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CreateWorkOrderResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CreateWorkOrderResponse>;
+        }));
+    }
+
+    protected processWorkOrders_CreateWorkOrder(response: HttpResponseBase): Observable<CreateWorkOrderResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CreateWorkOrderResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrders_GetWorkOrder(id: string): Observable<WorkOrderDto> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_GetWorkOrder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_GetWorkOrder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkOrderDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkOrderDto>;
+        }));
+    }
+
+    protected processWorkOrders_GetWorkOrder(response: HttpResponseBase): Observable<WorkOrderDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkOrderDto;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface ProblemDetails {
@@ -3455,6 +3661,7 @@ export interface ExpenseCategoryDto {
     name?: string;
     scheduleELine?: string | undefined;
     sortOrder?: number;
+    parentId?: string | undefined;
 }
 
 export interface PagedExpenseListDto {
@@ -3790,6 +3997,42 @@ export interface CreateVendorTradeTagResponse {
 
 export interface CreateVendorTradeTagRequest {
     name?: string;
+}
+
+export interface GetAllWorkOrdersResponse {
+    items?: WorkOrderDto[];
+    totalCount?: number;
+}
+
+export interface WorkOrderDto {
+    id?: string;
+    propertyId?: string;
+    propertyName?: string;
+    vendorId?: string | undefined;
+    vendorName?: string | undefined;
+    categoryId?: string | undefined;
+    categoryName?: string | undefined;
+    status?: string;
+    description?: string;
+    createdAt?: Date;
+    createdByUserId?: string;
+    tags?: WorkOrderTagDto[];
+}
+
+export interface WorkOrderTagDto {
+    id?: string;
+    name?: string;
+}
+
+export interface CreateWorkOrderResponse {
+    id?: string;
+}
+
+export interface CreateWorkOrderRequest {
+    propertyId?: string;
+    description?: string;
+    categoryId?: string | undefined;
+    status?: string | undefined;
 }
 
 export interface FileResponse {
