@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -16,13 +17,16 @@ namespace PropertyManager.Api.Controllers;
 public class WorkOrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IValidator<GetAllWorkOrdersQuery> _getAllValidator;
     private readonly ILogger<WorkOrdersController> _logger;
 
     public WorkOrdersController(
         IMediator mediator,
+        IValidator<GetAllWorkOrdersQuery> getAllValidator,
         ILogger<WorkOrdersController> logger)
     {
         _mediator = mediator;
+        _getAllValidator = getAllValidator;
         _logger = logger;
     }
 
@@ -34,9 +38,11 @@ public class WorkOrdersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of work orders</returns>
     /// <response code="200">Returns the list of work orders</response>
+    /// <response code="400">If status filter is invalid</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
     [ProducesResponseType(typeof(GetAllWorkOrdersResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAllWorkOrders(
         [FromQuery] string? status,
@@ -44,12 +50,18 @@ public class WorkOrdersController : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetAllWorkOrdersQuery(status, propertyId);
+
+        var validationResult = await _getAllValidator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
         var response = await _mediator.Send(query, cancellationToken);
 
-        _logger.LogInformation(
-            "Retrieved {Count} work orders at {Timestamp}",
-            response.TotalCount,
-            DateTime.UtcNow);
+        _logger.LogInformation("Retrieved {Count} work orders", response.TotalCount);
 
         return Ok(response);
     }

@@ -387,6 +387,16 @@ None - Implementation proceeded without blocking issues.
 
 8. **Unit Tests**: 14 new tests covering GetAllWorkOrdersHandlerTests (11 tests) and GetExpenseCategoriesHandlerTests (3 tests). All 653 total tests pass.
 
+### Code Review Fixes (Post-PR)
+
+9. **Case-Insensitive Status Filter**: Updated GetAllWorkOrders handler to use `Enum.TryParse` with `ignoreCase: true` instead of string comparison. Status filter now accepts "assigned", "ASSIGNED", "Assigned" etc.
+
+10. **Input Validation Added**: Created GetAllWorkOrdersValidator using FluentValidation to validate status parameter against valid WorkOrderStatus enum values. Invalid values (e.g., "InvalidStatus", "123") now return 400 Bad Request with proper error message.
+
+11. **Controller Updated**: WorkOrdersController now injects and uses GetAllWorkOrdersValidator, returns ValidationProblemDetails for invalid status values.
+
+12. **Additional Tests**: Added 23 new tests - 18 validator tests (GetAllWorkOrdersValidatorTests) and 5 handler tests for case-insensitive filtering. Total tests now 676.
+
 ### File List
 
 **Created:**
@@ -405,6 +415,8 @@ None - Implementation proceeded without blocking issues.
 - backend/src/PropertyManager.Api/Controllers/WorkOrdersController.cs
 - backend/tests/PropertyManager.Application.Tests/WorkOrders/GetAllWorkOrdersHandlerTests.cs
 - backend/tests/PropertyManager.Application.Tests/Expenses/GetExpenseCategoriesHandlerTests.cs
+- backend/src/PropertyManager.Application/WorkOrders/GetAllWorkOrdersValidator.cs (code review fix)
+- backend/tests/PropertyManager.Application.Tests/WorkOrders/GetAllWorkOrdersValidatorTests.cs (code review fix)
 
 **Modified:**
 - backend/src/PropertyManager.Domain/Entities/ExpenseCategory.cs (added ParentId, Parent, Children)
@@ -415,3 +427,6 @@ None - Implementation proceeded without blocking issues.
 - backend/src/PropertyManager.Application/Common/Interfaces/IAppDbContext.cs (added WorkOrder DbSets)
 - backend/src/PropertyManager.Application/Expenses/ExpenseCategoryDto.cs (added ParentId)
 - backend/src/PropertyManager.Application/Expenses/GetExpenseCategories.cs (added ParentId to projection)
+- backend/src/PropertyManager.Application/WorkOrders/GetAllWorkOrders.cs (code review: case-insensitive status filter)
+- backend/src/PropertyManager.Api/Controllers/WorkOrdersController.cs (code review: added validation)
+- backend/tests/PropertyManager.Application.Tests/WorkOrders/GetAllWorkOrdersHandlerTests.cs (code review: added case-insensitive tests)

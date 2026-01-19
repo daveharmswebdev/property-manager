@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Enums;
 
 namespace PropertyManager.Application.WorkOrders;
 
@@ -51,10 +52,11 @@ public class GetAllWorkOrdersQueryHandler : IRequestHandler<GetAllWorkOrdersQuer
                 .ThenInclude(a => a.Tag)
             .AsQueryable();
 
-        // Apply optional status filter
-        if (!string.IsNullOrWhiteSpace(request.Status))
+        // Apply optional status filter (case-insensitive)
+        if (!string.IsNullOrWhiteSpace(request.Status) &&
+            Enum.TryParse<WorkOrderStatus>(request.Status, ignoreCase: true, out var statusEnum))
         {
-            query = query.Where(w => w.Status.ToString() == request.Status);
+            query = query.Where(w => w.Status == statusEnum);
         }
 
         // Apply optional property filter

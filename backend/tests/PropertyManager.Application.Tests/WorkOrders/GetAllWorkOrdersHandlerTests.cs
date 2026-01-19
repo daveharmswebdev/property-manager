@@ -296,6 +296,50 @@ public class GetAllWorkOrdersHandlerTests
         result.Items[0].Description.Should().Be("Work on property 1");
     }
 
+    [Theory]
+    [InlineData("assigned")]
+    [InlineData("ASSIGNED")]
+    [InlineData("Assigned")]
+    [InlineData("aSsIgNeD")]
+    public async Task Handle_StatusFilter_IsCaseInsensitive(string statusInput)
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var assignedWorkOrder = CreateWorkOrder(_testAccountId, property, "Assigned");
+        assignedWorkOrder.Status = WorkOrderStatus.Assigned;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, assignedWorkOrder });
+        var query = new GetAllWorkOrdersQuery(Status: statusInput);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Status.Should().Be("Assigned");
+    }
+
+    [Fact]
+    public async Task Handle_InvalidStatus_ReturnsAllWorkOrders()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var workOrder1 = CreateWorkOrder(_testAccountId, property, "Work order 1");
+        var workOrder2 = CreateWorkOrder(_testAccountId, property, "Work order 2");
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { workOrder1, workOrder2 });
+        var query = new GetAllWorkOrdersQuery(Status: "InvalidStatus");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert - Invalid status is ignored, returns all work orders
+        result.Items.Should().HaveCount(2);
+    }
+
     private Property CreateProperty(Guid accountId, string name)
     {
         return new Property
