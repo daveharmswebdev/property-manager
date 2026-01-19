@@ -26,7 +26,7 @@ interface NavItem {
  * Sidebar Navigation Component (AC7.1, AC7.2)
  *
  * Dark sidebar with:
- * - Forest Green accents for active states
+ * - Upkeep Blue accents for active states
  * - Navigation items with icons
  * - User profile section in footer
  * - Logout functionality

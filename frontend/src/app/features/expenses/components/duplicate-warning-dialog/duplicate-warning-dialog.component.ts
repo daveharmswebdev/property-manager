@@ -30,7 +30,7 @@ export interface DuplicateWarningDialogData {
  * - Shows existing expense details (date, amount, description)
  * - Cancel button returns false (keep form data, don't save)
  * - Save Anyway button returns true (proceed with save)
- * - Styled with Forest Green accent (not warn color since this isn't destructive)
+ * - Styled with Upkeep accent (not warn color since this isn't destructive)
  */
 @Component({
   selector: 'app-duplicate-warning-dialog',
@@ -90,7 +90,7 @@ export interface DuplicateWarningDialogData {
           width: 28px;
           height: 28px;
           margin-bottom: 2px;
-          color: var(--pm-accent, #ffa726);
+          color: var(--pm-secondary, #7c3aed);
         }
 
         h2 {
@@ -125,7 +125,7 @@ export interface DuplicateWarningDialogData {
           padding: 12px;
           background-color: #f5f5f5;
           border-radius: 4px;
-          border-left: 3px solid var(--pm-accent, #ffa726);
+          border-left: 3px solid var(--pm-secondary, #7c3aed);
 
           .label {
             display: block;

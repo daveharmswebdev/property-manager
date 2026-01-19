@@ -184,7 +184,7 @@ export interface ReportPreviewDialogData {
         gap: 12px;
 
         .report-icon {
-          color: var(--pm-primary, #66bb6a);
+          color: var(--pm-primary, #4361ee);
           font-size: 28px;
           height: 28px;
           width: 28px;
@@ -285,7 +285,7 @@ export interface ReportPreviewDialogData {
           color: var(--pm-text-secondary, rgba(0, 0, 0, 0.6));
 
           a {
-            color: var(--pm-primary, #66bb6a);
+            color: var(--pm-primary, #4361ee);
             cursor: pointer;
             text-decoration: underline;
           }

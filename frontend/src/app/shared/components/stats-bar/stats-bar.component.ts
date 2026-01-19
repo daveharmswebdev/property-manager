@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
  * - Total Income YTD
  * - Net Income YTD (calculated: income - expenses)
  *
- * Uses Forest Green theme styling.
+ * Uses Upkeep theme styling.
  * Negative net income displays in accounting format with parentheses: ($1,234.00)
  */
 @Component({
