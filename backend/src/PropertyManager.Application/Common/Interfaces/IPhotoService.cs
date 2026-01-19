@@ -12,6 +12,91 @@ public enum PhotoEntityType
 }
 
 /// <summary>
+/// Constants and validation for photo uploads.
+/// </summary>
+public static class PhotoValidation
+{
+    /// <summary>
+    /// Maximum allowed file size: 10 MB.
+    /// </summary>
+    public const long MaxFileSizeBytes = 10 * 1024 * 1024;
+
+    /// <summary>
+    /// Allowed content types for photo uploads.
+    /// </summary>
+    public static readonly IReadOnlySet<string> AllowedContentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/bmp",
+        "image/tiff"
+    };
+
+    /// <summary>
+    /// Validates a photo upload request.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when validation fails.</exception>
+    public static void ValidateRequest(PhotoUploadRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.FileSizeBytes <= 0)
+        {
+            throw new ArgumentException("File size must be greater than zero.", nameof(request));
+        }
+
+        if (request.FileSizeBytes > MaxFileSizeBytes)
+        {
+            throw new ArgumentException(
+                $"File size {request.FileSizeBytes} bytes exceeds maximum allowed size of {MaxFileSizeBytes} bytes (10 MB).",
+                nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ContentType))
+        {
+            throw new ArgumentException("Content type is required.", nameof(request));
+        }
+
+        if (!AllowedContentTypes.Contains(request.ContentType))
+        {
+            throw new ArgumentException(
+                $"Content type '{request.ContentType}' is not allowed. Allowed types: {string.Join(", ", AllowedContentTypes)}",
+                nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.OriginalFileName))
+        {
+            throw new ArgumentException("Original file name is required.", nameof(request));
+        }
+    }
+
+    /// <summary>
+    /// Gets file extension for a content type.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown for unsupported content types.</exception>
+    public static string GetExtensionFromContentType(string contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            throw new ArgumentException("Content type is required.", nameof(contentType));
+        }
+
+        return contentType.ToLowerInvariant() switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            "image/bmp" => ".bmp",
+            "image/tiff" => ".tiff",
+            _ => throw new ArgumentException($"Unsupported content type: {contentType}", nameof(contentType))
+        };
+    }
+}
+
+/// <summary>
 /// Request to generate an upload URL for a photo.
 /// </summary>
 /// <param name="EntityType">Type of entity the photo belongs to.</param>

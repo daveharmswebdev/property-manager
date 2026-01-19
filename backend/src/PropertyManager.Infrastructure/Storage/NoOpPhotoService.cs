@@ -22,8 +22,20 @@ public class NoOpPhotoService : IPhotoService
         PhotoUploadRequest request,
         CancellationToken cancellationToken = default)
     {
-        var storageKey = $"{accountId}/{request.EntityType.ToString().ToLowerInvariant()}/{DateTime.UtcNow.Year}/{Guid.NewGuid()}.jpg";
-        var thumbnailKey = storageKey.Replace(".jpg", "_thumb.jpg");
+        if (accountId == Guid.Empty)
+        {
+            throw new ArgumentException("Account ID is required.", nameof(accountId));
+        }
+
+        PhotoValidation.ValidateRequest(request);
+
+        var extension = PhotoValidation.GetExtensionFromContentType(request.ContentType);
+        var entityTypePath = request.EntityType.ToString().ToLowerInvariant();
+        var year = DateTime.UtcNow.Year;
+        var fileId = Guid.NewGuid();
+
+        var storageKey = $"{accountId}/{entityTypePath}/{year}/{fileId}{extension}";
+        var thumbnailKey = $"{accountId}/{entityTypePath}/{year}/{fileId}_thumb.jpg";
 
         _logger.LogWarning(
             "NoOp: Cannot generate presigned upload URL for photo - S3 storage not configured. StorageKey: {StorageKey}",
@@ -43,6 +55,16 @@ public class NoOpPhotoService : IPhotoService
         long fileSizeBytes,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.StorageKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.ThumbnailStorageKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        if (fileSizeBytes <= 0)
+        {
+            throw new ArgumentException("File size must be greater than zero.", nameof(fileSizeBytes));
+        }
+
         _logger.LogWarning(
             "NoOp: Cannot confirm photo upload - S3 storage not configured. StorageKey: {StorageKey}",
             request.StorageKey);
@@ -59,6 +81,8 @@ public class NoOpPhotoService : IPhotoService
         string storageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storageKey);
+
         _logger.LogWarning(
             "NoOp: Cannot generate presigned download URL for photo - S3 storage not configured. StorageKey: {StorageKey}",
             storageKey);
@@ -71,6 +95,8 @@ public class NoOpPhotoService : IPhotoService
         string thumbnailStorageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(thumbnailStorageKey);
+
         _logger.LogWarning(
             "NoOp: Cannot generate presigned download URL for thumbnail - S3 storage not configured. ThumbnailKey: {ThumbnailKey}",
             thumbnailStorageKey);
@@ -84,6 +110,8 @@ public class NoOpPhotoService : IPhotoService
         string? thumbnailStorageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storageKey);
+
         _logger.LogInformation(
             "NoOp: Would delete photo {StorageKey} and thumbnail {ThumbnailKey}",
             storageKey,

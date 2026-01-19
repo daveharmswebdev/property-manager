@@ -293,6 +293,107 @@ public class PhotoServiceTests
         result.StorageKey.Should().EndWith(expectedExtension);
     }
 
+    #region Input Validation Tests
+
+    [Fact]
+    public async Task GenerateUploadUrlAsync_EmptyAccountId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new PhotoUploadRequest(
+            PhotoEntityType.Properties,
+            Guid.NewGuid(),
+            "image/jpeg",
+            1024,
+            "test.jpg");
+
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.GenerateUploadUrlAsync(Guid.Empty, request))
+            .Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Account ID*");
+    }
+
+    [Fact]
+    public async Task GenerateUploadUrlAsync_FileSizeExceedsLimit_ThrowsArgumentException()
+    {
+        // Arrange
+        var accountId = Guid.NewGuid();
+        var request = new PhotoUploadRequest(
+            PhotoEntityType.Properties,
+            Guid.NewGuid(),
+            "image/jpeg",
+            PhotoValidation.MaxFileSizeBytes + 1, // Exceeds 10MB limit
+            "huge.jpg");
+
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.GenerateUploadUrlAsync(accountId, request))
+            .Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*exceeds maximum*");
+    }
+
+    [Fact]
+    public async Task GenerateUploadUrlAsync_InvalidContentType_ThrowsArgumentException()
+    {
+        // Arrange
+        var accountId = Guid.NewGuid();
+        var request = new PhotoUploadRequest(
+            PhotoEntityType.Properties,
+            Guid.NewGuid(),
+            "application/pdf", // Invalid for photos
+            1024,
+            "document.pdf");
+
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.GenerateUploadUrlAsync(accountId, request))
+            .Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*not allowed*");
+    }
+
+    [Fact]
+    public async Task GetPhotoUrlAsync_EmptyStorageKey_ThrowsArgumentException()
+    {
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.GetPhotoUrlAsync(""))
+            .Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task GetThumbnailUrlAsync_EmptyStorageKey_ThrowsArgumentException()
+    {
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.GetThumbnailUrlAsync(""))
+            .Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task DeletePhotoAsync_EmptyStorageKey_ThrowsArgumentException()
+    {
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.DeletePhotoAsync("", null))
+            .Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task ConfirmUploadAsync_NullRequest_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.ConfirmUploadAsync(null!, "image/jpeg", 1024))
+            .Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task ConfirmUploadAsync_ZeroFileSize_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ConfirmPhotoUploadRequest("key", "thumb_key");
+
+        // Act & Assert
+        await FluentActions.Invoking(() => _sut.ConfirmUploadAsync(request, "image/jpeg", 0))
+            .Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*greater than zero*");
+    }
+
+    #endregion
+
     private void SetupHttpResponse(string url, byte[] content)
     {
         _httpMessageHandlerMock

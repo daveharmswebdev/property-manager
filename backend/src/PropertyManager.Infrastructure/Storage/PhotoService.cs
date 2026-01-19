@@ -35,7 +35,14 @@ public class PhotoService : IPhotoService
         PhotoUploadRequest request,
         CancellationToken cancellationToken = default)
     {
-        var extension = GetExtensionFromContentType(request.ContentType);
+        if (accountId == Guid.Empty)
+        {
+            throw new ArgumentException("Account ID is required.", nameof(accountId));
+        }
+
+        PhotoValidation.ValidateRequest(request);
+
+        var extension = PhotoValidation.GetExtensionFromContentType(request.ContentType);
         var entityTypePath = request.EntityType.ToString().ToLowerInvariant();
         var year = DateTime.UtcNow.Year;
         var fileId = Guid.NewGuid();
@@ -69,6 +76,16 @@ public class PhotoService : IPhotoService
         long fileSizeBytes,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.StorageKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.ThumbnailStorageKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        if (fileSizeBytes <= 0)
+        {
+            throw new ArgumentException("File size must be greater than zero.", nameof(fileSizeBytes));
+        }
+
         _logger.LogInformation(
             "Confirming upload and generating thumbnail for {StorageKey}",
             request.StorageKey);
@@ -139,6 +156,7 @@ public class PhotoService : IPhotoService
         string storageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storageKey);
         return _storageService.GeneratePresignedDownloadUrlAsync(storageKey, cancellationToken);
     }
 
@@ -147,6 +165,7 @@ public class PhotoService : IPhotoService
         string thumbnailStorageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(thumbnailStorageKey);
         return _storageService.GeneratePresignedDownloadUrlAsync(thumbnailStorageKey, cancellationToken);
     }
 
@@ -156,6 +175,8 @@ public class PhotoService : IPhotoService
         string? thumbnailStorageKey,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storageKey);
+
         _logger.LogInformation(
             "Deleting photo {StorageKey} and thumbnail {ThumbnailStorageKey}",
             storageKey,
@@ -168,15 +189,4 @@ public class PhotoService : IPhotoService
             await _storageService.DeleteFileAsync(thumbnailStorageKey, cancellationToken);
         }
     }
-
-    private static string GetExtensionFromContentType(string contentType) => contentType.ToLowerInvariant() switch
-    {
-        "image/jpeg" => ".jpg",
-        "image/png" => ".png",
-        "image/gif" => ".gif",
-        "image/webp" => ".webp",
-        "image/bmp" => ".bmp",
-        "image/tiff" => ".tiff",
-        _ => ".jpg" // Default to .jpg for unknown types
-    };
 }
