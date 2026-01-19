@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -176,7 +176,7 @@ import { WorkOrderStatus } from '../../services/work-order.service';
     `,
   ],
 })
-export class WorkOrderFormComponent implements OnInit {
+export class WorkOrderFormComponent implements OnInit, OnDestroy {
   protected readonly workOrderStore = inject(WorkOrderStore);
   protected readonly expenseStore = inject(ExpenseStore);
   private readonly fb = inject(FormBuilder);
@@ -189,6 +189,7 @@ export class WorkOrderFormComponent implements OnInit {
   // Local state
   protected readonly properties = signal<PropertySummaryDto[]>([]);
   protected readonly isLoadingProperties = signal(true);
+  private destroyed = false;
 
   protected form: FormGroup = this.fb.group({
     propertyId: ['', [Validators.required]],
@@ -199,11 +200,41 @@ export class WorkOrderFormComponent implements OnInit {
 
   /**
    * Hierarchical categories for display (AC #8)
-   * Categories are indented based on parentId
+   * Built reactively from expenseStore.sortedCategories using computed signal
    */
-  protected readonly hierarchicalCategories = signal<
-    Array<{ id: string; name: string; indent: string; parentId?: string }>
-  >([]);
+  protected readonly hierarchicalCategories = computed(() => {
+    const categories = this.expenseStore.sortedCategories();
+    if (categories.length === 0) {
+      return [];
+    }
+
+    // Build hierarchical list
+    const parents = categories.filter((c) => !c.parentId);
+    const children = categories.filter((c) => c.parentId);
+
+    const hierarchical: Array<{ id: string; name: string; indent: string; parentId?: string }> = [];
+
+    for (const parent of parents) {
+      hierarchical.push({
+        id: parent.id,
+        name: parent.name,
+        indent: '',
+      });
+
+      // Add children of this parent
+      const parentChildren = children.filter((c) => c.parentId === parent.id);
+      for (const child of parentChildren) {
+        hierarchical.push({
+          id: child.id,
+          name: child.name,
+          indent: '\u00A0\u00A0\u00A0\u00A0', // Non-breaking spaces for indentation
+          parentId: child.parentId,
+        });
+      }
+    }
+
+    return hierarchical;
+  });
 
   ngOnInit(): void {
     // Load properties
@@ -211,14 +242,16 @@ export class WorkOrderFormComponent implements OnInit {
 
     // Load categories
     this.expenseStore.loadCategories();
+  }
 
-    // Watch for categories to be loaded and build hierarchy
-    this.buildHierarchicalCategories();
+  ngOnDestroy(): void {
+    this.destroyed = true;
   }
 
   private loadProperties(): void {
     this.propertyService.getProperties().subscribe({
       next: (response) => {
+        if (this.destroyed) return;
         this.properties.set(response.items);
         this.isLoadingProperties.set(false);
 
@@ -229,51 +262,11 @@ export class WorkOrderFormComponent implements OnInit {
         }
       },
       error: (error) => {
+        if (this.destroyed) return;
         console.error('Error loading properties:', error);
         this.isLoadingProperties.set(false);
       },
     });
-  }
-
-  private buildHierarchicalCategories(): void {
-    // Use a simple interval to check when categories are loaded
-    const checkInterval = setInterval(() => {
-      const categories = this.expenseStore.sortedCategories();
-      if (categories.length > 0) {
-        clearInterval(checkInterval);
-
-        // Build hierarchical list
-        const parents = categories.filter((c) => !c.parentId);
-        const children = categories.filter((c) => c.parentId);
-
-        const hierarchical: Array<{ id: string; name: string; indent: string; parentId?: string }> =
-          [];
-
-        for (const parent of parents) {
-          hierarchical.push({
-            id: parent.id,
-            name: parent.name,
-            indent: '',
-          });
-
-          // Add children of this parent
-          const parentChildren = children.filter((c) => c.parentId === parent.id);
-          for (const child of parentChildren) {
-            hierarchical.push({
-              id: child.id,
-              name: child.name,
-              indent: '\u00A0\u00A0\u00A0\u00A0', // Non-breaking spaces for indentation
-              parentId: child.parentId,
-            });
-          }
-        }
-
-        this.hierarchicalCategories.set(hierarchical);
-      }
-    }, 100);
-
-    // Clear interval after 5 seconds to prevent memory leaks
-    setTimeout(() => clearInterval(checkInterval), 5000);
   }
 
   protected onSubmit(): void {

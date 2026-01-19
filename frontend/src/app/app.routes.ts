@@ -200,10 +200,10 @@ export const routes: Routes = [
       {
         path: 'work-orders/:id',
         loadComponent: () =>
-          import('./features/work-orders/work-orders.component').then(
-            (m) => m.WorkOrdersComponent
+          import('./features/work-orders/pages/work-order-detail/work-order-detail.component').then(
+            (m) => m.WorkOrderDetailComponent
           ),
-        // Placeholder: Will be replaced with WorkOrderDetailComponent in story 9-8
+        // Placeholder detail page - full implementation in story 9-8
       },
       // Default child redirect to dashboard
       {

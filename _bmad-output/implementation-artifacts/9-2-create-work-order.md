@@ -175,7 +175,7 @@ So that **I can track what needs to be fixed at my property**.
   - Validation errors for invalid Status
   - Passes with valid minimal request
   - Passes with valid full request
-- [ ] 8.3 Create component tests for WorkOrderFormComponent - Deferred (manual verification complete)
+- [x] 8.3 Create component tests for WorkOrderFormComponent - Added in code review
 - [x] 8.4 Manual Playwright verification:
   - [x] POST /api/v1/work-orders returns 201
   - [x] Returns proper validation errors for invalid requests
@@ -532,6 +532,13 @@ N/A
 6. **Testing**: All 713 backend tests pass, all 928 frontend tests pass. UI verified via Playwright.
 7. **Minor Updates**: Updated sidebar-nav.component.spec.ts to expect 9 navigation items.
 
+### Code Review Fixes Applied
+
+1. **Fixed Memory Leak** - Refactored WorkOrderFormComponent to implement OnDestroy with proper cleanup flag
+2. **Refactored Polling to Reactive Pattern** - Replaced setInterval polling with Angular computed() signal for hierarchical categories
+3. **Fixed Detail Route** - Created WorkOrderDetailComponent placeholder and updated route to use it instead of list component (AC #7 compliance)
+4. **Added Missing Component Tests** - Created work-order-form.component.spec.ts with comprehensive tests
+
 ### File List
 
 **Backend (New):**
@@ -547,11 +554,13 @@ N/A
 - `frontend/src/app/features/work-orders/services/work-order.service.ts`
 - `frontend/src/app/features/work-orders/stores/work-order.store.ts`
 - `frontend/src/app/features/work-orders/components/work-order-form/work-order-form.component.ts`
+- `frontend/src/app/features/work-orders/components/work-order-form/work-order-form.component.spec.ts` - Added in code review
 - `frontend/src/app/features/work-orders/pages/work-order-create/work-order-create.component.ts`
+- `frontend/src/app/features/work-orders/pages/work-order-detail/work-order-detail.component.ts` - Added in code review
 - `frontend/src/app/features/work-orders/work-orders.component.ts`
 
 **Frontend (Modified):**
-- `frontend/src/app/app.routes.ts` - Added work-orders routes
+- `frontend/src/app/app.routes.ts` - Added work-orders routes, fixed detail route
 - `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.ts` - Added Work Orders nav link
 - `frontend/src/app/core/components/sidebar-nav/sidebar-nav.component.spec.ts` - Updated test expectations
 - `frontend/src/app/features/expenses/services/expense.service.ts` - Added parentId to ExpenseCategoryDto
