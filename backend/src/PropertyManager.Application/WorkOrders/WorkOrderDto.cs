@@ -9,6 +9,7 @@ public record WorkOrderDto(
     string PropertyName,
     Guid? VendorId,
     string? VendorName,
+    bool IsDiy,
     Guid? CategoryId,
     string? CategoryName,
     string Status,

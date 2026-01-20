@@ -140,7 +140,7 @@ export const WorkOrderStore = signalStore(
                 if (error.status === 400) {
                   errorMessage = 'Invalid work order data. Please check your input.';
                 } else if (error.status === 404) {
-                  errorMessage = 'Property or category not found.';
+                  errorMessage = 'Property, category, or vendor not found.';
                 }
 
                 patchState(store, {

@@ -4176,6 +4176,7 @@ export interface WorkOrderDto {
     propertyName?: string;
     vendorId?: string | undefined;
     vendorName?: string | undefined;
+    isDiy?: boolean;
     categoryId?: string | undefined;
     categoryName?: string | undefined;
     status?: string;
@@ -4199,6 +4200,29 @@ export interface CreateWorkOrderRequest {
     description?: string;
     categoryId?: string | undefined;
     status?: string | undefined;
+    vendorId?: string | undefined;
+    tagIds?: string[] | undefined;
+}
+
+export interface UpdateWorkOrderRequest {
+    description?: string;
+    categoryId?: string | undefined;
+    status?: string | undefined;
+    vendorId?: string | undefined;
+    tagIds?: string[] | undefined;
+}
+
+export interface GetAllWorkOrderTagsResponse {
+    items?: WorkOrderTagDto[];
+    totalCount?: number;
+}
+
+export interface CreateWorkOrderTagResponse {
+    id?: string;
+}
+
+export interface CreateWorkOrderTagRequest {
+    name?: string;
 }
 
 export interface FileResponse {
