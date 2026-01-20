@@ -102,9 +102,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
           }
           @if (!hasError()) {
             <!-- Show thumbnail first if available, then transition to full image -->
-            @if (showThumbnail() && thumbnailUrl()) {
+            @if (showThumbnail() && effectiveThumbnailUrl()) {
               <img
-                [src]="thumbnailUrl()"
+                [src]="effectiveThumbnailUrl()"
                 [style.transform]="imageTransform()"
                 [class.loading]="isLoadingThumbnail()"
                 (load)="onThumbnailLoad()"
@@ -115,7 +115,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
               />
             }
             <img
-              [src]="viewUrl()"
+              [src]="effectiveViewUrl()"
               [style.transform]="imageTransform()"
               [class.loading]="isLoadingFullImage()"
               [class.hidden]="showThumbnail() && !isFullImageLoaded()"
@@ -285,6 +285,9 @@ export class PhotoViewerComponent {
   /** Whether the user is currently dragging the image */
   protected isDragging = signal(false);
 
+  /** Timestamp for cache-busting on retry */
+  private retryTimestamp = signal<number | null>(null);
+
   /** Last mouse X position for drag calculation */
   private lastMouseX = 0;
 
@@ -296,6 +299,29 @@ export class PhotoViewerComponent {
 
   /** Whether to show the thumbnail (has thumbnail URL and full image not yet loaded) */
   protected showThumbnail = computed(() => !!this.thumbnailUrl() && !this.isFullImageLoaded());
+
+  /** Effective view URL with cache-busting for retry */
+  protected effectiveViewUrl = computed(() => {
+    const url = this.viewUrl();
+    const timestamp = this.retryTimestamp();
+    if (timestamp) {
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}_retry=${timestamp}`;
+    }
+    return url;
+  });
+
+  /** Effective thumbnail URL with cache-busting for retry */
+  protected effectiveThumbnailUrl = computed(() => {
+    const url = this.thumbnailUrl();
+    if (!url) return url;
+    const timestamp = this.retryTimestamp();
+    if (timestamp) {
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}_retry=${timestamp}`;
+    }
+    return url;
+  });
 
   /** Combined CSS transform for the image */
   protected imageTransform = computed(
@@ -405,5 +431,7 @@ export class PhotoViewerComponent {
     this.isLoadingThumbnail.set(true);
     this.isLoadingFullImage.set(true);
     this.isFullImageLoaded.set(false);
+    // Set timestamp to cache-bust the URL and force browser to reload
+    this.retryTimestamp.set(Date.now());
   }
 }

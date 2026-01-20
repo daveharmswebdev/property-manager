@@ -74,7 +74,7 @@ interface FilePreview {
       } @else {
         <!-- File previews -->
         <div class="previews-container" data-testid="previews-container">
-          @for (preview of filePreviews(); track preview.file.name) {
+          @for (preview of filePreviews(); track $index) {
             <div class="preview-item" data-testid="preview-item">
               @if (preview.previewUrl) {
                 <img [src]="preview.previewUrl" [alt]="preview.file.name" class="preview-image" />
@@ -295,13 +295,8 @@ export class DragDropUploadComponent {
   /** Currently selected files */
   selectedFiles = signal<File[]>([]);
 
-  /** File previews with thumbnail URLs */
-  filePreviews = computed<FilePreview[]>(() => {
-    return this.selectedFiles().map((file) => ({
-      file,
-      previewUrl: this.isImageFile(file) ? URL.createObjectURL(file) : null,
-    }));
-  });
+  /** File previews with thumbnail URLs - managed manually to prevent memory leaks */
+  filePreviews = signal<FilePreview[]>([]);
 
   /** Total size of selected files in MB */
   totalSize = computed(() => {
@@ -396,9 +391,18 @@ export class DragDropUploadComponent {
 
   /** Remove a file from the selection */
   removeFile(file: File): void {
-    const currentFiles = this.selectedFiles();
-    const updatedFiles = currentFiles.filter((f) => f !== file);
+    // Find and revoke the Object URL for this file to prevent memory leak
+    const currentPreviews = this.filePreviews();
+    const previewToRemove = currentPreviews.find((p) => p.file === file);
+    if (previewToRemove?.previewUrl) {
+      URL.revokeObjectURL(previewToRemove.previewUrl);
+    }
+
+    // Update files and previews
+    const updatedFiles = this.selectedFiles().filter((f) => f !== file);
+    const updatedPreviews = currentPreviews.filter((p) => p.file !== file);
     this.selectedFiles.set(updatedFiles);
+    this.filePreviews.set(updatedPreviews);
 
     // Emit updated selection
     if (updatedFiles.length > 0) {
@@ -415,6 +419,7 @@ export class DragDropUploadComponent {
       }
     });
     this.selectedFiles.set([]);
+    this.filePreviews.set([]);
   }
 
   /** Process and validate dropped/selected files */
@@ -458,8 +463,17 @@ export class DragDropUploadComponent {
     // Add valid files to selection
     if (validFiles.length > 0) {
       const currentFiles = this.multiple() ? this.selectedFiles() : [];
+      const currentPreviews = this.multiple() ? this.filePreviews() : [];
+
+      // Create previews for new valid files
+      const newPreviews = validFiles.map((file) => ({
+        file,
+        previewUrl: this.isImageFile(file) ? URL.createObjectURL(file) : null,
+      }));
+
       const newSelection = [...currentFiles, ...validFiles];
       this.selectedFiles.set(newSelection);
+      this.filePreviews.set([...currentPreviews, ...newPreviews]);
       this.filesSelected.emit(newSelection);
     }
   }

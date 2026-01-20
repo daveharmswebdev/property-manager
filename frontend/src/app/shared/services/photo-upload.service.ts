@@ -101,6 +101,17 @@ export class PhotoUploadService {
 
     options.onProgress?.(10);
 
+    // Validate presigned URL response
+    if (!uploadUrlResponse.uploadUrl) {
+      throw new Error('Server did not return an upload URL');
+    }
+    if (!uploadUrlResponse.storageKey) {
+      throw new Error('Server did not return a storage key');
+    }
+    if (!uploadUrlResponse.thumbnailStorageKey) {
+      throw new Error('Server did not return a thumbnail storage key');
+    }
+
     // Step 2: Upload file directly to S3
     const progressCallback = options.onProgress
       ? (percent: number) => {
@@ -109,7 +120,7 @@ export class PhotoUploadService {
         }
       : undefined;
 
-    const s3Response = await this.uploadToS3(uploadUrlResponse.uploadUrl!, file, progressCallback);
+    const s3Response = await this.uploadToS3(uploadUrlResponse.uploadUrl, file, progressCallback);
 
     if (!s3Response.ok) {
       throw new Error(`S3 upload failed: ${s3Response.status} ${s3Response.statusText}`);
@@ -120,8 +131,8 @@ export class PhotoUploadService {
     // Step 3: Confirm upload (triggers thumbnail generation)
     const confirmResponse = await firstValueFrom(
       this.apiClient.photos_ConfirmUpload({
-        storageKey: uploadUrlResponse.storageKey!,
-        thumbnailStorageKey: uploadUrlResponse.thumbnailStorageKey!,
+        storageKey: uploadUrlResponse.storageKey,
+        thumbnailStorageKey: uploadUrlResponse.thumbnailStorageKey,
         contentType: file.type,
         fileSizeBytes: file.size,
       })
@@ -129,11 +140,22 @@ export class PhotoUploadService {
 
     options.onProgress?.(100);
 
+    // Validate confirm response
+    if (!confirmResponse.storageKey) {
+      throw new Error('Server did not confirm storage key');
+    }
+    if (!confirmResponse.contentType) {
+      throw new Error('Server did not confirm content type');
+    }
+    if (confirmResponse.fileSizeBytes === undefined || confirmResponse.fileSizeBytes === null) {
+      throw new Error('Server did not confirm file size');
+    }
+
     return {
-      storageKey: confirmResponse.storageKey!,
+      storageKey: confirmResponse.storageKey,
       thumbnailStorageKey: confirmResponse.thumbnailStorageKey ?? null,
-      contentType: confirmResponse.contentType!,
-      fileSizeBytes: confirmResponse.fileSizeBytes!,
+      contentType: confirmResponse.contentType,
+      fileSizeBytes: confirmResponse.fileSizeBytes,
     };
   }
 
