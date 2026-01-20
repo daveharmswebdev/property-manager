@@ -9,6 +9,7 @@ import { WorkOrderFormComponent } from './work-order-form.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { PropertyService } from '../../../properties/services/property.service';
+import { VendorStore } from '../../../vendors/stores/vendor.store';
 
 describe('WorkOrderFormComponent', () => {
   let component: WorkOrderFormComponent;
@@ -39,7 +40,18 @@ describe('WorkOrderFormComponent', () => {
   let mockPropertyService: {
     getProperties: ReturnType<typeof vi.fn>;
   };
+  let mockVendorStore: {
+    vendors: ReturnType<typeof signal>;
+    isLoading: ReturnType<typeof signal<boolean>>;
+    error: ReturnType<typeof signal<string | null>>;
+    loadVendors: ReturnType<typeof vi.fn>;
+  };
   let router: Router;
+
+  const mockVendors = [
+    { id: 'vendor-1', fullName: 'John Plumber', tradeTags: [{ id: 'trade-1', name: 'Plumbing' }] },
+    { id: 'vendor-2', fullName: 'Jane Electric', tradeTags: [{ id: 'trade-2', name: 'Electrical' }] },
+  ];
 
   const mockProperties = [
     { id: 'prop-1', name: 'Test Property 1', city: 'Austin', state: 'TX' },
@@ -87,6 +99,13 @@ describe('WorkOrderFormComponent', () => {
       getProperties: vi.fn().mockReturnValue(of({ items: mockProperties, totalCount: 2 })),
     };
 
+    mockVendorStore = {
+      vendors: signal(mockVendors),
+      isLoading: signal(false),
+      error: signal<string | null>(null),
+      loadVendors: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [WorkOrderFormComponent, NoopAnimationsModule],
       providers: [
@@ -97,6 +116,7 @@ describe('WorkOrderFormComponent', () => {
         { provide: WorkOrderStore, useValue: mockWorkOrderStore },
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: VendorStore, useValue: mockVendorStore },
       ],
     }).compileComponents();
 
@@ -303,6 +323,7 @@ describe('WorkOrderFormComponent', () => {
         description: '  Fix the faucet  ',
         categoryId: null,
         status: 'Reported',
+        vendorId: null,
       });
 
       component['onSubmit']();
@@ -312,6 +333,7 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: undefined,
         status: 'Reported',
+        vendorId: undefined,
         tagIds: undefined,
       });
     });
@@ -322,6 +344,7 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: 'cat-1',
         status: 'Reported',
+        vendorId: null,
       });
 
       component['onSubmit']();
@@ -331,6 +354,28 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: 'cat-1',
         status: 'Reported',
+        vendorId: undefined,
+        tagIds: undefined,
+      });
+    });
+
+    it('should pass vendorId when vendor is selected (Story 9-4)', () => {
+      component['form'].patchValue({
+        propertyId: 'prop-1',
+        description: 'Fix the faucet',
+        categoryId: null,
+        status: 'Assigned',
+        vendorId: 'vendor-1',
+      });
+
+      component['onSubmit']();
+
+      expect(mockWorkOrderStore.createWorkOrder).toHaveBeenCalledWith({
+        propertyId: 'prop-1',
+        description: 'Fix the faucet',
+        categoryId: undefined,
+        status: 'Assigned',
+        vendorId: 'vendor-1',
         tagIds: undefined,
       });
     });
@@ -341,6 +386,7 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: null,
         status: 'Reported',
+        vendorId: null,
       });
       component['selectedTags'].set([
         { id: 'tag-1', name: 'Urgent' },
@@ -354,6 +400,7 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: undefined,
         status: 'Reported',
+        vendorId: undefined,
         tagIds: ['tag-1', 'tag-2'],
       });
     });
@@ -466,6 +513,87 @@ describe('WorkOrderFormComponent', () => {
       component['removeTag'](tag);
 
       expect(component['selectedTags']()).toEqual([{ id: 'tag-2', name: 'Recurring' }]);
+    });
+  });
+
+  describe('Vendor Assignment (Story 9-4)', () => {
+    it('should have Assigned To dropdown (AC #6)', () => {
+      const vendorSelect = fixture.debugElement.query(
+        By.css('mat-select[formControlName="vendorId"]')
+      );
+      expect(vendorSelect).toBeTruthy();
+    });
+
+    it('should load vendors on init (AC #6)', () => {
+      expect(mockVendorStore.loadVendors).toHaveBeenCalled();
+    });
+
+    it('should default vendorId to null (DIY)', () => {
+      expect(component['form'].get('vendorId')?.value).toBeNull();
+    });
+
+    it('should have vendorId form control', () => {
+      expect(component['form'].get('vendorId')).toBeTruthy();
+    });
+
+    it('should auto-update status to Assigned when vendor selected and status is Reported (AC #10)', () => {
+      component['form'].patchValue({ status: 'Reported' });
+
+      component['onVendorChange']('vendor-1');
+
+      expect(component['form'].get('status')?.value).toBe('Assigned');
+    });
+
+    it('should NOT auto-update status when vendor selected but status is not Reported', () => {
+      component['form'].patchValue({ status: 'Completed' });
+
+      component['onVendorChange']('vendor-1');
+
+      expect(component['form'].get('status')?.value).toBe('Completed');
+    });
+
+    it('should NOT auto-update status when DIY selected (vendorId is null)', () => {
+      component['form'].patchValue({ status: 'Reported' });
+
+      component['onVendorChange'](null);
+
+      expect(component['form'].get('status')?.value).toBe('Reported');
+    });
+
+    it('should format trade tags correctly', () => {
+      const result = component['formatTradeTags']([
+        { name: 'Plumbing' },
+        { name: 'HVAC' },
+      ]);
+
+      expect(result).toBe('Plumbing, HVAC');
+    });
+
+    it('should format empty trade tags as empty string', () => {
+      const result = component['formatTradeTags']([]);
+
+      expect(result).toBe('');
+    });
+
+    it('should show error message when vendor loading fails', () => {
+      mockVendorStore.error.set('Failed to load vendors');
+      fixture.detectChanges();
+
+      const errorElement = fixture.debugElement.query(By.css('mat-error'));
+      expect(errorElement).toBeTruthy();
+      expect(errorElement.nativeElement.textContent).toContain('Failed to load vendors');
+    });
+
+    it('should still allow DIY selection when vendor loading fails', () => {
+      mockVendorStore.error.set('Failed to load vendors');
+      fixture.detectChanges();
+
+      const vendorSelect = fixture.debugElement.query(
+        By.css('mat-select[formControlName="vendorId"]')
+      );
+      expect(vendorSelect).toBeTruthy();
+      // Should not be disabled when there's an error - DIY is still available
+      expect(vendorSelect.attributes['ng-reflect-disabled']).toBeFalsy();
     });
   });
 });

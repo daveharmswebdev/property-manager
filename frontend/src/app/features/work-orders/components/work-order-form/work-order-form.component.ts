@@ -16,6 +16,8 @@ import { PropertyService, PropertySummaryDto } from '../../../properties/service
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.service';
+import { VendorStore } from '../../../vendors/stores/vendor.store';
+import { VendorDto } from '../../../../core/api/api.service';
 
 /**
  * WorkOrderFormComponent (AC #6, #8, #9)
@@ -116,6 +118,38 @@ import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.serv
               <mat-option value="Assigned">Assigned</mat-option>
               <mat-option value="Completed">Completed</mat-option>
             </mat-select>
+          </mat-form-field>
+
+          <!-- Assigned To Field (Story 9-4 AC #6, #7, #8, #9, #10) -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Assigned To</mat-label>
+            @if (vendorStore.isLoading()) {
+              <mat-select disabled>
+                <mat-option>Loading...</mat-option>
+              </mat-select>
+            } @else if (vendorStore.error()) {
+              <mat-select formControlName="vendorId">
+                <mat-option [value]="null">
+                  <mat-icon>person</mat-icon> Self (DIY)
+                </mat-option>
+              </mat-select>
+              <mat-error>Failed to load vendors. DIY only available.</mat-error>
+            } @else {
+              <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)">
+                <mat-option [value]="null">
+                  <mat-icon>person</mat-icon> Self (DIY)
+                </mat-option>
+                @for (vendor of vendorStore.vendors(); track vendor.id) {
+                  <mat-option [value]="vendor.id">
+                    {{ vendor.fullName }}
+                    @if (vendor.tradeTags?.length) {
+                      <span class="vendor-trades"> - {{ formatTradeTags(vendor.tradeTags!) }}</span>
+                    }
+                  </mat-option>
+                }
+              </mat-select>
+            }
+            <mat-hint>Select a vendor or leave as DIY</mat-hint>
           </mat-form-field>
 
           <!-- Tags Field (AC #8, #9, #10, #11) -->
@@ -236,12 +270,18 @@ import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.serv
         vertical-align: middle;
         margin-right: 4px;
       }
+
+      .vendor-trades {
+        color: var(--mdc-theme-text-secondary-on-background, rgba(0, 0, 0, 0.6));
+        font-size: 0.85em;
+      }
     `,
   ],
 })
 export class WorkOrderFormComponent implements OnInit, OnDestroy {
   protected readonly workOrderStore = inject(WorkOrderStore);
   protected readonly expenseStore = inject(ExpenseStore);
+  protected readonly vendorStore = inject(VendorStore);
   private readonly fb = inject(FormBuilder);
   private readonly propertyService = inject(PropertyService);
   private readonly router = inject(Router);
@@ -264,6 +304,7 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
     description: ['', [Validators.required, Validators.maxLength(5000)]],
     categoryId: [null as string | null],
     status: [WorkOrderStatus.Reported],
+    vendorId: [null as string | null],
   });
 
   /**
@@ -341,6 +382,9 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
 
     // Load tags (AC #8)
     this.workOrderStore.loadTags();
+
+    // Load vendors for assignment dropdown (Story 9-4 AC #6)
+    this.vendorStore.loadVendors();
   }
 
   ngOnDestroy(): void {
@@ -374,7 +418,7 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const { propertyId, description, categoryId, status } = this.form.value;
+    const { propertyId, description, categoryId, status, vendorId } = this.form.value;
     const tagIds = this.selectedTags().map((tag) => tag.id);
 
     this.workOrderStore.createWorkOrder({
@@ -382,12 +426,33 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
       description: description.trim(),
       categoryId: categoryId || undefined,
       status,
+      vendorId: vendorId || undefined,
       tagIds: tagIds.length > 0 ? tagIds : undefined,
     });
   }
 
   protected onCancel(): void {
     this.router.navigate(['/work-orders']);
+  }
+
+  /**
+   * Handle vendor selection change (Story 9-4 AC #10)
+   * Auto-updates status to "Assigned" when a vendor is selected and status is "Reported"
+   */
+  protected onVendorChange(vendorId: string | null): void {
+    const currentStatus = this.form.get('status')?.value;
+
+    // Auto-update status to "Assigned" if vendor selected and status is "Reported"
+    if (vendorId && currentStatus === WorkOrderStatus.Reported) {
+      this.form.patchValue({ status: WorkOrderStatus.Assigned });
+    }
+  }
+
+  /**
+   * Format vendor trade tags for display (Story 9-4 AC #9)
+   */
+  protected formatTradeTags(tradeTags: { name?: string }[]): string {
+    return tradeTags.map((t) => t.name).filter(Boolean).join(', ');
   }
 
   /**

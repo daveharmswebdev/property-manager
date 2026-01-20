@@ -3,13 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 /**
- * Request model for creating a work order (AC #1, #5)
+ * Request model for creating a work order (AC #1, #5, Story 9-4)
  */
 export interface CreateWorkOrderRequest {
   propertyId: string;
   description: string;
   categoryId?: string;
   status?: string; // Reported, Assigned, Completed
+  vendorId?: string; // Story 9-4: Vendor assignment (null for DIY)
   tagIds?: string[];
 }
 
@@ -47,7 +48,7 @@ export interface CreateWorkOrderResponse {
 }
 
 /**
- * Work order DTO
+ * Work order DTO (Story 9-4: Added isDiy)
  */
 export interface WorkOrderDto {
   id: string;
@@ -55,6 +56,7 @@ export interface WorkOrderDto {
   propertyName: string;
   vendorId?: string;
   vendorName?: string;
+  isDiy: boolean; // Story 9-4: True when vendorId is null
   categoryId?: string;
   categoryName?: string;
   status: string;

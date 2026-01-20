@@ -15,6 +15,7 @@ public record CreateWorkOrderCommand(
     string Description,
     Guid? CategoryId,
     string? Status,
+    Guid? VendorId = null,
     List<Guid>? TagIds = null
 ) : IRequest<Guid>;
 
@@ -75,6 +76,18 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             }
         }
 
+        // Validate vendor if provided (AC #1, #2)
+        if (request.VendorId.HasValue)
+        {
+            var vendorExists = await _dbContext.Vendors
+                .AnyAsync(v => v.Id == request.VendorId.Value && v.AccountId == _currentUser.AccountId, cancellationToken);
+
+            if (!vendorExists)
+            {
+                throw new NotFoundException(nameof(Vendor), request.VendorId.Value);
+            }
+        }
+
         // Parse status (case-insensitive) or default to Reported
         var status = WorkOrderStatus.Reported;
         if (!string.IsNullOrEmpty(request.Status))
@@ -91,6 +104,7 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             AccountId = _currentUser.AccountId,
             PropertyId = request.PropertyId,
             CategoryId = request.CategoryId,
+            VendorId = request.VendorId,
             Description = request.Description.Trim(),
             Status = status,
             CreatedByUserId = _currentUser.UserId

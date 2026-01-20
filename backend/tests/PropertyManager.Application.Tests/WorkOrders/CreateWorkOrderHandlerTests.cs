@@ -325,6 +325,7 @@ public class CreateWorkOrderHandlerTests
             "Fix the door",
             null,
             null,
+            null,
             new List<Guid> { tag1Id, tag2Id });
 
         // Act
@@ -350,6 +351,7 @@ public class CreateWorkOrderHandlerTests
             "Fix the door",
             null,
             null,
+            null, // No vendor
             null); // No tags
 
         // Act
@@ -370,6 +372,7 @@ public class CreateWorkOrderHandlerTests
         var command = new CreateWorkOrderCommand(
             propertyId,
             "Fix the door",
+            null,
             null,
             null,
             new List<Guid>()); // Empty list
@@ -396,6 +399,7 @@ public class CreateWorkOrderHandlerTests
         var command = new CreateWorkOrderCommand(
             propertyId,
             "Fix the door",
+            null,
             null,
             null,
             new List<Guid> { nonExistentTagId });
@@ -425,6 +429,7 @@ public class CreateWorkOrderHandlerTests
             "Fix the door",
             null,
             null,
+            null,
             new List<Guid> { otherAccountTagId });
 
         // Act
@@ -452,6 +457,128 @@ public class CreateWorkOrderHandlerTests
         var assignments = new List<WorkOrderTagAssignment>();
         var mockDbSet = assignments.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderTagAssignments).Returns(mockDbSet.Object);
+    }
+
+    #endregion
+
+    #region Vendor Assignment Tests (Story 9-4 AC #1, #2, #3)
+
+    [Fact]
+    public async Task Handle_WithValidVendorId_CreatesWorkOrderWithVendorAssigned()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        var vendorId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+        SetupVendorExists(vendorId, _testAccountId);
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            vendorId,
+            null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _addedWorkOrders.Should().HaveCount(1);
+        var workOrder = _addedWorkOrders[0];
+        workOrder.VendorId.Should().Be(vendorId);
+        workOrder.IsDiy.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_WithNullVendorId_CreatesWorkOrderAsDiy()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            null, // DIY - no vendor
+            null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _addedWorkOrders.Should().HaveCount(1);
+        var workOrder = _addedWorkOrders[0];
+        workOrder.VendorId.Should().BeNull();
+        workOrder.IsDiy.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WithNonExistentVendorId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        var nonExistentVendorId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+        SetupVendorNotFound(); // No vendors exist
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            nonExistentVendorId,
+            null);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*Vendor*{nonExistentVendorId}*");
+    }
+
+    [Fact]
+    public async Task Handle_WithVendorFromDifferentAccount_ThrowsNotFoundException()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        var vendorId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+        SetupVendorExists(vendorId, _otherAccountId); // Vendor belongs to different account
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            vendorId,
+            null);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    private void SetupVendorExists(Guid vendorId, Guid accountId)
+    {
+        var vendors = new List<Vendor>
+        {
+            new Vendor { Id = vendorId, AccountId = accountId, FirstName = "Test", LastName = "Vendor" }
+        };
+        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
+    }
+
+    private void SetupVendorNotFound()
+    {
+        var vendors = new List<Vendor>();
+        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 
     #endregion

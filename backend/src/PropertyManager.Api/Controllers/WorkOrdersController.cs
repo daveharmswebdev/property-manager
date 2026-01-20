@@ -96,6 +96,7 @@ public class WorkOrdersController : ControllerBase
             request.Description,
             request.CategoryId,
             request.Status,
+            request.VendorId,
             request.TagIds);
 
         var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
@@ -190,6 +191,7 @@ public record CreateWorkOrderRequest(
     string Description,
     Guid? CategoryId,
     string? Status,
+    Guid? VendorId = null,
     List<Guid>? TagIds = null
 );
 
