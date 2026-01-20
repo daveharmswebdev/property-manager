@@ -3,13 +3,40 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 /**
- * Request model for creating a work order (AC #1)
+ * Request model for creating a work order (AC #1, #5)
  */
 export interface CreateWorkOrderRequest {
   propertyId: string;
   description: string;
   categoryId?: string;
   status?: string; // Reported, Assigned, Completed
+  tagIds?: string[];
+}
+
+/**
+ * Request model for updating a work order (AC #6)
+ */
+export interface UpdateWorkOrderRequest {
+  description: string;
+  categoryId?: string;
+  status?: string;
+  vendorId?: string;
+  tagIds?: string[];
+}
+
+/**
+ * Request model for creating a work order tag
+ */
+export interface CreateWorkOrderTagRequest {
+  name: string;
+}
+
+/**
+ * Response model for get all work order tags
+ */
+export interface GetAllWorkOrderTagsResponse {
+  items: WorkOrderTagDto[];
+  totalCount: number;
 }
 
 /**
@@ -73,6 +100,7 @@ export type WorkOrderStatusType = (typeof WorkOrderStatus)[keyof typeof WorkOrde
 export class WorkOrderService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/work-orders';
+  private readonly tagsBaseUrl = '/api/v1/work-order-tags';
 
   /**
    * Create a new work order (AC #1)
@@ -107,5 +135,32 @@ export class WorkOrderService {
    */
   getWorkOrder(id: string): Observable<WorkOrderDto> {
     return this.http.get<WorkOrderDto>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Update an existing work order (AC #6)
+   * @param id Work order GUID
+   * @param request Updated work order details
+   * @returns Observable that completes on success
+   */
+  updateWorkOrder(id: string, request: UpdateWorkOrderRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${id}`, request);
+  }
+
+  /**
+   * Get all work order tags (AC #8)
+   * @returns Observable with list of tags
+   */
+  getWorkOrderTags(): Observable<GetAllWorkOrderTagsResponse> {
+    return this.http.get<GetAllWorkOrderTagsResponse>(this.tagsBaseUrl);
+  }
+
+  /**
+   * Create a new work order tag (AC #10)
+   * @param request Tag details
+   * @returns Observable with new tag ID
+   */
+  createWorkOrderTag(request: CreateWorkOrderTagRequest): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(this.tagsBaseUrl, request);
   }
 }

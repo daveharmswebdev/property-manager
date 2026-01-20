@@ -8,19 +8,20 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.WorkOrders;
 
 /// <summary>
-/// Command for creating a new work order (AC #1).
+/// Command for creating a new work order (AC #1, AC #5).
 /// </summary>
 public record CreateWorkOrderCommand(
     Guid PropertyId,
     string Description,
     Guid? CategoryId,
-    string? Status
+    string? Status,
+    List<Guid>? TagIds = null
 ) : IRequest<Guid>;
 
 /// <summary>
 /// Handler for CreateWorkOrderCommand.
 /// Creates a new work order with AccountId and CreatedByUserId from current user.
-/// Validates property and category (if provided) exist.
+/// Validates property, category (if provided), and tags (if provided) exist.
 /// </summary>
 public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderCommand, Guid>
 {
@@ -58,6 +59,22 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             }
         }
 
+        // Validate tags if provided (AC #5, #7)
+        if (request.TagIds?.Any() == true)
+        {
+            var validTagIds = await _dbContext.WorkOrderTags
+                .Where(t => t.AccountId == _currentUser.AccountId)
+                .Where(t => request.TagIds.Contains(t.Id))
+                .Select(t => t.Id)
+                .ToListAsync(cancellationToken);
+
+            var invalidIds = request.TagIds.Except(validTagIds).ToList();
+            if (invalidIds.Any())
+            {
+                throw new NotFoundException(nameof(WorkOrderTag), invalidIds.First());
+            }
+        }
+
         // Parse status (case-insensitive) or default to Reported
         var status = WorkOrderStatus.Reported;
         if (!string.IsNullOrEmpty(request.Status))
@@ -78,6 +95,19 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             Status = status,
             CreatedByUserId = _currentUser.UserId
         };
+
+        // Add tag assignments if provided (AC #5)
+        if (request.TagIds?.Any() == true)
+        {
+            foreach (var tagId in request.TagIds)
+            {
+                workOrder.TagAssignments.Add(new WorkOrderTagAssignment
+                {
+                    WorkOrderId = workOrder.Id,
+                    TagId = tagId
+                });
+            }
+        }
 
         _dbContext.WorkOrders.Add(workOrder);
         await _dbContext.SaveChangesAsync(cancellationToken);

@@ -305,4 +305,154 @@ public class CreateWorkOrderHandlerTests
         var mockDbSet = categories.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
+
+    #region Tag Support Tests (AC #5, #7)
+
+    [Fact]
+    public async Task Handle_WithValidTags_CreatesTagAssignments()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var tag1Id = Guid.NewGuid();
+        var tag2Id = Guid.NewGuid();
+        SetupTagsExist(new[] { tag1Id, tag2Id }, _testAccountId);
+        SetupTagAssignmentsDbSet();
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            new List<Guid> { tag1Id, tag2Id });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _addedWorkOrders.Should().HaveCount(1);
+        var workOrder = _addedWorkOrders[0];
+        workOrder.TagAssignments.Should().HaveCount(2);
+        workOrder.TagAssignments.Should().Contain(a => a.TagId == tag1Id);
+        workOrder.TagAssignments.Should().Contain(a => a.TagId == tag2Id);
+    }
+
+    [Fact]
+    public async Task Handle_WithNullTags_CreatesWorkOrderWithoutTags()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            null); // No tags
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _addedWorkOrders.Should().HaveCount(1);
+        _addedWorkOrders[0].TagAssignments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_WithEmptyTagsList_CreatesWorkOrderWithoutTags()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            new List<Guid>()); // Empty list
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _addedWorkOrders.Should().HaveCount(1);
+        _addedWorkOrders[0].TagAssignments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_WithNonExistentTagId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var nonExistentTagId = Guid.NewGuid();
+        SetupTagsExist(Array.Empty<Guid>(), _testAccountId); // No tags exist
+        SetupTagAssignmentsDbSet();
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            new List<Guid> { nonExistentTagId });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*WorkOrderTag*{nonExistentTagId}*");
+    }
+
+    [Fact]
+    public async Task Handle_WithTagFromDifferentAccount_ThrowsNotFoundException()
+    {
+        // Arrange
+        var propertyId = Guid.NewGuid();
+        SetupPropertyExists(propertyId, _testAccountId);
+
+        var otherAccountTagId = Guid.NewGuid();
+        // Tag exists but belongs to different account - should not be visible
+        SetupTagsExist(Array.Empty<Guid>(), _testAccountId); // No tags for current account
+        SetupTagAssignmentsDbSet();
+
+        var command = new CreateWorkOrderCommand(
+            propertyId,
+            "Fix the door",
+            null,
+            null,
+            new List<Guid> { otherAccountTagId });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    private void SetupTagsExist(IEnumerable<Guid> tagIds, Guid accountId)
+    {
+        var tags = tagIds.Select(id => new WorkOrderTag
+        {
+            Id = id,
+            AccountId = accountId,
+            Name = $"Tag-{id.ToString().Substring(0, 8)}",
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+        var mockDbSet = tags.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.WorkOrderTags).Returns(mockDbSet.Object);
+    }
+
+    private void SetupTagAssignmentsDbSet()
+    {
+        var assignments = new List<WorkOrderTagAssignment>();
+        var mockDbSet = assignments.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.WorkOrderTagAssignments).Returns(mockDbSet.Object);
+    }
+
+    #endregion
 }

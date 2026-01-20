@@ -123,7 +123,7 @@ development_status:
   epic-9: in-progress
   9-1-work-order-entity-category-hierarchy: done
   9-2-create-work-order: done
-  9-3-add-work-order-tags: backlog
+  9-3-add-work-order-tags: done
   9-4-assign-work-order-vendor-or-diy: backlog
   9-5-inline-vendor-creation: backlog
   9-6-work-order-dashboard: backlog
@@ -176,7 +176,7 @@ development_status:
   # Epic 13: Property Photos
   # User Outcome: "I can add and view photos of my properties"
   epic-13: in-progress
-  13-1-backend-photo-service: dev-complete   # GitHub Issue #99 Part 1 - Backend services + thumbnail
+  13-1-backend-photo-service: done   # GitHub Issue #99 Part 1 - Backend services + thumbnail
   13-2-frontend-photo-components: ready-for-dev  # GitHub Issue #99 Part 2 - PhotoViewer, DragDrop, PhotoUpload (unblocked by 13.1)
   13-3-property-photo-gallery: backlog       # GitHub Issue #100 - Property photos UI/Feature
   epic-13-retrospective: optional

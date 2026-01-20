@@ -19,17 +19,20 @@ public class WorkOrdersController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<GetAllWorkOrdersQuery> _getAllValidator;
     private readonly IValidator<CreateWorkOrderCommand> _createValidator;
+    private readonly IValidator<UpdateWorkOrderCommand> _updateValidator;
     private readonly ILogger<WorkOrdersController> _logger;
 
     public WorkOrdersController(
         IMediator mediator,
         IValidator<GetAllWorkOrdersQuery> getAllValidator,
         IValidator<CreateWorkOrderCommand> createValidator,
+        IValidator<UpdateWorkOrderCommand> updateValidator,
         ILogger<WorkOrdersController> logger)
     {
         _mediator = mediator;
         _getAllValidator = getAllValidator;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -92,7 +95,8 @@ public class WorkOrdersController : ControllerBase
             request.PropertyId,
             request.Description,
             request.CategoryId,
-            request.Status);
+            request.Status,
+            request.TagIds);
 
         var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
@@ -132,6 +136,50 @@ public class WorkOrdersController : ControllerBase
         // For now, return NotFound - will be implemented in future story
         return NotFound();
     }
+
+    /// <summary>
+    /// Update an existing work order (AC #6, #7).
+    /// </summary>
+    /// <param name="id">Work order GUID</param>
+    /// <param name="request">Updated work order details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Work order updated successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order, category, or tag not found</response>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateWorkOrder(
+        Guid id,
+        [FromBody] UpdateWorkOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateWorkOrderCommand(
+            id,
+            request.Description,
+            request.CategoryId,
+            request.Status,
+            request.VendorId,
+            request.TagIds);
+
+        var validationResult = await _updateValidator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Work order updated: {WorkOrderId}", id);
+
+        return NoContent();
+    }
 }
 
 /// <summary>
@@ -141,10 +189,22 @@ public record CreateWorkOrderRequest(
     Guid PropertyId,
     string Description,
     Guid? CategoryId,
-    string? Status
+    string? Status,
+    List<Guid>? TagIds = null
 );
 
 /// <summary>
 /// Response model for successful work order creation.
 /// </summary>
 public record CreateWorkOrderResponse(Guid Id);
+
+/// <summary>
+/// Request model for updating a work order.
+/// </summary>
+public record UpdateWorkOrderRequest(
+    string Description,
+    Guid? CategoryId,
+    string? Status,
+    Guid? VendorId,
+    List<Guid>? TagIds = null
+);

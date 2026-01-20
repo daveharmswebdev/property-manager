@@ -4,14 +4,14 @@ using PropertyManager.Domain.Enums;
 namespace PropertyManager.Application.WorkOrders;
 
 /// <summary>
-/// Validator for CreateWorkOrderCommand (AC #3, #5).
+/// Validator for UpdateWorkOrderCommand (AC #6).
 /// </summary>
-public class CreateWorkOrderValidator : AbstractValidator<CreateWorkOrderCommand>
+public class UpdateWorkOrderValidator : AbstractValidator<UpdateWorkOrderCommand>
 {
-    public CreateWorkOrderValidator()
+    public UpdateWorkOrderValidator()
     {
-        RuleFor(x => x.PropertyId)
-            .NotEmpty().WithMessage("Property is required");
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Work order ID is required");
 
         RuleFor(x => x.Description)
             .NotEmpty().WithMessage("Description is required")
