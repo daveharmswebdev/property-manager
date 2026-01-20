@@ -30,8 +30,12 @@ import { MatRippleModule } from '@angular/material/core';
   ],
   template: `
     <div class="property-row" matRipple (click)="onRowClick()" (keydown.enter)="onRowClick()" tabindex="0" role="button">
-      <div class="property-icon">
-        <mat-icon>home</mat-icon>
+      <div class="property-thumbnail">
+        @if (thumbnailUrl()) {
+          <img [src]="thumbnailUrl()" [alt]="name() + ' thumbnail'" class="thumbnail-img" />
+        } @else {
+          <mat-icon class="fallback-icon">home</mat-icon>
+        }
       </div>
 
       <div class="property-info">
@@ -85,17 +89,28 @@ import { MatRippleModule } from '@angular/material/core';
       }
     }
 
-    .property-icon {
+    .property-thumbnail {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       border-radius: 8px;
       background-color: var(--pm-primary-light);
+      overflow: hidden;
+      flex-shrink: 0;
 
-      mat-icon {
+      .thumbnail-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .fallback-icon {
         color: var(--pm-primary-dark);
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
       }
     }
 
@@ -192,11 +207,11 @@ import { MatRippleModule } from '@angular/material/core';
         gap: 12px;
       }
 
-      .property-icon {
-        width: 36px;
-        height: 36px;
+      .property-thumbnail {
+        width: 40px;
+        height: 40px;
 
-        mat-icon {
+        .fallback-icon {
           font-size: 20px;
           width: 20px;
           height: 20px;
@@ -265,6 +280,12 @@ export class PropertyRowComponent {
    * Default: 0
    */
   readonly incomeTotal = input<number>(0);
+
+  /**
+   * Primary photo thumbnail URL (AC-13.3b.1)
+   * If provided, shows thumbnail instead of home icon
+   */
+  readonly thumbnailUrl = input<string | null | undefined>(undefined);
 
   /**
    * Computed net income: income - expenses (AC-4.4.5)

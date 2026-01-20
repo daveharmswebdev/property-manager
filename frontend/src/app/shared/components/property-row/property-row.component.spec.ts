@@ -93,9 +93,34 @@ describe('PropertyRowComponent', () => {
     expect(rowClickSpy).not.toHaveBeenCalled();
   });
 
-  it('should display home icon', () => {
-    const icon = fixture.nativeElement.querySelector('.property-icon mat-icon');
+  it('should display home icon as fallback when no thumbnail URL', () => {
+    const icon = fixture.nativeElement.querySelector('.property-thumbnail .fallback-icon');
     expect(icon.textContent?.trim()).toBe('home');
+  });
+
+  it('should display thumbnail image when thumbnailUrl is provided (AC-13.3b.1)', () => {
+    fixture.componentRef.setInput('thumbnailUrl', 'https://example.com/photo.jpg');
+    fixture.detectChanges();
+
+    const img = fixture.nativeElement.querySelector('.property-thumbnail .thumbnail-img');
+    expect(img).toBeTruthy();
+    expect(img.src).toBe('https://example.com/photo.jpg');
+    expect(img.alt).toBe('Oak Street Duplex thumbnail');
+
+    // Fallback icon should not be shown
+    const fallbackIcon = fixture.nativeElement.querySelector('.property-thumbnail .fallback-icon');
+    expect(fallbackIcon).toBeFalsy();
+  });
+
+  it('should show fallback icon when thumbnailUrl is null (AC-13.3b.1)', () => {
+    fixture.componentRef.setInput('thumbnailUrl', null);
+    fixture.detectChanges();
+
+    const fallbackIcon = fixture.nativeElement.querySelector('.property-thumbnail .fallback-icon');
+    expect(fallbackIcon).toBeTruthy();
+
+    const img = fixture.nativeElement.querySelector('.property-thumbnail .thumbnail-img');
+    expect(img).toBeFalsy();
   });
 
   it('should display YTD Expenses label', () => {

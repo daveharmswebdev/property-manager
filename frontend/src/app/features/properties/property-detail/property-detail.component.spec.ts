@@ -4,6 +4,7 @@ import { signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { PropertyDetailComponent } from './property-detail.component';
 import { PropertyStore } from '../stores/property.store';
+import { PropertyPhotoStore } from '../stores/property-photo.store';
 import { PropertyService, PropertyDetailDto } from '../services/property.service';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
@@ -28,6 +29,12 @@ describe('PropertyDetailComponent', () => {
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockLocation: { back: ReturnType<typeof vi.fn> };
   let mockPropertyService: { getPropertyById: ReturnType<typeof vi.fn> };
+  let mockPhotoStore: {
+    isLoading: ReturnType<typeof signal>;
+    sortedPhotos: ReturnType<typeof signal>;
+    loadPhotos: ReturnType<typeof vi.fn>;
+    clear: ReturnType<typeof vi.fn>;
+  };
 
   const mockProperty: PropertyDetailDto = {
     id: 'test-property-id',
@@ -70,6 +77,13 @@ describe('PropertyDetailComponent', () => {
       getPropertyById: vi.fn().mockReturnValue(of(mockProperty)),
     };
 
+    mockPhotoStore = {
+      isLoading: signal(false),
+      sortedPhotos: signal([]),
+      loadPhotos: vi.fn(),
+      clear: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [
         PropertyDetailComponent,
@@ -78,6 +92,7 @@ describe('PropertyDetailComponent', () => {
       ],
       providers: [
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: PropertyPhotoStore, useValue: mockPhotoStore },
         { provide: Router, useValue: mockRouter },
         { provide: Location, useValue: mockLocation },
         { provide: PropertyService, useValue: mockPropertyService },

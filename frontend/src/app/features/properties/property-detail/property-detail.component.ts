@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, effect, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, effect, signal, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +11,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject, takeUntil } from 'rxjs';
 import { PropertyStore } from '../stores/property.store';
+import { PropertyPhotoStore } from '../stores/property-photo.store';
 import { YearSelectorService } from '../../../core/services/year-selector.service';
+import { PropertyPhotoGalleryComponent, PropertyPhoto } from '../components/property-photo-gallery/property-photo-gallery.component';
+import { PropertyPhotoUploadComponent } from '../components/property-photo-upload/property-photo-upload.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -47,6 +50,8 @@ import {
     MatMenuModule,
     CurrencyPipe,
     DatePipe,
+    PropertyPhotoGalleryComponent,
+    PropertyPhotoUploadComponent,
   ],
   template: `
     <div class="property-detail-container">
@@ -198,6 +203,34 @@ import {
               </div>
             </mat-card-content>
           </mat-card>
+        </div>
+
+        <!-- Photo Gallery Section (AC-13.3b.2) -->
+        <div class="photo-section">
+          <app-property-photo-gallery
+            [photos]="galleryPhotos()"
+            [isLoading]="photoStore.isLoading()"
+            (addPhotoClick)="showUploadDialog = true"
+            (photoClick)="onPhotoClick($event)"
+          />
+
+          <!-- Upload Dialog/Overlay -->
+          @if (showUploadDialog) {
+            <div class="upload-overlay" (click)="showUploadDialog = false">
+              <div class="upload-dialog" (click)="$event.stopPropagation()">
+                <div class="upload-dialog-header">
+                  <h3>Upload Photo</h3>
+                  <button mat-icon-button (click)="showUploadDialog = false" aria-label="Close">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+                <app-property-photo-upload
+                  [propertyId]="propertyStore.selectedProperty()!.id"
+                  (uploadComplete)="onUploadComplete()"
+                />
+              </div>
+            </div>
+          }
         </div>
 
         <!-- Recent Activity Section (AC-2.3.3) -->
@@ -560,6 +593,56 @@ import {
     .delete-menu-item {
       color: var(--pm-error, #c62828);
     }
+
+    // Photo Section (AC-13.3b.2)
+    .photo-section {
+      margin-bottom: 24px;
+    }
+
+    // Upload Overlay
+    .upload-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .upload-dialog {
+      background-color: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+      .upload-dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--pm-border, #e0e0e0);
+
+        h3 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 500;
+          color: var(--pm-text-primary);
+        }
+      }
+
+      app-property-photo-upload {
+        display: block;
+        padding: 24px;
+      }
+    }
   `]
 })
 export class PropertyDetailComponent implements OnInit, OnDestroy {
@@ -568,6 +651,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly breakpointObserver = inject(BreakpointObserver);
   readonly propertyStore = inject(PropertyStore);
+  readonly photoStore = inject(PropertyPhotoStore);
   readonly yearService = inject(YearSelectorService);
 
   private propertyId: string | null = null;
@@ -575,6 +659,25 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   /** Mobile viewport detection for responsive action buttons */
   readonly isMobile = signal(false);
+
+  /** Show upload dialog overlay */
+  showUploadDialog = false;
+
+  /**
+   * Convert store photos to gallery-compatible format
+   */
+  galleryPhotos = computed(() =>
+    this.photoStore.sortedPhotos().map(p => ({
+      id: p.id ?? '',
+      thumbnailUrl: p.thumbnailUrl,
+      viewUrl: p.viewUrl,
+      isPrimary: p.isPrimary ?? false,
+      displayOrder: p.displayOrder ?? 0,
+      originalFileName: p.originalFileName,
+      fileSizeBytes: p.fileSizeBytes,
+      createdAt: p.createdAt,
+    } as PropertyPhoto))
+  );
 
   constructor() {
     // React to year changes and reload property detail (AC-3.5.6)
@@ -591,6 +694,11 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     this.propertyId = this.route.snapshot.paramMap.get('id');
     // Initial load happens via effect when selectedYear signal is read
 
+    // Load photos for the property (AC-13.3b.2)
+    if (this.propertyId) {
+      this.photoStore.loadPhotos(this.propertyId);
+    }
+
     // Mobile breakpoint detection for responsive action buttons
     this.breakpointObserver
       .observe('(max-width: 767px)')
@@ -601,8 +709,9 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Clear selected property when leaving the page
+    // Clear selected property and photos when leaving the page
     this.propertyStore.clearSelectedProperty();
+    this.photoStore.clear();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -687,5 +796,23 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
         this.propertyStore.deleteProperty(property.id);
       }
     });
+  }
+
+  /**
+   * Handle photo click (for future lightbox/details view)
+   */
+  onPhotoClick(photo: PropertyPhoto): void {
+    // Future: Open lightbox or photo details dialog
+    console.log('Photo clicked:', photo.id);
+  }
+
+  /**
+   * Handle upload complete - close dialog and refresh photos
+   */
+  onUploadComplete(): void {
+    this.showUploadDialog = false;
+    if (this.propertyId) {
+      this.photoStore.loadPhotos(this.propertyId);
+    }
   }
 }
