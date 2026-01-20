@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import {
   WorkOrderService,
   WorkOrderDto,
+  WorkOrderTagDto,
   CreateWorkOrderRequest,
 } from '../services/work-order.service';
 
@@ -15,7 +16,9 @@ import {
  */
 interface WorkOrderState {
   workOrders: WorkOrderDto[];
+  tags: WorkOrderTagDto[];
   isLoading: boolean;
+  isLoadingTags: boolean;
   isSaving: boolean;
   error: string | null;
 }
@@ -25,7 +28,9 @@ interface WorkOrderState {
  */
 const initialState: WorkOrderState = {
   workOrders: [],
+  tags: [],
   isLoading: false,
+  isLoadingTags: false,
   isSaving: false,
   error: null,
 };
@@ -170,6 +175,68 @@ export const WorkOrderStore = signalStore(
        */
       reset(): void {
         patchState(store, initialState);
+      },
+
+      /**
+       * Load all work order tags (AC #8)
+       */
+      loadTags: rxMethod<void>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isLoadingTags: true,
+            })
+          ),
+          switchMap(() =>
+            workOrderService.getWorkOrderTags().pipe(
+              tap((response) =>
+                patchState(store, {
+                  tags: response.items,
+                  isLoadingTags: false,
+                })
+              ),
+              catchError((error) => {
+                patchState(store, {
+                  isLoadingTags: false,
+                });
+                console.error('Error loading work order tags:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Create a new work order tag (AC #10)
+       * @returns Promise with new tag ID for immediate use
+       */
+      async createTag(name: string): Promise<string | null> {
+        try {
+          const response = await workOrderService.createWorkOrderTag({ name }).toPromise();
+          if (response) {
+            // Add the new tag to the store immediately
+            const newTag: WorkOrderTagDto = { id: response.id, name };
+            patchState(store, {
+              tags: [...store.tags(), newTag],
+            });
+            return response.id;
+          }
+          return null;
+        } catch (error: any) {
+          // Handle conflict (duplicate tag name)
+          if (error.status === 409) {
+            snackBar.open('A tag with that name already exists', 'Close', {
+              duration: 3000,
+            });
+          } else {
+            console.error('Error creating tag:', error);
+            snackBar.open('Failed to create tag', 'Close', {
+              duration: 3000,
+            });
+          }
+          return null;
+        }
       },
     })
   )

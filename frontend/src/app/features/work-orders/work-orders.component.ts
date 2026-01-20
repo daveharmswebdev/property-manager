@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
 import { WorkOrderStore } from './stores/work-order.store';
 
 /**
@@ -23,6 +24,7 @@ import { WorkOrderStore } from './stores/work-order.store';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatChipsModule,
   ],
   template: `
     <div class="work-orders-page">
@@ -62,6 +64,13 @@ import { WorkOrderStore } from './stores/work-order.store';
                 <p class="description">{{ workOrder.description }}</p>
                 @if (workOrder.categoryName) {
                   <p class="category">Category: {{ workOrder.categoryName }}</p>
+                }
+                @if (workOrder.tags && workOrder.tags.length > 0) {
+                  <mat-chip-set class="work-order-tags">
+                    @for (tag of workOrder.tags; track tag.id) {
+                      <mat-chip>{{ tag.name }}</mat-chip>
+                    }
+                  </mat-chip-set>
                 }
               </mat-card-content>
             </mat-card>
@@ -139,6 +148,14 @@ import { WorkOrderStore } from './stores/work-order.store';
       .category {
         color: var(--mat-sys-outline);
         font-size: 0.9em;
+      }
+
+      .work-order-tags {
+        margin-top: 8px;
+      }
+
+      .work-order-tags mat-chip {
+        font-size: 0.8em;
       }
     `,
   ],

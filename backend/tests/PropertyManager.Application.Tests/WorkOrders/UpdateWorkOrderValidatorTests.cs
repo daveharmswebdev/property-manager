@@ -5,19 +5,21 @@ using PropertyManager.Application.WorkOrders;
 namespace PropertyManager.Application.Tests.WorkOrders;
 
 /// <summary>
-/// Unit tests for CreateWorkOrderValidator (AC #3, #5).
+/// Unit tests for UpdateWorkOrderValidator (AC #6).
 /// </summary>
-public class CreateWorkOrderValidatorTests
+public class UpdateWorkOrderValidatorTests
 {
-    private readonly CreateWorkOrderValidator _validator = new();
+    private readonly UpdateWorkOrderValidator _validator = new();
 
     [Fact]
     public void Validate_ValidMinimalCommand_NoErrors()
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Leaky faucet in kitchen",
+            "Updated description",
+            null,
+            null,
             null,
             null);
 
@@ -32,11 +34,13 @@ public class CreateWorkOrderValidatorTests
     public void Validate_ValidFullCommand_NoErrors()
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Leaky faucet in kitchen",
+            "Updated description",
             Guid.NewGuid(),
-            "Assigned");
+            "Assigned",
+            Guid.NewGuid(),
+            new List<Guid> { Guid.NewGuid(), Guid.NewGuid() });
 
         // Act
         var result = _validator.TestValidate(command);
@@ -46,12 +50,14 @@ public class CreateWorkOrderValidatorTests
     }
 
     [Fact]
-    public void Validate_EmptyPropertyId_HasError()
+    public void Validate_EmptyWorkOrderId_HasError()
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.Empty,
-            "Leaky faucet",
+            "Updated description",
+            null,
+            null,
             null,
             null);
 
@@ -59,8 +65,8 @@ public class CreateWorkOrderValidatorTests
         var result = _validator.TestValidate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.PropertyId)
-            .WithErrorMessage("Property is required");
+        result.ShouldHaveValidationErrorFor(x => x.Id)
+            .WithErrorMessage("Work order ID is required");
     }
 
     [Theory]
@@ -70,9 +76,11 @@ public class CreateWorkOrderValidatorTests
     public void Validate_EmptyDescription_HasError(string? description)
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
             description!,
+            null,
+            null,
             null,
             null);
 
@@ -89,9 +97,11 @@ public class CreateWorkOrderValidatorTests
     {
         // Arrange
         var longDescription = new string('A', 5001);
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
             longDescription,
+            null,
+            null,
             null,
             null);
 
@@ -104,32 +114,16 @@ public class CreateWorkOrderValidatorTests
     }
 
     [Fact]
-    public void Validate_DescriptionMaxLength_NoError()
-    {
-        // Arrange
-        var maxDescription = new string('A', 5000);
-        var command = new CreateWorkOrderCommand(
-            Guid.NewGuid(),
-            maxDescription,
-            null,
-            null);
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.Description);
-    }
-
-    [Fact]
     public void Validate_InvalidStatus_HasError()
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
             null,
-            "InvalidStatus");
+            "InvalidStatus",
+            null,
+            null);
 
         // Act
         var result = _validator.TestValidate(command);
@@ -142,21 +136,18 @@ public class CreateWorkOrderValidatorTests
     [Theory]
     [InlineData("Reported")]
     [InlineData("reported")]
-    [InlineData("REPORTED")]
-    [InlineData("Assigned")]
-    [InlineData("assigned")]
     [InlineData("ASSIGNED")]
     [InlineData("Completed")]
-    [InlineData("completed")]
-    [InlineData("COMPLETED")]
-    public void Validate_ValidStatusCaseInsensitive_NoError(string status)
+    public void Validate_ValidStatus_NoError(string status)
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
             null,
-            status);
+            status,
+            null,
+            null);
 
         // Act
         var result = _validator.TestValidate(command);
@@ -169,9 +160,11 @@ public class CreateWorkOrderValidatorTests
     public void Validate_NullStatus_NoError()
     {
         // Arrange
-        var command = new CreateWorkOrderCommand(
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
+            null,
+            null,
             null,
             null);
 
@@ -183,49 +176,32 @@ public class CreateWorkOrderValidatorTests
     }
 
     [Fact]
-    public void Validate_EmptyStringStatus_NoError()
+    public void Validate_TagIdsContainsEmptyGuid_HasError()
     {
-        // Arrange - Empty string should be treated like null (default to Reported)
-        var command = new CreateWorkOrderCommand(
+        // Arrange
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
             null,
-            "");
+            null,
+            null,
+            new List<Guid> { Guid.NewGuid(), Guid.Empty });
 
         // Act
         var result = _validator.TestValidate(command);
 
         // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.Status);
+        result.ShouldHaveValidationErrorFor(x => x.TagIds);
     }
-
-    [Fact]
-    public void Validate_NullCategoryId_NoError()
-    {
-        // Arrange - CategoryId is optional
-        var command = new CreateWorkOrderCommand(
-            Guid.NewGuid(),
-            "Fix the door",
-            null,
-            null,
-            null);
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.CategoryId);
-    }
-
-    #region TagIds Validation Tests
 
     [Fact]
     public void Validate_NullTagIds_NoError()
     {
-        // Arrange - TagIds is optional
-        var command = new CreateWorkOrderCommand(
+        // Arrange
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
+            null,
             null,
             null,
             null);
@@ -240,10 +216,11 @@ public class CreateWorkOrderValidatorTests
     [Fact]
     public void Validate_EmptyTagIdsList_NoError()
     {
-        // Arrange - Empty list is valid
-        var command = new CreateWorkOrderCommand(
+        // Arrange
+        var command = new UpdateWorkOrderCommand(
             Guid.NewGuid(),
-            "Fix the door",
+            "Updated description",
+            null,
             null,
             null,
             new List<Guid>());
@@ -254,42 +231,4 @@ public class CreateWorkOrderValidatorTests
         // Assert
         result.ShouldNotHaveValidationErrorFor(x => x.TagIds);
     }
-
-    [Fact]
-    public void Validate_ValidTagIds_NoError()
-    {
-        // Arrange
-        var command = new CreateWorkOrderCommand(
-            Guid.NewGuid(),
-            "Fix the door",
-            null,
-            null,
-            new List<Guid> { Guid.NewGuid(), Guid.NewGuid() });
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.TagIds);
-    }
-
-    [Fact]
-    public void Validate_TagIdsContainsEmptyGuid_HasError()
-    {
-        // Arrange
-        var command = new CreateWorkOrderCommand(
-            Guid.NewGuid(),
-            "Fix the door",
-            null,
-            null,
-            new List<Guid> { Guid.NewGuid(), Guid.Empty });
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.TagIds);
-    }
-
-    #endregion
 }

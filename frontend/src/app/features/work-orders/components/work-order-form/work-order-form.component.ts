@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,11 +8,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { Router } from '@angular/router';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { PropertyService, PropertySummaryDto } from '../../../properties/services/property.service';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { WorkOrderStore } from '../../stores/work-order.store';
-import { WorkOrderStatus } from '../../services/work-order.service';
+import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.service';
 
 /**
  * WorkOrderFormComponent (AC #6, #8, #9)
@@ -36,6 +39,8 @@ import { WorkOrderStatus } from '../../services/work-order.service';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatChipsModule,
+    MatAutocompleteModule,
   ],
   template: `
     <mat-card class="work-order-form-card">
@@ -113,6 +118,50 @@ import { WorkOrderStatus } from '../../services/work-order.service';
             </mat-select>
           </mat-form-field>
 
+          <!-- Tags Field (AC #8, #9, #10, #11) -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Tags (optional)</mat-label>
+            @if (workOrderStore.isLoadingTags()) {
+              <mat-select disabled>
+                <mat-option>Loading...</mat-option>
+              </mat-select>
+            } @else {
+              <mat-chip-grid #chipGrid>
+                @for (tag of selectedTags(); track tag.id) {
+                  <mat-chip-row (removed)="removeTag(tag)">
+                    {{ tag.name }}
+                    <button matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip-row>
+                }
+              </mat-chip-grid>
+              <input
+                placeholder="Add tags..."
+                #tagInput
+                [formControl]="tagInputControl"
+                [matChipInputFor]="chipGrid"
+                [matAutocomplete]="auto"
+                [matChipInputSeparatorKeyCodes]="separatorKeyCodes"
+                (matChipInputTokenEnd)="addTag($event)"
+              />
+              <mat-autocomplete
+                #auto="matAutocomplete"
+                (optionSelected)="selectTag($event)"
+              >
+                @for (tag of filteredTags(); track tag.id) {
+                  <mat-option [value]="tag">{{ tag.name }}</mat-option>
+                }
+                @if (tagInputControl.value && canCreateNewTag()) {
+                  <mat-option [value]="{ id: 'new', name: tagInputControl.value }" class="create-new-tag">
+                    <mat-icon>add</mat-icon> Create "{{ tagInputControl.value }}"
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            }
+            <mat-hint>Type to search or create new tags</mat-hint>
+          </mat-form-field>
+
           <!-- Form Actions -->
           <div class="form-actions">
             <button mat-button type="button" (click)="onCancel()">Cancel</button>
@@ -173,6 +222,20 @@ import { WorkOrderStatus } from '../../services/work-order.service';
       mat-spinner {
         display: inline-block;
       }
+
+      mat-chip-row {
+        margin: 2px 4px 2px 0;
+      }
+
+      .create-new-tag {
+        font-style: italic;
+        color: var(--mdc-theme-primary);
+      }
+
+      .create-new-tag mat-icon {
+        vertical-align: middle;
+        margin-right: 4px;
+      }
     `,
   ],
 })
@@ -191,11 +254,44 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   protected readonly isLoadingProperties = signal(true);
   private destroyed = false;
 
+  // Tag input state (AC #8, #9, #10, #11)
+  protected readonly selectedTags = signal<WorkOrderTagDto[]>([]);
+  protected readonly tagInputControl = new FormControl('');
+  protected readonly separatorKeyCodes = [ENTER, COMMA] as const;
+
   protected form: FormGroup = this.fb.group({
     propertyId: ['', [Validators.required]],
     description: ['', [Validators.required, Validators.maxLength(5000)]],
     categoryId: [null as string | null],
     status: [WorkOrderStatus.Reported],
+  });
+
+  /**
+   * Filtered tags for autocomplete (AC #9)
+   * Excludes already selected tags and filters by input text
+   */
+  protected readonly filteredTags = computed(() => {
+    const input = (this.tagInputControl.value || '').toLowerCase().trim();
+    const selected = this.selectedTags();
+    const allTags = this.workOrderStore.tags();
+
+    return allTags.filter(
+      (tag) =>
+        !selected.some((s) => s.id === tag.id) &&
+        (!input || tag.name.toLowerCase().includes(input))
+    );
+  });
+
+  /**
+   * Check if user can create a new tag (AC #10)
+   * True if input doesn't match any existing tag name (case-insensitive)
+   */
+  protected readonly canCreateNewTag = computed(() => {
+    const input = (this.tagInputControl.value || '').trim();
+    if (!input) return false;
+
+    const allTags = this.workOrderStore.tags();
+    return !allTags.some((tag) => tag.name.toLowerCase() === input.toLowerCase());
   });
 
   /**
@@ -242,6 +338,9 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
 
     // Load categories
     this.expenseStore.loadCategories();
+
+    // Load tags (AC #8)
+    this.workOrderStore.loadTags();
   }
 
   ngOnDestroy(): void {
@@ -276,16 +375,78 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
     }
 
     const { propertyId, description, categoryId, status } = this.form.value;
+    const tagIds = this.selectedTags().map((tag) => tag.id);
 
     this.workOrderStore.createWorkOrder({
       propertyId,
       description: description.trim(),
       categoryId: categoryId || undefined,
       status,
+      tagIds: tagIds.length > 0 ? tagIds : undefined,
     });
   }
 
   protected onCancel(): void {
     this.router.navigate(['/work-orders']);
+  }
+
+  /**
+   * Remove a tag from selection (AC #11)
+   */
+  protected removeTag(tag: WorkOrderTagDto): void {
+    this.selectedTags.update((tags) => tags.filter((t) => t.id !== tag.id));
+  }
+
+  /**
+   * Add a tag from chip input (AC #10 - create new)
+   */
+  protected async addTag(event: { value: string; chipInput: { clear: () => void } }): Promise<void> {
+    const value = (event.value || '').trim();
+    if (!value) return;
+
+    // Check if this matches an existing tag
+    const existingTag = this.workOrderStore
+      .tags()
+      .find((t) => t.name.toLowerCase() === value.toLowerCase());
+
+    if (existingTag) {
+      // Select the existing tag if not already selected
+      if (!this.selectedTags().some((t) => t.id === existingTag.id)) {
+        this.selectedTags.update((tags) => [...tags, existingTag]);
+      }
+    } else {
+      // Create a new tag
+      const newId = await this.workOrderStore.createTag(value);
+      if (newId) {
+        this.selectedTags.update((tags) => [...tags, { id: newId, name: value }]);
+      }
+    }
+
+    // Clear the input
+    event.chipInput.clear();
+    this.tagInputControl.setValue('');
+  }
+
+  /**
+   * Select a tag from autocomplete (AC #9)
+   */
+  protected async selectTag(event: MatAutocompleteSelectedEvent): Promise<void> {
+    const tag = event.option.value as WorkOrderTagDto;
+
+    if (tag.id === 'new') {
+      // Create a new tag
+      const newId = await this.workOrderStore.createTag(tag.name);
+      if (newId) {
+        this.selectedTags.update((tags) => [...tags, { id: newId, name: tag.name }]);
+      }
+    } else {
+      // Add existing tag if not already selected
+      if (!this.selectedTags().some((t) => t.id === tag.id)) {
+        this.selectedTags.update((tags) => [...tags, tag]);
+      }
+    }
+
+    // Clear the input
+    this.tagInputControl.setValue('');
   }
 }

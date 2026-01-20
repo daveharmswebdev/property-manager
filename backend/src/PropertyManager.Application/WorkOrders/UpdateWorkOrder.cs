@@ -8,27 +8,28 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.WorkOrders;
 
 /// <summary>
-/// Command for creating a new work order (AC #1, AC #5).
+/// Command for updating an existing work order (AC #6).
 /// </summary>
-public record CreateWorkOrderCommand(
-    Guid PropertyId,
+public record UpdateWorkOrderCommand(
+    Guid Id,
     string Description,
     Guid? CategoryId,
     string? Status,
-    List<Guid>? TagIds = null
-) : IRequest<Guid>;
+    Guid? VendorId,
+    List<Guid>? TagIds
+) : IRequest;
 
 /// <summary>
-/// Handler for CreateWorkOrderCommand.
-/// Creates a new work order with AccountId and CreatedByUserId from current user.
-/// Validates property, category (if provided), and tags (if provided) exist.
+/// Handler for UpdateWorkOrderCommand.
+/// Updates work order fields and tag associations.
+/// Validates work order, category (if provided), and tags (if provided) exist.
 /// </summary>
-public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderCommand, Guid>
+public class UpdateWorkOrderCommandHandler : IRequestHandler<UpdateWorkOrderCommand>
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
 
-    public CreateWorkOrderCommandHandler(
+    public UpdateWorkOrderCommandHandler(
         IAppDbContext dbContext,
         ICurrentUser currentUser)
     {
@@ -36,18 +37,19 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
         _currentUser = currentUser;
     }
 
-    public async Task<Guid> Handle(CreateWorkOrderCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateWorkOrderCommand request, CancellationToken cancellationToken)
     {
-        // Validate property exists and belongs to user's account (global query filter handles account isolation)
-        var propertyExists = await _dbContext.Properties
-            .AnyAsync(p => p.Id == request.PropertyId, cancellationToken);
+        // Get work order with tag assignments (account filter applied via global query filter)
+        var workOrder = await _dbContext.WorkOrders
+            .Include(wo => wo.TagAssignments)
+            .FirstOrDefaultAsync(wo => wo.Id == request.Id && wo.AccountId == _currentUser.AccountId, cancellationToken);
 
-        if (!propertyExists)
+        if (workOrder == null)
         {
-            throw new NotFoundException(nameof(Property), request.PropertyId);
+            throw new NotFoundException(nameof(WorkOrder), request.Id);
         }
 
-        // Validate category if provided (ExpenseCategories are global, no account filter)
+        // Validate category if provided
         if (request.CategoryId.HasValue)
         {
             var categoryExists = await _dbContext.ExpenseCategories
@@ -59,8 +61,8 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             }
         }
 
-        // Validate tags if provided (AC #5, #7)
-        if (request.TagIds?.Any() == true)
+        // Validate tags if provided (AC #7)
+        if (request.TagIds != null && request.TagIds.Any())
         {
             var validTagIds = await _dbContext.WorkOrderTags
                 .Where(t => t.AccountId == _currentUser.AccountId)
@@ -75,30 +77,27 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             }
         }
 
-        // Parse status (case-insensitive) or default to Reported
-        var status = WorkOrderStatus.Reported;
+        // Update fields
+        workOrder.Description = request.Description.Trim();
+        workOrder.CategoryId = request.CategoryId;
+        workOrder.VendorId = request.VendorId;
+
+        // Parse status if provided
         if (!string.IsNullOrEmpty(request.Status))
         {
-            if (!Enum.TryParse<WorkOrderStatus>(request.Status, ignoreCase: true, out status))
+            if (Enum.TryParse<WorkOrderStatus>(request.Status, ignoreCase: true, out var status))
             {
-                // This should be caught by validator, but defensive check
-                throw new ArgumentException($"Invalid status: {request.Status}");
+                workOrder.Status = status;
             }
         }
 
-        var workOrder = new WorkOrder
+        // Update tag assignments if TagIds is explicitly provided (null means don't modify)
+        if (request.TagIds != null)
         {
-            AccountId = _currentUser.AccountId,
-            PropertyId = request.PropertyId,
-            CategoryId = request.CategoryId,
-            Description = request.Description.Trim(),
-            Status = status,
-            CreatedByUserId = _currentUser.UserId
-        };
+            // Clear existing assignments
+            workOrder.TagAssignments.Clear();
 
-        // Add tag assignments if provided (AC #5)
-        if (request.TagIds?.Any() == true)
-        {
+            // Add new assignments
             foreach (var tagId in request.TagIds)
             {
                 workOrder.TagAssignments.Add(new WorkOrderTagAssignment
@@ -109,9 +108,6 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             }
         }
 
-        _dbContext.WorkOrders.Add(workOrder);
         await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return workOrder.Id;
     }
 }

@@ -15,14 +15,18 @@ describe('WorkOrderFormComponent', () => {
   let fixture: ComponentFixture<WorkOrderFormComponent>;
   let mockWorkOrderStore: {
     workOrders: ReturnType<typeof signal>;
+    tags: ReturnType<typeof signal>;
     isLoading: ReturnType<typeof signal<boolean>>;
+    isLoadingTags: ReturnType<typeof signal<boolean>>;
     isSaving: ReturnType<typeof signal<boolean>>;
     error: ReturnType<typeof signal<string | null>>;
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasWorkOrders: ReturnType<typeof signal<boolean>>;
     workOrderCount: ReturnType<typeof signal<number>>;
     loadWorkOrders: ReturnType<typeof vi.fn>;
+    loadTags: ReturnType<typeof vi.fn>;
     createWorkOrder: ReturnType<typeof vi.fn>;
+    createTag: ReturnType<typeof vi.fn>;
     clearError: ReturnType<typeof vi.fn>;
     reset: ReturnType<typeof vi.fn>;
   };
@@ -48,17 +52,26 @@ describe('WorkOrderFormComponent', () => {
     { id: 'cat-3', name: 'Maintenance', parentId: null },
   ];
 
+  const mockTags = [
+    { id: 'tag-1', name: 'Urgent' },
+    { id: 'tag-2', name: 'Recurring' },
+  ];
+
   beforeEach(async () => {
     mockWorkOrderStore = {
       workOrders: signal([]),
+      tags: signal(mockTags),
       isLoading: signal(false),
+      isLoadingTags: signal(false),
       isSaving: signal(false),
       error: signal<string | null>(null),
       isEmpty: signal(true),
       hasWorkOrders: signal(false),
       workOrderCount: signal(0),
       loadWorkOrders: vi.fn(),
+      loadTags: vi.fn(),
       createWorkOrder: vi.fn(),
+      createTag: vi.fn().mockResolvedValue('new-tag-id'),
       clearError: vi.fn(),
       reset: vi.fn(),
     };
@@ -156,6 +169,10 @@ describe('WorkOrderFormComponent', () => {
 
     it('should load categories on init', () => {
       expect(mockExpenseStore.loadCategories).toHaveBeenCalled();
+    });
+
+    it('should load tags on init', () => {
+      expect(mockWorkOrderStore.loadTags).toHaveBeenCalled();
     });
 
     it('should default status to Reported', () => {
@@ -295,6 +312,7 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: undefined,
         status: 'Reported',
+        tagIds: undefined,
       });
     });
 
@@ -313,6 +331,30 @@ describe('WorkOrderFormComponent', () => {
         description: 'Fix the faucet',
         categoryId: 'cat-1',
         status: 'Reported',
+        tagIds: undefined,
+      });
+    });
+
+    it('should pass tagIds when tags are selected', () => {
+      component['form'].patchValue({
+        propertyId: 'prop-1',
+        description: 'Fix the faucet',
+        categoryId: null,
+        status: 'Reported',
+      });
+      component['selectedTags'].set([
+        { id: 'tag-1', name: 'Urgent' },
+        { id: 'tag-2', name: 'Recurring' },
+      ]);
+
+      component['onSubmit']();
+
+      expect(mockWorkOrderStore.createWorkOrder).toHaveBeenCalledWith({
+        propertyId: 'prop-1',
+        description: 'Fix the faucet',
+        categoryId: undefined,
+        status: 'Reported',
+        tagIds: ['tag-1', 'tag-2'],
       });
     });
 
@@ -372,6 +414,58 @@ describe('WorkOrderFormComponent', () => {
     it('should set destroyed flag on destroy', () => {
       component.ngOnDestroy();
       expect(component['destroyed']).toBe(true);
+    });
+  });
+
+  describe('Tag Functionality (AC #8-11)', () => {
+    it('should have empty selectedTags by default', () => {
+      expect(component['selectedTags']()).toEqual([]);
+    });
+
+    it('should show all tags when input is empty (AC #9)', () => {
+      // The computed is evaluated with empty input initially, showing all tags
+      const filtered = component['filteredTags']();
+      expect(filtered.length).toBe(2);
+    });
+
+    it('should filter tags based on input after re-render (AC #9)', () => {
+      // Set input value and trigger change detection to re-evaluate computed
+      component['tagInputControl'].setValue('Urg');
+      // Manually trigger a dependency change to force re-evaluation
+      mockWorkOrderStore.tags.set([...mockTags]);
+      const filtered = component['filteredTags']();
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].name).toBe('Urgent');
+    });
+
+    it('should exclude already selected tags from filteredTags', () => {
+      component['selectedTags'].set([{ id: 'tag-1', name: 'Urgent' }]);
+      const filtered = component['filteredTags']();
+      expect(filtered.some((t) => t.id === 'tag-1')).toBe(false);
+    });
+
+    it('should allow creating new tag when input does not match existing (AC #10)', () => {
+      component['tagInputControl'].setValue('NewTag');
+      expect(component['canCreateNewTag']()).toBe(true);
+    });
+
+    it('should not allow creating new tag when input matches existing (case-insensitive)', () => {
+      component['tagInputControl'].setValue('urgent');
+      expect(component['canCreateNewTag']()).toBe(false);
+    });
+
+    it('should not allow creating new tag when input is empty', () => {
+      component['tagInputControl'].setValue('');
+      expect(component['canCreateNewTag']()).toBe(false);
+    });
+
+    it('should remove tag from selectedTags (AC #11)', () => {
+      const tag = { id: 'tag-1', name: 'Urgent' };
+      component['selectedTags'].set([tag, { id: 'tag-2', name: 'Recurring' }]);
+
+      component['removeTag'](tag);
+
+      expect(component['selectedTags']()).toEqual([{ id: 'tag-2', name: 'Recurring' }]);
     });
   });
 });
