@@ -124,7 +124,7 @@ development_status:
   9-1-work-order-entity-category-hierarchy: done
   9-2-create-work-order: done
   9-3-add-work-order-tags: done
-  9-4-assign-work-order-vendor-or-diy: backlog
+  9-4-assign-work-order-vendor-or-diy: ready-for-dev
   9-5-inline-vendor-creation: backlog
   9-6-work-order-dashboard: backlog
   9-7-filter-work-orders: backlog

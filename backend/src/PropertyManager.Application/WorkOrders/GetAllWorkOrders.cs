@@ -76,6 +76,7 @@ public class GetAllWorkOrdersQueryHandler : IRequestHandler<GetAllWorkOrdersQuer
             w.Property.Name,
             w.VendorId,
             w.Vendor?.FullName,
+            w.IsDiy,
             w.CategoryId,
             w.Category?.Name,
             w.Status.ToString(),

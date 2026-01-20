@@ -4207,6 +4207,7 @@ export interface WorkOrderDto {
     propertyName?: string;
     vendorId?: string | undefined;
     vendorName?: string | undefined;
+    isDiy?: boolean;
     categoryId?: string | undefined;
     categoryName?: string | undefined;
     status?: string;
@@ -4230,6 +4231,7 @@ export interface CreateWorkOrderRequest {
     description?: string;
     categoryId?: string | undefined;
     status?: string | undefined;
+    vendorId?: string | undefined;
     tagIds?: string[] | undefined;
 }
 

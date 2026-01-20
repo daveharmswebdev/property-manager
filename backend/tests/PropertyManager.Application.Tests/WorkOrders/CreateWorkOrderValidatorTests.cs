@@ -246,6 +246,7 @@ public class CreateWorkOrderValidatorTests
             "Fix the door",
             null,
             null,
+            null,
             new List<Guid>());
 
         // Act
@@ -262,6 +263,7 @@ public class CreateWorkOrderValidatorTests
         var command = new CreateWorkOrderCommand(
             Guid.NewGuid(),
             "Fix the door",
+            null,
             null,
             null,
             new List<Guid> { Guid.NewGuid(), Guid.NewGuid() });
@@ -282,6 +284,7 @@ public class CreateWorkOrderValidatorTests
             "Fix the door",
             null,
             null,
+            null,
             new List<Guid> { Guid.NewGuid(), Guid.Empty });
 
         // Act
@@ -289,6 +292,68 @@ public class CreateWorkOrderValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.TagIds);
+    }
+
+    #endregion
+
+    #region VendorId Validation Tests (Story 9-4)
+
+    [Fact]
+    public void Validate_NullVendorId_NoError()
+    {
+        // Arrange - VendorId is optional (null = DIY)
+        var command = new CreateWorkOrderCommand(
+            Guid.NewGuid(),
+            "Fix the door",
+            null,
+            null,
+            null, // DIY
+            null);
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldNotHaveValidationErrorFor(x => x.VendorId);
+    }
+
+    [Fact]
+    public void Validate_ValidVendorId_NoError()
+    {
+        // Arrange
+        var command = new CreateWorkOrderCommand(
+            Guid.NewGuid(),
+            "Fix the door",
+            null,
+            null,
+            Guid.NewGuid(), // Valid vendor ID
+            null);
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldNotHaveValidationErrorFor(x => x.VendorId);
+    }
+
+    [Fact]
+    public void Validate_EmptyGuidVendorId_HasError()
+    {
+        // Arrange
+        var command = new CreateWorkOrderCommand(
+            Guid.NewGuid(),
+            "Fix the door",
+            null,
+            null,
+            Guid.Empty, // Invalid - empty GUID
+            null);
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.VendorId)
+            .WithErrorMessage("Vendor ID must be a valid non-empty GUID");
     }
 
     #endregion

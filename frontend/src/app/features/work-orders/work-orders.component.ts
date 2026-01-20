@@ -62,6 +62,10 @@ import { WorkOrderStore } from './stores/work-order.store';
               </mat-card-header>
               <mat-card-content>
                 <p class="description">{{ workOrder.description }}</p>
+                <p class="assignee">
+                  <mat-icon class="assignee-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
+                  {{ workOrder.isDiy ? 'Self (DIY)' : workOrder.vendorName }}
+                </p>
                 @if (workOrder.categoryName) {
                   <p class="category">Category: {{ workOrder.categoryName }}</p>
                 }
@@ -148,6 +152,21 @@ import { WorkOrderStore } from './stores/work-order.store';
       .category {
         color: var(--mat-sys-outline);
         font-size: 0.9em;
+      }
+
+      .assignee {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.9em;
+        margin: 8px 0;
+      }
+
+      .assignee-icon {
+        font-size: 18px;
+        height: 18px;
+        width: 18px;
       }
 
       .work-order-tags {

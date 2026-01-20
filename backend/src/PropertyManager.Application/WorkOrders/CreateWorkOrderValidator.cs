@@ -26,6 +26,12 @@ public class CreateWorkOrderValidator : AbstractValidator<CreateWorkOrderCommand
         RuleFor(x => x.TagIds)
             .Must(tagIds => tagIds == null || tagIds.All(id => id != Guid.Empty))
             .WithMessage("Each tag ID must be a valid non-empty GUID");
+
+        // Validate VendorId: must be non-empty GUID when provided
+        RuleFor(x => x.VendorId)
+            .NotEqual(Guid.Empty)
+            .WithMessage("Vendor ID must be a valid non-empty GUID")
+            .When(x => x.VendorId.HasValue);
     }
 
     private static bool BeValidStatusOrEmpty(string? status)
