@@ -1,4 +1,5 @@
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +11,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
 import { Router } from '@angular/router';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { PropertyService, PropertySummaryDto } from '../../../properties/services/property.service';
@@ -17,7 +20,10 @@ import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.service';
 import { VendorStore } from '../../../vendors/stores/vendor.store';
-import { VendorDto } from '../../../../core/api/api.service';
+import {
+  InlineVendorDialogComponent,
+  InlineVendorDialogResult,
+} from '../../../vendors/components/inline-vendor-dialog/inline-vendor-dialog.component';
 
 /**
  * WorkOrderFormComponent (AC #6, #8, #9)
@@ -43,6 +49,8 @@ import { VendorDto } from '../../../../core/api/api.service';
     MatIconModule,
     MatChipsModule,
     MatAutocompleteModule,
+    MatDialogModule,
+    MatDividerModule,
   ],
   template: `
     <mat-card class="work-order-form-card">
@@ -147,6 +155,10 @@ import { VendorDto } from '../../../../core/api/api.service';
                     }
                   </mat-option>
                 }
+                <mat-divider></mat-divider>
+                <mat-option [value]="'add-new'" class="add-vendor-option">
+                  <mat-icon>add</mat-icon> Add New Vendor
+                </mat-option>
               </mat-select>
             }
             <mat-hint>Select a vendor or leave as DIY</mat-hint>
@@ -275,6 +287,16 @@ import { VendorDto } from '../../../../core/api/api.service';
         color: var(--mdc-theme-text-secondary-on-background, rgba(0, 0, 0, 0.6));
         font-size: 0.85em;
       }
+
+      .add-vendor-option {
+        color: var(--mdc-theme-primary);
+        font-weight: 500;
+      }
+
+      .add-vendor-option mat-icon {
+        vertical-align: middle;
+        margin-right: 4px;
+      }
     `,
   ],
 })
@@ -285,6 +307,8 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly propertyService = inject(PropertyService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Pre-selected property ID (when navigating from property page)
   preSelectedPropertyId = input<string | null>(null);
@@ -293,6 +317,9 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   protected readonly properties = signal<PropertySummaryDto[]>([]);
   protected readonly isLoadingProperties = signal(true);
   private destroyed = false;
+
+  // Track previous vendor selection for restore on dialog cancel (Story 9-5)
+  private previousVendorId: string | null = null;
 
   // Tag input state (AC #8, #9, #10, #11)
   protected readonly selectedTags = signal<WorkOrderTagDto[]>([]);
@@ -436,16 +463,57 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle vendor selection change (Story 9-4 AC #10)
+   * Handle vendor selection change (Story 9-4 AC #10, Story 9-5 AC #1-#4)
    * Auto-updates status to "Assigned" when a vendor is selected and status is "Reported"
+   * Opens inline vendor dialog when "add-new" is selected
    */
   protected onVendorChange(vendorId: string | null): void {
-    const currentStatus = this.form.get('status')?.value;
+    // Handle "Add New Vendor" selection (Story 9-5)
+    if (vendorId === 'add-new') {
+      // previousVendorId was already stored from the last regular selection
+      // Reset to null while dialog is open
+      this.form.patchValue({ vendorId: null });
+
+      this.openInlineVendorDialog();
+      return;
+    }
 
     // Auto-update status to "Assigned" if vendor selected and status is "Reported"
+    const currentStatus = this.form.get('status')?.value;
     if (vendorId && currentStatus === WorkOrderStatus.Reported) {
       this.form.patchValue({ status: WorkOrderStatus.Assigned });
     }
+
+    // Track this vendor ID for potential restore on dialog cancel (Story 9-5 AC #4)
+    this.previousVendorId = vendorId;
+  }
+
+  /**
+   * Open inline vendor creation dialog (Story 9-5 AC #2, #3, #4)
+   */
+  private openInlineVendorDialog(): void {
+    const dialogRef = this.dialog.open(InlineVendorDialogComponent, {
+      width: '400px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((result: InlineVendorDialogResult | null) => {
+      if (result) {
+        // Success: select the newly created vendor
+        this.form.patchValue({ vendorId: result.id });
+
+        // Trigger status auto-update
+        const currentStatus = this.form.get('status')?.value;
+        if (currentStatus === WorkOrderStatus.Reported) {
+          this.form.patchValue({ status: WorkOrderStatus.Assigned });
+        }
+      } else {
+        // Cancel: restore previous selection
+        this.form.patchValue({ vendorId: this.previousVendorId });
+      }
+    });
   }
 
   /**
