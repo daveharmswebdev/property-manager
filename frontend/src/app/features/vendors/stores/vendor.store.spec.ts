@@ -569,6 +569,99 @@ describe('VendorStore', () => {
     });
   });
 
+  // Story 9-5: Inline Vendor Creation Tests
+  describe('createVendorInline (Story 9-5)', () => {
+    const createRequest = {
+      firstName: 'New',
+      middleName: undefined,
+      lastName: 'Vendor',
+    };
+
+    it('should call API with request data (AC #3)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(of({ id: 'new-id' }));
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+      const result = await store.createVendorInline(createRequest);
+
+      expect(mockApiClient.vendors_CreateVendor).toHaveBeenCalledWith(createRequest);
+      expect(result).toBe('new-id');
+    });
+
+    it('should return created vendor ID on success (AC #3)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(of({ id: 'vendor-123' }));
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+      const result = await store.createVendorInline(createRequest);
+
+      expect(result).toBe('vendor-123');
+    });
+
+    it('should show success snackbar on create (AC #3)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(of({ id: 'new-id' }));
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+      await store.createVendorInline(createRequest);
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        'Vendor added ✓',
+        'Close',
+        expect.objectContaining({ duration: 3000 })
+      );
+    });
+
+    it('should NOT navigate on success (unlike createVendor)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(of({ id: 'new-id' }));
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+      await store.createVendorInline(createRequest);
+
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should refresh vendors list after creation', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(of({ id: 'new-id' }));
+      mockApiClient.vendors_GetAllVendors.mockReturnValue(of({ items: mockVendors, totalCount: 2 }));
+
+      await store.createVendorInline(createRequest);
+
+      expect(mockApiClient.vendors_GetAllVendors).toHaveBeenCalled();
+    });
+
+    it('should return null on error (AC #7)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      const result = await store.createVendorInline(createRequest);
+
+      expect(result).toBeNull();
+    });
+
+    it('should show error snackbar on failure (AC #7)', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      await store.createVendorInline(createRequest);
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        'Failed to create vendor',
+        'Close',
+        expect.objectContaining({ duration: 5000 })
+      );
+    });
+
+    it('should set error state on failure', async () => {
+      mockApiClient.vendors_CreateVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      await store.createVendorInline(createRequest);
+
+      expect(store.error()).toBe('Failed to create vendor. Please try again.');
+    });
+  });
+
   // Story 8-8: Delete Vendor Tests
   describe('deleteVendor (Story 8-8)', () => {
     beforeEach(() => {

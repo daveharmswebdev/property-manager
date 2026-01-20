@@ -389,6 +389,45 @@ export const VendorStore = signalStore(
       ),
 
       /**
+       * Create a new vendor inline (for dialogs, no navigation) (Story 9-5 AC #3, #7)
+       * @param request Vendor creation request
+       * @returns Promise resolving to created vendor ID, or null on error
+       */
+      async createVendorInline(request: CreateVendorRequest): Promise<string | null> {
+        patchState(store, { isSaving: true, error: null });
+
+        try {
+          const result = await firstValueFrom(
+            apiService.vendors_CreateVendor(request)
+          );
+
+          // Refresh vendor list to include new vendor
+          this.loadVendors();
+
+          patchState(store, { isSaving: false });
+          snackBar.open('Vendor added \u2713', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+
+          return result.id !== undefined ? result.id : null;
+        } catch (error) {
+          patchState(store, {
+            isSaving: false,
+            error: 'Failed to create vendor. Please try again.',
+          });
+          snackBar.open('Failed to create vendor', 'Close', {
+            duration: 5000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+          console.error('Error creating vendor inline:', error);
+          return null;
+        }
+      },
+
+      /**
        * Create a new trade tag (AC #8)
        * @param name Name of the new trade tag
        * @returns Promise resolving to the created tag

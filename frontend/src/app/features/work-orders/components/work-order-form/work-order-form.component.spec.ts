@@ -4,7 +4,8 @@ import { provideRouter, Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { WorkOrderFormComponent } from './work-order-form.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
@@ -46,6 +47,10 @@ describe('WorkOrderFormComponent', () => {
     error: ReturnType<typeof signal<string | null>>;
     loadVendors: ReturnType<typeof vi.fn>;
   };
+  let mockDialog: {
+    open: ReturnType<typeof vi.fn>;
+  };
+  let dialogAfterClosedSubject: Subject<unknown>;
   let router: Router;
 
   const mockVendors = [
@@ -106,6 +111,13 @@ describe('WorkOrderFormComponent', () => {
       loadVendors: vi.fn(),
     };
 
+    dialogAfterClosedSubject = new Subject();
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => dialogAfterClosedSubject.asObservable(),
+      }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [WorkOrderFormComponent, NoopAnimationsModule],
       providers: [
@@ -118,7 +130,11 @@ describe('WorkOrderFormComponent', () => {
         { provide: PropertyService, useValue: mockPropertyService },
         { provide: VendorStore, useValue: mockVendorStore },
       ],
-    }).compileComponents();
+    })
+      .overrideComponent(WorkOrderFormComponent, {
+        add: { providers: [{ provide: MatDialog, useValue: mockDialog }] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(WorkOrderFormComponent);
     component = fixture.componentInstance;
@@ -594,6 +610,92 @@ describe('WorkOrderFormComponent', () => {
       expect(vendorSelect).toBeTruthy();
       // Should not be disabled when there's an error - DIY is still available
       expect(vendorSelect.attributes['ng-reflect-disabled']).toBeFalsy();
+    });
+  });
+
+  describe('Inline Vendor Creation (Story 9-5)', () => {
+    it('should open dialog when "add-new" vendor is selected (AC #1, #2)', () => {
+      component['onVendorChange']('add-new');
+
+      expect(mockDialog.open).toHaveBeenCalled();
+    });
+
+    it('should track vendor selection for potential restore on cancel', () => {
+      // Simulate user selecting a vendor (this stores previousVendorId)
+      component['onVendorChange']('vendor-1');
+
+      expect(component['previousVendorId']).toBe('vendor-1');
+    });
+
+    it('should reset vendorId to null while dialog is open', () => {
+      component['form'].patchValue({ vendorId: 'vendor-1' });
+
+      component['onVendorChange']('add-new');
+
+      expect(component['form'].get('vendorId')?.value).toBeNull();
+    });
+
+    it('should auto-select new vendor after successful creation (AC #3)', () => {
+      component['form'].patchValue({ vendorId: 'vendor-1', status: 'Reported' });
+
+      component['onVendorChange']('add-new');
+
+      // Simulate dialog closing with vendor data
+      dialogAfterClosedSubject.next({ id: 'new-vendor-id', fullName: 'New Vendor' });
+      fixture.detectChanges();
+
+      expect(component['form'].get('vendorId')?.value).toBe('new-vendor-id');
+    });
+
+    it('should auto-update status to Assigned after inline vendor creation (AC #3)', () => {
+      component['form'].patchValue({ vendorId: null, status: 'Reported' });
+
+      component['onVendorChange']('add-new');
+
+      // Simulate dialog closing with vendor data
+      dialogAfterClosedSubject.next({ id: 'new-vendor-id', fullName: 'New Vendor' });
+      fixture.detectChanges();
+
+      expect(component['form'].get('status')?.value).toBe('Assigned');
+    });
+
+    it('should restore previous selection when dialog is cancelled (AC #4)', () => {
+      // First, simulate user selecting a vendor (this stores previousVendorId)
+      component['onVendorChange']('vendor-1');
+      component['form'].patchValue({ status: 'Assigned' });
+
+      // Then user clicks "Add New Vendor"
+      component['onVendorChange']('add-new');
+
+      // Simulate dialog closing with null (cancel)
+      dialogAfterClosedSubject.next(null);
+      fixture.detectChanges();
+
+      expect(component['form'].get('vendorId')?.value).toBe('vendor-1');
+    });
+
+    it('should NOT update status when dialog is cancelled', () => {
+      component['form'].patchValue({ vendorId: 'vendor-1', status: 'Assigned' });
+
+      component['onVendorChange']('add-new');
+
+      // Simulate dialog closing with null (cancel)
+      dialogAfterClosedSubject.next(null);
+      fixture.detectChanges();
+
+      expect(component['form'].get('status')?.value).toBe('Assigned');
+    });
+
+    it('should NOT open dialog for regular vendor selection', () => {
+      component['onVendorChange']('vendor-1');
+
+      expect(mockDialog.open).not.toHaveBeenCalled();
+    });
+
+    it('should NOT open dialog when DIY (null) is selected', () => {
+      component['onVendorChange'](null);
+
+      expect(mockDialog.open).not.toHaveBeenCalled();
     });
   });
 });
