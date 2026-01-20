@@ -55,7 +55,7 @@ public class ReceiptNotificationServiceTests
         _clientsMock.Verify(c => c.Group(expectedGroupName), Times.Once);
         _clientProxyMock.Verify(p => p.SendCoreAsync(
             "ReceiptAdded",
-            It.Is<object[]>(args => args.Length == 1 && args[0] == receiptEvent),
+            It.Is<object[]>(args => args.Length == 1 && receiptEvent.Equals(args[0])),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -77,7 +77,7 @@ public class ReceiptNotificationServiceTests
         _clientsMock.Verify(c => c.Group(expectedGroupName), Times.Once);
         _clientProxyMock.Verify(p => p.SendCoreAsync(
             "ReceiptLinked",
-            It.Is<object[]>(args => args.Length == 1 && args[0] == linkedEvent),
+            It.Is<object[]>(args => args.Length == 1 && linkedEvent.Equals(args[0])),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
