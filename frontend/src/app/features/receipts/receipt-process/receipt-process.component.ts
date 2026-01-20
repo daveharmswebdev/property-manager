@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiClient, ReceiptDto } from '../../../core/api/api.service';
 import { ReceiptStore } from '../stores/receipt.store';
-import { ReceiptImageViewerComponent } from '../components/receipt-image-viewer/receipt-image-viewer.component';
+import { PhotoViewerComponent } from '../../../shared/components/photo-viewer/photo-viewer.component';
 import { ReceiptExpenseFormComponent } from '../components/receipt-expense-form/receipt-expense-form.component';
 
 /**
@@ -29,7 +29,7 @@ import { ReceiptExpenseFormComponent } from '../components/receipt-expense-form/
     MatProgressSpinnerModule,
     MatButtonModule,
     MatIconModule,
-    ReceiptImageViewerComponent,
+    PhotoViewerComponent,
     ReceiptExpenseFormComponent,
   ],
   template: `
@@ -51,7 +51,7 @@ import { ReceiptExpenseFormComponent } from '../components/receipt-expense-form/
         <div class="split-view" data-testid="split-view">
           <!-- Left: Image Viewer -->
           <div class="image-panel" data-testid="image-panel">
-            <app-receipt-image-viewer
+            <app-photo-viewer
               [viewUrl]="receipt()!.viewUrl!"
               [contentType]="receipt()!.contentType!"
             />

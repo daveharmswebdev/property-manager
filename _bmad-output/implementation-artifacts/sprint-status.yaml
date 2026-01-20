@@ -177,6 +177,6 @@ development_status:
   # User Outcome: "I can add and view photos of my properties"
   epic-13: in-progress
   13-1-backend-photo-service: done   # GitHub Issue #99 Part 1 - Backend services + thumbnail
-  13-2-frontend-photo-components: ready-for-dev  # GitHub Issue #99 Part 2 - PhotoViewer, DragDrop, PhotoUpload (unblocked by 13.1)
+  13-2-frontend-photo-components: done  # GitHub Issue #99 Part 2 - PhotosController + PhotoViewer, DragDrop, PhotoUpload
   13-3-property-photo-gallery: backlog       # GitHub Issue #100 - Property photos UI/Feature
   epic-13-retrospective: optional
