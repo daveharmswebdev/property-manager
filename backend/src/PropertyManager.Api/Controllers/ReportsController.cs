@@ -184,7 +184,7 @@ public class ReportsController : ControllerBase
 
         // Generate batch reports
         var batchResult = await _mediator.Send(
-            new GenerateBatchScheduleEReportsQuery(request.PropertyIds, request.Year), ct);
+            new GenerateBatchScheduleEReportsQuery(request.PropertyIds!, request.Year), ct);
 
         // Collect successful PDFs for bundling
         var pdfFiles = batchResult.Results
@@ -242,7 +242,7 @@ public class ReportsController : ControllerBase
         _logger.LogInformation(
             "Generated batch Schedule E reports for {SuccessCount}/{TotalCount} properties, year {Year} at {Timestamp}",
             pdfFiles.Count,
-            request.PropertyIds.Count,
+            request.PropertyIds!.Count,
             request.Year,
             DateTime.UtcNow);
 

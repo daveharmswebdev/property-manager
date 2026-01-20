@@ -462,6 +462,7 @@ public class GetPropertyByIdHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(income);
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetPropertyByIdQuery(property.Id);
 
         // Act
