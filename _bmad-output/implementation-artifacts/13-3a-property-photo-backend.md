@@ -186,7 +186,14 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - All commands enforce tenant isolation via AccountId
 - Updated existing Properties queries to include PrimaryPhotoThumbnailUrl
 - Fixed existing tests to include IPhotoService mock dependency
-- All 178 backend tests passing (43 new PropertyPhotos tests)
+- All 998 backend tests passing (60 PropertyPhotos tests)
+
+### Code Review Fixes (2026-01-20)
+
+- **Added missing unit tests**: Created `GetPropertyPhotosHandlerTests.cs` (8 tests) and `GeneratePropertyPhotoUploadUrlHandlerTests.cs` (7 tests)
+- **Performance optimization**: Parallelized presigned URL generation in `GetPropertyPhotos` and `GetAllProperties` using `Task.WhenAll`
+- **Added missing index**: Added `IX_PropertyPhotos_CreatedByUserId` index for audit/reporting queries (consistent with other entities)
+- **New migration**: `AddPropertyPhotoCreatedByUserIdIndex` for the new index
 
 ### File List
 
@@ -211,6 +218,9 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - backend/tests/PropertyManager.Application.Tests/PropertyPhotos/SetPrimaryPropertyPhotoHandlerTests.cs
 - backend/tests/PropertyManager.Application.Tests/PropertyPhotos/ReorderPropertyPhotosHandlerTests.cs
 - backend/tests/PropertyManager.Application.Tests/PropertyPhotos/ValidatorTests.cs
+- backend/tests/PropertyManager.Application.Tests/PropertyPhotos/GetPropertyPhotosHandlerTests.cs (code review fix)
+- backend/tests/PropertyManager.Application.Tests/PropertyPhotos/GeneratePropertyPhotoUploadUrlHandlerTests.cs (code review fix)
+- backend/src/PropertyManager.Infrastructure/Persistence/Migrations/*_AddPropertyPhotoCreatedByUserIdIndex.cs (code review fix)
 
 **Modified Files:**
 - backend/src/PropertyManager.Domain/Entities/Property.cs (added PropertyPhotos navigation)
@@ -220,4 +230,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - backend/src/PropertyManager.Application/Properties/GetPropertyById.cs (added PrimaryPhotoThumbnailUrl)
 - backend/tests/PropertyManager.Application.Tests/Properties/GetAllPropertiesHandlerTests.cs (added IPhotoService mock)
 - backend/tests/PropertyManager.Application.Tests/Properties/GetPropertyByIdHandlerTests.cs (added IPhotoService mock)
+- backend/src/PropertyManager.Application/PropertyPhotos/GetPropertyPhotos.cs (code review: parallelized URL generation)
+- backend/src/PropertyManager.Application/Properties/GetAllProperties.cs (code review: parallelized URL generation)
+- backend/src/PropertyManager.Infrastructure/Persistence/Configurations/PropertyPhotoConfiguration.cs (code review: added CreatedByUserId index)
 

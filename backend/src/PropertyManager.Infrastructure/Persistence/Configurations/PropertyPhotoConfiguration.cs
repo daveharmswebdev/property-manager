@@ -79,5 +79,10 @@ public class PropertyPhotoConfiguration : IEntityTypeConfiguration<PropertyPhoto
             .WithMany(p => p.PropertyPhotos)
             .HasForeignKey(e => e.PropertyId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Index on CreatedByUserId for audit/reporting queries
+        // Note: CreatedByUserId references ApplicationUser (Identity)
+        builder.HasIndex(e => e.CreatedByUserId)
+            .HasDatabaseName("IX_PropertyPhotos_CreatedByUserId");
     }
 }

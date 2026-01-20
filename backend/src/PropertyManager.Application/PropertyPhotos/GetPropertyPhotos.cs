@@ -84,10 +84,8 @@ public class GetPropertyPhotosHandler : IRequestHandler<GetPropertyPhotosQuery, 
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        // Generate presigned URLs for each photo
-        var photoDtos = new List<PropertyPhotoDto>();
-
-        foreach (var photo in photos)
+        // Generate presigned URLs for each photo in parallel for better performance
+        var urlTasks = photos.Select(async photo =>
         {
             string? thumbnailUrl = null;
             string? viewUrl = null;
@@ -102,7 +100,7 @@ public class GetPropertyPhotosHandler : IRequestHandler<GetPropertyPhotosQuery, 
                 viewUrl = await _photoService.GetPhotoUrlAsync(photo.StorageKey, cancellationToken);
             }
 
-            photoDtos.Add(new PropertyPhotoDto(
+            return new PropertyPhotoDto(
                 Id: photo.Id,
                 ThumbnailUrl: thumbnailUrl,
                 ViewUrl: viewUrl,
@@ -110,9 +108,11 @@ public class GetPropertyPhotosHandler : IRequestHandler<GetPropertyPhotosQuery, 
                 DisplayOrder: photo.DisplayOrder,
                 OriginalFileName: photo.OriginalFileName,
                 FileSizeBytes: photo.FileSizeBytes,
-                CreatedAt: photo.CreatedAt));
-        }
+                CreatedAt: photo.CreatedAt);
+        }).ToList();
 
-        return new GetPropertyPhotosResponse(photoDtos);
+        var photoDtos = await Task.WhenAll(urlTasks);
+
+        return new GetPropertyPhotosResponse(photoDtos.ToList());
     }
 }

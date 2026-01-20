@@ -89,9 +89,8 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        // Generate presigned URLs for primary photo thumbnails (AC-13.3a.9)
-        var properties = new List<PropertySummaryDto>();
-        foreach (var p in propertiesData)
+        // Generate presigned URLs for primary photo thumbnails in parallel (AC-13.3a.9)
+        var propertyTasks = propertiesData.Select(async p =>
         {
             string? primaryPhotoThumbnailUrl = null;
             if (!string.IsNullOrEmpty(p.PrimaryPhotoThumbnailStorageKey))
@@ -100,7 +99,7 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
                     p.PrimaryPhotoThumbnailStorageKey, cancellationToken);
             }
 
-            properties.Add(new PropertySummaryDto(
+            return new PropertySummaryDto(
                 p.Id,
                 p.Name,
                 p.Street,
@@ -110,9 +109,11 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
                 p.ExpenseTotal,
                 p.IncomeTotal,
                 primaryPhotoThumbnailUrl
-            ));
-        }
+            );
+        }).ToList();
 
-        return new GetAllPropertiesResponse(properties, properties.Count);
+        var properties = await Task.WhenAll(propertyTasks);
+
+        return new GetAllPropertiesResponse(properties.ToList(), properties.Length);
     }
 }
