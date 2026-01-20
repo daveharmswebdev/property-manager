@@ -43,6 +43,7 @@ describe('WorkOrderFormComponent', () => {
   let mockVendorStore: {
     vendors: ReturnType<typeof signal>;
     isLoading: ReturnType<typeof signal<boolean>>;
+    error: ReturnType<typeof signal<string | null>>;
     loadVendors: ReturnType<typeof vi.fn>;
   };
   let router: Router;
@@ -101,6 +102,7 @@ describe('WorkOrderFormComponent', () => {
     mockVendorStore = {
       vendors: signal(mockVendors),
       isLoading: signal(false),
+      error: signal<string | null>(null),
       loadVendors: vi.fn(),
     };
 
@@ -571,6 +573,27 @@ describe('WorkOrderFormComponent', () => {
       const result = component['formatTradeTags']([]);
 
       expect(result).toBe('');
+    });
+
+    it('should show error message when vendor loading fails', () => {
+      mockVendorStore.error.set('Failed to load vendors');
+      fixture.detectChanges();
+
+      const errorElement = fixture.debugElement.query(By.css('mat-error'));
+      expect(errorElement).toBeTruthy();
+      expect(errorElement.nativeElement.textContent).toContain('Failed to load vendors');
+    });
+
+    it('should still allow DIY selection when vendor loading fails', () => {
+      mockVendorStore.error.set('Failed to load vendors');
+      fixture.detectChanges();
+
+      const vendorSelect = fixture.debugElement.query(
+        By.css('mat-select[formControlName="vendorId"]')
+      );
+      expect(vendorSelect).toBeTruthy();
+      // Should not be disabled when there's an error - DIY is still available
+      expect(vendorSelect.attributes['ng-reflect-disabled']).toBeFalsy();
     });
   });
 });

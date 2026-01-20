@@ -127,6 +127,13 @@ import { VendorDto } from '../../../../core/api/api.service';
               <mat-select disabled>
                 <mat-option>Loading...</mat-option>
               </mat-select>
+            } @else if (vendorStore.error()) {
+              <mat-select formControlName="vendorId">
+                <mat-option [value]="null">
+                  <mat-icon>person</mat-icon> Self (DIY)
+                </mat-option>
+              </mat-select>
+              <mat-error>Failed to load vendors. DIY only available.</mat-error>
             } @else {
               <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)">
                 <mat-option [value]="null">

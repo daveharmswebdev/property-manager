@@ -64,7 +64,7 @@ import { WorkOrderStore } from './stores/work-order.store';
                 <p class="description">{{ workOrder.description }}</p>
                 <p class="assignee">
                   <mat-icon class="assignee-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
-                  {{ workOrder.isDiy ? 'Self (DIY)' : workOrder.vendorName }}
+                  {{ workOrder.isDiy ? 'Self (DIY)' : (workOrder.vendorName || 'Unknown Vendor') }}
                 </p>
                 @if (workOrder.categoryName) {
                   <p class="category">Category: {{ workOrder.categoryName }}</p>
