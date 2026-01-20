@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PropertyManager.Domain.ValueObjects;
@@ -13,9 +14,11 @@ using PropertyManager.Infrastructure.Persistence;
 namespace PropertyManager.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260120123049_AddPropertyPhotos")]
+    partial class AddPropertyPhotos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -704,9 +707,6 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AccountId")
                         .HasDatabaseName("IX_PropertyPhotos_AccountId");
-
-                    b.HasIndex("CreatedByUserId")
-                        .HasDatabaseName("IX_PropertyPhotos_CreatedByUserId");
 
                     b.HasIndex("PropertyId", "DisplayOrder")
                         .HasDatabaseName("IX_PropertyPhotos_PropertyId_DisplayOrder");

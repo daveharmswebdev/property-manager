@@ -13,8 +13,8 @@ namespace PropertyManager.Application.Properties;
 public record GetPropertyByIdQuery(Guid Id, int? Year = null) : IRequest<PropertyDetailDto?>;
 
 /// <summary>
-/// Detail DTO for property view page (AC-2.3.2).
-/// Extends PropertySummaryDto with createdAt, updatedAt, and recent activity.
+/// Detail DTO for property view page (AC-2.3.2, AC-13.3a.9).
+/// Extends PropertySummaryDto with createdAt, updatedAt, recent activity, and primary photo.
 /// </summary>
 public record PropertyDetailDto(
     Guid Id,
@@ -28,7 +28,8 @@ public record PropertyDetailDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<ExpenseSummaryDto> RecentExpenses,
-    IReadOnlyList<IncomeSummaryDto> RecentIncome
+    IReadOnlyList<IncomeSummaryDto> RecentIncome,
+    string? PrimaryPhotoThumbnailUrl = null
 );
 
 /// <summary>
@@ -53,19 +54,22 @@ public record IncomeSummaryDto(
 
 /// <summary>
 /// Handler for GetPropertyByIdQuery.
-/// Returns property details for the current user's account only (AC-2.3.5, AC-2.3.6).
+/// Returns property details for the current user's account only (AC-2.3.5, AC-2.3.6, AC-13.3a.9).
 /// </summary>
 public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery, PropertyDetailDto?>
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IPhotoService _photoService;
 
     public GetPropertyByIdQueryHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IPhotoService photoService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _photoService = photoService;
     }
 
     public async Task<PropertyDetailDto?> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)
@@ -75,22 +79,23 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
         var yearStart = new DateOnly(year, 1, 1);
         var yearEnd = new DateOnly(year, 12, 31);
 
-        var property = await _dbContext.Properties
+        var propertyData = await _dbContext.Properties
             .Where(p => p.Id == request.Id && p.AccountId == _currentUser.AccountId && p.DeletedAt == null)
-            .Select(p => new PropertyDetailDto(
+            .Select(p => new
+            {
                 p.Id,
                 p.Name,
                 p.Street,
                 p.City,
                 p.State,
                 p.ZipCode,
-                _dbContext.Expenses
+                ExpenseTotal = _dbContext.Expenses
                     .Where(e => e.PropertyId == p.Id
                         && e.AccountId == _currentUser.AccountId
                         && e.DeletedAt == null
                         && e.Date >= yearStart && e.Date <= yearEnd)
                     .Sum(e => (decimal?)e.Amount) ?? 0m,
-                _dbContext.Income
+                IncomeTotal = _dbContext.Income
                     .Where(i => i.PropertyId == p.Id
                         && i.AccountId == _currentUser.AccountId
                         && i.DeletedAt == null
@@ -98,7 +103,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                     .Sum(i => (decimal?)i.Amount) ?? 0m,
                 p.CreatedAt,
                 p.UpdatedAt,
-                _dbContext.Expenses
+                RecentExpenses = _dbContext.Expenses
                     .Where(e => e.PropertyId == p.Id
                         && e.AccountId == _currentUser.AccountId
                         && e.DeletedAt == null
@@ -114,7 +119,7 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         new DateTime(e.Date.Year, e.Date.Month, e.Date.Day)
                     ))
                     .ToList(),
-                _dbContext.Income
+                RecentIncome = _dbContext.Income
                     .Where(i => i.PropertyId == p.Id
                         && i.AccountId == _currentUser.AccountId
                         && i.DeletedAt == null
@@ -129,11 +134,42 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
                         i.Amount,
                         new DateTime(i.Date.Year, i.Date.Month, i.Date.Day)
                     ))
-                    .ToList()
-            ))
+                    .ToList(),
+                PrimaryPhotoThumbnailStorageKey = _dbContext.PropertyPhotos
+                    .Where(pp => pp.PropertyId == p.Id && pp.IsPrimary)
+                    .Select(pp => pp.ThumbnailStorageKey)
+                    .FirstOrDefault()
+            })
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
-        return property;
+        if (propertyData == null)
+        {
+            return null;
+        }
+
+        // Generate presigned URL for primary photo thumbnail (AC-13.3a.9)
+        string? primaryPhotoThumbnailUrl = null;
+        if (!string.IsNullOrEmpty(propertyData.PrimaryPhotoThumbnailStorageKey))
+        {
+            primaryPhotoThumbnailUrl = await _photoService.GetThumbnailUrlAsync(
+                propertyData.PrimaryPhotoThumbnailStorageKey, cancellationToken);
+        }
+
+        return new PropertyDetailDto(
+            propertyData.Id,
+            propertyData.Name,
+            propertyData.Street,
+            propertyData.City,
+            propertyData.State,
+            propertyData.ZipCode,
+            propertyData.ExpenseTotal,
+            propertyData.IncomeTotal,
+            propertyData.CreatedAt,
+            propertyData.UpdatedAt,
+            propertyData.RecentExpenses,
+            propertyData.RecentIncome,
+            primaryPhotoThumbnailUrl
+        );
     }
 }

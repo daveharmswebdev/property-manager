@@ -186,12 +186,12 @@ public class AuthControllerTests : IClassFixture<PropertyManagerWebApplicationFa
         payload.Should().ContainKey("exp");
 
         // Verify values are valid GUIDs
-        Guid.TryParse(payload["userId"].ToString(), out var userId).Should().BeTrue();
-        Guid.TryParse(payload["accountId"].ToString(), out var accountId).Should().BeTrue();
-        payload["role"].ToString().Should().Be("Owner");
+        Guid.TryParse(payload["userId"]!.ToString(), out var userId).Should().BeTrue();
+        Guid.TryParse(payload["accountId"]!.ToString(), out var accountId).Should().BeTrue();
+        payload["role"]!.ToString().Should().Be("Owner");
 
         // Verify expiration is ~60 minutes from now
-        var exp = long.Parse(payload["exp"].ToString()!);
+        var exp = long.Parse(payload["exp"]!.ToString()!);
         var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp);
         var expectedExp = DateTimeOffset.UtcNow.AddMinutes(60);
         expDateTime.Should().BeCloseTo(expectedExp, TimeSpan.FromMinutes(1));
@@ -292,8 +292,8 @@ public class AuthControllerTests : IClassFixture<PropertyManagerWebApplicationFa
         var payload1 = DecodeJwtPayload(token1);
         var payload2 = DecodeJwtPayload(token2);
 
-        payload1["userId"].ToString().Should().Be(payload2["userId"].ToString());
-        payload1["jti"].ToString().Should().NotBe(payload2["jti"].ToString());
+        payload1["userId"]!.ToString().Should().Be(payload2["userId"]!.ToString());
+        payload1["jti"]!.ToString().Should().NotBe(payload2["jti"]!.ToString());
     }
 
     // ==================== LOGOUT TESTS (AC5.1, AC5.2, AC5.3) ====================

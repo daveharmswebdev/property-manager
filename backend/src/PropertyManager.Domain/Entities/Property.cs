@@ -22,4 +22,5 @@ public class Property : AuditableEntity, ITenantEntity, ISoftDeletable
     public ICollection<Income> Income { get; set; } = new List<Income>();
     public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
     public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
+    public ICollection<PropertyPhoto> PropertyPhotos { get; set; } = new List<PropertyPhoto>();
 }
