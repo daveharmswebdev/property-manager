@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,6 +19,7 @@ import { WorkOrderStore } from './stores/work-order.store';
   standalone: true,
   imports: [
     CommonModule,
+    DatePipe,
     RouterLink,
     MatCardModule,
     MatButtonModule,
@@ -58,7 +59,11 @@ import { WorkOrderStore } from './stores/work-order.store';
             <mat-card class="work-order-card" [routerLink]="['/work-orders', workOrder.id]">
               <mat-card-header>
                 <mat-card-title>{{ workOrder.propertyName }}</mat-card-title>
-                <mat-card-subtitle>{{ workOrder.status }}</mat-card-subtitle>
+                <mat-card-subtitle>
+                  <span class="status-badge" [ngClass]="'status-' + workOrder.status.toLowerCase()">
+                    {{ workOrder.status }}
+                  </span>
+                </mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
                 <p class="description">{{ workOrder.description }}</p>
@@ -76,6 +81,10 @@ import { WorkOrderStore } from './stores/work-order.store';
                     }
                   </mat-chip-set>
                 }
+                <span class="created-date">
+                  <mat-icon class="date-icon">calendar_today</mat-icon>
+                  {{ workOrder.createdAt | date:'mediumDate' }}
+                </span>
               </mat-card-content>
             </mat-card>
           }
@@ -175,6 +184,45 @@ import { WorkOrderStore } from './stores/work-order.store';
 
       .work-order-tags mat-chip {
         font-size: 0.8em;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .status-reported {
+        background-color: var(--mat-sys-warning-container, #fef3c7);
+        color: var(--mat-sys-on-warning-container, #92400e);
+      }
+
+      .status-assigned {
+        background-color: var(--mat-sys-primary-container, #dbeafe);
+        color: var(--mat-sys-on-primary-container, #1e40af);
+      }
+
+      .status-completed {
+        background-color: var(--mat-sys-tertiary-container, #d1fae5);
+        color: var(--mat-sys-on-tertiary-container, #065f46);
+      }
+
+      .created-date {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.85em;
+        color: var(--mat-sys-outline);
+        margin-top: 8px;
+      }
+
+      .date-icon {
+        font-size: 16px;
+        height: 16px;
+        width: 16px;
       }
     `,
   ],
