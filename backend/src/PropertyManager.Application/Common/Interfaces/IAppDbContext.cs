@@ -26,6 +26,7 @@ public interface IAppDbContext
     DbSet<WorkOrder> WorkOrders { get; }
     DbSet<WorkOrderTag> WorkOrderTags { get; }
     DbSet<WorkOrderTagAssignment> WorkOrderTagAssignments { get; }
+    DbSet<PropertyPhoto> PropertyPhotos { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

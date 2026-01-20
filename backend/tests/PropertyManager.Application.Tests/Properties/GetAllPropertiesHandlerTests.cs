@@ -5,6 +5,7 @@ using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Properties;
 using PropertyManager.Domain.Entities;
 using IncomeEntity = PropertyManager.Domain.Entities.Income;
+using PropertyPhoto = PropertyManager.Domain.Entities.PropertyPhoto;
 
 namespace PropertyManager.Application.Tests.Properties;
 
@@ -15,6 +16,7 @@ public class GetAllPropertiesHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IPhotoService> _photoServiceMock;
     private readonly GetAllPropertiesQueryHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
@@ -23,10 +25,11 @@ public class GetAllPropertiesHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _photoServiceMock = new Mock<IPhotoService>();
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
-        _handler = new GetAllPropertiesQueryHandler(_dbContextMock.Object, _currentUserMock.Object);
+        _handler = new GetAllPropertiesQueryHandler(_dbContextMock.Object, _currentUserMock.Object, _photoServiceMock.Object);
     }
 
     [Fact]
@@ -37,6 +40,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -60,6 +64,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -84,6 +89,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -108,6 +114,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -130,6 +137,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -163,6 +171,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -189,6 +198,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery(Year: 2024);
 
         // Act
@@ -218,6 +228,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -252,6 +263,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery(Year: 2024);
 
         // Act
@@ -282,6 +294,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -309,6 +322,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(expenses);
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -329,6 +343,7 @@ public class GetAllPropertiesHandlerTests
         SetupPropertiesDbSet(properties);
         SetupExpensesDbSet(new List<Expense>());
         SetupIncomeDbSet(new List<IncomeEntity>());
+        SetupPropertyPhotosDbSet(new List<PropertyPhoto>());
         var query = new GetAllPropertiesQuery();
 
         // Act
@@ -371,6 +386,12 @@ public class GetAllPropertiesHandlerTests
     {
         var mockDbSet = income.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
+    }
+
+    private void SetupPropertyPhotosDbSet(List<PropertyPhoto> photos)
+    {
+        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.PropertyPhotos).Returns(mockDbSet.Object);
     }
 
     private Expense CreateExpense(Guid accountId, Guid propertyId, decimal amount, DateOnly date)

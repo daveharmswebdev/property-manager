@@ -47,6 +47,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
     public DbSet<WorkOrderTag> WorkOrderTags => Set<WorkOrderTag>();
     public DbSet<WorkOrderTagAssignment> WorkOrderTagAssignments => Set<WorkOrderTagAssignment>();
+    public DbSet<PropertyPhoto> PropertyPhotos => Set<PropertyPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         // Apply tenant filter to WorkOrderTag (no soft delete)
         modelBuilder.Entity<WorkOrderTag>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to PropertyPhoto (no soft delete)
+        modelBuilder.Entity<PropertyPhoto>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 
