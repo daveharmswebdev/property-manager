@@ -4,6 +4,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 /**
  * Photo data interface matching API PropertyPhotoDto
@@ -43,6 +45,8 @@ export interface PropertyPhoto {
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
+    MatMenuModule,
+    MatTooltipModule,
   ],
   template: `
     <mat-card class="gallery-card">
@@ -83,30 +87,85 @@ export interface PropertyPhoto {
           </div>
         }
 
-        <!-- Photo Grid (AC-13.3b.2, AC-13.3b.5, AC-13.3b.6) -->
+        <!-- Photo Grid (AC-13.3b.2, AC-13.3b.5, AC-13.3b.6, AC-13.3c.4, AC-13.3c.5, AC-13.3c.6) -->
         @if (!isLoading() && photos().length > 0) {
           <div class="gallery-grid">
-            @for (photo of photos(); track photo.id) {
+            @for (photo of photos(); track photo.id; let i = $index; let first = $first; let last = $last) {
               <div
                 class="photo-card"
                 [class.is-primary]="photo.isPrimary"
-                (click)="photoClick.emit(photo)"
-                (keydown.enter)="photoClick.emit(photo)"
                 tabindex="0"
                 role="button"
                 [attr.aria-label]="'View ' + (photo.originalFileName || 'photo')">
                 @if (photo.isPrimary) {
-                  <div class="primary-badge">
+                  <div class="primary-badge" data-testid="primary-badge">
                     <mat-icon>star</mat-icon>
                   </div>
                 }
+
+                <!-- Photo Image (clickable area) -->
                 <img
                   [src]="photo.thumbnailUrl || photo.viewUrl"
                   [alt]="photo.originalFileName || 'Property photo'"
                   class="photo-img"
                   loading="lazy"
                   (load)="onImageLoad($event)"
+                  (click)="photoClick.emit(photo)"
+                  (keydown.enter)="photoClick.emit(photo)"
                 />
+
+                <!-- Photo Card Overlay with Actions -->
+                <div class="photo-overlay">
+                  <!-- Reorder Buttons (AC-13.3c.6) -->
+                  @if (photos().length > 1) {
+                    <div class="reorder-buttons">
+                      <button
+                        mat-icon-button
+                        class="reorder-btn"
+                        [disabled]="first"
+                        (click)="onMoveUp(photo, i, $event)"
+                        matTooltip="Move up"
+                        data-testid="move-up-button"
+                        aria-label="Move photo up">
+                        <mat-icon>arrow_upward</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        class="reorder-btn"
+                        [disabled]="last"
+                        (click)="onMoveDown(photo, i, $event)"
+                        matTooltip="Move down"
+                        data-testid="move-down-button"
+                        aria-label="Move photo down">
+                        <mat-icon>arrow_downward</mat-icon>
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Context Menu Button (AC-13.3c.5) -->
+                  <button
+                    mat-icon-button
+                    class="menu-btn"
+                    [matMenuTriggerFor]="photoMenu"
+                    (click)="$event.stopPropagation()"
+                    data-testid="photo-menu-button"
+                    aria-label="Photo options">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+
+                  <mat-menu #photoMenu="matMenu">
+                    @if (!photo.isPrimary) {
+                      <button mat-menu-item (click)="setPrimaryClick.emit(photo)" data-testid="set-primary-menu-item">
+                        <mat-icon>star</mat-icon>
+                        <span>Set as Primary</span>
+                      </button>
+                    }
+                    <button mat-menu-item class="delete-menu-item" (click)="deleteClick.emit(photo)" data-testid="delete-menu-item">
+                      <mat-icon color="warn">delete</mat-icon>
+                      <span>Delete</span>
+                    </button>
+                  </mat-menu>
+                </div>
               </div>
             }
           </div>
@@ -205,7 +264,7 @@ export interface PropertyPhoto {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1;
+      z-index: 2;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
       mat-icon {
@@ -213,6 +272,66 @@ export interface PropertyPhoto {
         width: 16px;
         height: 16px;
       }
+    }
+
+    /* Photo Overlay with Actions (AC-13.3c.5, AC-13.3c.6) */
+    .photo-overlay {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 8px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.3) 100%);
+      z-index: 1;
+    }
+
+    .photo-card:hover .photo-overlay,
+    .photo-card:focus-within .photo-overlay {
+      opacity: 1;
+    }
+
+    .reorder-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .reorder-btn,
+    .menu-btn {
+      background-color: rgba(255, 255, 255, 0.9);
+      color: var(--pm-text-primary, #333);
+      width: 32px;
+      height: 32px;
+
+      &:hover:not(:disabled) {
+        background-color: white;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .menu-btn {
+      align-self: flex-end;
+    }
+
+    .delete-menu-item {
+      color: #c62828;
     }
 
     /* Skeleton Loading (AC-13.3b.4) */
@@ -298,6 +417,22 @@ export class PropertyPhotoGalleryComponent {
   readonly photoClick = output<PropertyPhoto>();
 
   /**
+   * Emitted when user clicks "Set as Primary" in context menu (AC-13.3c.5)
+   */
+  readonly setPrimaryClick = output<PropertyPhoto>();
+
+  /**
+   * Emitted when user clicks "Delete" in context menu (AC-13.3c.5)
+   */
+  readonly deleteClick = output<PropertyPhoto>();
+
+  /**
+   * Emitted when photos are reordered (AC-13.3c.6)
+   * Emits the new order of photo IDs
+   */
+  readonly reorderClick = output<string[]>();
+
+  /**
    * Skeleton placeholder items for loading state
    */
   readonly skeletonItems = [1, 2, 3, 4, 5, 6];
@@ -308,5 +443,33 @@ export class PropertyPhotoGalleryComponent {
   onImageLoad(event: Event): void {
     const img = event.target as HTMLImageElement;
     img.classList.add('loaded');
+  }
+
+  /**
+   * Move photo up in display order (AC-13.3c.6)
+   */
+  onMoveUp(photo: PropertyPhoto, index: number, event: Event): void {
+    event.stopPropagation();
+    if (index > 0) {
+      const photos = [...this.photos()];
+      const newOrder = photos.map(p => p.id);
+      // Swap with previous
+      [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+      this.reorderClick.emit(newOrder);
+    }
+  }
+
+  /**
+   * Move photo down in display order (AC-13.3c.6)
+   */
+  onMoveDown(photo: PropertyPhoto, index: number, event: Event): void {
+    event.stopPropagation();
+    const photos = this.photos();
+    if (index < photos.length - 1) {
+      const newOrder = photos.map(p => p.id);
+      // Swap with next
+      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+      this.reorderClick.emit(newOrder);
+    }
   }
 }

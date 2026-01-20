@@ -125,7 +125,7 @@ development_status:
   9-2-create-work-order: done
   9-3-add-work-order-tags: done
   9-4-assign-work-order-vendor-or-diy: done
-  9-5-inline-vendor-creation: backlog
+  9-5-inline-vendor-creation: done
   9-6-work-order-dashboard: backlog
   9-7-filter-work-orders: backlog
   9-8-work-order-detail-page: backlog
@@ -180,6 +180,6 @@ development_status:
   13-2-frontend-photo-components: done  # GitHub Issue #99 Part 2 - PhotosController + PhotoViewer, DragDrop, PhotoUpload
   13-3-property-photo-gallery: in-progress   # GitHub Issue #100 - Property photos UI/Feature (split into 3a, 3b, 3c)
   13-3a-property-photo-backend: done         # Entity, API endpoints, unit tests - PR #107 merged
-  13-3b-property-photo-gallery-upload: backlog  # Frontend gallery component with upload
-  13-3c-property-photo-lightbox-management: backlog  # Lightbox viewer and photo management
+  13-3b-property-photo-gallery-upload: done   # Frontend gallery, upload, store - PR #109 merged
+  13-3c-property-photo-lightbox-management: ready-for-review  # Lightbox viewer and photo management
   epic-13-retrospective: optional

@@ -23,6 +23,10 @@ import {
   ReportDialogComponent,
   ReportDialogData,
 } from '../../reports/components/report-dialog/report-dialog.component';
+import {
+  PropertyPhotoLightboxComponent,
+  PropertyPhotoLightboxData,
+} from '../../../shared/components/property-photo-lightbox/property-photo-lightbox.component';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -205,13 +209,16 @@ import {
           </mat-card>
         </div>
 
-        <!-- Photo Gallery Section (AC-13.3b.2) -->
+        <!-- Photo Gallery Section (AC-13.3b.2, AC-13.3c.5, AC-13.3c.6) -->
         <div class="photo-section">
           <app-property-photo-gallery
             [photos]="galleryPhotos()"
             [isLoading]="photoStore.isLoading()"
             (addPhotoClick)="showUploadDialog = true"
             (photoClick)="onPhotoClick($event)"
+            (setPrimaryClick)="onSetPrimaryClick($event)"
+            (deleteClick)="onDeletePhotoClick($event)"
+            (reorderClick)="onReorderPhotos($event)"
           />
 
           <!-- Upload Dialog/Overlay -->
@@ -799,11 +806,33 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle photo click (for future lightbox/details view)
+   * Handle photo click - open lightbox dialog (AC-13.3c.1)
    */
   onPhotoClick(photo: PropertyPhoto): void {
-    // Future: Open lightbox or photo details dialog
-    console.log('Photo clicked:', photo.id);
+    const photos = this.galleryPhotos();
+    const currentIndex = photos.findIndex(p => p.id === photo.id);
+
+    const dialogData: PropertyPhotoLightboxData = {
+      photos: photos.map(p => ({
+        id: p.id,
+        viewUrl: p.viewUrl,
+        thumbnailUrl: p.thumbnailUrl,
+        contentType: 'image/jpeg', // Default content type
+        originalFileName: p.originalFileName,
+        isPrimary: p.isPrimary,
+        displayOrder: p.displayOrder,
+      })),
+      currentIndex: currentIndex >= 0 ? currentIndex : 0,
+    };
+
+    this.dialog.open(PropertyPhotoLightboxComponent, {
+      data: dialogData,
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: '100vw',
+      height: '100vh',
+      panelClass: 'fullscreen-dialog',
+    });
   }
 
   /**
@@ -814,5 +843,48 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     if (this.propertyId) {
       this.photoStore.loadPhotos(this.propertyId);
     }
+  }
+
+  /**
+   * Handle set primary photo click (AC-13.3c.5)
+   */
+  onSetPrimaryClick(photo: PropertyPhoto): void {
+    this.photoStore.setPrimaryPhoto(photo.id);
+  }
+
+  /**
+   * Handle delete photo click - show confirmation dialog (AC-13.3c.5, AC-13.3c.8)
+   */
+  onDeletePhotoClick(photo: PropertyPhoto): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Delete Photo?',
+      message: 'Are you sure you want to delete this photo?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+      secondaryMessage: 'This action cannot be undone.',
+      confirmIcon: 'delete',
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '400px',
+      disableClose: true,
+      panelClass: 'confirm-dialog-panel',
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.photoStore.deletePhoto(photo.id);
+      }
+    });
+  }
+
+  /**
+   * Handle reorder photos (AC-13.3c.6)
+   */
+  onReorderPhotos(photoIds: string[]): void {
+    this.photoStore.reorderPhotos(photoIds);
   }
 }
