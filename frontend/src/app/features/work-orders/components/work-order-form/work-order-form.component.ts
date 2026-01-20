@@ -1,4 +1,5 @@
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -19,7 +20,6 @@ import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.service';
 import { VendorStore } from '../../../vendors/stores/vendor.store';
-import { VendorDto } from '../../../../core/api/api.service';
 import {
   InlineVendorDialogComponent,
   InlineVendorDialogResult,
@@ -308,6 +308,7 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   private readonly propertyService = inject(PropertyService);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Pre-selected property ID (when navigating from property page)
   preSelectedPropertyId = input<string | null>(null);
@@ -496,7 +497,9 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
       disableClose: true,
     });
 
-    dialogRef.afterClosed().subscribe((result: InlineVendorDialogResult | null) => {
+    dialogRef.afterClosed().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((result: InlineVendorDialogResult | null) => {
       if (result) {
         // Success: select the newly created vendor
         this.form.patchValue({ vendorId: result.id });
