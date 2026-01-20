@@ -8,7 +8,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ReceiptImageViewerComponent } from '../receipt-image-viewer/receipt-image-viewer.component';
+import { PhotoViewerComponent } from '../../../../shared/components/photo-viewer/photo-viewer.component';
 import { ApiClient, ReceiptDto } from '../../../../core/api/api.service';
 
 /**
@@ -22,7 +22,7 @@ export interface ReceiptLightboxDialogData {
  * Receipt Lightbox Dialog Component (AC-5.5.1, AC-5.5.2)
  *
  * Displays receipt image in a lightbox/modal with:
- * - Full zoom/pan/rotate controls via ReceiptImageViewerComponent
+ * - Full zoom/pan/rotate controls via PhotoViewerComponent
  * - Loading spinner while fetching receipt
  * - Error state if receipt not found
  * - Close button to return to caller
@@ -36,7 +36,7 @@ export interface ReceiptLightboxDialogData {
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    ReceiptImageViewerComponent,
+    PhotoViewerComponent,
   ],
   template: `
     <div class="lightbox-container" data-testid="receipt-lightbox">
@@ -61,7 +61,7 @@ export interface ReceiptLightboxDialogData {
             <p>{{ error() }}</p>
           </div>
         } @else if (receipt()) {
-          <app-receipt-image-viewer
+          <app-photo-viewer
             [viewUrl]="receipt()!.viewUrl!"
             [contentType]="receipt()!.contentType!"
             data-testid="receipt-viewer"
@@ -119,7 +119,7 @@ export interface ReceiptLightboxDialogData {
         }
       }
 
-      app-receipt-image-viewer {
+      app-photo-viewer {
         display: block;
         flex: 1;
         min-width: 0;
