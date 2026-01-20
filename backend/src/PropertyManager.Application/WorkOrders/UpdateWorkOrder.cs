@@ -61,6 +61,18 @@ public class UpdateWorkOrderCommandHandler : IRequestHandler<UpdateWorkOrderComm
             }
         }
 
+        // Validate vendor if provided
+        if (request.VendorId.HasValue)
+        {
+            var vendorExists = await _dbContext.Vendors
+                .AnyAsync(v => v.Id == request.VendorId.Value && v.AccountId == _currentUser.AccountId, cancellationToken);
+
+            if (!vendorExists)
+            {
+                throw new NotFoundException(nameof(Vendor), request.VendorId.Value);
+            }
+        }
+
         // Validate tags if provided (AC #7)
         if (request.TagIds != null && request.TagIds.Any())
         {

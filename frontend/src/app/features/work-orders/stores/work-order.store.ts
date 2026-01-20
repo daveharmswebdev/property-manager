@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, firstValueFrom } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import {
@@ -213,7 +213,7 @@ export const WorkOrderStore = signalStore(
        */
       async createTag(name: string): Promise<string | null> {
         try {
-          const response = await workOrderService.createWorkOrderTag({ name }).toPromise();
+          const response = await firstValueFrom(workOrderService.createWorkOrderTag({ name }));
           if (response) {
             // Add the new tag to the store immediately
             const newTag: WorkOrderTagDto = { id: response.id, name };

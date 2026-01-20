@@ -338,6 +338,116 @@ public class UpdateWorkOrderHandlerTests
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    #region Vendor Validation Tests
+
+    [Fact]
+    public async Task Handle_WithValidVendor_UpdatesVendorId()
+    {
+        // Arrange
+        var workOrderId = Guid.NewGuid();
+        var vendorId = Guid.NewGuid();
+        var workOrder = CreateWorkOrder(workOrderId, _testAccountId);
+        SetupWorkOrderExists(workOrder);
+        SetupVendorExists(vendorId, _testAccountId);
+        SetupTagsExist(Array.Empty<Guid>(), _testAccountId);
+        SetupTagAssignmentsDbSet(new List<WorkOrderTagAssignment>());
+
+        var command = new UpdateWorkOrderCommand(
+            workOrderId,
+            "Updated description",
+            null,
+            null,
+            vendorId,
+            null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        workOrder.VendorId.Should().Be(vendorId);
+    }
+
+    [Fact]
+    public async Task Handle_VendorNotFound_ThrowsNotFoundException()
+    {
+        // Arrange
+        var workOrderId = Guid.NewGuid();
+        var vendorId = Guid.NewGuid();
+        var workOrder = CreateWorkOrder(workOrderId, _testAccountId);
+        SetupWorkOrderExists(workOrder);
+        SetupVendorNotFound();
+
+        var command = new UpdateWorkOrderCommand(
+            workOrderId,
+            "Updated description",
+            null,
+            null,
+            vendorId,
+            null);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*Vendor*{vendorId}*");
+    }
+
+    [Fact]
+    public async Task Handle_VendorFromDifferentAccount_ThrowsNotFoundException()
+    {
+        // Arrange
+        var workOrderId = Guid.NewGuid();
+        var vendorId = Guid.NewGuid();
+        var workOrder = CreateWorkOrder(workOrderId, _testAccountId);
+        SetupWorkOrderExists(workOrder);
+        // Vendor exists but belongs to different account
+        SetupVendorExists(vendorId, _otherAccountId);
+
+        var command = new UpdateWorkOrderCommand(
+            workOrderId,
+            "Updated description",
+            null,
+            null,
+            vendorId,
+            null);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*Vendor*{vendorId}*");
+    }
+
+    [Fact]
+    public async Task Handle_WithNullVendorId_ClearsVendor()
+    {
+        // Arrange
+        var workOrderId = Guid.NewGuid();
+        var workOrder = CreateWorkOrder(workOrderId, _testAccountId);
+        workOrder.VendorId = Guid.NewGuid(); // Set an existing vendor
+        SetupWorkOrderExists(workOrder);
+        SetupTagsExist(Array.Empty<Guid>(), _testAccountId);
+        SetupTagAssignmentsDbSet(new List<WorkOrderTagAssignment>());
+
+        var command = new UpdateWorkOrderCommand(
+            workOrderId,
+            "Updated description",
+            null,
+            null,
+            null, // Clear vendor
+            null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        workOrder.VendorId.Should().BeNull();
+    }
+
+    #endregion
+
     private WorkOrder CreateWorkOrder(Guid id, Guid accountId)
     {
         return new WorkOrder
@@ -408,5 +518,22 @@ public class UpdateWorkOrderHandlerTests
                 }
             });
         _dbContextMock.Setup(x => x.WorkOrderTagAssignments).Returns(mockDbSet.Object);
+    }
+
+    private void SetupVendorExists(Guid vendorId, Guid accountId)
+    {
+        var vendors = new List<Vendor>
+        {
+            new Vendor { Id = vendorId, AccountId = accountId, FirstName = "Test", LastName = "Vendor" }
+        };
+        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
+    }
+
+    private void SetupVendorNotFound()
+    {
+        var vendors = new List<Vendor>();
+        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 }
