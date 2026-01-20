@@ -23,6 +23,7 @@ export interface PropertySummaryDto {
   zipCode: string;
   expenseTotal: number;
   incomeTotal: number;
+  primaryPhotoThumbnailUrl?: string | null;
 }
 
 export interface GetAllPropertiesResponse {
@@ -57,6 +58,7 @@ export interface PropertyDetailDto {
   updatedAt: string;
   recentExpenses: ExpenseSummaryDto[];
   recentIncome: IncomeSummaryDto[];
+  primaryPhotoThumbnailUrl?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

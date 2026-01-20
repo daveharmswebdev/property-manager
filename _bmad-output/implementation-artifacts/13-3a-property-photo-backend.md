@@ -1,6 +1,6 @@
 # Story 13.3a: Property Photo Backend - Entity & API
 
-Status: dev-complete
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 13.3b: Property Photo Gallery & Upload
 
-Status: blocked
+Status: ready-for-review
 
 ## Story
 
@@ -39,30 +39,30 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 ## Tasks / Subtasks
 
 ### Task 1: Frontend - Property List Thumbnail (AC: 1)
-- [ ] 1.1 Update property card component to show thumbnail
-- [ ] 1.2 Add fallback home icon when no photo
-- [ ] 1.3 Style thumbnail with proper aspect ratio
+- [x] 1.1 Update property card component to show thumbnail
+- [x] 1.2 Add fallback home icon when no photo
+- [x] 1.3 Style thumbnail with proper aspect ratio
 
 ### Task 2: Frontend - Property Photo Gallery Component (AC: 2, 3, 4, 5, 6)
-- [ ] 2.1 Create `PropertyPhotoGalleryComponent` in `features/properties/components/`
-- [ ] 2.2 Implement responsive grid layout (CSS Grid)
-- [ ] 2.3 Add empty state with upload CTA
-- [ ] 2.4 Add skeleton loading placeholders
-- [ ] 2.5 Add fade-in transitions
+- [x] 2.1 Create `PropertyPhotoGalleryComponent` in `features/properties/components/`
+- [x] 2.2 Implement responsive grid layout (CSS Grid)
+- [x] 2.3 Add empty state with upload CTA
+- [x] 2.4 Add skeleton loading placeholders
+- [x] 2.5 Add fade-in transitions
 
 ### Task 3: Frontend - Property Photo Upload Component (AC: 7, 8, 9)
-- [ ] 3.1 Create `PropertyPhotoUploadComponent` with drag-drop zone
-- [ ] 3.2 Integrate existing `PhotoUploadService`
-- [ ] 3.3 Show upload progress bar
-- [ ] 3.4 Add client-side validation (file type, size)
-- [ ] 3.5 Handle errors with retry option
+- [x] 3.1 Create `PropertyPhotoUploadComponent` with drag-drop zone
+- [x] 3.2 Integrate existing `PhotoUploadService`
+- [x] 3.3 Show upload progress bar
+- [x] 3.4 Add client-side validation (file type, size)
+- [x] 3.5 Handle errors with retry option
 
 ### Task 4: Frontend - State Management & Integration
-- [ ] 4.1 Create property photo store (signals-based)
-- [ ] 4.2 Add photo gallery section to property-detail page
-- [ ] 4.3 Regenerate API client from backend
-- [ ] 4.4 Wire up all API calls
-- [ ] 4.5 Test mobile/tablet/desktop breakpoints
+- [x] 4.1 Create property photo store (signals-based)
+- [x] 4.2 Add photo gallery section to property-detail page
+- [x] 4.3 Regenerate API client from backend
+- [x] 4.4 Wire up all API calls
+- [x] 4.5 Test mobile/tablet/desktop breakpoints
 
 ## Dev Notes
 
@@ -140,9 +140,32 @@ frontend/src/app/features/properties/stores/property-photo.store.ts
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
+- **Task 1**: Updated `PropertyRowComponent` to show thumbnail from `primaryPhotoThumbnailUrl` with home icon fallback. Added `thumbnailUrl` input and updated styles. Updated `PropertySummaryDto` and `PropertyDetailDto` to include the new field.
+- **Task 2**: Created `PropertyPhotoGalleryComponent` with responsive CSS Grid layout (1/2/3 columns based on viewport), empty state with upload CTA, skeleton loading placeholders with shimmer animation, and fade-in transitions on image load. Primary photos show star badge.
+- **Task 3**: Created `PropertyPhotoUploadComponent` with drag-drop zone, file picker integration, upload progress bar, client-side file type/size validation using existing `PhotoUploadService`, and error states with retry option.
+- **Task 4**: Created `PropertyPhotoStore` with signals-based state management for photos list, upload progress, delete, set primary, and reorder operations. Integrated gallery and upload components into `PropertyDetailComponent` with upload dialog overlay.
+- All 1109 frontend tests passing
+
 ### File List
+
+**New Files:**
+- frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.ts
+- frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.spec.ts
+- frontend/src/app/features/properties/components/property-photo-upload/property-photo-upload.component.ts
+- frontend/src/app/features/properties/components/property-photo-upload/property-photo-upload.component.spec.ts
+- frontend/src/app/features/properties/stores/property-photo.store.ts
+
+**Modified Files:**
+- frontend/src/app/shared/components/property-row/property-row.component.ts (added thumbnailUrl input, updated template/styles)
+- frontend/src/app/shared/components/property-row/property-row.component.spec.ts (added thumbnail tests)
+- frontend/src/app/features/properties/properties.component.ts (pass thumbnailUrl to PropertyRow)
+- frontend/src/app/features/properties/services/property.service.ts (added primaryPhotoThumbnailUrl to DTOs)
+- frontend/src/app/features/properties/property-detail/property-detail.component.ts (integrated photo gallery, upload dialog)
+- frontend/src/app/features/properties/property-detail/property-detail.component.spec.ts (added mockPhotoStore)
+- frontend/src/app/core/api/api.service.ts (regenerated with PropertyPhoto endpoints)
+- frontend/nswag.json (temporarily updated port for API generation)
 

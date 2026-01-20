@@ -78,6 +78,7 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
                       [state]="property.state"
                       [expenseTotal]="property.expenseTotal"
                       [incomeTotal]="property.incomeTotal"
+                      [thumbnailUrl]="property.primaryPhotoThumbnailUrl"
                       (rowClick)="navigateToProperty($event)" />
                   }
                 </div>
