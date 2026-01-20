@@ -394,6 +394,11 @@ export const VendorStore = signalStore(
        * @returns Promise resolving to created vendor ID, or null on error
        */
       async createVendorInline(request: CreateVendorRequest): Promise<string | null> {
+        // Guard against duplicate submissions (Issue #4 from code review)
+        if (store.isSaving()) {
+          return null;
+        }
+
         patchState(store, { isSaving: true, error: null });
 
         try {
@@ -401,11 +406,20 @@ export const VendorStore = signalStore(
             apiService.vendors_CreateVendor(request)
           );
 
-          // Refresh vendor list to include new vendor
-          this.loadVendors();
+          // Await vendor list refresh to ensure new vendor is available in dropdown
+          // (Issue #1 from code review: race condition fix)
+          await firstValueFrom(
+            apiService.vendors_GetAllVendors().pipe(
+              tap((response) =>
+                patchState(store, {
+                  vendors: response.items ?? [],
+                })
+              )
+            )
+          );
 
           patchState(store, { isSaving: false });
-          snackBar.open('Vendor added \u2713', 'Close', {
+          snackBar.open('Vendor added ✓', 'Close', {
             duration: 3000,
             horizontalPosition: 'center',
             verticalPosition: 'bottom',
@@ -413,11 +427,13 @@ export const VendorStore = signalStore(
 
           return result.id !== undefined ? result.id : null;
         } catch (error) {
+          const errorMessage = 'Failed to create vendor. Please try again.';
           patchState(store, {
             isSaving: false,
-            error: 'Failed to create vendor. Please try again.',
+            error: errorMessage,
           });
-          snackBar.open('Failed to create vendor', 'Close', {
+          // Issue #5 from code review: consistent error message
+          snackBar.open(errorMessage, 'Close', {
             duration: 5000,
             horizontalPosition: 'center',
             verticalPosition: 'bottom',

@@ -25,6 +25,9 @@ import {
   InlineVendorDialogResult,
 } from '../../../vendors/components/inline-vendor-dialog/inline-vendor-dialog.component';
 
+/** Special value for "Add New Vendor" dropdown option (Issue #6 from code review) */
+const ADD_NEW_VENDOR_OPTION = 'add-new';
+
 /**
  * WorkOrderFormComponent (AC #6, #8, #9)
  *
@@ -156,7 +159,7 @@ import {
                   </mat-option>
                 }
                 <mat-divider></mat-divider>
-                <mat-option [value]="'add-new'" class="add-vendor-option">
+                <mat-option [value]="ADD_NEW_VENDOR_OPTION" class="add-vendor-option">
                   <mat-icon>add</mat-icon> Add New Vendor
                 </mat-option>
               </mat-select>
@@ -309,6 +312,9 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Expose constant to template (Issue #6 from code review) */
+  protected readonly ADD_NEW_VENDOR_OPTION = ADD_NEW_VENDOR_OPTION;
 
   // Input: Pre-selected property ID (when navigating from property page)
   preSelectedPropertyId = input<string | null>(null);
@@ -465,11 +471,11 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   /**
    * Handle vendor selection change (Story 9-4 AC #10, Story 9-5 AC #1-#4)
    * Auto-updates status to "Assigned" when a vendor is selected and status is "Reported"
-   * Opens inline vendor dialog when "add-new" is selected
+   * Opens inline vendor dialog when ADD_NEW_VENDOR_OPTION is selected
    */
   protected onVendorChange(vendorId: string | null): void {
     // Handle "Add New Vendor" selection (Story 9-5)
-    if (vendorId === 'add-new') {
+    if (vendorId === ADD_NEW_VENDOR_OPTION) {
       // previousVendorId was already stored from the last regular selection
       // Reset to null while dialog is open
       this.form.patchValue({ vendorId: null });
@@ -493,7 +499,8 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
    */
   private openInlineVendorDialog(): void {
     const dialogRef = this.dialog.open(InlineVendorDialogComponent, {
-      width: '400px',
+      width: '100%',
+      maxWidth: '400px', // Issue #7 from code review: responsive dialog
       disableClose: true,
     });
 

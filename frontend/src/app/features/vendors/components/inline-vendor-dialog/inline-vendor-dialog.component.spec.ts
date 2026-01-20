@@ -291,5 +291,90 @@ describe('InlineVendorDialogComponent', () => {
       );
       expect(cancelButton?.nativeElement.disabled).toBe(true);
     });
+
+    it('should display spinner in Save button while saving (Issue #2 fix)', () => {
+      mockVendorStore.isSaving.mockReturnValue(true);
+      fixture.detectChanges();
+
+      const spinner = fixture.debugElement.query(By.css('mat-spinner'));
+      expect(spinner).toBeTruthy();
+      expect(spinner.attributes['diameter']).toBe('20');
+    });
+
+    it('should hide Save text and show spinner while saving', () => {
+      mockVendorStore.isSaving.mockReturnValue(true);
+      fixture.detectChanges();
+
+      const saveButton = fixture.debugElement
+        .queryAll(By.css('button'))
+        .find((b) => b.nativeElement.querySelector('mat-spinner'));
+      expect(saveButton).toBeTruthy();
+      // Save text should not be visible when spinner is shown
+      expect(saveButton?.nativeElement.textContent).not.toContain('Save');
+    });
+
+    it('should disable Save button while saving', () => {
+      mockVendorStore.isSaving.mockReturnValue(true);
+      fixture.detectChanges();
+
+      const saveButton = fixture.debugElement
+        .queryAll(By.css('button'))
+        .find((b) => b.nativeElement.querySelector('mat-spinner'));
+      expect(saveButton?.nativeElement.disabled).toBe(true);
+    });
+  });
+
+  describe('maxLength validation (Issue #8 fix)', () => {
+    it('should accept first name up to 100 characters', () => {
+      const firstNameInput = fixture.debugElement.query(
+        By.css('input[formControlName="firstName"]')
+      );
+      const validName = 'A'.repeat(100);
+      firstNameInput.nativeElement.value = validName;
+      firstNameInput.nativeElement.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      const formControl = component['form'].get('firstName');
+      expect(formControl?.valid).toBe(true);
+    });
+
+    it('should reject first name over 100 characters', () => {
+      const firstNameInput = fixture.debugElement.query(
+        By.css('input[formControlName="firstName"]')
+      );
+      const invalidName = 'A'.repeat(101);
+      firstNameInput.nativeElement.value = invalidName;
+      firstNameInput.nativeElement.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      const formControl = component['form'].get('firstName');
+      expect(formControl?.hasError('maxlength')).toBe(true);
+    });
+
+    it('should reject last name over 100 characters', () => {
+      const lastNameInput = fixture.debugElement.query(
+        By.css('input[formControlName="lastName"]')
+      );
+      const invalidName = 'A'.repeat(101);
+      lastNameInput.nativeElement.value = invalidName;
+      lastNameInput.nativeElement.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      const formControl = component['form'].get('lastName');
+      expect(formControl?.hasError('maxlength')).toBe(true);
+    });
+
+    it('should reject middle name over 100 characters', () => {
+      const middleNameInput = fixture.debugElement.query(
+        By.css('input[formControlName="middleName"]')
+      );
+      const invalidName = 'A'.repeat(101);
+      middleNameInput.nativeElement.value = invalidName;
+      middleNameInput.nativeElement.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      const formControl = component['form'].get('middleName');
+      expect(formControl?.hasError('maxlength')).toBe(true);
+    });
   });
 });

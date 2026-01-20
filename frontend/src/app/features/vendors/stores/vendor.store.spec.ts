@@ -644,11 +644,30 @@ describe('VendorStore', () => {
 
       await store.createVendorInline(createRequest);
 
+      // Issue #5 from code review: consistent error message
       expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Failed to create vendor',
+        'Failed to create vendor. Please try again.',
         'Close',
         expect.objectContaining({ duration: 5000 })
       );
+    });
+
+    it('should guard against duplicate submissions when already saving (Issue #4 fix)', async () => {
+      // First call starts saving
+      mockApiClient.vendors_CreateVendor.mockImplementation(() => {
+        // Simulate slow API - never resolves during test
+        return new Promise(() => {});
+      });
+
+      // Start first submission (will be in progress) - intentionally not awaited
+      void store.createVendorInline(createRequest);
+
+      // Immediately try second submission while first is in progress
+      const secondResult = await store.createVendorInline(createRequest);
+
+      // Second call should return null without calling API again
+      expect(secondResult).toBeNull();
+      expect(mockApiClient.vendors_CreateVendor).toHaveBeenCalledTimes(1);
     });
 
     it('should set error state on failure', async () => {
