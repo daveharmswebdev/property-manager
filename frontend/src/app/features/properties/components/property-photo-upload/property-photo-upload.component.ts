@@ -1,10 +1,10 @@
-import { Component, input, output, signal, inject } from '@angular/core';
+import { Component, input, output, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { PhotoUploadService, PhotoUploadResult } from '../../../../shared/services/photo-upload.service';
-import { PhotoEntityType } from '../../../../core/api/api.service';
+import { PhotoUploadService } from '../../../../shared/services/photo-upload.service';
+import { PropertyPhotoStore } from '../../stores/property-photo.store';
 
 /**
  * Upload state interface
@@ -263,6 +263,7 @@ interface UploadState {
 })
 export class PropertyPhotoUploadComponent {
   private readonly photoUploadService = inject(PhotoUploadService);
+  private readonly photoStore = inject(PropertyPhotoStore);
 
   /**
    * Property ID for the upload
@@ -272,7 +273,38 @@ export class PropertyPhotoUploadComponent {
   /**
    * Emitted when upload completes successfully
    */
-  readonly uploadComplete = output<PhotoUploadResult>();
+  readonly uploadComplete = output<void>();
+
+  constructor() {
+    // Sync upload progress from store to local state
+    effect(() => {
+      const isUploading = this.photoStore.isUploading();
+      const progress = this.photoStore.uploadProgress();
+      const error = this.photoStore.uploadError();
+
+      if (isUploading) {
+        this.uploadState.update(state => ({
+          ...state,
+          status: 'uploading',
+          progress,
+        }));
+      } else if (error && this.uploadState().status === 'uploading') {
+        this.uploadState.update(state => ({
+          ...state,
+          status: 'error',
+          error,
+          progress: 0,
+        }));
+      } else if (!isUploading && this.uploadState().status === 'uploading' && progress === 100) {
+        this.uploadState.update(state => ({
+          ...state,
+          status: 'success',
+          progress: 100,
+        }));
+        this.uploadComplete.emit();
+      }
+    });
+  }
 
   /**
    * Drag state
@@ -365,7 +397,9 @@ export class PropertyPhotoUploadComponent {
   }
 
   /**
-   * Start the upload process
+   * Start the upload process using PropertyPhotoStore
+   * This ensures photos are created via property-specific endpoints
+   * and properly stored in the PropertyPhotos table.
    */
   private async startUpload(file: File): Promise<void> {
     this.uploadState.set({
@@ -375,31 +409,16 @@ export class PropertyPhotoUploadComponent {
       file,
     });
 
-    try {
-      const result = await this.photoUploadService.uploadPhoto(file, {
-        entityType: PhotoEntityType.Properties,
-        entityId: this.propertyId(),
-        onProgress: (percent) => {
-          this.uploadState.update(state => ({ ...state, progress: percent }));
-        },
-      });
+    // Use the store's uploadPhoto method which calls property-specific endpoints
+    // that create PropertyPhoto records in the database
+    const success = await this.photoStore.uploadPhoto(file);
 
-      this.uploadState.set({
-        status: 'success',
-        progress: 100,
-        error: null,
-        file,
-      });
-
-      this.uploadComplete.emit(result);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.';
-      this.uploadState.set({
-        status: 'error',
-        progress: 0,
-        error: errorMessage,
-        file,
-      });
+    // Note: The effect() in the constructor handles state transitions
+    // based on photoStore signals, so we don't need to manually
+    // set success/error states here. But we do set them for immediate feedback.
+    if (!success) {
+      // Error state is set by the effect, but also set file reference
+      this.uploadState.update(state => ({ ...state, file }));
     }
   }
 
