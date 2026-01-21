@@ -1,6 +1,6 @@
 # Story 13.3c: Property Photo Lightbox & Management
 
-Status: blocked
+Status: ready-for-review
 
 ## Story
 
@@ -14,8 +14,8 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 
 ## Dependencies
 
-- **Story 13.3a** (Property Photo Backend) - Must be complete
-- **Story 13.3b** (Gallery & Upload) - Must be complete before starting
+- **Story 13.3a** (Property Photo Backend) - ✅ Complete
+- **Story 13.3b** (Gallery & Upload) - ✅ Complete
 
 ## Acceptance Criteria
 
@@ -44,30 +44,30 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 
 ## Tasks / Subtasks
 
-### Task 1: Frontend - Property Photo Lightbox (AC: 1, 2, 3)
-- [ ] 1.1 Create `PropertyPhotoLightboxComponent` (modal dialog)
-- [ ] 1.2 Add prev/next navigation with keyboard support
-- [ ] 1.3 Integrate existing `PhotoViewerComponent` for zoom/rotate
-- [ ] 1.4 Close on backdrop click or Escape key
+### Task 1: Frontend - Property Photo Lightbox (AC: 1, 2, 3) ✅ COMPLETE
+- [x] 1.1 Create `PropertyPhotoLightboxComponent` (modal dialog) *(property-photo-lightbox.component.ts)*
+- [x] 1.2 Add prev/next navigation with keyboard support *(arrow keys, wrapping navigation)*
+- [x] 1.3 Integrate existing `PhotoViewerComponent` for zoom/rotate *(zoom/pan/rotate controls)*
+- [x] 1.4 Close on backdrop click or Escape key *(@HostListener keyboard handler)*
 
-### Task 2: Frontend - Property Photo Management (AC: 4, 5, 6, 7, 8, 9, 10)
-- [ ] 2.1 Add star badge on primary photo
-- [ ] 2.2 Add context menu (set primary, delete)
-- [ ] 2.3 Add move up/down reorder buttons
-- [ ] 2.4 Implement delete confirmation dialog
-- [ ] 2.5 Update gallery after each operation
+### Task 2: Frontend - Property Photo Management (AC: 4, 5, 6, 7, 8, 9, 10) ✅ COMPLETE
+- [x] 2.1 Add star badge on primary photo *(done in 13.3b - gallery component lines 98-102)*
+- [x] 2.2 Add context menu (set primary, delete) to gallery photo cards *(MatMenu with mat-menu-item)*
+- [x] 2.3 Add move up/down reorder buttons to gallery photo cards *(hover overlay buttons)*
+- [x] 2.4 Implement delete confirmation dialog *(using ConfirmDialogComponent)*
+- [x] 2.5 Update gallery after each operation *(store methods handle optimistic updates)*
 
-### Task 3: Frontend - Store Enhancements
-- [ ] 3.1 Add deletePhoto method to store
-- [ ] 3.2 Add setPrimary method to store
-- [ ] 3.3 Add reorderPhotos method to store
-- [ ] 3.4 Handle optimistic updates
+### Task 3: Frontend - Store Enhancements ✅ COMPLETE (implemented in 13.3b)
+- [x] 3.1 Add deletePhoto method to store *(property-photo.store.ts:213-247)*
+- [x] 3.2 Add setPrimaryPhoto method to store *(property-photo.store.ts:252-289)*
+- [x] 3.3 Add reorderPhotos method to store *(property-photo.store.ts:294-334)*
+- [x] 3.4 Handle optimistic updates *(all methods update local state immediately)*
 
-### Task 4: Frontend - Unit Tests (AC: 11)
-- [ ] 4.1 Test gallery component rendering
-- [ ] 4.2 Test upload component validation
-- [ ] 4.3 Test lightbox navigation
-- [ ] 4.4 Test store state management
+### Task 4: Frontend - Unit Tests (AC: 11) ✅ COMPLETE
+- [x] 4.1 Test gallery component rendering *(property-photo-gallery.component.spec.ts - 357 lines)*
+- [x] 4.2 Test upload component validation *(property-photo-upload.component.spec.ts - 294 lines)*
+- [x] 4.3 Test lightbox navigation *(property-photo-lightbox.component.spec.ts - 247 lines)*
+- [x] 4.4 Test store state management *(property-photo.store.spec.ts - 321 lines)*
 
 ## Dev Notes
 
@@ -85,18 +85,19 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 |-----------|----------|-------|
 | `PhotoViewerComponent` | `shared/components/photo-viewer/` | Zoom/rotate/pan in lightbox |
 
-### Frontend Component Hierarchy (Complete)
+### Frontend Component Hierarchy (Actual)
 
 ```
 property-detail.component.ts
-└── property-photo-gallery.component.ts
-    ├── property-photo-upload.component.ts (when adding)
-    ├── property-photo-card.component.ts (per photo)
-    │   └── context menu (set primary, delete)
-    │   └── reorder buttons (move up/down)
-    └── property-photo-lightbox.component.ts (modal)
-        └── photo-viewer.component.ts (existing - zoom/rotate)
+└── property-photo-gallery.component.ts (already exists)
+    ├── property-photo-upload.component.ts (already exists - upload dialog)
+    ├── Photo cards rendered inline (add context menu + reorder buttons)
+    └── property-photo-lightbox.component.ts (NEW - modal dialog)
+        └── photo-viewer.component.ts (already exists - zoom/rotate/pan)
 ```
+
+**Note:** The gallery component renders photo cards inline (no separate `property-photo-card` component).
+Management UI (context menu, reorder buttons) should be added directly to the gallery's photo card template.
 
 ### State Management (Signals) - Complete
 
@@ -133,14 +134,15 @@ export const PropertyPhotoStore = signalStore(
 
 ### Project Structure
 
-This story adds:
+This story adds/modifies:
 ```
-frontend/src/app/shared/components/property-photo-lightbox/
+frontend/src/app/shared/components/property-photo-lightbox/  (NEW)
   ├── property-photo-lightbox.component.ts
-  ├── property-photo-lightbox.component.html
-  └── property-photo-lightbox.component.scss
-frontend/src/app/features/properties/components/property-photo-card/ (enhanced)
-  └── context-menu, reorder buttons added
+  └── property-photo-lightbox.component.spec.ts
+frontend/src/app/features/properties/components/property-photo-gallery/  (MODIFY)
+  └── property-photo-gallery.component.ts (add context menu, reorder buttons)
+frontend/src/app/features/properties/stores/  (MODIFY)
+  └── property-photo.store.spec.ts (NEW - add store unit tests)
 ```
 
 ### References
@@ -152,9 +154,35 @@ frontend/src/app/features/properties/components/property-photo-card/ (enhanced)
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
+1. **Task 1 (Lightbox)**: Created `PropertyPhotoLightboxComponent` as a fullscreen modal dialog using Angular Material. Integrates existing `PhotoViewerComponent` for zoom/rotate/pan functionality. Supports keyboard navigation (ArrowLeft/Right, Escape) and navigation button clicks. Closes on backdrop click.
+
+2. **Task 2 (Photo Management)**: Enhanced `PropertyPhotoGalleryComponent` with:
+   - Context menu (MatMenu) with "Set as Primary" and "Delete" options
+   - Move up/down reorder buttons that appear on hover overlay
+   - Delete confirmation via existing `ConfirmDialogComponent`
+   - "Set as Primary" hidden for already-primary photos
+   - Disabled move up on first photo, move down on last photo
+
+3. **Task 4 (Testing)**: Added comprehensive unit tests:
+   - Lightbox tests (22 tests): navigation, keyboard, close functionality, single photo handling
+   - Gallery tests expanded (+10 tests): context menu, reorder buttons, event emissions
+   - Store tests (20 tests): loadPhotos, deletePhoto, setPrimaryPhoto, reorderPhotos, computed properties, error handling
+
+4. **Integration**: Wired up lightbox in `property-detail.component.ts` - clicking a photo opens the lightbox at the correct index. Management actions (delete, set primary, reorder) call store methods which handle API calls and optimistic updates.
+
 ### File List
+
+**New Files:**
+- `frontend/src/app/shared/components/property-photo-lightbox/property-photo-lightbox.component.ts` (174 lines)
+- `frontend/src/app/shared/components/property-photo-lightbox/property-photo-lightbox.component.spec.ts` (247 lines)
+- `frontend/src/app/features/properties/stores/property-photo.store.spec.ts` (321 lines)
+
+**Modified Files:**
+- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.ts` - Added context menu, reorder buttons, overlay styling, new outputs
+- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.spec.ts` - Added tests for management features (+10 tests)
+- `frontend/src/app/features/properties/property-detail/property-detail.component.ts` - Added lightbox integration and management event handlers
 

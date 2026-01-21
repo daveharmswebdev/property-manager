@@ -152,12 +152,12 @@ describe('PropertyPhotoGalleryComponent', () => {
       });
     });
 
-    it('should emit photoClick when photo card is clicked', () => {
+    it('should emit photoClick when photo image is clicked', () => {
       const photoClickSpy = vi.fn();
       component.photoClick.subscribe(photoClickSpy);
 
-      const firstCard = fixture.nativeElement.querySelector('.photo-card');
-      firstCard.click();
+      const firstImage = fixture.nativeElement.querySelector('.photo-card .photo-img');
+      firstImage.click();
 
       expect(photoClickSpy).toHaveBeenCalledWith(mockPhotos[0]);
     });
@@ -231,6 +231,126 @@ describe('PropertyPhotoGalleryComponent', () => {
       const grid = fixture.nativeElement.querySelector('.gallery-grid');
       expect(grid).toBeTruthy();
       // CSS media queries handle the actual column count
+    });
+  });
+
+  describe('Photo Management (AC-13.3c.4, AC-13.3c.5)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('photos', mockPhotos);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+    });
+
+    it('should show context menu button on each photo card', () => {
+      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
+      expect(menuButtons.length).toBe(3);
+    });
+
+    it('should emit setPrimaryClick when "Set as Primary" is selected from menu', async () => {
+      const setPrimarySpy = vi.fn();
+      component.setPrimaryClick.subscribe(setPrimarySpy);
+
+      // Find a non-primary photo's menu button and click it
+      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
+      menuButtons[1].click(); // Second photo (non-primary)
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      // Find and click the "Set as Primary" menu item
+      const setPrimaryItem = document.querySelector('[data-testid="set-primary-menu-item"]');
+      expect(setPrimaryItem).toBeTruthy();
+      (setPrimaryItem as HTMLElement).click();
+      expect(setPrimarySpy).toHaveBeenCalledWith(mockPhotos[1]);
+    });
+
+    it('should emit deleteClick when "Delete" is selected from menu', async () => {
+      const deleteSpy = vi.fn();
+      component.deleteClick.subscribe(deleteSpy);
+
+      // Click menu button for first photo
+      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
+      menuButtons[0].click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      // Find and click the "Delete" menu item
+      const deleteItem = document.querySelector('[data-testid="delete-menu-item"]');
+      expect(deleteItem).toBeTruthy();
+      (deleteItem as HTMLElement).click();
+      expect(deleteSpy).toHaveBeenCalledWith(mockPhotos[0]);
+    });
+
+    it('should not show "Set as Primary" option for already primary photo', async () => {
+      // Click menu button for primary photo (first)
+      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
+      menuButtons[0].click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      // The "Set as Primary" option should not exist for primary photo
+      const setPrimaryItem = document.querySelector('[data-testid="set-primary-menu-item"]');
+      expect(setPrimaryItem).toBeFalsy();
+    });
+  });
+
+  describe('Reorder Photos (AC-13.3c.6)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('photos', mockPhotos);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+    });
+
+    it('should show move up/down buttons when multiple photos', () => {
+      const moveUpButtons = fixture.nativeElement.querySelectorAll('[data-testid="move-up-button"]');
+      const moveDownButtons = fixture.nativeElement.querySelectorAll('[data-testid="move-down-button"]');
+
+      expect(moveUpButtons.length).toBe(3);
+      expect(moveDownButtons.length).toBe(3);
+    });
+
+    it('should disable move up button on first photo', () => {
+      const firstMoveUp = fixture.nativeElement.querySelector('.photo-card:first-child [data-testid="move-up-button"]');
+      expect(firstMoveUp.disabled).toBe(true);
+    });
+
+    it('should disable move down button on last photo', () => {
+      const lastMoveDown = fixture.nativeElement.querySelector('.photo-card:last-child [data-testid="move-down-button"]');
+      expect(lastMoveDown.disabled).toBe(true);
+    });
+
+    it('should emit reorderClick with new order when move up is clicked', () => {
+      const reorderSpy = vi.fn();
+      component.reorderClick.subscribe(reorderSpy);
+
+      // Click move up on second photo
+      const secondPhotoMoveUp = fixture.nativeElement.querySelectorAll('[data-testid="move-up-button"]')[1];
+      secondPhotoMoveUp.click();
+
+      // Expected new order: photo-2, photo-1, photo-3
+      expect(reorderSpy).toHaveBeenCalledWith(['photo-2', 'photo-1', 'photo-3']);
+    });
+
+    it('should emit reorderClick with new order when move down is clicked', () => {
+      const reorderSpy = vi.fn();
+      component.reorderClick.subscribe(reorderSpy);
+
+      // Click move down on first photo
+      const firstPhotoMoveDown = fixture.nativeElement.querySelectorAll('[data-testid="move-down-button"]')[0];
+      firstPhotoMoveDown.click();
+
+      // Expected new order: photo-2, photo-1, photo-3
+      expect(reorderSpy).toHaveBeenCalledWith(['photo-2', 'photo-1', 'photo-3']);
+    });
+
+    it('should not show reorder buttons when only one photo', () => {
+      fixture.componentRef.setInput('photos', [mockPhotos[0]]);
+      fixture.detectChanges();
+
+      const moveUpButtons = fixture.nativeElement.querySelectorAll('[data-testid="move-up-button"]');
+      const moveDownButtons = fixture.nativeElement.querySelectorAll('[data-testid="move-down-button"]');
+
+      expect(moveUpButtons.length).toBe(0);
+      expect(moveDownButtons.length).toBe(0);
     });
   });
 });
