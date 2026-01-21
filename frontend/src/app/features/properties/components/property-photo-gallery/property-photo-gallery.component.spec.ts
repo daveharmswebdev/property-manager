@@ -258,10 +258,9 @@ describe('PropertyPhotoGalleryComponent', () => {
 
       // Find and click the "Set as Primary" menu item
       const setPrimaryItem = document.querySelector('[data-testid="set-primary-menu-item"]');
-      if (setPrimaryItem) {
-        (setPrimaryItem as HTMLElement).click();
-        expect(setPrimarySpy).toHaveBeenCalledWith(mockPhotos[1]);
-      }
+      expect(setPrimaryItem).toBeTruthy();
+      (setPrimaryItem as HTMLElement).click();
+      expect(setPrimarySpy).toHaveBeenCalledWith(mockPhotos[1]);
     });
 
     it('should emit deleteClick when "Delete" is selected from menu', async () => {
@@ -276,10 +275,9 @@ describe('PropertyPhotoGalleryComponent', () => {
 
       // Find and click the "Delete" menu item
       const deleteItem = document.querySelector('[data-testid="delete-menu-item"]');
-      if (deleteItem) {
-        (deleteItem as HTMLElement).click();
-        expect(deleteSpy).toHaveBeenCalledWith(mockPhotos[0]);
-      }
+      expect(deleteItem).toBeTruthy();
+      (deleteItem as HTMLElement).click();
+      expect(deleteSpy).toHaveBeenCalledWith(mockPhotos[0]);
     });
 
     it('should not show "Set as Primary" option for already primary photo', async () => {

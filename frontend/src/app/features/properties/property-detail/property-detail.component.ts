@@ -817,7 +817,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
         id: p.id,
         viewUrl: p.viewUrl,
         thumbnailUrl: p.thumbnailUrl,
-        contentType: 'image/jpeg', // Default content type
+        contentType: this.inferContentType(p.originalFileName),
         originalFileName: p.originalFileName,
         isPrimary: p.isPrimary,
         displayOrder: p.displayOrder,
@@ -836,13 +836,29 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle upload complete - close dialog and refresh photos
+   * Infer content type from filename extension
+   */
+  private inferContentType(filename?: string): string {
+    if (!filename) return 'image/jpeg';
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'webp': return 'image/webp';
+      case 'svg': return 'image/svg+xml';
+      case 'bmp': return 'image/bmp';
+      case 'jpg':
+      case 'jpeg':
+      default: return 'image/jpeg';
+    }
+  }
+
+  /**
+   * Handle upload complete - close dialog
+   * Note: Photo refresh is handled by the store's uploadPhoto method
    */
   onUploadComplete(): void {
     this.showUploadDialog = false;
-    if (this.propertyId) {
-      this.photoStore.loadPhotos(this.propertyId);
-    }
   }
 
   /**

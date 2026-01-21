@@ -278,8 +278,8 @@ export class PropertyPhotoLightboxComponent {
     Math.min(Math.max(0, this.data.currentIndex), this.data.photos.length - 1)
   );
 
-  /** Current photo computed from index */
-  readonly currentPhoto = computed(() => this.data.photos[this.currentIndex()]);
+  /** Current photo computed from index (may be undefined for empty arrays) */
+  readonly currentPhoto = computed((): LightboxPhoto | undefined => this.data.photos[this.currentIndex()]);
 
   /** Whether to show navigation buttons (more than one photo) */
   readonly showNavigation = computed(() => this.data.photos.length > 1);
