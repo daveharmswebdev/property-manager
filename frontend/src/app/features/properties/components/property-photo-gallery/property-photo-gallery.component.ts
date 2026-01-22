@@ -5,7 +5,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 /**
@@ -47,7 +46,6 @@ export interface PropertyPhoto {
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatMenuModule,
     MatTooltipModule,
   ],
   template: `
@@ -91,7 +89,7 @@ export interface PropertyPhoto {
 
         <!-- Photo Grid (AC-13.3b.2, AC-13.3b.5, AC-13.3b.6, AC-13.3c.4, AC-13.3c.5, AC-13.3c.6, AC-13.3c.15, AC-13.3c.16) -->
         @if (!isLoading() && photos().length > 0) {
-          <div class="gallery-grid" cdkDropList (cdkDropListDropped)="onDrop($event)">
+          <div class="gallery-grid" cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="onDrop($event)">
             @for (photo of photos(); track photo.id; let i = $index; let first = $first; let last = $last) {
               <div
                 class="photo-card"
@@ -112,13 +110,6 @@ export interface PropertyPhoto {
                   data-testid="favorite-btn">
                   <mat-icon>{{ photo.isPrimary ? 'favorite' : 'favorite_border' }}</mat-icon>
                 </button>
-
-                <!-- Drag Handle (AC-13.3c.15) - Desktop only -->
-                @if (photos().length > 1) {
-                  <div class="drag-handle" cdkDragHandle data-testid="drag-handle">
-                    <mat-icon>drag_indicator</mat-icon>
-                  </div>
-                }
 
                 <!-- Photo Image (clickable area) -->
                 <img
@@ -159,29 +150,15 @@ export interface PropertyPhoto {
                     </div>
                   }
 
-                  <!-- Context Menu Button (AC-13.3c.5) -->
+                  <!-- Delete Button (AC-13.3c.5) -->
                   <button
                     mat-icon-button
-                    class="menu-btn"
-                    [matMenuTriggerFor]="photoMenu"
-                    (click)="$event.stopPropagation()"
-                    data-testid="photo-menu-button"
-                    aria-label="Photo options">
-                    <mat-icon>more_vert</mat-icon>
+                    class="delete-btn"
+                    (click)="onDelete(photo, $event)"
+                    data-testid="delete-button"
+                    aria-label="Delete photo">
+                    <mat-icon>delete</mat-icon>
                   </button>
-
-                  <mat-menu #photoMenu="matMenu">
-                    @if (!photo.isPrimary) {
-                      <button mat-menu-item (click)="setPrimaryClick.emit(photo)" data-testid="set-primary-menu-item">
-                        <mat-icon>star</mat-icon>
-                        <span>Set as Primary</span>
-                      </button>
-                    }
-                    <button mat-menu-item class="delete-menu-item" (click)="deleteClick.emit(photo)" data-testid="delete-menu-item">
-                      <mat-icon color="warn">delete</mat-icon>
-                      <span>Delete</span>
-                    </button>
-                  </mat-menu>
                 </div>
               </div>
             }
@@ -217,22 +194,14 @@ export interface PropertyPhoto {
       }
     }
 
-    /* Responsive Grid (AC-13.3b.5) */
+    /* Responsive Flexbox Grid (AC-13.3b.5, AC-13.4.1, AC-13.4.2) */
     .gallery-grid {
-      display: grid;
+      display: flex;
+      flex-wrap: wrap;
       gap: 12px;
-      grid-template-columns: repeat(1, 1fr);
-
-      @media (min-width: 600px) {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      @media (min-width: 960px) {
-        grid-template-columns: repeat(3, 1fr);
-      }
     }
 
-    /* Photo Card */
+    /* Photo Card - Responsive Flexbox Sizing (AC-13.4.1) */
     .photo-card {
       position: relative;
       aspect-ratio: 4 / 3;
@@ -240,11 +209,24 @@ export interface PropertyPhoto {
       overflow: hidden;
       cursor: pointer;
       background-color: var(--pm-surface-variant, #f5f5f5);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: box-shadow 0.2s ease;
+
+      /* Single column on mobile (default) */
+      flex: 0 0 100%;
+
+      /* 2 columns on tablet - account for 12px gap */
+      @media (min-width: 600px) {
+        flex: 0 0 calc(50% - 6px);
+      }
+
+      /* 3 columns on desktop - account for 12px gap between 3 items */
+      @media (min-width: 960px) {
+        flex: 0 0 calc(33.333% - 8px);
+      }
 
       &:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        /* No transform - keeps drag calculations accurate (AC-13.4.1) */
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
       }
 
       &:focus {
@@ -300,47 +282,9 @@ export interface PropertyPhoto {
 
       &:hover {
         background: white;
-        transform: scale(1.1);
+        /* No transform - avoids drag calculation interference (AC-13.4.1) */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       }
-    }
-
-    /* Drag Handle (AC-13.3c.15) */
-    .drag-handle {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 4px;
-      width: 32px;
-      height: 32px;
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 3;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-      opacity: 0;
-
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        color: #666;
-      }
-
-      &:hover {
-        background: white;
-        transform: scale(1.1);
-      }
-
-      &:active {
-        cursor: grabbing;
-      }
-    }
-
-    .photo-card:hover .drag-handle {
-      opacity: 1;
     }
 
     /* Photo Overlay with Actions (AC-13.3c.5, AC-13.3c.6) */
@@ -379,7 +323,7 @@ export interface PropertyPhoto {
     }
 
     .reorder-btn,
-    .menu-btn {
+    .delete-btn {
       background-color: rgba(255, 255, 255, 0.9);
       color: var(--pm-text-primary, #333);
       width: 32px;
@@ -401,12 +345,13 @@ export interface PropertyPhoto {
       }
     }
 
-    .menu-btn {
+    .delete-btn {
       align-self: flex-end;
-    }
-
-    .delete-menu-item {
       color: #c62828;
+
+      mat-icon {
+        color: #c62828;
+      }
     }
 
     /* Skeleton Loading (AC-13.3b.4) */
@@ -499,14 +444,10 @@ export interface PropertyPhoto {
       transition: transform 200ms ease;
     }
 
-    /* Responsive: Hide move buttons on desktop, show drag handle (AC-13.3c.16) */
+    /* Responsive: Hide move buttons on desktop (AC-13.3c.16) */
     @media (min-width: 768px) {
       .reorder-buttons {
         display: none;
-      }
-
-      .drag-handle {
-        display: flex;
       }
     }
 
@@ -514,10 +455,6 @@ export interface PropertyPhoto {
     @media (max-width: 767px) {
       .photo-card {
         cursor: pointer;
-      }
-
-      .drag-handle {
-        display: none !important;
       }
 
       .reorder-buttons {
@@ -585,6 +522,14 @@ export class PropertyPhotoGalleryComponent {
     if (!photo.isPrimary) {
       this.setPrimaryClick.emit(photo);
     }
+  }
+
+  /**
+   * Delete photo (AC-13.3c.5)
+   */
+  onDelete(photo: PropertyPhoto, event: Event): void {
+    event.stopPropagation();
+    this.deleteClick.emit(photo);
   }
 
   /**

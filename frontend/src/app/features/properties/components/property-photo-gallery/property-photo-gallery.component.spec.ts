@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PropertyPhotoGalleryComponent, PropertyPhoto } from './property-photo-gallery.component';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
@@ -273,55 +274,30 @@ describe('PropertyPhotoGalleryComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should show context menu button on each photo card', () => {
-      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
-      expect(menuButtons.length).toBe(3);
+    it('should show delete button on each photo card', () => {
+      const deleteButtons = fixture.nativeElement.querySelectorAll('[data-testid="delete-button"]');
+      expect(deleteButtons.length).toBe(3);
     });
 
-    it('should emit setPrimaryClick when "Set as Primary" is selected from menu', async () => {
-      const setPrimarySpy = vi.fn();
-      component.setPrimaryClick.subscribe(setPrimarySpy);
-
-      // Find a non-primary photo's menu button and click it
-      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
-      menuButtons[1].click(); // Second photo (non-primary)
-      fixture.detectChanges();
-      await fixture.whenStable();
-
-      // Find and click the "Set as Primary" menu item
-      const setPrimaryItem = document.querySelector('[data-testid="set-primary-menu-item"]');
-      expect(setPrimaryItem).toBeTruthy();
-      (setPrimaryItem as HTMLElement).click();
-      expect(setPrimarySpy).toHaveBeenCalledWith(mockPhotos[1]);
-    });
-
-    it('should emit deleteClick when "Delete" is selected from menu', async () => {
+    it('should emit deleteClick when delete button is clicked', () => {
       const deleteSpy = vi.fn();
       component.deleteClick.subscribe(deleteSpy);
 
-      // Click menu button for first photo
-      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
-      menuButtons[0].click();
-      fixture.detectChanges();
-      await fixture.whenStable();
+      const deleteButtons = fixture.nativeElement.querySelectorAll('[data-testid="delete-button"]');
+      deleteButtons[0].click();
 
-      // Find and click the "Delete" menu item
-      const deleteItem = document.querySelector('[data-testid="delete-menu-item"]');
-      expect(deleteItem).toBeTruthy();
-      (deleteItem as HTMLElement).click();
       expect(deleteSpy).toHaveBeenCalledWith(mockPhotos[0]);
     });
 
-    it('should not show "Set as Primary" option for already primary photo', async () => {
-      // Click menu button for primary photo (first)
-      const menuButtons = fixture.nativeElement.querySelectorAll('[data-testid="photo-menu-button"]');
-      menuButtons[0].click();
-      fixture.detectChanges();
-      await fixture.whenStable();
+    it('should stop event propagation when delete button is clicked', () => {
+      const photoClickSpy = vi.fn();
+      component.photoClick.subscribe(photoClickSpy);
 
-      // The "Set as Primary" option should not exist for primary photo
-      const setPrimaryItem = document.querySelector('[data-testid="set-primary-menu-item"]');
-      expect(setPrimaryItem).toBeFalsy();
+      const deleteButtons = fixture.nativeElement.querySelectorAll('[data-testid="delete-button"]');
+      deleteButtons[0].click();
+
+      // photoClick should NOT be called because stopPropagation is called
+      expect(photoClickSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -454,25 +430,14 @@ describe('PropertyPhotoGalleryComponent', () => {
       expect(photoCard.classList.contains('cdk-drag-disabled')).toBe(true);
     });
 
-    it('should show drag handle on photo cards when multiple photos exist', () => {
-      const dragHandles = fixture.nativeElement.querySelectorAll('[data-testid="drag-handle"]');
-      expect(dragHandles.length).toBe(mockPhotos.length);
-    });
-
-    it('should NOT show drag handle when only one photo', () => {
-      fixture.componentRef.setInput('photos', [mockPhotos[0]]);
-      fixture.detectChanges();
-
+    it('should allow dragging entire photo card (no separate drag handle)', () => {
+      // Verify drag handle element does NOT exist (entire card is draggable)
       const dragHandles = fixture.nativeElement.querySelectorAll('[data-testid="drag-handle"]');
       expect(dragHandles.length).toBe(0);
-    });
 
-    it('should have drag handle with cdkDragHandle directive', () => {
-      const dragHandles = fixture.nativeElement.querySelectorAll('.drag-handle');
-      expect(dragHandles.length).toBe(mockPhotos.length);
-      dragHandles.forEach((handle: Element) => {
-        expect(handle.hasAttribute('cdkdraghandle')).toBe(true);
-      });
+      // Verify photo cards have cdkDrag class (entire card is draggable)
+      const photoCards = fixture.nativeElement.querySelectorAll('.photo-card.cdk-drag');
+      expect(photoCards.length).toBe(mockPhotos.length);
     });
   });
 });
