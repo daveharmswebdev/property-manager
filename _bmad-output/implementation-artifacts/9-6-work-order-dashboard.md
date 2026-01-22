@@ -1,6 +1,6 @@
 # Story 9.6: Work Order Dashboard
 
-Status: review
+Status: done
 
 ## Story
 
