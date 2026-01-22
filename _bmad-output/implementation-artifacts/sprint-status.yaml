@@ -182,4 +182,5 @@ development_status:
   13-3a-property-photo-backend: done         # Entity, API endpoints, unit tests - PR #107 merged
   13-3b-property-photo-gallery-upload: done   # Frontend gallery, upload, store - PR #109 merged
   13-3c-property-photo-lightbox-management: review  # Lightbox + management + sprint refinements (Tasks 5-7) COMPLETE
+  13-4-photo-gallery-drag-drop-fix: review  # GitHub Issue #113 - Fix inconsistent drag-drop with cdkDropListOrientation="mixed"
   epic-13-retrospective: optional
