@@ -6,6 +6,7 @@ import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
 import { WorkOrdersComponent } from './work-orders.component';
 import { WorkOrderStore } from './stores/work-order.store';
+import { PropertyStore } from '../properties/stores/property.store';
 
 describe('WorkOrdersComponent', () => {
   let component: WorkOrdersComponent;
@@ -17,6 +18,19 @@ describe('WorkOrdersComponent', () => {
     hasWorkOrders: ReturnType<typeof signal<boolean>>;
     workOrderCount: ReturnType<typeof signal<number>>;
     loadWorkOrders: ReturnType<typeof vi.fn>;
+    // Filter state (Story 9-7)
+    selectedStatuses: ReturnType<typeof signal<string[]>>;
+    selectedPropertyId: ReturnType<typeof signal<string | null>>;
+    hasActiveFilters: ReturnType<typeof signal<boolean>>;
+    isFilteredEmpty: ReturnType<typeof signal<boolean>>;
+    setStatusFilter: ReturnType<typeof vi.fn>;
+    setPropertyFilter: ReturnType<typeof vi.fn>;
+    clearFilters: ReturnType<typeof vi.fn>;
+  };
+  let mockPropertyStore: {
+    properties: ReturnType<typeof signal>;
+    isLoading: ReturnType<typeof signal<boolean>>;
+    loadProperties: ReturnType<typeof vi.fn>;
   };
 
   const mockWorkOrders = [
@@ -69,6 +83,23 @@ describe('WorkOrdersComponent', () => {
       hasWorkOrders: signal(true),
       workOrderCount: signal(3),
       loadWorkOrders: vi.fn(),
+      // Filter state (Story 9-7)
+      selectedStatuses: signal(['Reported', 'Assigned', 'Completed']),
+      selectedPropertyId: signal(null),
+      hasActiveFilters: signal(false),
+      isFilteredEmpty: signal(false),
+      setStatusFilter: vi.fn(),
+      setPropertyFilter: vi.fn(),
+      clearFilters: vi.fn(),
+    };
+
+    mockPropertyStore = {
+      properties: signal([
+        { id: 'prop-1', name: 'Test Property' },
+        { id: 'prop-2', name: 'Other Property' },
+      ]),
+      isLoading: signal(false),
+      loadProperties: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -76,6 +107,7 @@ describe('WorkOrdersComponent', () => {
       providers: [
         provideRouter([]),
         { provide: WorkOrderStore, useValue: mockWorkOrderStore },
+        { provide: PropertyStore, useValue: mockPropertyStore },
       ],
     }).compileComponents();
 
@@ -243,6 +275,120 @@ describe('WorkOrdersComponent', () => {
       expect(createdDates[0].nativeElement.textContent).toContain('Jan 20, 2026');
       expect(createdDates[1].nativeElement.textContent).toContain('Jan 19, 2026');
       expect(createdDates[2].nativeElement.textContent).toContain('Jan 18, 2026');
+    });
+  });
+
+  // Story 9-7: Filter Work Orders Tests
+  describe('Filter Controls (Story 9-7 AC #1)', () => {
+    it('should render filter section', () => {
+      const filterSection = fixture.debugElement.query(By.css('.filter-section'));
+      expect(filterSection).toBeTruthy();
+    });
+
+    it('should render status filter chips (Reported, Assigned, Completed)', () => {
+      const statusChips = fixture.debugElement.queryAll(By.css('mat-chip-option'));
+      expect(statusChips.length).toBe(3);
+
+      const chipTexts = statusChips.map((chip) => chip.nativeElement.textContent.trim());
+      expect(chipTexts).toContain('Reported');
+      expect(chipTexts).toContain('Assigned');
+      expect(chipTexts).toContain('Completed');
+    });
+
+    it('should render property filter dropdown', () => {
+      const propertySelect = fixture.debugElement.query(By.css('.property-filter mat-select'));
+      expect(propertySelect).toBeTruthy();
+    });
+
+    it('should load properties on init', () => {
+      expect(mockPropertyStore.loadProperties).toHaveBeenCalled();
+    });
+  });
+
+  describe('Status Filter Behavior (Story 9-7 AC #2)', () => {
+    it('should call setStatusFilter when status chips change', () => {
+      const chipListbox = fixture.debugElement.query(By.css('mat-chip-listbox'));
+      chipListbox.triggerEventHandler('change', { value: ['Reported', 'Assigned'] });
+
+      expect(mockWorkOrderStore.setStatusFilter).toHaveBeenCalledWith(['Reported', 'Assigned']);
+    });
+  });
+
+  describe('Property Filter Behavior (Story 9-7 AC #3)', () => {
+    it('should call setPropertyFilter when property dropdown changes', () => {
+      component.onPropertyFilterChange('prop-1');
+      expect(mockWorkOrderStore.setPropertyFilter).toHaveBeenCalledWith('prop-1');
+    });
+
+    it('should call setPropertyFilter with null for "All Properties"', () => {
+      component.onPropertyFilterChange(null);
+      expect(mockWorkOrderStore.setPropertyFilter).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('Active Filter Indicators (Story 9-7 AC #5)', () => {
+    it('should show clear filters button when hasActiveFilters is true', () => {
+      mockWorkOrderStore.hasActiveFilters.set(true);
+      fixture.detectChanges();
+
+      const clearButton = fixture.debugElement.query(By.css('.clear-filters-btn'));
+      expect(clearButton).toBeTruthy();
+      expect(clearButton.nativeElement.textContent).toContain('Clear filters');
+    });
+
+    it('should not show clear filters button when hasActiveFilters is false', () => {
+      mockWorkOrderStore.hasActiveFilters.set(false);
+      fixture.detectChanges();
+
+      const clearButton = fixture.debugElement.query(By.css('.clear-filters-btn'));
+      expect(clearButton).toBeFalsy();
+    });
+  });
+
+  describe('Clear Filters (Story 9-7 AC #6)', () => {
+    it('should call clearFilters when clear button clicked', () => {
+      mockWorkOrderStore.hasActiveFilters.set(true);
+      fixture.detectChanges();
+
+      const clearButton = fixture.debugElement.query(By.css('.clear-filters-btn'));
+      clearButton.nativeElement.click();
+
+      expect(mockWorkOrderStore.clearFilters).toHaveBeenCalled();
+    });
+  });
+
+  describe('Empty Filter Results (Story 9-7 AC #7)', () => {
+    it('should show filtered empty state when isFilteredEmpty is true', () => {
+      mockWorkOrderStore.workOrders.set([]);
+      mockWorkOrderStore.isFilteredEmpty.set(true);
+      mockWorkOrderStore.isEmpty.set(true);
+      fixture.detectChanges();
+
+      const filteredEmpty = fixture.debugElement.query(By.css('.filtered-empty'));
+      expect(filteredEmpty).toBeTruthy();
+      expect(filteredEmpty.nativeElement.textContent).toContain('No work orders match your filters');
+    });
+
+    it('should show clear filters button in filtered empty state', () => {
+      mockWorkOrderStore.workOrders.set([]);
+      mockWorkOrderStore.isFilteredEmpty.set(true);
+      mockWorkOrderStore.isEmpty.set(true);
+      fixture.detectChanges();
+
+      const clearButton = fixture.debugElement.query(By.css('.filtered-empty button'));
+      expect(clearButton).toBeTruthy();
+      expect(clearButton.nativeElement.textContent).toContain('Clear filters');
+    });
+
+    it('should show regular empty state when isEmpty is true but isFilteredEmpty is false', () => {
+      mockWorkOrderStore.workOrders.set([]);
+      mockWorkOrderStore.isFilteredEmpty.set(false);
+      mockWorkOrderStore.isEmpty.set(true);
+      fixture.detectChanges();
+
+      const emptyState = fixture.debugElement.query(By.css('.empty-state:not(.filtered-empty)'));
+      expect(emptyState).toBeTruthy();
+      expect(emptyState.nativeElement.textContent).toContain('No work orders yet');
     });
   });
 });

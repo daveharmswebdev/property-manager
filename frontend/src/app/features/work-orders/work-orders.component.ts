@@ -5,8 +5,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatChipsModule, MatChipListboxChange } from '@angular/material/chips';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { WorkOrderStore } from './stores/work-order.store';
+import { PropertyStore } from '../properties/stores/property.store';
 
 /**
  * WorkOrdersComponent
@@ -26,6 +29,8 @@ import { WorkOrderStore } from './stores/work-order.store';
     MatIconModule,
     MatProgressSpinnerModule,
     MatChipsModule,
+    MatSelectModule,
+    MatFormFieldModule,
   ],
   template: `
     <div class="work-orders-page">
@@ -37,11 +42,64 @@ import { WorkOrderStore } from './stores/work-order.store';
         </a>
       </div>
 
+      <!-- Filter Section (Story 9-7, AC #1, #5) -->
+      <div class="filter-section">
+        <div class="filter-group">
+          <label class="filter-label">Status</label>
+          <mat-chip-listbox
+            multiple
+            [value]="store.selectedStatuses()"
+            (change)="onStatusFilterChange($event)"
+            class="status-chips"
+          >
+            <mat-chip-option value="Reported">Reported</mat-chip-option>
+            <mat-chip-option value="Assigned">Assigned</mat-chip-option>
+            <mat-chip-option value="Completed">Completed</mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+
+        <div class="filter-group">
+          <mat-form-field appearance="outline" class="property-filter">
+            <mat-label>Property</mat-label>
+            <mat-select
+              [value]="store.selectedPropertyId()"
+              (selectionChange)="onPropertyFilterChange($event.value)"
+            >
+              <mat-option [value]="null">All Properties</mat-option>
+              @for (property of propertyStore.properties(); track property.id) {
+                <mat-option [value]="property.id">{{ property.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        @if (store.hasActiveFilters()) {
+          <button mat-button color="primary" (click)="clearFilters()" class="clear-filters-btn">
+            <mat-icon>clear</mat-icon>
+            Clear filters
+          </button>
+        }
+      </div>
+
       @if (store.isLoading()) {
         <div class="loading-container">
           <mat-spinner diameter="48"></mat-spinner>
         </div>
+      } @else if (store.isFilteredEmpty()) {
+        <!-- Filtered empty state (AC #7) - no work orders match current filters -->
+        <mat-card class="empty-state filtered-empty">
+          <mat-card-content>
+            <mat-icon class="empty-icon">filter_list_off</mat-icon>
+            <h2>No work orders match your filters</h2>
+            <p>Try adjusting your filters or clear them to see all work orders.</p>
+            <button mat-raised-button color="primary" (click)="clearFilters()">
+              <mat-icon>clear</mat-icon>
+              Clear filters
+            </button>
+          </mat-card-content>
+        </mat-card>
       } @else if (store.isEmpty()) {
+        <!-- Truly empty state - no work orders at all -->
         <mat-card class="empty-state">
           <mat-card-content>
             <mat-icon class="empty-icon">assignment</mat-icon>
@@ -111,6 +169,58 @@ import { WorkOrderStore } from './stores/work-order.store';
         margin: 0;
       }
 
+      .filter-section {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 16px;
+        background-color: var(--mat-sys-surface-container-low);
+        border-radius: 8px;
+      }
+
+      .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .filter-label {
+        font-weight: 500;
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.9em;
+      }
+
+      .status-chips {
+        display: flex;
+        gap: 8px;
+      }
+
+      .property-filter {
+        min-width: 200px;
+      }
+
+      .property-filter .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+
+      .clear-filters-btn {
+        margin-left: auto;
+      }
+
+      @media (max-width: 768px) {
+        .filter-section {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .clear-filters-btn {
+          margin-left: 0;
+          margin-top: 8px;
+        }
+      }
+
       .loading-container {
         display: flex;
         justify-content: center;
@@ -134,6 +244,10 @@ import { WorkOrderStore } from './stores/work-order.store';
         height: 64px;
         width: 64px;
         color: var(--mat-sys-outline);
+      }
+
+      .filtered-empty .empty-icon {
+        color: var(--mat-sys-primary);
       }
 
       .work-orders-list {
@@ -229,8 +343,32 @@ import { WorkOrderStore } from './stores/work-order.store';
 })
 export class WorkOrdersComponent implements OnInit {
   protected readonly store = inject(WorkOrderStore);
+  protected readonly propertyStore = inject(PropertyStore);
 
   ngOnInit(): void {
     this.store.loadWorkOrders();
+    this.propertyStore.loadProperties(undefined); // Load properties for filter dropdown
+  }
+
+  /**
+   * Handle status filter chip selection change (AC #2)
+   */
+  onStatusFilterChange(event: MatChipListboxChange): void {
+    const selectedStatuses = event.value as string[];
+    this.store.setStatusFilter(selectedStatuses);
+  }
+
+  /**
+   * Handle property filter dropdown change (AC #3)
+   */
+  onPropertyFilterChange(propertyId: string | null): void {
+    this.store.setPropertyFilter(propertyId);
+  }
+
+  /**
+   * Clear all filters (AC #6)
+   */
+  clearFilters(): void {
+    this.store.clearFilters();
   }
 }
