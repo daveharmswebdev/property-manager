@@ -34,8 +34,8 @@ dotnet ef database update --project src/PropertyManager.Infrastructure --startup
 dotnet run --project src/PropertyManager.Api
 ```
 
-API will be available at: http://localhost:5000
-Swagger UI: http://localhost:5000/swagger
+API will be available at: http://localhost:5292
+Swagger UI: http://localhost:5292/swagger
 
 ### 3. Run Frontend
 
@@ -52,8 +52,8 @@ Web app will be available at: http://localhost:4200
 | Service | URL |
 |---------|-----|
 | Web App | http://localhost:4200 |
-| API | http://localhost:5000 |
-| Swagger | http://localhost:5000/swagger |
+| API | http://localhost:5292 |
+| Swagger | http://localhost:5292/swagger |
 | MailHog | http://localhost:8025 |
 | PostgreSQL | localhost:5432 |
 
@@ -204,7 +204,25 @@ This project uses GitHub Actions for continuous integration and deployment:
 | `Email__SmtpHost` | SMTP server host | If using SMTP |
 | `Email__SmtpPort` | SMTP server port | If using SMTP |
 | `Email__FromAddress` | Sender email address | Yes |
+| `Email__FromName` | Sender display name | No |
+| `AWS__AccessKeyId` | AWS IAM access key for S3 | For file storage |
+| `AWS__SecretAccessKey` | AWS IAM secret key | For file storage |
+| `AWS__BucketName` | S3 bucket name | For file storage |
+| `AWS__Region` | AWS region (default: us-east-1) | No |
+| `AWS__PresignedUrlExpiryMinutes` | URL expiry (default: 60) | No |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | Yes |
+
+### File Storage (AWS S3)
+
+The application uses AWS S3 for storing:
+- Receipt images
+- Property photos (with auto-generated thumbnails)
+- Generated tax reports (PDF/ZIP)
+
+**S3 Configuration:** Create an S3 bucket and IAM user with these permissions:
+- `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`
+
+**Local Development:** S3 is optional for local development. When AWS credentials are not configured, the system uses NoOp implementations that log operations but don't persist files.
 
 ### Health Checks
 
