@@ -453,5 +453,26 @@ describe('PropertyPhotoGalleryComponent', () => {
       const photoCard = fixture.nativeElement.querySelector('.photo-card');
       expect(photoCard.classList.contains('cdk-drag-disabled')).toBe(true);
     });
+
+    it('should show drag handle on photo cards when multiple photos exist', () => {
+      const dragHandles = fixture.nativeElement.querySelectorAll('[data-testid="drag-handle"]');
+      expect(dragHandles.length).toBe(mockPhotos.length);
+    });
+
+    it('should NOT show drag handle when only one photo', () => {
+      fixture.componentRef.setInput('photos', [mockPhotos[0]]);
+      fixture.detectChanges();
+
+      const dragHandles = fixture.nativeElement.querySelectorAll('[data-testid="drag-handle"]');
+      expect(dragHandles.length).toBe(0);
+    });
+
+    it('should have drag handle with cdkDragHandle directive', () => {
+      const dragHandles = fixture.nativeElement.querySelectorAll('.drag-handle');
+      expect(dragHandles.length).toBe(mockPhotos.length);
+      dragHandles.forEach((handle: Element) => {
+        expect(handle.hasAttribute('cdkdraghandle')).toBe(true);
+      });
+    });
   });
 });

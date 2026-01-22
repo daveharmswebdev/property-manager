@@ -113,6 +113,13 @@ export interface PropertyPhoto {
                   <mat-icon>{{ photo.isPrimary ? 'favorite' : 'favorite_border' }}</mat-icon>
                 </button>
 
+                <!-- Drag Handle (AC-13.3c.15) - Desktop only -->
+                @if (photos().length > 1) {
+                  <div class="drag-handle" cdkDragHandle data-testid="drag-handle">
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+                }
+
                 <!-- Photo Image (clickable area) -->
                 <img
                   [src]="photo.thumbnailUrl || photo.viewUrl"
@@ -297,6 +304,45 @@ export interface PropertyPhoto {
       }
     }
 
+    /* Drag Handle (AC-13.3c.15) */
+    .drag-handle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #666;
+      }
+
+      &:hover {
+        background: white;
+        transform: scale(1.1);
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+
+    .photo-card:hover .drag-handle {
+      opacity: 1;
+    }
+
     /* Photo Overlay with Actions (AC-13.3c.5, AC-13.3c.6) */
     .photo-overlay {
       position: absolute;
@@ -313,6 +359,12 @@ export interface PropertyPhoto {
       transition: opacity 0.2s ease;
       background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.3) 100%);
       z-index: 1;
+      pointer-events: none; /* Don't block drag interactions */
+    }
+
+    .photo-overlay button,
+    .photo-overlay .reorder-buttons {
+      pointer-events: auto; /* Re-enable for buttons only */
     }
 
     .photo-card:hover .photo-overlay,
@@ -447,10 +499,14 @@ export interface PropertyPhoto {
       transition: transform 200ms ease;
     }
 
-    /* Responsive: Hide move buttons on desktop, show on mobile (AC-13.3c.16) */
+    /* Responsive: Hide move buttons on desktop, show drag handle (AC-13.3c.16) */
     @media (min-width: 768px) {
       .reorder-buttons {
         display: none;
+      }
+
+      .drag-handle {
+        display: flex;
       }
     }
 
@@ -460,8 +516,8 @@ export interface PropertyPhoto {
         cursor: pointer;
       }
 
-      .cdk-drop-list {
-        /* Disable drag on mobile - handled by cdkDragDisabled in template */
+      .drag-handle {
+        display: none !important;
       }
 
       .reorder-buttons {
