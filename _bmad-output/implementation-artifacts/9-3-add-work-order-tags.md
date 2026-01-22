@@ -577,3 +577,14 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
   - Backend: 868 tests passing (605 Application + 85 Infrastructure + 178 API)
   - Frontend: 970 tests passing
   - All acceptance criteria verified through unit tests
+
+### Code Review Fixes (Post-PR #103)
+
+- **VendorId Validation Added** - UpdateWorkOrderCommandHandler now validates that VendorId exists and belongs to user's account before updating (was previously missing)
+- **Deprecated .toPromise() Replaced** - work-order.store.ts now uses `firstValueFrom()` instead of deprecated `.toPromise()` in createTag method
+- **4 Additional Unit Tests** - Added tests for vendor validation scenarios:
+  - Handle_WithValidVendor_UpdatesVendorId
+  - Handle_VendorNotFound_ThrowsNotFoundException
+  - Handle_VendorFromDifferentAccount_ThrowsNotFoundException
+  - Handle_WithNullVendorId_ClearsVendor
+- Commit: 76ca680 (merged via PR #103)
