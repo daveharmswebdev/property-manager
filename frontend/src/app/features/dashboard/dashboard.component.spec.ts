@@ -34,6 +34,7 @@ describe('DashboardComponent', () => {
       zipCode: '78701',
       expenseTotal: 1500,
       incomeTotal: 3000,
+      primaryPhotoThumbnailUrl: 'https://example.com/photos/prop-1-thumb.jpg',
     },
     {
       id: 'prop-2',
@@ -44,6 +45,7 @@ describe('DashboardComponent', () => {
       zipCode: '75201',
       expenseTotal: 800,
       incomeTotal: 2000,
+      primaryPhotoThumbnailUrl: null,
     },
   ];
 
@@ -218,6 +220,24 @@ describe('DashboardComponent', () => {
       const navigateSpy = vi.spyOn(router, 'navigate');
       component.navigateToProperty('prop-1');
       expect(navigateSpy).toHaveBeenCalledWith(['/properties', 'prop-1']);
+    });
+
+    it('should pass primaryPhotoThumbnailUrl to property-row component (AC-13.3c.12)', async () => {
+      await setupTest(mockProperties);
+      const rows = fixture.debugElement.queryAll(By.css('app-property-row'));
+
+      // First property has a thumbnail URL
+      const firstRow = rows[0].nativeElement;
+      const firstThumbnail = firstRow.querySelector('.thumbnail-img');
+      expect(firstThumbnail).toBeTruthy();
+      expect(firstThumbnail.getAttribute('src')).toBe('https://example.com/photos/prop-1-thumb.jpg');
+
+      // Second property has null thumbnail, should show fallback icon
+      const secondRow = rows[1].nativeElement;
+      const secondThumbnail = secondRow.querySelector('.thumbnail-img');
+      const fallbackIcon = secondRow.querySelector('.fallback-icon');
+      expect(secondThumbnail).toBeFalsy();
+      expect(fallbackIcon).toBeTruthy();
     });
   });
 

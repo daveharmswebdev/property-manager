@@ -53,7 +53,7 @@ public class SetPrimaryPropertyPhotoHandler : IRequestHandler<SetPrimaryProperty
             return;
         }
 
-        // Clear previous primary photo
+        // Clear previous primary photo first (must save separately to avoid unique constraint violation)
         var currentPrimary = await _dbContext.PropertyPhotos
             .FirstOrDefaultAsync(pp => pp.PropertyId == request.PropertyId
                 && pp.IsPrimary
@@ -62,11 +62,11 @@ public class SetPrimaryPropertyPhotoHandler : IRequestHandler<SetPrimaryProperty
         if (currentPrimary != null)
         {
             currentPrimary.IsPrimary = false;
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         // Set new primary
         photo.IsPrimary = true;
-
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
