@@ -138,18 +138,50 @@ describe('PropertyPhotoGalleryComponent', () => {
       expect(images[0].src).toBe('https://example.com/thumb1.jpg');
     });
 
-    it('should show primary badge on primary photo', () => {
-      const primaryBadge = fixture.nativeElement.querySelector('.photo-card.is-primary .primary-badge');
-      expect(primaryBadge).toBeTruthy();
+    it('should show favorite button on ALL photos (AC-13.3c.13)', () => {
+      const favoriteButtons = fixture.nativeElement.querySelectorAll('[data-testid="favorite-btn"]');
+      expect(favoriteButtons.length).toBe(3);
     });
 
-    it('should not show primary badge on non-primary photos', () => {
+    it('should show filled heart icon on primary photo (AC-13.3c.13)', () => {
+      const primaryCard = fixture.nativeElement.querySelector('.photo-card.is-primary');
+      const favoriteBtn = primaryCard.querySelector('[data-testid="favorite-btn"]');
+      expect(favoriteBtn.classList.contains('is-primary')).toBe(true);
+      expect(favoriteBtn.querySelector('mat-icon').textContent.trim()).toBe('favorite');
+    });
+
+    it('should show outline heart icon on non-primary photos (AC-13.3c.13)', () => {
       const nonPrimaryCards = fixture.nativeElement.querySelectorAll('.photo-card:not(.is-primary)');
       expect(nonPrimaryCards.length).toBe(2);
 
       nonPrimaryCards.forEach((card: Element) => {
-        expect(card.querySelector('.primary-badge')).toBeFalsy();
+        const favoriteBtn = card.querySelector('[data-testid="favorite-btn"]');
+        expect(favoriteBtn).toBeTruthy();
+        expect(favoriteBtn!.classList.contains('is-primary')).toBe(false);
+        expect(favoriteBtn!.querySelector('mat-icon')!.textContent!.trim()).toBe('favorite_border');
       });
+    });
+
+    it('should emit setPrimaryClick when clicking favorite button on non-primary photo (AC-13.3c.14)', () => {
+      const setPrimarySpy = vi.fn();
+      component.setPrimaryClick.subscribe(setPrimarySpy);
+
+      const nonPrimaryCard = fixture.nativeElement.querySelector('.photo-card:not(.is-primary)');
+      const favoriteBtn = nonPrimaryCard.querySelector('[data-testid="favorite-btn"]');
+      favoriteBtn.click();
+
+      expect(setPrimarySpy).toHaveBeenCalledWith(mockPhotos[1]);
+    });
+
+    it('should NOT emit setPrimaryClick when clicking favorite button on primary photo (AC-13.3c.14)', () => {
+      const setPrimarySpy = vi.fn();
+      component.setPrimaryClick.subscribe(setPrimarySpy);
+
+      const primaryCard = fixture.nativeElement.querySelector('.photo-card.is-primary');
+      const favoriteBtn = primaryCard.querySelector('[data-testid="favorite-btn"]');
+      favoriteBtn.click();
+
+      expect(setPrimarySpy).not.toHaveBeenCalled();
     });
 
     it('should emit photoClick when photo image is clicked', () => {
@@ -351,6 +383,75 @@ describe('PropertyPhotoGalleryComponent', () => {
 
       expect(moveUpButtons.length).toBe(0);
       expect(moveDownButtons.length).toBe(0);
+    });
+  });
+
+  describe('Drag-and-Drop Photo Reordering (AC-13.3c.15, AC-13.3c.16)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('photos', mockPhotos);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+    });
+
+    it('should have cdkDropList directive on gallery grid', () => {
+      const grid = fixture.nativeElement.querySelector('.gallery-grid');
+      expect(grid.classList.contains('cdk-drop-list')).toBe(true);
+    });
+
+    it('should have cdkDrag directive on photo cards', () => {
+      const photoCards = fixture.nativeElement.querySelectorAll('.photo-card');
+      photoCards.forEach((card: Element) => {
+        expect(card.classList.contains('cdk-drag')).toBe(true);
+      });
+    });
+
+    it('should emit reorderClick when onDrop is called with different positions', () => {
+      const reorderSpy = vi.fn();
+      component.reorderClick.subscribe(reorderSpy);
+
+      // Simulate drop event - moving first photo to second position
+      component.onDrop({
+        previousIndex: 0,
+        currentIndex: 1,
+        container: {} as any,
+        previousContainer: {} as any,
+        item: {} as any,
+        isPointerOverContainer: true,
+        distance: { x: 0, y: 0 },
+        dropPoint: { x: 0, y: 0 },
+        event: new MouseEvent('drop'),
+      });
+
+      // Expected new order: photo-2, photo-1, photo-3
+      expect(reorderSpy).toHaveBeenCalledWith(['photo-2', 'photo-1', 'photo-3']);
+    });
+
+    it('should NOT emit reorderClick when onDrop is called with same position', () => {
+      const reorderSpy = vi.fn();
+      component.reorderClick.subscribe(reorderSpy);
+
+      // Simulate drop event - same position (no change)
+      component.onDrop({
+        previousIndex: 0,
+        currentIndex: 0,
+        container: {} as any,
+        previousContainer: {} as any,
+        item: {} as any,
+        isPointerOverContainer: true,
+        distance: { x: 0, y: 0 },
+        dropPoint: { x: 0, y: 0 },
+        event: new MouseEvent('drop'),
+      });
+
+      expect(reorderSpy).not.toHaveBeenCalled();
+    });
+
+    it('should disable drag when only one photo', () => {
+      fixture.componentRef.setInput('photos', [mockPhotos[0]]);
+      fixture.detectChanges();
+
+      const photoCard = fixture.nativeElement.querySelector('.photo-card');
+      expect(photoCard.classList.contains('cdk-drag-disabled')).toBe(true);
     });
   });
 });

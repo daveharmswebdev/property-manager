@@ -1,6 +1,8 @@
 # Story 13.3c: Property Photo Lightbox & Management
 
-Status: ready-for-review
+Status: review
+
+> **Note (2026-01-22):** Story extended with sprint change refinements per [sprint-change-proposal-2026-01-22.md](../planning-artifacts/sprint-change-proposal-2026-01-22.md). Original scope complete; Tasks 5-7 added for UX refinements before epic closure.
 
 ## Story
 
@@ -42,6 +44,20 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 
 11. **AC-13.3c.11**: Frontend unit tests cover gallery, upload, lightbox, and store
 
+### Sprint Change Refinements (2026-01-22)
+
+*Source: [sprint-change-proposal-2026-01-22.md](../planning-artifacts/sprint-change-proposal-2026-01-22.md)*
+
+12. **AC-13.3c.12**: Dashboard property rows display photo thumbnail when a property has a primary photo set (instead of house icon)
+
+13. **AC-13.3c.13**: Photo gallery shows a heart icon in the top-left corner of each photo card; primary photo has filled pink heart, non-primary photos have outline heart
+
+14. **AC-13.3c.14**: Clicking the outline heart on a non-primary photo sets it as primary (heart fills, previous primary becomes outline, success message shown)
+
+15. **AC-13.3c.15**: On desktop, photos can be reordered via drag-and-drop; new order persists after page reload
+
+16. **AC-13.3c.16**: On mobile, Move Up/Down buttons remain visible; drag-and-drop is disabled
+
 ## Tasks / Subtasks
 
 ### Task 1: Frontend - Property Photo Lightbox (AC: 1, 2, 3) ✅ COMPLETE
@@ -68,6 +84,28 @@ Split from [Story 13.3: Property Photo Gallery](13-3-property-photo-gallery.md)
 - [x] 4.2 Test upload component validation *(property-photo-upload.component.spec.ts - 294 lines)*
 - [x] 4.3 Test lightbox navigation *(property-photo-lightbox.component.spec.ts - 247 lines)*
 - [x] 4.4 Test store state management *(property-photo.store.spec.ts - 321 lines)*
+
+---
+
+## Sprint Change Refinement Tasks (2026-01-22)
+
+### Task 5: Dashboard Thumbnail Bug Fix (AC: 12) ✅ COMPLETE
+- [x] 5.1 Update `dashboard.component.ts` to pass `thumbnailUrl` binding to `app-property-row`
+- [x] 5.2 Verify property-row component already supports `thumbnailUrl` input (from properties list)
+
+### Task 6: Favorite Icon for Primary Photo Selection (AC: 13, 14) ✅ COMPLETE
+- [x] 6.1 Replace primary badge with clickable favorite button in `property-photo-gallery.component.ts`
+- [x] 6.2 Add `onSetPrimary(photo, event)` method with stopPropagation
+- [x] 6.3 Style favorite button (white circle, pink filled heart for primary, outline for non-primary)
+- [x] 6.4 Add unit tests for favorite button functionality
+
+### Task 7: Drag-and-Drop Photo Reordering (AC: 15, 16) ✅ COMPLETE
+- [x] 7.1 Import `DragDropModule` from `@angular/cdk/drag-drop`
+- [x] 7.2 Add `cdkDropList` and `cdkDrag` directives to photo grid
+- [x] 7.3 Implement `onDrop(event)` handler using `moveItemInArray`
+- [x] 7.4 Add drag preview and placeholder styles
+- [x] 7.5 Add responsive CSS: drag-drop on desktop, move buttons on mobile
+- [x] 7.6 Add unit tests for drag-drop functionality
 
 ## Dev Notes
 
@@ -174,6 +212,22 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 4. **Integration**: Wired up lightbox in `property-detail.component.ts` - clicking a photo opens the lightbox at the correct index. Management actions (delete, set primary, reorder) call store methods which handle API calls and optimistic updates.
 
+5. **Task 5 (Dashboard Thumbnail)**: Added `[thumbnailUrl]="property.primaryPhotoThumbnailUrl"` binding to dashboard's property-row component. PropertyRowComponent and PropertySummaryDto already had the field - only the binding was missing.
+
+6. **Task 6 (Favorite Icon)**: Replaced the star primary-badge with a clickable favorite button:
+   - Shows on ALL photos (not just primary)
+   - Primary photo: filled pink heart (favorite icon)
+   - Non-primary: outline heart (favorite_border icon)
+   - Click on non-primary emits `setPrimaryClick`
+   - Styled with white circular background, pink fill when primary
+
+7. **Task 7 (Drag-and-Drop)**: Added CDK DragDrop for desktop photo reordering:
+   - `cdkDropList` on gallery grid
+   - `cdkDrag` on each photo card
+   - `onDrop()` handler emits reorderClick with new order
+   - Responsive: drag-drop on desktop (≥768px), move buttons on mobile (<768px)
+   - Drag preview with shadow, placeholder with dashed border
+
 ### File List
 
 **New Files:**
@@ -182,7 +236,12 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `frontend/src/app/features/properties/stores/property-photo.store.spec.ts` (321 lines)
 
 **Modified Files:**
-- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.ts` - Added context menu, reorder buttons, overlay styling, new outputs
-- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.spec.ts` - Added tests for management features (+10 tests)
+- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.ts` - Added context menu, reorder buttons, overlay styling, new outputs, favorite button, drag-and-drop
+- `frontend/src/app/features/properties/components/property-photo-gallery/property-photo-gallery.component.spec.ts` - Added tests for management features, favorite button, drag-and-drop (+15 tests total for refinements)
 - `frontend/src/app/features/properties/property-detail/property-detail.component.ts` - Added lightbox integration and management event handlers
+- `frontend/src/app/features/dashboard/dashboard.component.ts` - Added thumbnailUrl binding to property-row
+- `frontend/src/app/features/dashboard/dashboard.component.spec.ts` - Added test for thumbnail URL passing
+- `backend/src/PropertyManager.Api/Properties/launchSettings.json` - Fixed port 5293 → 5292
+- `frontend/proxy.conf.json` - Fixed port 5293 → 5292
+- `frontend/src/app/core/api/api.service.ts` - Fixed fallback port 5293 → 5292
 

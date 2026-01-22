@@ -93,7 +93,7 @@ export class ApiClient implements IApiClient {
 
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
-        this.baseUrl = baseUrl ?? "http://localhost:5293";
+        this.baseUrl = baseUrl ?? "http://localhost:5292";
     }
 
     auth_VerifyEmail(request: VerifyEmailRequest): Observable<void> {

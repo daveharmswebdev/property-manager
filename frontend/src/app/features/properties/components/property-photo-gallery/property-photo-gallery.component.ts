@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,6 +42,7 @@ export interface PropertyPhoto {
   standalone: true,
   imports: [
     CommonModule,
+    DragDropModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -87,21 +89,29 @@ export interface PropertyPhoto {
           </div>
         }
 
-        <!-- Photo Grid (AC-13.3b.2, AC-13.3b.5, AC-13.3b.6, AC-13.3c.4, AC-13.3c.5, AC-13.3c.6) -->
+        <!-- Photo Grid (AC-13.3b.2, AC-13.3b.5, AC-13.3b.6, AC-13.3c.4, AC-13.3c.5, AC-13.3c.6, AC-13.3c.15, AC-13.3c.16) -->
         @if (!isLoading() && photos().length > 0) {
-          <div class="gallery-grid">
+          <div class="gallery-grid" cdkDropList (cdkDropListDropped)="onDrop($event)">
             @for (photo of photos(); track photo.id; let i = $index; let first = $first; let last = $last) {
               <div
                 class="photo-card"
+                cdkDrag
+                [cdkDragDisabled]="photos().length <= 1"
                 [class.is-primary]="photo.isPrimary"
                 tabindex="0"
                 role="button"
                 [attr.aria-label]="'View ' + (photo.originalFileName || 'photo')">
-                @if (photo.isPrimary) {
-                  <div class="primary-badge" data-testid="primary-badge">
-                    <mat-icon>star</mat-icon>
-                  </div>
-                }
+                <!-- Drag Placeholder (AC-13.3c.15) -->
+                <div class="drag-placeholder" *cdkDragPlaceholder></div>
+                <!-- Favorite Button (AC-13.3c.13, AC-13.3c.14) -->
+                <button
+                  class="favorite-btn"
+                  [class.is-primary]="photo.isPrimary"
+                  (click)="onSetPrimary(photo, $event)"
+                  [attr.aria-label]="photo.isPrimary ? 'Primary photo' : 'Set as primary photo'"
+                  data-testid="favorite-btn">
+                  <mat-icon>{{ photo.isPrimary ? 'favorite' : 'favorite_border' }}</mat-icon>
+                </button>
 
                 <!-- Photo Image (clickable area) -->
                 <img
@@ -252,25 +262,38 @@ export interface PropertyPhoto {
       }
     }
 
-    .primary-badge {
+    /* Favorite Button (AC-13.3c.13, AC-13.3c.14) */
+    .favorite-btn {
       position: absolute;
       top: 8px;
       left: 8px;
-      background-color: var(--pm-primary);
-      color: white;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 2;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 
       mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #666;
+      }
+
+      &.is-primary mat-icon {
+        color: #e91e63;
+      }
+
+      &:hover {
+        background: white;
+        transform: scale(1.1);
       }
     }
 
@@ -393,6 +416,58 @@ export interface PropertyPhoto {
         margin-right: 8px;
       }
     }
+
+    /* Drag-and-Drop Styles (AC-13.3c.15) */
+    .photo-card {
+      cursor: grab;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+
+    .drag-placeholder {
+      aspect-ratio: 4 / 3;
+      background: var(--pm-surface-variant, #f5f5f5);
+      border: 2px dashed var(--pm-primary);
+      border-radius: 8px;
+    }
+
+    .cdk-drag-preview {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      opacity: 0.9;
+    }
+
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
+    }
+
+    .cdk-drop-list-dragging .photo-card:not(.cdk-drag-placeholder) {
+      transition: transform 200ms ease;
+    }
+
+    /* Responsive: Hide move buttons on desktop, show on mobile (AC-13.3c.16) */
+    @media (min-width: 768px) {
+      .reorder-buttons {
+        display: none;
+      }
+    }
+
+    /* Responsive: Disable drag on mobile, show move buttons (AC-13.3c.16) */
+    @media (max-width: 767px) {
+      .photo-card {
+        cursor: pointer;
+      }
+
+      .cdk-drop-list {
+        /* Disable drag on mobile - handled by cdkDragDisabled in template */
+      }
+
+      .reorder-buttons {
+        display: flex;
+      }
+    }
   `]
 })
 export class PropertyPhotoGalleryComponent {
@@ -443,6 +518,29 @@ export class PropertyPhotoGalleryComponent {
   onImageLoad(event: Event): void {
     const img = event.target as HTMLImageElement;
     img.classList.add('loaded');
+  }
+
+  /**
+   * Set photo as primary (AC-13.3c.14)
+   * Only emits if photo is not already primary
+   */
+  onSetPrimary(photo: PropertyPhoto, event: Event): void {
+    event.stopPropagation();
+    if (!photo.isPrimary) {
+      this.setPrimaryClick.emit(photo);
+    }
+  }
+
+  /**
+   * Handle drag-and-drop photo reordering (AC-13.3c.15)
+   */
+  onDrop(event: CdkDragDrop<PropertyPhoto[]>): void {
+    if (event.previousIndex !== event.currentIndex) {
+      const photos = [...this.photos()];
+      moveItemInArray(photos, event.previousIndex, event.currentIndex);
+      const newOrder = photos.map(p => p.id);
+      this.reorderClick.emit(newOrder);
+    }
   }
 
   /**
