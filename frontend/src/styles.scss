@@ -134,3 +134,18 @@ a {
     }
   }
 }
+
+// Property photo lightbox panel - fullscreen modal
+.fullscreen-dialog {
+  .mat-mdc-dialog-container {
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+
+    .mdc-dialog__surface {
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+    }
+  }
+}
