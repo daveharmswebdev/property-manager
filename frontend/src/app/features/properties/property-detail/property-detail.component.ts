@@ -15,6 +15,7 @@ import { PropertyPhotoStore } from '../stores/property-photo.store';
 import { YearSelectorService } from '../../../core/services/year-selector.service';
 import { PropertyPhotoGalleryComponent, PropertyPhoto } from '../components/property-photo-gallery/property-photo-gallery.component';
 import { PropertyPhotoUploadComponent } from '../components/property-photo-upload/property-photo-upload.component';
+import { PropertyWorkOrdersComponent } from '../components/property-work-orders/property-work-orders.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -56,6 +57,7 @@ import {
     DatePipe,
     PropertyPhotoGalleryComponent,
     PropertyPhotoUploadComponent,
+    PropertyWorkOrdersComponent,
   ],
   template: `
     <div class="property-detail-container">
@@ -238,6 +240,15 @@ import {
               </div>
             </div>
           }
+        </div>
+
+        <!-- Work Orders Section (Story 9-11) -->
+        <div class="work-orders-section">
+          <app-property-work-orders
+            [propertyId]="propertyStore.selectedProperty()!.id"
+            (createClick)="onCreateWorkOrder()"
+            (viewAllClick)="onViewAllWorkOrders()"
+          />
         </div>
 
         <!-- Recent Activity Section (AC-2.3.3) -->
@@ -606,6 +617,11 @@ import {
       margin-bottom: 24px;
     }
 
+    // Work Orders Section (Story 9-11)
+    .work-orders-section {
+      margin-bottom: 24px;
+    }
+
     // Upload Overlay
     .upload-overlay {
       position: fixed;
@@ -902,5 +918,29 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
    */
   onReorderPhotos(photoIds: string[]): void {
     this.photoStore.reorderPhotos(photoIds);
+  }
+
+  /**
+   * Navigate to create work order with pre-selected property (Story 9-11 AC #3)
+   */
+  onCreateWorkOrder(): void {
+    const property = this.propertyStore.selectedProperty();
+    if (property) {
+      this.router.navigate(['/work-orders/new'], {
+        queryParams: { propertyId: property.id },
+      });
+    }
+  }
+
+  /**
+   * Navigate to work orders dashboard filtered by this property (Story 9-11 AC #5)
+   */
+  onViewAllWorkOrders(): void {
+    const property = this.propertyStore.selectedProperty();
+    if (property) {
+      this.router.navigate(['/work-orders'], {
+        queryParams: { propertyId: property.id },
+      });
+    }
   }
 }
