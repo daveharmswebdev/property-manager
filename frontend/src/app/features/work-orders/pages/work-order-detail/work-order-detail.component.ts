@@ -6,7 +6,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -35,6 +38,7 @@ import { WorkOrderStore } from '../../stores/work-order.store';
     MatIconModule,
     MatProgressSpinnerModule,
     MatChipsModule,
+    MatDialogModule,
   ],
   template: `
     <div class="work-order-detail-page">
@@ -505,6 +509,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   protected readonly store = inject(WorkOrderStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
 
   protected workOrderId: string | null = null;
 
@@ -527,10 +532,24 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle delete button click (AC #3)
-   * Will be implemented in Story 9-10
+   * Handle delete button click (Story 9-9, AC #5, #6, #7)
+   * Opens confirmation dialog and deletes work order if confirmed.
    */
-  onDeleteClick(): void {
-    // TODO: Implement delete confirmation dialog in Story 9-10
+  async onDeleteClick(): Promise<void> {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete this work order?',
+        message: 'This will remove the work order. Linked expenses will be unlinked.',
+        confirmText: 'Delete',
+        icon: 'warning',
+        iconColor: 'warn',
+        confirmIcon: 'delete',
+      } as ConfirmDialogData,
+    });
+
+    const confirmed = await firstValueFrom(dialogRef.afterClosed());
+    if (confirmed && this.workOrderId) {
+      this.store.deleteWorkOrder(this.workOrderId);
+    }
   }
 }

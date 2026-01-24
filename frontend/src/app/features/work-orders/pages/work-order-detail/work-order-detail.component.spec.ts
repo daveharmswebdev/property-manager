@@ -27,8 +27,11 @@ describe('WorkOrderDetailComponent', () => {
     isLoadingDetail: WritableSignal<boolean>;
     detailError: WritableSignal<string | null>;
     selectedWorkOrder: WritableSignal<WorkOrderDto | null>;
+    isUpdating: WritableSignal<boolean>;
+    isDeleting: WritableSignal<boolean>;
     loadWorkOrderById: ReturnType<typeof vi.fn>;
     clearSelectedWorkOrder: ReturnType<typeof vi.fn>;
+    deleteWorkOrder: ReturnType<typeof vi.fn>;
   };
   let router: Router;
 
@@ -72,8 +75,11 @@ describe('WorkOrderDetailComponent', () => {
       isLoadingDetail: signal(false),
       detailError: signal<string | null>(null),
       selectedWorkOrder: signal<WorkOrderDto | null>(null),
+      isUpdating: signal(false),
+      isDeleting: signal(false),
       loadWorkOrderById: vi.fn(),
       clearSelectedWorkOrder: vi.fn(),
+      deleteWorkOrder: vi.fn(),
     };
 
     await TestBed.configureTestingModule({

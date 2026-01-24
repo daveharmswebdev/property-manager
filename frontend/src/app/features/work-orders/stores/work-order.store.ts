@@ -9,6 +9,7 @@ import {
   WorkOrderDto,
   WorkOrderTagDto,
   CreateWorkOrderRequest,
+  UpdateWorkOrderRequest,
 } from '../services/work-order.service';
 
 /**
@@ -43,6 +44,9 @@ interface WorkOrderState {
   selectedWorkOrder: WorkOrderDto | null;
   isLoadingDetail: boolean;
   detailError: string | null;
+  // Edit/Delete state (Story 9-9)
+  isUpdating: boolean;
+  isDeleting: boolean;
 }
 
 /**
@@ -62,6 +66,9 @@ const initialState: WorkOrderState = {
   selectedWorkOrder: null,
   isLoadingDetail: false,
   detailError: null,
+  // Edit/Delete initial state (Story 9-9)
+  isUpdating: false,
+  isDeleting: false,
 };
 
 /**
@@ -376,6 +383,124 @@ export const WorkOrderStore = signalStore(
           detailError: null,
         });
       },
+
+      /**
+       * Update an existing work order (Story 9-9, AC #3)
+       * On success:
+       * - Shows snackbar confirmation
+       * - Navigates to work order detail page
+       */
+      updateWorkOrder: rxMethod<{ id: string; data: UpdateWorkOrderRequest }>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isUpdating: true,
+              error: null,
+            })
+          ),
+          switchMap(({ id, data }) =>
+            workOrderService.updateWorkOrder(id, data).pipe(
+              tap(() => {
+                patchState(store, {
+                  isUpdating: false,
+                });
+
+                // Show success snackbar (AC #3)
+                snackBar.open('Work order updated', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+
+                // Navigate to work order detail page (AC #3)
+                router.navigate(['/work-orders', id]);
+              }),
+              catchError((error) => {
+                let errorMessage = 'Failed to update work order. Please try again.';
+                if (error.status === 400) {
+                  errorMessage = 'Invalid work order data. Please check your input.';
+                } else if (error.status === 404) {
+                  errorMessage = 'Work order, category, or vendor not found.';
+                }
+
+                patchState(store, {
+                  isUpdating: false,
+                  error: errorMessage,
+                });
+
+                // Show error snackbar
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+
+                console.error('Error updating work order:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Delete a work order (soft delete) (Story 9-9, AC #6)
+       * On success:
+       * - Shows snackbar confirmation
+       * - Navigates to work orders dashboard
+       * - Refreshes work orders list
+       */
+      deleteWorkOrder: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isDeleting: true,
+              error: null,
+            })
+          ),
+          switchMap((id) =>
+            workOrderService.deleteWorkOrder(id).pipe(
+              tap(() => {
+                patchState(store, {
+                  isDeleting: false,
+                  selectedWorkOrder: null,
+                });
+
+                // Show success snackbar (AC #6)
+                snackBar.open('Work order deleted', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+
+                // Navigate to work orders dashboard (AC #6)
+                router.navigate(['/work-orders']);
+              }),
+              catchError((error) => {
+                let errorMessage = 'Failed to delete work order. Please try again.';
+                if (error.status === 404) {
+                  errorMessage = 'Work order not found.';
+                }
+
+                patchState(store, {
+                  isDeleting: false,
+                  error: errorMessage,
+                });
+
+                // Show error snackbar
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+
+                console.error('Error deleting work order:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
     })
   )
 );

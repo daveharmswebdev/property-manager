@@ -203,7 +203,15 @@ export const routes: Routes = [
           import('./features/work-orders/pages/work-order-detail/work-order-detail.component').then(
             (m) => m.WorkOrderDetailComponent
           ),
-        // Placeholder detail page - full implementation in story 9-8
+      },
+      // Work Order Edit (Story 9-9, AC #1)
+      {
+        path: 'work-orders/:id/edit',
+        loadComponent: () =>
+          import('./features/work-orders/pages/work-order-edit/work-order-edit.component').then(
+            (m) => m.WorkOrderEditComponent
+          ),
+        canDeactivate: [unsavedChangesGuard],
       },
       // Default child redirect to dashboard
       {

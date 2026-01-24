@@ -21,6 +21,8 @@ describe('WorkOrderFormComponent', () => {
     isLoading: ReturnType<typeof signal<boolean>>;
     isLoadingTags: ReturnType<typeof signal<boolean>>;
     isSaving: ReturnType<typeof signal<boolean>>;
+    isUpdating: ReturnType<typeof signal<boolean>>;
+    isDeleting: ReturnType<typeof signal<boolean>>;
     error: ReturnType<typeof signal<string | null>>;
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasWorkOrders: ReturnType<typeof signal<boolean>>;
@@ -81,6 +83,8 @@ describe('WorkOrderFormComponent', () => {
       isLoading: signal(false),
       isLoadingTags: signal(false),
       isSaving: signal(false),
+      isUpdating: signal(false),
+      isDeleting: signal(false),
       error: signal<string | null>(null),
       isEmpty: signal(true),
       hasWorkOrders: signal(false),
@@ -181,12 +185,12 @@ describe('WorkOrderFormComponent', () => {
       expect(statusSelect).toBeTruthy();
     });
 
-    it('should have Save Work Order button', () => {
+    it('should have Create Work Order button', () => {
       const saveButton = fixture.debugElement.query(
         By.css('button[type="submit"]')
       );
       expect(saveButton).toBeTruthy();
-      expect(saveButton.nativeElement.textContent).toContain('Save Work Order');
+      expect(saveButton.nativeElement.textContent).toContain('Create Work Order');
     });
 
     it('should have Cancel button', () => {

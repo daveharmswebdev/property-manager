@@ -165,4 +165,13 @@ export class WorkOrderService {
   createWorkOrderTag(request: CreateWorkOrderTagRequest): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(this.tagsBaseUrl, request);
   }
+
+  /**
+   * Delete a work order (soft delete) (Story 9-9, AC #6)
+   * @param id Work order GUID
+   * @returns Observable that completes on success
+   */
+  deleteWorkOrder(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

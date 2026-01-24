@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -18,7 +18,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { PropertyService, PropertySummaryDto } from '../../../properties/services/property.service';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { WorkOrderStore } from '../../stores/work-order.store';
-import { WorkOrderStatus, WorkOrderTagDto } from '../../services/work-order.service';
+import { WorkOrderDto, WorkOrderStatus, WorkOrderTagDto, UpdateWorkOrderRequest } from '../../services/work-order.service';
 import { VendorStore } from '../../../vendors/stores/vendor.store';
 import {
   InlineVendorDialogComponent,
@@ -55,7 +55,7 @@ import {
   template: `
     <mat-card class="work-order-form-card">
       <mat-card-header>
-        <mat-card-title>New Work Order</mat-card-title>
+        <mat-card-title>{{ isEditMode() ? 'Edit Work Order' : 'New Work Order' }}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="work-order-form">
@@ -215,15 +215,16 @@ import {
               mat-raised-button
               color="primary"
               type="submit"
-              [disabled]="!form.valid || workOrderStore.isSaving()"
+              [disabled]="!form.valid || workOrderStore.isSaving() || workOrderStore.isUpdating()"
             >
-              @if (workOrderStore.isSaving()) {
+              @if (workOrderStore.isSaving() || workOrderStore.isUpdating()) {
                 <mat-spinner diameter="20" />
+              } @else if (isEditMode()) {
+                <mat-icon>save</mat-icon>
+                Save Changes
               } @else {
-                <ng-container>
-                  <mat-icon>add</mat-icon>
-                  Save Work Order
-                </ng-container>
+                <mat-icon>add</mat-icon>
+                Create Work Order
               }
             </button>
           </div>
@@ -312,6 +313,21 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
 
   // Input: Pre-selected property ID (when navigating from property page)
   preSelectedPropertyId = input<string | null>(null);
+
+  // Input: Work order for edit mode (Story 9-9, AC #2)
+  workOrder = input<WorkOrderDto | null>(null);
+
+  // Input: Mode - create or edit (Story 9-9, AC #2)
+  mode = input<'create' | 'edit'>('create');
+
+  // Output: Form submit event for edit mode (Story 9-9, AC #3)
+  formSubmit = output<UpdateWorkOrderRequest>();
+
+  // Output: Form cancel event (Story 9-9, AC #4)
+  formCancel = output<void>();
+
+  // Computed: Check if in edit mode
+  protected readonly isEditMode = computed(() => this.mode() === 'edit');
 
   // Local state
   protected readonly properties = signal<PropertySummaryDto[]>([]);
@@ -412,6 +428,23 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
 
     // Load vendors for assignment dropdown (Story 9-4 AC #6)
     this.vendorStore.loadVendors();
+
+    // Pre-populate form in edit mode (Story 9-9, AC #2)
+    const workOrderData = this.workOrder();
+    if (workOrderData && this.mode() === 'edit') {
+      this.form.patchValue({
+        propertyId: workOrderData.propertyId,
+        description: workOrderData.description,
+        categoryId: workOrderData.categoryId || null,
+        status: workOrderData.status,
+        vendorId: workOrderData.vendorId || null,
+      });
+
+      // Pre-populate tags
+      if (workOrderData.tags && workOrderData.tags.length > 0) {
+        this.selectedTags.set(workOrderData.tags);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -448,6 +481,19 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
     const { propertyId, description, categoryId, status, vendorId } = this.form.value;
     const tagIds = this.selectedTags().map((tag) => tag.id);
 
+    // Edit mode: emit update data (Story 9-9, AC #3)
+    if (this.isEditMode()) {
+      this.formSubmit.emit({
+        description: description.trim(),
+        categoryId: categoryId || undefined,
+        status,
+        vendorId: vendorId || undefined,
+        tagIds: tagIds.length > 0 ? tagIds : undefined,
+      });
+      return;
+    }
+
+    // Create mode: call store directly
     this.workOrderStore.createWorkOrder({
       propertyId,
       description: description.trim(),
@@ -459,6 +505,13 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
   }
 
   protected onCancel(): void {
+    // Edit mode: emit cancel event (Story 9-9, AC #4)
+    if (this.isEditMode()) {
+      this.formCancel.emit();
+      return;
+    }
+
+    // Create mode: navigate to list
     this.router.navigate(['/work-orders']);
   }
 
