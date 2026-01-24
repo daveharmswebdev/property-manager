@@ -1,6 +1,6 @@
 # Story 9.9: Edit and Delete Work Order
 
-Status: ready-for-review
+Status: done
 
 <!-- Combined Story: Merges original 9-9 (Edit) and 9-10 (Delete) per Scrum Master recommendation -->
 <!-- Rationale: Natural cohesion - both operate on existing work orders from detail page, shared infrastructure, Delete is lightweight -->

@@ -128,10 +128,10 @@ development_status:
   9-5-inline-vendor-creation: done
   9-6-work-order-dashboard: done
   9-7-filter-work-orders: done
-  9-8-work-order-detail-page: review
-  9-9-edit-work-order: backlog
-  9-10-delete-work-order: backlog
-  9-11-property-work-order-history: backlog
+  9-8-work-order-detail-page: done
+  9-9-edit-and-delete-work-order: done  # Combined 9-9 + 9-10 per SM recommendation
+  # 9-10-delete-work-order: merged into 9-9
+  9-11-property-work-order-history: done
   epic-9-retrospective: optional
 
   # Epic 10: Work Order Context
@@ -181,6 +181,6 @@ development_status:
   13-3-property-photo-gallery: in-progress   # GitHub Issue #100 - Property photos UI/Feature (split into 3a, 3b, 3c)
   13-3a-property-photo-backend: done         # Entity, API endpoints, unit tests - PR #107 merged
   13-3b-property-photo-gallery-upload: done   # Frontend gallery, upload, store - PR #109 merged
-  13-3c-property-photo-lightbox-management: review  # Lightbox + management + sprint refinements (Tasks 5-7) COMPLETE
-  13-4-photo-gallery-drag-drop-fix: review  # GitHub Issue #113 - Fix inconsistent drag-drop with cdkDropListOrientation="mixed"
+  13-3c-property-photo-lightbox-management: done  # Lightbox + management + sprint refinements (Tasks 5-7) COMPLETE
+  13-4-photo-gallery-drag-drop-fix: done  # GitHub Issue #113 - Fix inconsistent drag-drop with cdkDropListOrientation="mixed"
   epic-13-retrospective: optional

@@ -131,3 +131,4 @@ docker-compose.local.yml
 .cache/
 
 .playwright-mcp
+backend/CoverageReport
