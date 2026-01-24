@@ -52,11 +52,20 @@ public class GetAllWorkOrdersQueryHandler : IRequestHandler<GetAllWorkOrdersQuer
                 .ThenInclude(a => a.Tag)
             .AsQueryable();
 
-        // Apply optional status filter (case-insensitive)
-        if (!string.IsNullOrWhiteSpace(request.Status) &&
-            Enum.TryParse<WorkOrderStatus>(request.Status, ignoreCase: true, out var statusEnum))
+        // Apply optional status filter (supports comma-separated values, case-insensitive)
+        if (!string.IsNullOrWhiteSpace(request.Status))
         {
-            query = query.Where(w => w.Status == statusEnum);
+            var statusStrings = request.Status.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var validStatuses = statusStrings
+                .Select(s => Enum.TryParse<WorkOrderStatus>(s.Trim(), ignoreCase: true, out var status) ? status : (WorkOrderStatus?)null)
+                .Where(s => s.HasValue)
+                .Select(s => s!.Value)
+                .ToList();
+
+            if (validStatuses.Count > 0)
+            {
+                query = query.Where(w => validStatuses.Contains(w.Status));
+            }
         }
 
         // Apply optional property filter

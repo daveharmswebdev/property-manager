@@ -340,6 +340,232 @@ public class GetAllWorkOrdersHandlerTests
         result.Items.Should().HaveCount(2);
     }
 
+    #region Multi-Status Filter Tests (Story 9-7)
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_ReturnsMatchingStatuses()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported issue");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var assignedWorkOrder = CreateWorkOrder(_testAccountId, property, "Assigned task");
+        assignedWorkOrder.Status = WorkOrderStatus.Assigned;
+
+        var completedWorkOrder = CreateWorkOrder(_testAccountId, property, "Completed repair");
+        completedWorkOrder.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, assignedWorkOrder, completedWorkOrder });
+
+        // Filter for Reported AND Assigned (comma-separated)
+        var query = new GetAllWorkOrdersQuery(Status: "Reported,Assigned");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().Contain(w => w.Status == "Reported");
+        result.Items.Should().Contain(w => w.Status == "Assigned");
+        result.Items.Should().NotContain(w => w.Status == "Completed");
+    }
+
+    [Theory]
+    [InlineData("reported,assigned")]
+    [InlineData("REPORTED,ASSIGNED")]
+    [InlineData("Reported,Assigned")]
+    [InlineData("REPORTED,assigned")]
+    public async Task Handle_MultiStatusFilter_IsCaseInsensitive(string statusInput)
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var assignedWorkOrder = CreateWorkOrder(_testAccountId, property, "Assigned");
+        assignedWorkOrder.Status = WorkOrderStatus.Assigned;
+
+        var completedWorkOrder = CreateWorkOrder(_testAccountId, property, "Completed");
+        completedWorkOrder.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, assignedWorkOrder, completedWorkOrder });
+        var query = new GetAllWorkOrdersQuery(Status: statusInput);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_WithSpaces_ParsesCorrectly()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var assignedWorkOrder = CreateWorkOrder(_testAccountId, property, "Assigned");
+        assignedWorkOrder.Status = WorkOrderStatus.Assigned;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, assignedWorkOrder });
+
+        // Status with spaces around values
+        var query = new GetAllWorkOrdersQuery(Status: "Reported , Assigned");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_WithInvalidStatus_IgnoresInvalidAndUsesValid()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var completedWorkOrder = CreateWorkOrder(_testAccountId, property, "Completed");
+        completedWorkOrder.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, completedWorkOrder });
+
+        // Mix of valid and invalid status
+        var query = new GetAllWorkOrdersQuery(Status: "Reported,InvalidStatus,Bogus");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert - Should only filter by valid "Reported" status
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Status.Should().Be("Reported");
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_AllInvalid_ReturnsAllWorkOrders()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var workOrder1 = CreateWorkOrder(_testAccountId, property, "Work order 1");
+        var workOrder2 = CreateWorkOrder(_testAccountId, property, "Work order 2");
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { workOrder1, workOrder2 });
+
+        // All invalid statuses
+        var query = new GetAllWorkOrdersQuery(Status: "Invalid,Bogus,Fake");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert - All invalid, no filter applied
+        result.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_EmptyAfterSplit_ReturnsAllWorkOrders()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var workOrder1 = CreateWorkOrder(_testAccountId, property, "Work order 1");
+        var workOrder2 = CreateWorkOrder(_testAccountId, property, "Work order 2");
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { workOrder1, workOrder2 });
+
+        // Empty-ish string
+        var query = new GetAllWorkOrdersQuery(Status: ",,,");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_SingleStatus_StillWorks()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var reportedWorkOrder = CreateWorkOrder(_testAccountId, property, "Reported");
+        reportedWorkOrder.Status = WorkOrderStatus.Reported;
+
+        var completedWorkOrder = CreateWorkOrder(_testAccountId, property, "Completed");
+        completedWorkOrder.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedWorkOrder, completedWorkOrder });
+
+        // Single status (backward compatible)
+        var query = new GetAllWorkOrdersQuery(Status: "Reported");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Status.Should().Be("Reported");
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_WithPropertyFilter_CombinesWithAnd()
+    {
+        // Arrange
+        var property1 = CreateProperty(_testAccountId, "Property 1");
+        var property2 = CreateProperty(_testAccountId, "Property 2");
+
+        var reportedP1 = CreateWorkOrder(_testAccountId, property1, "Reported P1");
+        reportedP1.Status = WorkOrderStatus.Reported;
+
+        var assignedP1 = CreateWorkOrder(_testAccountId, property1, "Assigned P1");
+        assignedP1.Status = WorkOrderStatus.Assigned;
+
+        var reportedP2 = CreateWorkOrder(_testAccountId, property2, "Reported P2");
+        reportedP2.Status = WorkOrderStatus.Reported;
+
+        var completedP1 = CreateWorkOrder(_testAccountId, property1, "Completed P1");
+        completedP1.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { reportedP1, assignedP1, reportedP2, completedP1 });
+
+        // Filter: Property 1 AND (Reported OR Assigned)
+        var query = new GetAllWorkOrdersQuery(Status: "Reported,Assigned", PropertyId: property1.Id);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().OnlyContain(w => w.PropertyId == property1.Id);
+        result.Items.Should().OnlyContain(w => w.Status == "Reported" || w.Status == "Assigned");
+    }
+
+    [Fact]
+    public async Task Handle_MultiStatusFilter_NoMatches_ReturnsEmptyList()
+    {
+        // Arrange
+        var property = CreateProperty(_testAccountId, "Test Property");
+        var completedWorkOrder = CreateWorkOrder(_testAccountId, property, "Completed");
+        completedWorkOrder.Status = WorkOrderStatus.Completed;
+
+        SetupWorkOrdersDbSet(new List<WorkOrder> { completedWorkOrder });
+
+        // Filter for statuses that don't exist in data
+        var query = new GetAllWorkOrdersQuery(Status: "Reported,Assigned");
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().BeEmpty();
+        result.TotalCount.Should().Be(0);
+    }
+
+    #endregion
+
     private Property CreateProperty(Guid accountId, string name)
     {
         return new Property
