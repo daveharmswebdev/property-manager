@@ -18,7 +18,6 @@ public class WorkOrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<GetAllWorkOrdersQuery> _getAllValidator;
-    private readonly IValidator<GetWorkOrderQuery> _getOneValidator;
     private readonly IValidator<CreateWorkOrderCommand> _createValidator;
     private readonly IValidator<UpdateWorkOrderCommand> _updateValidator;
     private readonly ILogger<WorkOrdersController> _logger;
@@ -26,14 +25,12 @@ public class WorkOrdersController : ControllerBase
     public WorkOrdersController(
         IMediator mediator,
         IValidator<GetAllWorkOrdersQuery> getAllValidator,
-        IValidator<GetWorkOrderQuery> getOneValidator,
         IValidator<CreateWorkOrderCommand> createValidator,
         IValidator<UpdateWorkOrderCommand> updateValidator,
         ILogger<WorkOrdersController> logger)
     {
         _mediator = mediator;
         _getAllValidator = getAllValidator;
-        _getOneValidator = getOneValidator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _logger = logger;
@@ -137,15 +134,6 @@ public class WorkOrdersController : ControllerBase
     public async Task<IActionResult> GetWorkOrder(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetWorkOrderQuery(id);
-
-        var validationResult = await _getOneValidator.ValidateAsync(query, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return ValidationProblem(new ValidationProblemDetails(
-                validationResult.Errors.GroupBy(e => e.PropertyName)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
-        }
-
         var workOrder = await _mediator.Send(query, cancellationToken);
 
         _logger.LogInformation("Retrieved work order {WorkOrderId}", id);

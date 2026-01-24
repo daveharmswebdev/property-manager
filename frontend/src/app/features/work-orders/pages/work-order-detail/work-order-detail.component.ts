@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,7 +29,6 @@ import { WorkOrderStore } from '../../stores/work-order.store';
   standalone: true,
   imports: [
     CommonModule,
-    DatePipe,
     RouterLink,
     MatCardModule,
     MatButtonModule,
@@ -533,6 +532,5 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
    */
   onDeleteClick(): void {
     // TODO: Implement delete confirmation dialog in Story 9-10
-    console.log('Delete clicked for work order:', this.workOrderId);
   }
 }

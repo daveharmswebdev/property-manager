@@ -1,0 +1,392 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
+import { signal, WritableSignal } from '@angular/core';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
+import { WorkOrderDetailComponent } from './work-order-detail.component';
+import { WorkOrderStore } from '../../stores/work-order.store';
+import { WorkOrderDto } from '../../services/work-order.service';
+
+/**
+ * Unit tests for WorkOrderDetailComponent (Story 9-8)
+ *
+ * Test coverage:
+ * - AC #1: Navigation to detail page
+ * - AC #2: Work order detail display (status, property, description, category, vendor, tags, dates)
+ * - AC #3: Edit and Delete action buttons
+ * - AC #4: Placeholder sections for Photos, Notes, Expenses
+ * - AC #5: Back navigation
+ * - AC #6: 404 error handling
+ * - AC #7: Loading state
+ */
+describe('WorkOrderDetailComponent', () => {
+  let component: WorkOrderDetailComponent;
+  let fixture: ComponentFixture<WorkOrderDetailComponent>;
+  let mockWorkOrderStore: {
+    isLoadingDetail: WritableSignal<boolean>;
+    detailError: WritableSignal<string | null>;
+    selectedWorkOrder: WritableSignal<WorkOrderDto | null>;
+    loadWorkOrderById: ReturnType<typeof vi.fn>;
+    clearSelectedWorkOrder: ReturnType<typeof vi.fn>;
+  };
+  let router: Router;
+
+  const mockWorkOrder: WorkOrderDto = {
+    id: 'wo-123',
+    propertyId: 'prop-456',
+    propertyName: 'Test Property',
+    vendorId: 'vendor-789',
+    vendorName: 'John Plumber',
+    isDiy: false,
+    categoryId: 'cat-101',
+    categoryName: 'Plumbing',
+    status: 'Assigned',
+    description: 'Fix the leaky faucet in the kitchen',
+    createdAt: '2026-01-20T10:30:00Z',
+    createdByUserId: 'user-111',
+    tags: [
+      { id: 'tag-1', name: 'Urgent' },
+      { id: 'tag-2', name: 'Kitchen' },
+    ],
+  };
+
+  const mockDiyWorkOrder: WorkOrderDto = {
+    id: 'wo-456',
+    propertyId: 'prop-456',
+    propertyName: 'Test Property',
+    vendorId: undefined,
+    vendorName: undefined,
+    isDiy: true,
+    categoryId: undefined,
+    categoryName: undefined,
+    status: 'Reported',
+    description: 'DIY repair task',
+    createdAt: '2026-01-21T14:00:00Z',
+    createdByUserId: 'user-111',
+    tags: [],
+  };
+
+  beforeEach(async () => {
+    mockWorkOrderStore = {
+      isLoadingDetail: signal(false),
+      detailError: signal<string | null>(null),
+      selectedWorkOrder: signal<WorkOrderDto | null>(null),
+      loadWorkOrderById: vi.fn(),
+      clearSelectedWorkOrder: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [WorkOrderDetailComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideRouter([
+          { path: 'work-orders', component: WorkOrderDetailComponent },
+          { path: 'work-orders/:id', component: WorkOrderDetailComponent },
+          { path: 'work-orders/:id/edit', component: WorkOrderDetailComponent },
+          { path: 'properties/:id', component: WorkOrderDetailComponent },
+          { path: 'vendors/:id', component: WorkOrderDetailComponent },
+        ]),
+        { provide: WorkOrderStore, useValue: mockWorkOrderStore },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => 'wo-123',
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(WorkOrderDetailComponent);
+    component = fixture.componentInstance;
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+  });
+
+  /**
+   * Helper to set up component with loaded work order data
+   */
+  function setupWithWorkOrder(workOrder: WorkOrderDto = mockWorkOrder): void {
+    fixture.detectChanges(); // Triggers ngOnInit
+    mockWorkOrderStore.selectedWorkOrder.set(workOrder);
+    fixture.detectChanges();
+  }
+
+  describe('initialization (AC #1)', () => {
+    it('should create', () => {
+      expect(component).toBeTruthy();
+    });
+
+    it('should load work order on init', () => {
+      fixture.detectChanges();
+      expect(mockWorkOrderStore.loadWorkOrderById).toHaveBeenCalledWith('wo-123');
+    });
+
+    it('should clear selected work order on destroy', () => {
+      fixture.detectChanges();
+      component.ngOnDestroy();
+      expect(mockWorkOrderStore.clearSelectedWorkOrder).toHaveBeenCalled();
+    });
+  });
+
+  describe('loading state (AC #7)', () => {
+    it('should show spinner when loading', () => {
+      mockWorkOrderStore.isLoadingDetail.set(true);
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.querySelector('mat-spinner')).toBeTruthy();
+      expect(compiled.textContent).toContain('Loading work order...');
+    });
+
+    it('should hide content when loading', () => {
+      mockWorkOrderStore.isLoadingDetail.set(true);
+      fixture.detectChanges();
+
+      const header = fixture.nativeElement.querySelector('.work-order-header');
+      expect(header).toBeFalsy();
+    });
+  });
+
+  describe('error state (AC #6)', () => {
+    it('should show error message when detailError is set', () => {
+      mockWorkOrderStore.detailError.set('Work order not found');
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Work order not found');
+      expect(compiled.querySelector('.error-icon')).toBeTruthy();
+    });
+
+    it('should show back button in error state', () => {
+      mockWorkOrderStore.detailError.set('Work order not found');
+      fixture.detectChanges();
+
+      const backButton = fixture.nativeElement.querySelector('.error-card button');
+      expect(backButton).toBeTruthy();
+      expect(backButton.textContent).toContain('Back to Work Orders');
+    });
+
+    it('should navigate to work orders list when error back button clicked', () => {
+      mockWorkOrderStore.detailError.set('Work order not found');
+      fixture.detectChanges();
+
+      const backButton = fixture.debugElement.query(By.css('.error-card button'));
+      backButton.triggerEventHandler('click', null);
+      expect(router.navigate).toHaveBeenCalledWith(['/work-orders']);
+    });
+  });
+
+  describe('work order detail display (AC #2)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should display status badge with correct class', () => {
+      const badge = fixture.nativeElement.querySelector('.status-badge');
+      expect(badge).toBeTruthy();
+      expect(badge.textContent).toContain('Assigned');
+      expect(badge.classList.contains('status-assigned')).toBe(true);
+    });
+
+    it('should display property name as link', () => {
+      const propertyLink = fixture.nativeElement.querySelector('.property-link');
+      expect(propertyLink).toBeTruthy();
+      expect(propertyLink.textContent).toContain('Test Property');
+    });
+
+    it('should display full description', () => {
+      const description = fixture.nativeElement.querySelector('.description-text');
+      expect(description).toBeTruthy();
+      expect(description.textContent).toContain('Fix the leaky faucet in the kitchen');
+    });
+
+    it('should display category name', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Plumbing');
+    });
+
+    it('should display vendor name as link when assigned', () => {
+      const vendorLink = fixture.nativeElement.querySelector('.vendor-link');
+      expect(vendorLink).toBeTruthy();
+      expect(vendorLink.textContent).toContain('John Plumber');
+    });
+
+    it('should display tags as chips', () => {
+      const chips = fixture.nativeElement.querySelectorAll('mat-chip');
+      expect(chips.length).toBe(2);
+      expect(chips[0].textContent).toContain('Urgent');
+      expect(chips[1].textContent).toContain('Kitchen');
+    });
+
+    it('should display created date', () => {
+      const compiled = fixture.nativeElement;
+      // Check that the date is displayed (format may vary)
+      expect(compiled.textContent).toContain('Jan');
+      expect(compiled.textContent).toContain('2026');
+    });
+  });
+
+  describe('DIY work order display (AC #2)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder(mockDiyWorkOrder);
+    });
+
+    it('should display DIY label when isDiy is true', () => {
+      const diyLabel = fixture.nativeElement.querySelector('.diy-label');
+      expect(diyLabel).toBeTruthy();
+      expect(diyLabel.textContent).toContain('DIY (Self)');
+    });
+
+    it('should not show vendor link for DIY work order', () => {
+      const vendorLink = fixture.nativeElement.querySelector('.vendor-link');
+      expect(vendorLink).toBeFalsy();
+    });
+
+    it('should display "Not categorized" when no category', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Not categorized');
+    });
+
+    it('should display "No tags" when tags array is empty', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('No tags');
+    });
+
+    it('should display status badge with reported class', () => {
+      const badge = fixture.nativeElement.querySelector('.status-badge');
+      expect(badge.classList.contains('status-reported')).toBe(true);
+    });
+  });
+
+  describe('action buttons (AC #3)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should display edit button', () => {
+      const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button');
+      const editBtn = Array.from(buttons).find((b: any) => b.textContent.includes('Edit'));
+      expect(editBtn).toBeTruthy();
+    });
+
+    it('should display delete button', () => {
+      const deleteButton = fixture.debugElement.query(By.css('button[color="warn"]'));
+      expect(deleteButton).toBeTruthy();
+      expect(deleteButton.nativeElement.textContent).toContain('Delete');
+    });
+
+    it('should have both edit and delete buttons', () => {
+      const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button');
+      expect(buttons.length).toBe(2);
+
+      const buttonText = Array.from(buttons).map((b: any) => b.textContent);
+      expect(buttonText.some((t: string) => t.includes('Edit'))).toBe(true);
+      expect(buttonText.some((t: string) => t.includes('Delete'))).toBe(true);
+    });
+  });
+
+  describe('placeholder sections (AC #4)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should display Photos placeholder section', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Photos');
+      expect(compiled.textContent).toContain('No photos yet');
+    });
+
+    it('should display Notes placeholder section', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Notes');
+      expect(compiled.textContent).toContain('No notes yet');
+    });
+
+    it('should display Linked Expenses placeholder section', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Linked Expenses');
+      expect(compiled.textContent).toContain('No expenses linked');
+    });
+
+    it('should have placeholder sections with reduced opacity', () => {
+      const placeholderSections = fixture.nativeElement.querySelectorAll('.placeholder-section');
+      expect(placeholderSections.length).toBe(3);
+    });
+  });
+
+  describe('back navigation (AC #5)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should display back button in header', () => {
+      const backButton = fixture.debugElement.query(By.css('.back-button'));
+      expect(backButton).toBeTruthy();
+    });
+
+    it('should navigate to work orders list when back button clicked', () => {
+      const backButton = fixture.debugElement.query(By.css('.back-button'));
+      backButton.triggerEventHandler('click', null);
+      expect(router.navigate).toHaveBeenCalledWith(['/work-orders']);
+    });
+
+    it('should call goBack method', () => {
+      vi.spyOn(component, 'goBack');
+      const backButton = fixture.debugElement.query(By.css('.back-button'));
+      backButton.triggerEventHandler('click', null);
+      expect(component.goBack).toHaveBeenCalled();
+    });
+  });
+
+  describe('section cards', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should have Property section card', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Property');
+    });
+
+    it('should have Description section card', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Description');
+    });
+
+    it('should have Details section card', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Details');
+    });
+  });
+
+  describe('status badge colors', () => {
+    it('should have status-reported class for Reported status', () => {
+      const reportedWorkOrder = { ...mockWorkOrder, status: 'Reported' };
+      setupWithWorkOrder(reportedWorkOrder);
+
+      const badge = fixture.nativeElement.querySelector('.status-badge');
+      expect(badge.classList.contains('status-reported')).toBe(true);
+    });
+
+    it('should have status-assigned class for Assigned status', () => {
+      const assignedWorkOrder = { ...mockWorkOrder, status: 'Assigned' };
+      setupWithWorkOrder(assignedWorkOrder);
+
+      const badge = fixture.nativeElement.querySelector('.status-badge');
+      expect(badge.classList.contains('status-assigned')).toBe(true);
+    });
+
+    it('should have status-completed class for Completed status', () => {
+      const completedWorkOrder = { ...mockWorkOrder, status: 'Completed' };
+      setupWithWorkOrder(completedWorkOrder);
+
+      const badge = fixture.nativeElement.querySelector('.status-badge');
+      expect(badge.classList.contains('status-completed')).toBe(true);
+    });
+  });
+});
