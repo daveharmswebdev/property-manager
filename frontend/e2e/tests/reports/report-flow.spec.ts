@@ -300,8 +300,9 @@ test.describe('Batch Schedule E Report Generation', () => {
 
     // Deselect all and verify count changes
     await reportsPage.toggleAllButton.click();
-    const emptyButtonText = await reportsPage.getGenerateButtonText();
-    expect(emptyButtonText).toContain('Generate (0 Reports)');
+    // Use auto-retrying assertion to wait for UI to update after toggle
+    await expect(reportsPage.toggleAllButton).toContainText('Select All');
+    await expect(reportsPage.generateButton).toContainText('Generate (0 Reports)');
   });
 
   test('should allow year selection in batch dialog', async ({ page }) => {
