@@ -12,6 +12,21 @@ import {
 } from '../services/work-order.service';
 
 /**
+ * All available work order statuses
+ */
+const ALL_STATUSES = ['Reported', 'Assigned', 'Completed'];
+
+/**
+ * Helper to determine if filters are active
+ * Extracted to avoid duplication between computed signals
+ */
+function areFiltersActive(selectedStatuses: string[], selectedPropertyId: string | null): boolean {
+  const hasStatusFilter = selectedStatuses.length < ALL_STATUSES.length;
+  const hasPropertyFilter = selectedPropertyId !== null;
+  return hasStatusFilter || hasPropertyFilter;
+}
+
+/**
  * Work Order Store State Interface
  */
 interface WorkOrderState {
@@ -21,6 +36,9 @@ interface WorkOrderState {
   isLoadingTags: boolean;
   isSaving: boolean;
   error: string | null;
+  // Filter state (Story 9-7)
+  selectedStatuses: string[];
+  selectedPropertyId: string | null;
 }
 
 /**
@@ -33,6 +51,9 @@ const initialState: WorkOrderState = {
   isLoadingTags: false,
   isSaving: false,
   error: null,
+  // Filter initial state - all statuses selected, no property filter (Story 9-7)
+  selectedStatuses: [...ALL_STATUSES],
+  selectedPropertyId: null,
 };
 
 /**
@@ -53,7 +74,7 @@ export const WorkOrderStore = signalStore(
     hasWorkOrders: computed(() => !store.isLoading() && store.workOrders().length > 0),
 
     /**
-     * Whether the work order list is empty
+     * Whether the work order list is empty (no filters applied)
      */
     isEmpty: computed(() => !store.isLoading() && store.workOrders().length === 0),
 
@@ -61,6 +82,24 @@ export const WorkOrderStore = signalStore(
      * Total work order count
      */
     workOrderCount: computed(() => store.workOrders().length),
+
+    /**
+     * Whether any filters are currently active (Story 9-7, AC #5)
+     * Active when: fewer than all statuses selected OR a property is selected
+     */
+    hasActiveFilters: computed(() =>
+      areFiltersActive(store.selectedStatuses(), store.selectedPropertyId())
+    ),
+
+    /**
+     * Whether the list is empty due to filtering (Story 9-7, AC #7)
+     * True when: not loading, no work orders, and filters are active
+     */
+    isFilteredEmpty: computed(() =>
+      !store.isLoading() &&
+      store.workOrders().length === 0 &&
+      areFiltersActive(store.selectedStatuses(), store.selectedPropertyId())
+    ),
   })),
   withMethods(
     (
@@ -175,6 +214,44 @@ export const WorkOrderStore = signalStore(
        */
       reset(): void {
         patchState(store, initialState);
+      },
+
+      /**
+       * Set status filter and reload work orders (Story 9-7, AC #2)
+       * @param statuses Array of status strings to filter by
+       */
+      setStatusFilter(statuses: string[]): void {
+        // Prevent empty selection - require at least one status
+        if (statuses.length === 0) {
+          return;
+        }
+        patchState(store, { selectedStatuses: statuses });
+        // Build comma-separated status string, undefined if all selected
+        const statusParam = statuses.length < ALL_STATUSES.length ? statuses.join(',') : undefined;
+        this.loadWorkOrders({ status: statusParam, propertyId: store.selectedPropertyId() ?? undefined });
+      },
+
+      /**
+       * Set property filter and reload work orders (Story 9-7, AC #3)
+       * @param propertyId Property ID or null for all properties
+       */
+      setPropertyFilter(propertyId: string | null): void {
+        patchState(store, { selectedPropertyId: propertyId });
+        const statusParam = store.selectedStatuses().length < ALL_STATUSES.length
+          ? store.selectedStatuses().join(',')
+          : undefined;
+        this.loadWorkOrders({ status: statusParam, propertyId: propertyId ?? undefined });
+      },
+
+      /**
+       * Clear all filters and reload work orders (Story 9-7, AC #6)
+       */
+      clearFilters(): void {
+        patchState(store, {
+          selectedStatuses: [...ALL_STATUSES],
+          selectedPropertyId: null,
+        });
+        this.loadWorkOrders();
       },
 
       /**
