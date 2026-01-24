@@ -133,9 +133,12 @@ public class WorkOrdersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWorkOrder(Guid id, CancellationToken cancellationToken)
     {
-        // Placeholder for story 9-8: Get work order detail
-        // For now, return NotFound - will be implemented in future story
-        return NotFound();
+        var query = new GetWorkOrderQuery(id);
+        var workOrder = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Retrieved work order {WorkOrderId}", id);
+
+        return Ok(workOrder);
     }
 
     /// <summary>
