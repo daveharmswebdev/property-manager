@@ -77,6 +77,18 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<FakeStorageService>();
             services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<FakeStorageService>());
+
+            // Replace report storage service with a singleton fake for testing
+            var reportStorageServiceDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IReportStorageService));
+
+            if (reportStorageServiceDescriptor != null)
+            {
+                services.Remove(reportStorageServiceDescriptor);
+            }
+
+            services.AddSingleton<FakeReportStorageService>();
+            services.AddSingleton<IReportStorageService>(sp => sp.GetRequiredService<FakeReportStorageService>());
         });
 
         builder.UseEnvironment("Development"); // Use Development for detailed error messages in tests
@@ -195,5 +207,40 @@ public class FakeStorageService : IStorageService
     {
         DeletedKeys.Add(storageKey);
         return Task.CompletedTask;
+    }
+}
+
+public class FakeReportStorageService : IReportStorageService
+{
+    private readonly Dictionary<string, byte[]> _storage = new();
+    public List<string> SavedKeys { get; } = [];
+    public List<string> DeletedKeys { get; } = [];
+
+    public Task<string> SaveReportAsync(byte[] content, string storageKey, CancellationToken cancellationToken = default)
+    {
+        _storage[storageKey] = content;
+        SavedKeys.Add(storageKey);
+        return Task.FromResult(storageKey);
+    }
+
+    public Task<byte[]> GetReportAsync(string storageKey, CancellationToken cancellationToken = default)
+    {
+        if (_storage.TryGetValue(storageKey, out var content))
+        {
+            return Task.FromResult(content);
+        }
+        throw new InvalidOperationException($"Report not found: {storageKey}");
+    }
+
+    public Task DeleteReportAsync(string storageKey, CancellationToken cancellationToken = default)
+    {
+        _storage.Remove(storageKey);
+        DeletedKeys.Add(storageKey);
+        return Task.CompletedTask;
+    }
+
+    public string GenerateStorageKey(Guid accountId, int year, string filename)
+    {
+        return $"reports/{accountId}/{year}/{filename}";
     }
 }
