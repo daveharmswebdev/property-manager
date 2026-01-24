@@ -1,6 +1,6 @@
 # Story 9.8: Work Order Detail Page
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

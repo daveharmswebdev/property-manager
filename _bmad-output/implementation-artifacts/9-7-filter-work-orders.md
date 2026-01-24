@@ -1,6 +1,6 @@
 # Story 9.7: Filter Work Orders
 
-Status: review
+Status: done
 
 ## Story
 
