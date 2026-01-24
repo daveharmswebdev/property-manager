@@ -347,14 +347,15 @@ export class WorkOrdersComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.loadWorkOrders();
-    this.propertyStore.loadProperties(undefined); // Load properties for filter dropdown
+    // Load properties for filter dropdown (rxMethod requires argument, undefined = no page limit)
+    this.propertyStore.loadProperties(undefined);
   }
 
   /**
    * Handle status filter chip selection change (AC #2)
    */
   onStatusFilterChange(event: MatChipListboxChange): void {
-    const selectedStatuses = event.value as string[];
+    const selectedStatuses = (event.value as string[]) ?? [];
     this.store.setStatusFilter(selectedStatuses);
   }
 

@@ -17,6 +17,16 @@ import {
 const ALL_STATUSES = ['Reported', 'Assigned', 'Completed'];
 
 /**
+ * Helper to determine if filters are active
+ * Extracted to avoid duplication between computed signals
+ */
+function areFiltersActive(selectedStatuses: string[], selectedPropertyId: string | null): boolean {
+  const hasStatusFilter = selectedStatuses.length < ALL_STATUSES.length;
+  const hasPropertyFilter = selectedPropertyId !== null;
+  return hasStatusFilter || hasPropertyFilter;
+}
+
+/**
  * Work Order Store State Interface
  */
 interface WorkOrderState {
@@ -77,22 +87,19 @@ export const WorkOrderStore = signalStore(
      * Whether any filters are currently active (Story 9-7, AC #5)
      * Active when: fewer than all statuses selected OR a property is selected
      */
-    hasActiveFilters: computed(() => {
-      const hasStatusFilter = store.selectedStatuses().length < ALL_STATUSES.length;
-      const hasPropertyFilter = store.selectedPropertyId() !== null;
-      return hasStatusFilter || hasPropertyFilter;
-    }),
+    hasActiveFilters: computed(() =>
+      areFiltersActive(store.selectedStatuses(), store.selectedPropertyId())
+    ),
 
     /**
      * Whether the list is empty due to filtering (Story 9-7, AC #7)
      * True when: not loading, no work orders, and filters are active
      */
-    isFilteredEmpty: computed(() => {
-      const hasStatusFilter = store.selectedStatuses().length < ALL_STATUSES.length;
-      const hasPropertyFilter = store.selectedPropertyId() !== null;
-      const hasActiveFilters = hasStatusFilter || hasPropertyFilter;
-      return !store.isLoading() && store.workOrders().length === 0 && hasActiveFilters;
-    }),
+    isFilteredEmpty: computed(() =>
+      !store.isLoading() &&
+      store.workOrders().length === 0 &&
+      areFiltersActive(store.selectedStatuses(), store.selectedPropertyId())
+    ),
   })),
   withMethods(
     (
@@ -214,6 +221,10 @@ export const WorkOrderStore = signalStore(
        * @param statuses Array of status strings to filter by
        */
       setStatusFilter(statuses: string[]): void {
+        // Prevent empty selection - require at least one status
+        if (statuses.length === 0) {
+          return;
+        }
         patchState(store, { selectedStatuses: statuses });
         // Build comma-separated status string, undefined if all selected
         const statusParam = statuses.length < ALL_STATUSES.length ? statuses.join(',') : undefined;
