@@ -20,6 +20,7 @@ public class WorkOrdersController : ControllerBase
     private readonly IValidator<GetAllWorkOrdersQuery> _getAllValidator;
     private readonly IValidator<CreateWorkOrderCommand> _createValidator;
     private readonly IValidator<UpdateWorkOrderCommand> _updateValidator;
+    private readonly IValidator<DeleteWorkOrderCommand> _deleteValidator;
     private readonly ILogger<WorkOrdersController> _logger;
 
     public WorkOrdersController(
@@ -27,12 +28,14 @@ public class WorkOrdersController : ControllerBase
         IValidator<GetAllWorkOrdersQuery> getAllValidator,
         IValidator<CreateWorkOrderCommand> createValidator,
         IValidator<UpdateWorkOrderCommand> updateValidator,
+        IValidator<DeleteWorkOrderCommand> deleteValidator,
         ILogger<WorkOrdersController> logger)
     {
         _mediator = mediator;
         _getAllValidator = getAllValidator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _deleteValidator = deleteValidator;
         _logger = logger;
     }
 
@@ -181,6 +184,40 @@ public class WorkOrdersController : ControllerBase
         await _mediator.Send(command, cancellationToken);
 
         _logger.LogInformation("Work order updated: {WorkOrderId}", id);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete a work order (soft delete).
+    /// </summary>
+    /// <param name="id">Work order GUID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Work order deleted successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order not found</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteWorkOrder(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteWorkOrderCommand(id);
+
+        var validationResult = await _deleteValidator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Work order deleted: {WorkOrderId}", id);
 
         return NoContent();
     }
