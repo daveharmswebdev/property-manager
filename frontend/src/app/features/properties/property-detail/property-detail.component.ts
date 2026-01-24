@@ -926,7 +926,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   onCreateWorkOrder(): void {
     const property = this.propertyStore.selectedProperty();
     if (property) {
-      this.router.navigate(['/work-orders/create'], {
+      this.router.navigate(['/work-orders/new'], {
         queryParams: { propertyId: property.id },
       });
     }
