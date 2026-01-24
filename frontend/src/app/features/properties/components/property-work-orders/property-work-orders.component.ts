@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe, SlicePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -313,6 +314,7 @@ export class PropertyWorkOrdersComponent implements OnInit {
   readonly viewAllClick = output<void>();
 
   private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Maximum number of work orders to display */
   readonly displayLimit = 5;
@@ -340,18 +342,20 @@ export class PropertyWorkOrdersComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    this.workOrderService.getWorkOrdersByProperty(this.propertyId(), this.displayLimit).subscribe({
-      next: (response) => {
-        this.workOrders.set(response.items);
-        this.totalCount.set(response.totalCount);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.error.set('Failed to load work orders');
-        this.isLoading.set(false);
-        console.error('Error loading property work orders:', err);
-      },
-    });
+    this.workOrderService.getWorkOrdersByProperty(this.propertyId(), this.displayLimit)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.totalCount.set(response.totalCount);
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.error.set('Failed to load work orders');
+          this.isLoading.set(false);
+          console.error('Error loading property work orders:', err);
+        },
+      });
   }
 
   /**

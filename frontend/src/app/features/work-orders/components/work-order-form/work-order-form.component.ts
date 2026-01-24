@@ -78,7 +78,7 @@ import {
             @if (isPropertyLocked()) {
               <mat-hint>
                 <mat-icon class="lock-icon">lock</mat-icon>
-                Property is locked to this work order
+                Property pre-selected from property page
               </mat-hint>
             }
             @if (form.get('propertyId')?.hasError('required') && form.get('propertyId')?.touched) {
