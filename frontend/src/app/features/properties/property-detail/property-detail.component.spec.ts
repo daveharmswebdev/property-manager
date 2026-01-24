@@ -10,6 +10,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
+import { WorkOrderService } from '../../work-orders/services/work-order.service';
 
 describe('PropertyDetailComponent', () => {
   let component: PropertyDetailComponent;
@@ -34,6 +35,9 @@ describe('PropertyDetailComponent', () => {
     sortedPhotos: ReturnType<typeof signal>;
     loadPhotos: ReturnType<typeof vi.fn>;
     clear: ReturnType<typeof vi.fn>;
+  };
+  let mockWorkOrderService: {
+    getWorkOrdersByProperty: ReturnType<typeof vi.fn>;
   };
 
   const mockProperty: PropertyDetailDto = {
@@ -84,6 +88,10 @@ describe('PropertyDetailComponent', () => {
       clear: vi.fn(),
     };
 
+    mockWorkOrderService = {
+      getWorkOrdersByProperty: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+    };
+
     await TestBed.configureTestingModule({
       imports: [
         PropertyDetailComponent,
@@ -93,6 +101,7 @@ describe('PropertyDetailComponent', () => {
       providers: [
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: PropertyPhotoStore, useValue: mockPhotoStore },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
         { provide: Router, useValue: mockRouter },
         { provide: Location, useValue: mockLocation },
         { provide: PropertyService, useValue: mockPropertyService },
@@ -235,12 +244,17 @@ describe('PropertyDetailComponent', () => {
     });
 
     it('should show empty state for recent expenses', () => {
-      const emptyState = fixture.nativeElement.querySelector('.activity-card .empty-state');
-      expect(emptyState.textContent).toContain('No expenses yet');
+      // Get activity-section cards (excludes work-orders-section)
+      const activitySection = fixture.nativeElement.querySelector('.activity-section');
+      const activityCards = activitySection.querySelectorAll('.activity-card');
+      const expenseCard = activityCards[0];
+      expect(expenseCard.textContent).toContain('No expenses yet');
     });
 
     it('should show empty state for recent income', () => {
-      const activityCards = fixture.nativeElement.querySelectorAll('.activity-card');
+      // Get activity-section cards (excludes work-orders-section)
+      const activitySection = fixture.nativeElement.querySelector('.activity-section');
+      const activityCards = activitySection.querySelectorAll('.activity-card');
       const incomeCard = activityCards[1];
       expect(incomeCard.textContent).toContain('No income recorded yet');
     });

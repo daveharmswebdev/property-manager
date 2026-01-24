@@ -221,6 +221,34 @@ public class WorkOrdersController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Get work orders for a specific property (Story 9-11 AC #1, #5).
+    /// Used on property detail page to show maintenance history.
+    /// </summary>
+    /// <param name="propertyId">Property GUID</param>
+    /// <param name="limit">Optional limit for number of results (e.g., 5 for recent work orders)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of work orders for the property with total count</returns>
+    /// <response code="200">Returns the list of work orders for the property</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("/api/v1/properties/{propertyId:guid}/work-orders")]
+    [ProducesResponseType(typeof(GetWorkOrdersByPropertyResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetWorkOrdersByProperty(
+        Guid propertyId,
+        [FromQuery] int? limit,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetWorkOrdersByPropertyQuery(propertyId, limit);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation(
+            "Retrieved {Count} work orders (total: {Total}) for property {PropertyId}",
+            result.Items.Count, result.TotalCount, propertyId);
+
+        return Ok(result);
+    }
 }
 
 /// <summary>

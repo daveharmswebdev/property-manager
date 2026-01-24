@@ -59,7 +59,7 @@ import {
       </mat-card-header>
       <mat-card-content>
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="work-order-form">
-          <!-- Property Field (AC #6) -->
+          <!-- Property Field (AC #6, Story 9-11 AC #3) -->
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Property</mat-label>
             @if (isLoadingProperties()) {
@@ -67,13 +67,19 @@ import {
                 <mat-option>Loading...</mat-option>
               </mat-select>
             } @else {
-              <mat-select formControlName="propertyId">
+              <mat-select formControlName="propertyId" [disabled]="isPropertyLocked()">
                 @for (property of properties(); track property.id) {
                   <mat-option [value]="property.id">
                     {{ property.name }} - {{ property.city }}, {{ property.state }}
                   </mat-option>
                 }
               </mat-select>
+            }
+            @if (isPropertyLocked()) {
+              <mat-hint>
+                <mat-icon class="lock-icon">lock</mat-icon>
+                Property is locked to this work order
+              </mat-hint>
             }
             @if (form.get('propertyId')?.hasError('required') && form.get('propertyId')?.touched) {
               <mat-error>Property is required</mat-error>
@@ -298,6 +304,15 @@ import {
         vertical-align: middle;
         margin-right: 4px;
       }
+
+      .lock-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        vertical-align: middle;
+        margin-right: 4px;
+        color: var(--mdc-theme-text-secondary-on-background, rgba(0, 0, 0, 0.6));
+      }
     `,
   ],
 })
@@ -328,6 +343,12 @@ export class WorkOrderFormComponent implements OnInit, OnDestroy {
 
   // Computed: Check if in edit mode
   protected readonly isEditMode = computed(() => this.mode() === 'edit');
+
+  // Computed: Check if property is locked (pre-selected from property page) (Story 9-11 AC #3)
+  protected readonly isPropertyLocked = computed(() => {
+    const preSelected = this.preSelectedPropertyId();
+    return preSelected !== null && preSelected !== undefined && preSelected !== '';
+  });
 
   // Local state
   protected readonly properties = signal<PropertySummaryDto[]>([]);

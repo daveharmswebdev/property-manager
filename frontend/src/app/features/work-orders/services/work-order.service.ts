@@ -83,6 +83,14 @@ export interface GetAllWorkOrdersResponse {
 }
 
 /**
+ * Response model for get work orders by property (Story 9-11)
+ */
+export interface GetWorkOrdersByPropertyResponse {
+  items: WorkOrderDto[];
+  totalCount: number;
+}
+
+/**
  * Work Order Status enum values
  */
 export const WorkOrderStatus = {
@@ -173,5 +181,23 @@ export class WorkOrderService {
    */
   deleteWorkOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Get work orders for a specific property (Story 9-11 AC #1, #5)
+   * Used on property detail page to show maintenance history.
+   * @param propertyId Property GUID
+   * @param limit Optional limit for number of results (e.g., 5 for recent work orders)
+   * @returns Observable with list of work orders for the property with total count
+   */
+  getWorkOrdersByProperty(propertyId: string, limit?: number): Observable<GetWorkOrdersByPropertyResponse> {
+    const params: Record<string, string> = {};
+    if (limit !== undefined) {
+      params['limit'] = limit.toString();
+    }
+    return this.http.get<GetWorkOrdersByPropertyResponse>(
+      `/api/v1/properties/${propertyId}/work-orders`,
+      { params }
+    );
   }
 }
