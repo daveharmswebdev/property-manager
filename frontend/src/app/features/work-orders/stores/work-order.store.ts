@@ -39,6 +39,10 @@ interface WorkOrderState {
   // Filter state (Story 9-7)
   selectedStatuses: string[];
   selectedPropertyId: string | null;
+  // Detail view state (Story 9-8)
+  selectedWorkOrder: WorkOrderDto | null;
+  isLoadingDetail: boolean;
+  detailError: string | null;
 }
 
 /**
@@ -54,6 +58,10 @@ const initialState: WorkOrderState = {
   // Filter initial state - all statuses selected, no property filter (Story 9-7)
   selectedStatuses: [...ALL_STATUSES],
   selectedPropertyId: null,
+  // Detail view initial state (Story 9-8)
+  selectedWorkOrder: null,
+  isLoadingDetail: false,
+  detailError: null,
 };
 
 /**
@@ -100,6 +108,11 @@ export const WorkOrderStore = signalStore(
       store.workOrders().length === 0 &&
       areFiltersActive(store.selectedStatuses(), store.selectedPropertyId())
     ),
+
+    /**
+     * Whether a work order is selected for detail view (Story 9-8, AC #2)
+     */
+    hasSelectedWorkOrder: computed(() => store.selectedWorkOrder() !== null),
   })),
   withMethods(
     (
@@ -314,6 +327,54 @@ export const WorkOrderStore = signalStore(
           }
           return null;
         }
+      },
+
+      /**
+       * Load a single work order by ID (Story 9-8, AC #1, #2, #7)
+       * @param id Work order GUID
+       */
+      loadWorkOrderById: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isLoadingDetail: true,
+              detailError: null,
+              selectedWorkOrder: null,
+            })
+          ),
+          switchMap((id) =>
+            workOrderService.getWorkOrder(id).pipe(
+              tap((workOrder) =>
+                patchState(store, {
+                  selectedWorkOrder: workOrder,
+                  isLoadingDetail: false,
+                })
+              ),
+              catchError((error) => {
+                const errorMessage =
+                  error.status === 404
+                    ? 'Work order not found'
+                    : 'Failed to load work order. Please try again.';
+                patchState(store, {
+                  isLoadingDetail: false,
+                  detailError: errorMessage,
+                });
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Clear the selected work order (Story 9-8)
+       * Used when leaving detail view to clean up state
+       */
+      clearSelectedWorkOrder(): void {
+        patchState(store, {
+          selectedWorkOrder: null,
+          detailError: null,
+        });
       },
     })
   )

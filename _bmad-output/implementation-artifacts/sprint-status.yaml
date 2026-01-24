@@ -127,8 +127,8 @@ development_status:
   9-4-assign-work-order-vendor-or-diy: done
   9-5-inline-vendor-creation: done
   9-6-work-order-dashboard: done
-  9-7-filter-work-orders: review
-  9-8-work-order-detail-page: backlog
+  9-7-filter-work-orders: done
+  9-8-work-order-detail-page: review
   9-9-edit-work-order: backlog
   9-10-delete-work-order: backlog
   9-11-property-work-order-history: backlog
