@@ -1,34 +1,30 @@
 # Test Coverage Gap Work - Handoff Document
 
 ## Status
-- **Branch:** `chore/test-coverage-gaps-2`
-- **Current coverage:** 92.1% line, 263 API integration tests
-- **Total tests:** 1,121 (773 Application + 85 Infrastructure + 263 API)
+- **Branch:** `main` (working on test coverage)
+- **Current coverage:** 92%+ line, 385 API integration tests
+- **Total tests:** 1,243 (773 Application + 85 Infrastructure + 385 API)
 
 ## Completed
-| Task | Controller | Coverage |
-|------|------------|----------|
-| #1 | WorkOrdersController | 0% → 95.6% |
-| #2 | WorkOrderTagsController | 0% → 84.4% |
-| #3 | ReportsController | 0% → 93.3% |
+| Task | Controller | Coverage | Tests Added |
+|------|------------|----------|-------------|
+| #1 | WorkOrdersController | 0% → 95.6% | PR #121 |
+| #2 | WorkOrderTagsController | 0% → 84.4% | PR #121 |
+| #3 | ReportsController | 0% → 93.3% | PR #122 |
+| #4 | PhotosController | 0% → ~95% | 36 tests |
+| #5 | PropertyPhotosController | 0% → ~90% | 30 tests |
+| #6 | IncomeController | 37% → ~90% | 38 tests (CRUD) |
+| #7 | VendorTradeTagsController | 0% → ~95% | 18 tests |
 
 ## Remaining Tasks (Priority Order)
 
-### High Priority
+### High Priority (Frontend)
 | Task | Target | Current | Location |
 |------|--------|---------|----------|
 | #9 | work-order.store.ts | 13% | `frontend/src/app/features/work-orders/store/work-order.store.ts` |
 | #10 | auth.service.ts | 20% | `frontend/src/app/core/auth/auth.service.ts` |
 
-### Medium Priority
-| Task | Target | Current | Location |
-|------|--------|---------|----------|
-| #4 | PhotosController | 0% | `backend/src/PropertyManager.Api/Controllers/PhotosController.cs` |
-| #5 | PropertyPhotosController | 0% | `backend/src/PropertyManager.Api/Controllers/PropertyPhotosController.cs` |
-| #6 | IncomeController | 37% | `backend/src/PropertyManager.Api/Controllers/IncomeController.cs` |
-| #7 | VendorTradeTagsController | 0% | `backend/src/PropertyManager.Api/Controllers/VendorTradeTagsController.cs` |
-
-### Low Priority
+### Low Priority (Backend)
 | Task | Target | Current |
 |------|--------|---------|
 | #8 | InvitationsController | 0% |
