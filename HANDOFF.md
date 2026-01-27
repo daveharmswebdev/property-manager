@@ -1,10 +1,10 @@
 # Test Coverage Gap Work - Handoff Document
 
 ## Status
-- **Branch:** `test/frontend-core-services`
+- **Branch:** `main`
 - **Backend:** ✅ **COMPLETE** - 15/15 controllers tested, 407 API integration tests
-- **Frontend:** 63 test files, 1502 tests
-- **Progress:** P0 ✅ + P1 ✅ (Core Services + Feature Stores complete)
+- **Frontend:** 71 test files, 1654 tests
+- **Progress:** P0 ✅ + P1 ✅ + P2 ✅ + P3 ✅ (Core Services + Feature Stores + Feature Services + Auth Components complete)
 
 ---
 
@@ -44,24 +44,28 @@ State management stores - high business logic concentration:
 | **P1** | expense-list.store.ts | `frontend/src/app/features/expenses/stores/` | ✅ 54 tests |
 | **P1** | income.store.ts | `frontend/src/app/features/income/stores/` | ✅ 56 tests |
 
-### Medium: Feature Services (No Tests)
+### Medium: Feature Services
 API integration services:
 
-| Priority | File | Location |
-|----------|------|----------|
-| **P2** | work-order.service.ts | `frontend/src/app/features/work-orders/services/` |
-| **P2** | expense.service.ts | `frontend/src/app/features/expenses/services/` |
-| **P2** | income.service.ts | `frontend/src/app/features/income/services/` |
-| **P2** | property.service.ts | `frontend/src/app/features/properties/services/` |
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P2** | work-order.service.ts | `frontend/src/app/features/work-orders/services/` | ✅ 16 tests |
+| **P2** | expense.service.ts | `frontend/src/app/features/expenses/services/` | ✅ 20 tests |
+| **P2** | income.service.ts | `frontend/src/app/features/income/services/` | ✅ 15 tests |
+| **P2** | property.service.ts | `frontend/src/app/features/properties/services/` | ✅ 12 tests |
+
+### P3: Auth Components
+User-facing critical path components:
+
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P3** | login.component.ts | `frontend/src/app/features/auth/login/` | ✅ 16 tests |
+| **P3** | forgot-password.component.ts | `frontend/src/app/features/auth/forgot-password/` | ✅ 13 tests |
+| **P3** | reset-password.component.ts | `frontend/src/app/features/auth/reset-password/` | ✅ 27 tests |
+| **P3** | accept-invitation.component.ts | `frontend/src/app/features/auth/accept-invitation/` | ✅ 33 tests |
 
 ### Lower: Components (No Tests)
-23 components without test files:
-
-**Auth (4 components)**
-- `login.component.ts`
-- `forgot-password.component.ts`
-- `reset-password.component.ts`
-- `accept-invitation.component.ts`
+19 components without test files:
 
 **Work Orders (2 components)**
 - `work-order-create.component.ts`
@@ -94,11 +98,11 @@ API integration services:
 
 ## Recommended Order
 
-1. **P0 - Core Services** (~2 files, critical foundation)
-2. **P1 - Feature Stores** (~3 files, high business logic)
-3. **P2 - Feature Services** (~4 files, API integration)
-4. **P3 - Auth Components** (~4 files, user-facing critical path)
-5. **P4 - Remaining Components** (~19 files)
+1. ~~**P0 - Core Services** (~2 files, critical foundation)~~ ✅ PR #126
+2. ~~**P1 - Feature Stores** (~3 files, high business logic)~~ ✅ PR #126
+3. ~~**P2 - Feature Services** (~4 files, API integration)~~ ✅ PR #127
+4. ~~**P3 - Auth Components** (~4 files, user-facing critical path)~~ ✅ PR #128
+5. **P4 - Remaining Components** (~19 files) ← Next
 
 ---
 
