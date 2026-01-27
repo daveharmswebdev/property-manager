@@ -1,10 +1,10 @@
 # Test Coverage Gap Work - Handoff Document
 
 ## Status
-- **Branch:** `main` (working on test coverage)
+- **Branch:** `test/frontend-core-services`
 - **Backend:** ✅ **COMPLETE** - 15/15 controllers tested, 407 API integration tests
-- **Frontend:** 59 test files exist, gaps identified below
-- **Total tests:** 1,265 (773 Application + 85 Infrastructure + 407 API)
+- **Frontend:** 63 test files, 1502 tests
+- **Progress:** P0 ✅ + P1 ✅ (Core Services + Feature Stores complete)
 
 ---
 
@@ -27,22 +27,22 @@ All 15 backend API controllers have integration tests:
 
 ## Frontend - REMAINING GAPS
 
-### Critical: Core Services (No Tests)
+### Critical: Core Services
 These are foundational services used across the app:
 
-| Priority | File | Location |
-|----------|------|----------|
-| **P0** | auth.service.ts | `frontend/src/app/core/services/` |
-| **P0** | api.service.ts | `frontend/src/app/core/api/` |
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P0** | auth.service.ts | `frontend/src/app/core/services/` | ✅ 47 tests |
+| **P0** | api.service.ts | `frontend/src/app/core/api/` | N/A (NSwag generated) |
 
-### High: Feature Stores (No Tests)
+### High: Feature Stores
 State management stores - high business logic concentration:
 
-| Priority | File | Location |
-|----------|------|----------|
-| **P1** | work-order.store.ts | `frontend/src/app/features/work-orders/stores/` |
-| **P1** | expense-list.store.ts | `frontend/src/app/features/expenses/stores/` |
-| **P1** | income.store.ts | `frontend/src/app/features/income/stores/` |
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P1** | work-order.store.ts | `frontend/src/app/features/work-orders/stores/` | ✅ 59 tests |
+| **P1** | expense-list.store.ts | `frontend/src/app/features/expenses/stores/` | ✅ 54 tests |
+| **P1** | income.store.ts | `frontend/src/app/features/income/stores/` | ✅ 56 tests |
 
 ### Medium: Feature Services (No Tests)
 API integration services:
