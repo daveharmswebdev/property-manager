@@ -1,10 +1,10 @@
 # Test Coverage Gap Work - Handoff Document
 
 ## Status
-- **Branch:** `main` (working on test coverage)
+- **Branch:** `test/frontend-core-services`
 - **Backend:** ✅ **COMPLETE** - 15/15 controllers tested, 407 API integration tests
-- **Frontend:** 59 test files exist, gaps identified below
-- **Total tests:** 1,265 (773 Application + 85 Infrastructure + 407 API)
+- **Frontend:** 60 test files, 1333 tests
+- **Total tests:** 1,312 (773 Application + 85 Infrastructure + 407 API + 47 Frontend)
 
 ---
 
@@ -27,13 +27,13 @@ All 15 backend API controllers have integration tests:
 
 ## Frontend - REMAINING GAPS
 
-### Critical: Core Services (No Tests)
+### Critical: Core Services
 These are foundational services used across the app:
 
-| Priority | File | Location |
-|----------|------|----------|
-| **P0** | auth.service.ts | `frontend/src/app/core/services/` |
-| **P0** | api.service.ts | `frontend/src/app/core/api/` |
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P0** | auth.service.ts | `frontend/src/app/core/services/` | ✅ 47 tests |
+| **P0** | api.service.ts | `frontend/src/app/core/api/` | N/A (NSwag generated) |
 
 ### High: Feature Stores (No Tests)
 State management stores - high business logic concentration:
