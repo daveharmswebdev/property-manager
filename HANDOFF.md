@@ -2,8 +2,8 @@
 
 ## Status
 - **Branch:** `main` (working on test coverage)
-- **Current coverage:** 92%+ line, 385 API integration tests
-- **Total tests:** 1,243 (773 Application + 85 Infrastructure + 385 API)
+- **Current coverage:** 92%+ line, 407 API integration tests
+- **Total tests:** 1,265 (773 Application + 85 Infrastructure + 407 API)
 
 ## Completed
 | Task | Controller | Coverage | Tests Added |
@@ -15,6 +15,7 @@
 | #5 | PropertyPhotosController | 0% → ~90% | 30 tests (PR #124) |
 | #6 | IncomeController | 37% → ~90% | 38 tests (PR #124) |
 | #7 | VendorTradeTagsController | 0% → ~95% | 18 tests (PR #124) |
+| #8 | InvitationsController | 0% → ~95% | 22 tests |
 
 ## Backend API Controllers Status
 
@@ -25,7 +26,7 @@
 | ExpensesController | ✅ | Covered (3 test files) |
 | HealthController | ✅ | Covered |
 | IncomeController | ✅ | Covered (2 test files) |
-| **InvitationsController** | ❌ | **0% - NO TESTS** |
+| InvitationsController | ✅ | Covered |
 | PhotosController | ✅ | Covered |
 | PropertiesController | ✅ | Covered |
 | PropertyPhotosController | ✅ | Covered |
@@ -36,19 +37,12 @@
 | WorkOrderTagsController | ✅ | Covered |
 | WorkOrdersController | ✅ | Covered |
 
-**Backend Summary:** 14/15 controllers have tests.
+**Backend Summary:** 15/15 controllers have tests. ✅ **COMPLETE**
 
 ## Remaining Tasks (Priority Order)
 
-### Backend (1 controller remaining)
-| Task | Target | Current | Endpoints |
-|------|--------|---------|-----------|
-| #8 | InvitationsController | 0% | 3 endpoints (~20 tests needed) |
-
-Endpoints to test:
-- `POST /api/v1/invitations` - Create invitation (requires Owner role)
-- `GET /api/v1/invitations/{code}/validate` - Validate invitation code
-- `POST /api/v1/invitations/{code}/accept` - Accept invitation and create account
+### Backend
+**All 15 backend controllers have tests - Backend coverage complete!**
 
 ### Frontend - High Priority (Core Services/Stores)
 | Task | Target | Location |
