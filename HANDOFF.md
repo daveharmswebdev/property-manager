@@ -1,37 +1,81 @@
 # Test Coverage Gap Work - Handoff Document
 
 ## Status
-- **Branch:** `chore/test-coverage-gaps-2`
-- **Current coverage:** 92.1% line, 263 API integration tests
-- **Total tests:** 1,121 (773 Application + 85 Infrastructure + 263 API)
+- **Branch:** `main` (working on test coverage)
+- **Current coverage:** 92%+ line, 385 API integration tests
+- **Total tests:** 1,243 (773 Application + 85 Infrastructure + 385 API)
 
 ## Completed
-| Task | Controller | Coverage |
-|------|------------|----------|
-| #1 | WorkOrdersController | 0% → 95.6% |
-| #2 | WorkOrderTagsController | 0% → 84.4% |
-| #3 | ReportsController | 0% → 93.3% |
+| Task | Controller | Coverage | Tests Added |
+|------|------------|----------|-------------|
+| #1 | WorkOrdersController | 0% → 95.6% | PR #121 |
+| #2 | WorkOrderTagsController | 0% → 84.4% | PR #121 |
+| #3 | ReportsController | 0% → 93.3% | PR #122 |
+| #4 | PhotosController | 0% → ~95% | 36 tests (PR #124) |
+| #5 | PropertyPhotosController | 0% → ~90% | 30 tests (PR #124) |
+| #6 | IncomeController | 37% → ~90% | 38 tests (PR #124) |
+| #7 | VendorTradeTagsController | 0% → ~95% | 18 tests (PR #124) |
+
+## Backend API Controllers Status
+
+| Controller | Tests | Status |
+|------------|-------|--------|
+| AuthController | ✅ | Covered |
+| DashboardController | ✅ | Covered |
+| ExpensesController | ✅ | Covered (3 test files) |
+| HealthController | ✅ | Covered |
+| IncomeController | ✅ | Covered (2 test files) |
+| **InvitationsController** | ❌ | **0% - NO TESTS** |
+| PhotosController | ✅ | Covered |
+| PropertiesController | ✅ | Covered |
+| PropertyPhotosController | ✅ | Covered |
+| ReceiptsController | ✅ | Covered |
+| ReportsController | ✅ | Covered |
+| VendorTradeTagsController | ✅ | Covered |
+| VendorsController | ✅ | Covered (2 test files) |
+| WorkOrderTagsController | ✅ | Covered |
+| WorkOrdersController | ✅ | Covered |
+
+**Backend Summary:** 14/15 controllers have tests.
 
 ## Remaining Tasks (Priority Order)
 
-### High Priority
-| Task | Target | Current | Location |
-|------|--------|---------|----------|
-| #9 | work-order.store.ts | 13% | `frontend/src/app/features/work-orders/store/work-order.store.ts` |
-| #10 | auth.service.ts | 20% | `frontend/src/app/core/auth/auth.service.ts` |
+### Backend (1 controller remaining)
+| Task | Target | Current | Endpoints |
+|------|--------|---------|-----------|
+| #8 | InvitationsController | 0% | 3 endpoints (~20 tests needed) |
 
-### Medium Priority
-| Task | Target | Current | Location |
-|------|--------|---------|----------|
-| #4 | PhotosController | 0% | `backend/src/PropertyManager.Api/Controllers/PhotosController.cs` |
-| #5 | PropertyPhotosController | 0% | `backend/src/PropertyManager.Api/Controllers/PropertyPhotosController.cs` |
-| #6 | IncomeController | 37% | `backend/src/PropertyManager.Api/Controllers/IncomeController.cs` |
-| #7 | VendorTradeTagsController | 0% | `backend/src/PropertyManager.Api/Controllers/VendorTradeTagsController.cs` |
+Endpoints to test:
+- `POST /api/v1/invitations` - Create invitation (requires Owner role)
+- `GET /api/v1/invitations/{code}/validate` - Validate invitation code
+- `POST /api/v1/invitations/{code}/accept` - Accept invitation and create account
 
-### Low Priority
-| Task | Target | Current |
-|------|--------|---------|
-| #8 | InvitationsController | 0% |
+### Frontend - High Priority (Core Services/Stores)
+| Task | Target | Location |
+|------|--------|----------|
+| #9 | auth.service.ts | `frontend/src/app/core/services/auth.service.ts` |
+| #10 | api.service.ts | `frontend/src/app/core/api/api.service.ts` |
+| #11 | work-order.store.ts | `frontend/src/app/features/work-orders/stores/work-order.store.ts` |
+| #12 | expense-list.store.ts | `frontend/src/app/features/expenses/stores/expense-list.store.ts` |
+| #13 | income.store.ts | `frontend/src/app/features/income/stores/income.store.ts` |
+
+### Frontend - Medium Priority (Feature Services)
+| Target | Location |
+|--------|----------|
+| work-order.service.ts | `frontend/src/app/features/work-orders/services/` |
+| expense.service.ts | `frontend/src/app/features/expenses/services/` |
+| income.service.ts | `frontend/src/app/features/income/services/` |
+| property.service.ts | `frontend/src/app/features/properties/services/` |
+
+### Frontend - Lower Priority (Components without tests)
+- **Auth:** login, forgot-password, reset-password, accept-invitation
+- **Work Orders:** work-order-create, work-order-edit
+- **Expenses:** expense-workspace, expense-form, expense-filters, category-select
+- **Income:** income, income-workspace, income-form, income-row
+- **Properties:** properties
+- **Reports:** pdf-preview
+- **Shared:** not-found, empty-state, loading-spinner
+- **Settings:** settings
 
 ## Testing Pattern (Backend)
 
@@ -59,6 +103,7 @@ Test scenarios to cover:
 - Not found → 404
 - Multi-tenant isolation (user can't access other user's data)
 - Duplicate detection → 409 (where applicable)
+- Role-based access → 403 (where applicable)
 
 ## Commands
 
@@ -72,19 +117,20 @@ dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
 # Generate coverage report
 reportgenerator -reports:"TestResults/*/coverage.cobertura.xml" -targetdir:"./CoverageReport" -reporttypes:TextSummary
+
+# Frontend tests
+cd frontend
+npm test
 ```
 
 ## Notes
 
 - FakeReportStorageService was added to PropertyManagerWebApplicationFactory.cs to support ReportsController tests
+- FakeEmailService tracks sent invitations via `SentInvitationEmails` list
 - ExpenseCategories are seeded globally - use known IDs from ExpenseCategorySeeder.cs:
   - Repairs: `11111111-1111-1111-1111-111111111110`
   - Other categories have similar GUIDs ending in 101-115
-
-## To Continue
-
-1. Consider moving to next priority controller (PhotosController or IncomeController)
-2. Or switch to frontend tests for higher impact coverage gains
+- InvitationsController requires Owner role for creating invitations - test with role-based auth
 
 ## Verification
 
