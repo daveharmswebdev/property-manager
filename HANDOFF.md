@@ -3,8 +3,8 @@
 ## Status
 - **Branch:** `test/frontend-core-services`
 - **Backend:** ✅ **COMPLETE** - 15/15 controllers tested, 407 API integration tests
-- **Frontend:** 60 test files, 1333 tests
-- **Total tests:** 1,312 (773 Application + 85 Infrastructure + 407 API + 47 Frontend)
+- **Frontend:** 63 test files, 1502 tests
+- **Progress:** P0 ✅ + P1 ✅ (Core Services + Feature Stores complete)
 
 ---
 
@@ -35,14 +35,14 @@ These are foundational services used across the app:
 | **P0** | auth.service.ts | `frontend/src/app/core/services/` | ✅ 47 tests |
 | **P0** | api.service.ts | `frontend/src/app/core/api/` | N/A (NSwag generated) |
 
-### High: Feature Stores (No Tests)
+### High: Feature Stores
 State management stores - high business logic concentration:
 
-| Priority | File | Location |
-|----------|------|----------|
-| **P1** | work-order.store.ts | `frontend/src/app/features/work-orders/stores/` |
-| **P1** | expense-list.store.ts | `frontend/src/app/features/expenses/stores/` |
-| **P1** | income.store.ts | `frontend/src/app/features/income/stores/` |
+| Priority | File | Location | Status |
+|----------|------|----------|--------|
+| **P1** | work-order.store.ts | `frontend/src/app/features/work-orders/stores/` | ✅ 59 tests |
+| **P1** | expense-list.store.ts | `frontend/src/app/features/expenses/stores/` | ✅ 54 tests |
+| **P1** | income.store.ts | `frontend/src/app/features/income/stores/` | ✅ 56 tests |
 
 ### Medium: Feature Services (No Tests)
 API integration services:
