@@ -81,4 +81,13 @@ public interface IIdentityService
         string token,
         string newPassword,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets display names for multiple users by their IDs.
+    /// Returns DisplayName if set, otherwise falls back to Email.
+    /// </summary>
+    /// <returns>Dictionary mapping user ID to display name.</returns>
+    Task<Dictionary<Guid, string>> GetUserDisplayNamesAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default);
 }
