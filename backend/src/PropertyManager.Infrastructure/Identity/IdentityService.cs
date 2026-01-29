@@ -261,4 +261,23 @@ public class IdentityService : IIdentityService
             return (false, invalidTokenError);
         }
     }
+
+    public async Task<Dictionary<Guid, string>> GetUserDisplayNamesAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = userIds.Distinct().ToList();
+        if (idList.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        return await _dbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => idList.Contains(u.Id))
+            .ToDictionaryAsync(
+                u => u.Id,
+                u => u.DisplayName ?? u.Email ?? "Unknown",
+                cancellationToken);
+    }
 }

@@ -29,34 +29,43 @@ public class GetNotesQueryHandler : IRequestHandler<GetNotesQuery, GetNotesResul
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IIdentityService _identityService;
 
-    public GetNotesQueryHandler(IAppDbContext dbContext, ICurrentUser currentUser)
+    public GetNotesQueryHandler(
+        IAppDbContext dbContext,
+        ICurrentUser currentUser,
+        IIdentityService identityService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _identityService = identityService;
     }
 
     public async Task<GetNotesResult> Handle(GetNotesQuery request, CancellationToken cancellationToken)
     {
-        // Query notes with tenant isolation and soft delete filtering
-        // Global query filter handles AccountId and DeletedAt filtering
+        // Defense-in-depth: explicit filters supplement global query filters
         var notes = await _dbContext.Notes
             .Where(n => n.AccountId == _currentUser.AccountId)
             .Where(n => n.DeletedAt == null)
             .Where(n => n.EntityType == request.EntityType)
             .Where(n => n.EntityId == request.EntityId)
             .OrderByDescending(n => n.CreatedAt)
-            .Select(n => new NoteDto(
-                n.Id,
-                n.EntityType,
-                n.EntityId,
-                n.Content,
-                n.CreatedByUserId,
-                "User", // Placeholder - will be resolved via join or separate lookup
-                n.CreatedAt
-            ))
             .ToListAsync(cancellationToken);
 
-        return new GetNotesResult(notes, notes.Count);
+        // Resolve user display names for all note creators
+        var userIds = notes.Select(n => n.CreatedByUserId).Distinct();
+        var userNames = await _identityService.GetUserDisplayNamesAsync(userIds, cancellationToken);
+
+        var noteDtos = notes.Select(n => new NoteDto(
+            n.Id,
+            n.EntityType,
+            n.EntityId,
+            n.Content,
+            n.CreatedByUserId,
+            userNames.TryGetValue(n.CreatedByUserId, out var name) ? name : "Unknown",
+            n.CreatedAt
+        )).ToList();
+
+        return new GetNotesResult(noteDtos, noteDtos.Count);
     }
 }

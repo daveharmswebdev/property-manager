@@ -124,8 +124,3 @@ public class NotesController : ControllerBase
         return NoContent();
     }
 }
-
-/// <summary>
-/// Response model for successful note creation.
-/// </summary>
-public record CreateNoteResponse(Guid Id);

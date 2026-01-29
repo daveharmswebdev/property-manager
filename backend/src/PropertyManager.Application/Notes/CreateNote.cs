@@ -43,6 +43,15 @@ public class CreateNoteCommandValidator : AbstractValidator<CreateNoteCommand>
 /// Handler for CreateNoteCommand (AC #5).
 /// Creates a new note with AccountId and CreatedByUserId from current user.
 /// </summary>
+/// <remarks>
+/// KNOWN LIMITATION: No validation that EntityId exists for the given EntityType.
+/// Notes can be created for non-existent entities. This is a gap in the current
+/// implementation - the PRD assumes notes are attached to existing entities.
+/// Consider adding entity existence validation in a future story if orphaned
+/// notes become problematic. The trade-off is that validation would require
+/// checking different tables based on EntityType, adding coupling between
+/// the Notes module and other entity modules.
+/// </remarks>
 public class CreateNoteCommandHandler : IRequestHandler<CreateNoteCommand, Guid>
 {
     private readonly IAppDbContext _dbContext;

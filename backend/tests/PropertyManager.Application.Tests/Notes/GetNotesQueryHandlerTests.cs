@@ -15,6 +15,7 @@ public class GetNotesQueryHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IIdentityService> _identityServiceMock;
     private readonly GetNotesQueryHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _testUserId = Guid.NewGuid();
@@ -24,12 +25,22 @@ public class GetNotesQueryHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _identityServiceMock = new Mock<IIdentityService>();
 
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
-        _handler = new GetNotesQueryHandler(_dbContextMock.Object, _currentUserMock.Object);
+        // Default setup: return "Test User" for the test user
+        _identityServiceMock
+            .Setup(x => x.GetUserDisplayNamesAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IEnumerable<Guid> ids, CancellationToken _) =>
+                ids.ToDictionary(id => id, _ => "Test User"));
+
+        _handler = new GetNotesQueryHandler(
+            _dbContextMock.Object,
+            _currentUserMock.Object,
+            _identityServiceMock.Object);
     }
 
     [Fact]

@@ -49,10 +49,16 @@ public class NoteConfiguration : IEntityTypeConfiguration<Note>
             .HasForeignKey(e => e.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Note: CreatedByUserId references ApplicationUser (Identity)
-        // No navigation property - just the FK for data integrity
+        // CreatedByUserId references ApplicationUser (Identity)
+        // FK constraint ensures data integrity - restrict delete to prevent orphaned notes
         builder.HasIndex(e => e.CreatedByUserId)
             .HasDatabaseName("IX_Notes_CreatedByUserId");
+
+        // Add FK constraint to AspNetUsers table (Identity managed)
+        builder.HasOne<PropertyManager.Infrastructure.Identity.ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Index for efficient lookups by entity (AC #2)
         builder.HasIndex(e => new { e.EntityType, e.EntityId })
