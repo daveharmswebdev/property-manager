@@ -1,6 +1,6 @@
 # Story 10.2: Add Notes to Work Order
 
-Status: review
+Status: done
 
 ## Story
 

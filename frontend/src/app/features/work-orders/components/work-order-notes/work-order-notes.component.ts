@@ -9,7 +9,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { NotesService, NoteDto } from '../../services/notes.service';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * WorkOrderNotesComponent (Story 10-2)
@@ -76,10 +78,21 @@ import { NotesService, NoteDto } from '../../services/notes.service';
           @for (note of notes(); track note.id) {
             <div class="note-item">
               <div class="note-header">
-                <span class="note-author">{{ note.createdByUserName }}</span>
-                <span class="note-timestamp">
-                  {{ note.createdAt | date:'MMM d, y' }} at {{ note.createdAt | date:'h:mm a' }}
-                </span>
+                <div class="note-meta">
+                  <span class="note-author">{{ note.createdByUserName }}</span>
+                  <span class="note-timestamp">
+                    {{ note.createdAt | date:'MMM d, y' }} at {{ note.createdAt | date:'h:mm a' }}
+                  </span>
+                </div>
+                <button
+                  mat-icon-button
+                  class="delete-note-button"
+                  color="warn"
+                  (click)="confirmDelete(note)"
+                  aria-label="Delete note"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
               <div class="note-content">{{ note.content }}</div>
             </div>
@@ -149,6 +162,12 @@ import { NotesService, NoteDto } from '../../services/notes.service';
       font-size: 13px;
     }
 
+    .note-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
     .note-author {
       font-weight: 500;
       color: var(--mat-sys-on-surface);
@@ -156,6 +175,15 @@ import { NotesService, NoteDto } from '../../services/notes.service';
 
     .note-timestamp {
       color: var(--mat-sys-outline);
+    }
+
+    .delete-note-button {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .note-item:hover .delete-note-button {
+      opacity: 1;
     }
 
     .note-content {
@@ -199,9 +227,19 @@ import { NotesService, NoteDto } from '../../services/notes.service';
       }
 
       .note-header {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .note-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
+      }
+
+      /* Always show delete button on mobile (no hover) */
+      .delete-note-button {
+        opacity: 1;
       }
     }
   `]
@@ -212,6 +250,7 @@ export class WorkOrderNotesComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly notesService = inject(NotesService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   notes = signal<NoteDto[]>([]);
   isLoading = signal(true);
@@ -268,6 +307,45 @@ export class WorkOrderNotesComponent implements OnInit {
       error: () => {
         this.isSubmitting.set(false);
         this.snackBar.open('Failed to add note', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Open confirmation dialog for delete (Story 10-3, AC #2)
+   */
+  confirmDelete(note: NoteDto): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete this note?',
+        message: 'This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+      }
+    });
+
+    dialogRef.afterClosed().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(confirmed => {
+      if (confirmed) {
+        this.deleteNote(note.id);
+      }
+    });
+  }
+
+  /**
+   * Delete a note (Story 10-3, AC #3, #5)
+   */
+  private deleteNote(noteId: string): void {
+    this.notesService.deleteNote(noteId).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => {
+        this.notes.update(notes => notes.filter(n => n.id !== noteId));
+        this.snackBar.open('Note deleted', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to delete note', 'Close', { duration: 3000 });
       }
     });
   }

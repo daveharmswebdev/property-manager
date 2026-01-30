@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 import { WorkOrderNotesComponent } from './work-order-notes.component';
 import { NotesService, NoteDto, NotesResponse } from '../../services/notes.service';
@@ -14,8 +15,11 @@ describe('WorkOrderNotesComponent', () => {
   let notesServiceSpy: {
     getNotes: ReturnType<typeof vi.fn>;
     createNote: ReturnType<typeof vi.fn>;
+    deleteNote: ReturnType<typeof vi.fn>;
   };
   let snackBarSpy: { open: ReturnType<typeof vi.fn> };
+  let dialogSpy: { open: ReturnType<typeof vi.fn> };
+  let dialogRefSpy: { afterClosed: ReturnType<typeof vi.fn> };
 
   const mockNote: NoteDto = {
     id: 'note-1',
@@ -43,13 +47,22 @@ describe('WorkOrderNotesComponent', () => {
   };
 
   beforeEach(async () => {
+    dialogRefSpy = {
+      afterClosed: vi.fn().mockReturnValue(of(true))
+    };
+
     notesServiceSpy = {
       getNotes: vi.fn().mockReturnValue(of(mockNotesResponse)),
-      createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' }))
+      createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' })),
+      deleteNote: vi.fn().mockReturnValue(of(void 0))
     };
 
     snackBarSpy = {
       open: vi.fn()
+    };
+
+    dialogSpy = {
+      open: vi.fn().mockReturnValue(dialogRefSpy)
     };
 
     await TestBed.configureTestingModule({
@@ -59,7 +72,8 @@ describe('WorkOrderNotesComponent', () => {
         provideHttpClientTesting(),
         provideNoopAnimations(),
         { provide: NotesService, useValue: notesServiceSpy },
-        { provide: MatSnackBar, useValue: snackBarSpy }
+        { provide: MatSnackBar, useValue: snackBarSpy },
+        { provide: MatDialog, useValue: dialogSpy }
       ]
     }).compileComponents();
 
@@ -282,6 +296,85 @@ describe('WorkOrderNotesComponent', () => {
 
       // isLoading should remain false during refresh
       expect(component.isLoading()).toBe(false);
+    });
+  });
+
+  describe('Delete Note (Story 10-3)', () => {
+    it('should display delete button on each note (AC #1)', () => {
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.nativeElement.querySelectorAll('.delete-note-button');
+      expect(deleteButtons.length).toBe(2); // Two notes in mock data
+    });
+
+    it('should open confirmation dialog when delete clicked (AC #2)', () => {
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(dialogSpy.open).toHaveBeenCalled();
+      const dialogData = dialogSpy.open.mock.calls[0][1].data;
+      expect(dialogData.title).toBe('Delete this note?');
+    });
+
+    it('should call service on confirm (AC #3)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(notesServiceSpy.deleteNote).toHaveBeenCalledWith('note-1');
+    });
+
+    it('should remove note from list after successful delete (AC #3)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      fixture.detectChanges();
+
+      expect(component.notes().length).toBe(2);
+
+      component.confirmDelete(mockNote);
+
+      expect(component.notes().length).toBe(1);
+      expect(component.notes().find(n => n.id === 'note-1')).toBeUndefined();
+    });
+
+    it('should show success snackbar after delete (AC #3)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(snackBarSpy.open).toHaveBeenCalledWith('Note deleted', 'Close', expect.any(Object));
+    });
+
+    it('should not delete when cancel is clicked (AC #4)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(false));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(notesServiceSpy.deleteNote).not.toHaveBeenCalled();
+      expect(component.notes().length).toBe(2);
+    });
+
+    it('should show error snackbar on delete failure (AC #5)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      notesServiceSpy.deleteNote.mockReturnValue(throwError(() => new Error('Network error')));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to delete note', 'Close', expect.any(Object));
+    });
+
+    it('should not remove note from list on delete failure (AC #5)', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      notesServiceSpy.deleteNote.mockReturnValue(throwError(() => new Error('Network error')));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(component.notes().length).toBe(2);
     });
   });
 });

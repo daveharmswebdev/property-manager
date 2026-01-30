@@ -63,4 +63,14 @@ export class NotesService {
   createNote(request: CreateNoteRequest): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(this.baseUrl, request);
   }
+
+  /**
+   * Delete a note (Story 10-3, AC #3)
+   * Soft-deletes the note on the backend.
+   * @param noteId Note GUID
+   * @returns Observable that completes on success (204 No Content)
+   */
+  deleteNote(noteId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${noteId}`);
+  }
 }
