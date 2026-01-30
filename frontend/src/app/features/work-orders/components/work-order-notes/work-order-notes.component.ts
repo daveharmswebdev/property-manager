@@ -1,5 +1,6 @@
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, Input, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -77,7 +78,7 @@ import { NotesService, NoteDto } from '../../services/notes.service';
               <div class="note-header">
                 <span class="note-author">{{ note.createdByUserName }}</span>
                 <span class="note-timestamp">
-                  {{ note.createdAt | date:'MMM d, y, h:mm a' }}
+                  {{ note.createdAt | date:'MMM d, y' }} at {{ note.createdAt | date:'h:mm a' }}
                 </span>
               </div>
               <div class="note-content">{{ note.content }}</div>
@@ -208,6 +209,7 @@ import { NotesService, NoteDto } from '../../services/notes.service';
 export class WorkOrderNotesComponent implements OnInit {
   @Input({ required: true }) workOrderId!: string;
 
+  private readonly destroyRef = inject(DestroyRef);
   private readonly notesService = inject(NotesService);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -215,18 +217,23 @@ export class WorkOrderNotesComponent implements OnInit {
   isLoading = signal(true);
   isSubmitting = signal(false);
 
-  noteContent = new FormControl('', [Validators.required, Validators.minLength(1)]);
+  noteContent = new FormControl('', Validators.required);
 
   ngOnInit(): void {
-    this.loadNotes();
+    this.loadNotes(true);
   }
 
   /**
    * Load notes from API (AC #2)
+   * @param showSpinner Whether to show loading spinner (true for initial load, false for refresh)
    */
-  loadNotes(): void {
-    this.isLoading.set(true);
-    this.notesService.getNotes('WorkOrder', this.workOrderId).subscribe({
+  loadNotes(showSpinner = false): void {
+    if (showSpinner) {
+      this.isLoading.set(true);
+    }
+    this.notesService.getNotes('WorkOrder', this.workOrderId).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: (response) => {
         this.notes.set(response.items);
         this.isLoading.set(false);
@@ -249,11 +256,12 @@ export class WorkOrderNotesComponent implements OnInit {
       entityType: 'WorkOrder',
       entityId: this.workOrderId,
       content: this.noteContent.value!.trim()
-    }).subscribe({
+    }).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: () => {
         this.loadNotes(); // Reload to get updated list with new note at top
-        this.noteContent.reset();
-        this.noteContent.setValue(''); // Ensure value is empty string not null
+        this.noteContent.setValue('');
         this.isSubmitting.set(false);
         this.snackBar.open('Note added', 'Close', { duration: 3000 });
       },

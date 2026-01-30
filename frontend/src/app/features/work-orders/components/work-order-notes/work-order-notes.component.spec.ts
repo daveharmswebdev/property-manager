@@ -266,11 +266,22 @@ describe('WorkOrderNotesComponent', () => {
       expect(notesServiceSpy.getNotes).toHaveBeenCalledWith('WorkOrder', 'wo-1');
     });
 
-    it('should call loadNotes method on init', () => {
+    it('should call loadNotes with showSpinner=true on init', () => {
       const loadNotesSpy = vi.spyOn(component, 'loadNotes');
       fixture.detectChanges();
 
-      expect(loadNotesSpy).toHaveBeenCalled();
+      expect(loadNotesSpy).toHaveBeenCalledWith(true);
+    });
+
+    it('should not show loading spinner when refreshing after add note', () => {
+      fixture.detectChanges(); // Initial load
+      expect(component.isLoading()).toBe(false);
+
+      // Simulate refresh (called without showSpinner argument)
+      component.loadNotes();
+
+      // isLoading should remain false during refresh
+      expect(component.isLoading()).toBe(false);
     });
   });
 });
