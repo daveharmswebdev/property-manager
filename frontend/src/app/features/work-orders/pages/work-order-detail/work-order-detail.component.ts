@@ -10,6 +10,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-order-notes.component';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -39,6 +40,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/co
     MatProgressSpinnerModule,
     MatChipsModule,
     MatDialogModule,
+    WorkOrderNotesComponent,
   ],
   template: `
     <div class="work-order-detail-page">
@@ -212,16 +214,13 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/co
           </mat-card-content>
         </mat-card>
 
-        <!-- Notes Placeholder -->
-        <mat-card class="section-card placeholder-section">
+        <!-- Notes Section (Story 10-2) -->
+        <mat-card class="section-card">
           <mat-card-header>
             <mat-card-title>Notes</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">notes</mat-icon>
-              <p>No notes yet</p>
-            </div>
+            <app-work-order-notes [workOrderId]="store.selectedWorkOrder()!.id"></app-work-order-notes>
           </mat-card-content>
         </mat-card>
 

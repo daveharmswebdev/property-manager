@@ -1,6 +1,6 @@
 # Story 10.1: Polymorphic Notes Entity
 
-Status: review
+Status: done
 
 ## Story
 
