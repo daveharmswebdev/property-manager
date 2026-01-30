@@ -3,10 +3,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { signal, WritableSignal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
+import { of } from 'rxjs';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderDto } from '../../services/work-order.service';
+import { NotesService } from '../../services/notes.service';
 
 /**
  * Unit tests for WorkOrderDetailComponent (Story 9-8)
@@ -82,10 +86,17 @@ describe('WorkOrderDetailComponent', () => {
       deleteWorkOrder: vi.fn(),
     };
 
+    const mockNotesService = {
+      getNotes: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+      createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' }))
+    };
+
     await TestBed.configureTestingModule({
       imports: [WorkOrderDetailComponent],
       providers: [
         provideNoopAnimations(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([
           { path: 'work-orders', component: WorkOrderDetailComponent },
           { path: 'work-orders/:id', component: WorkOrderDetailComponent },
@@ -94,6 +105,7 @@ describe('WorkOrderDetailComponent', () => {
           { path: 'vendors/:id', component: WorkOrderDetailComponent },
         ]),
         { provide: WorkOrderStore, useValue: mockWorkOrderStore },
+        { provide: NotesService, useValue: mockNotesService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -307,10 +319,11 @@ describe('WorkOrderDetailComponent', () => {
       expect(compiled.textContent).toContain('No photos yet');
     });
 
-    it('should display Notes placeholder section', () => {
+    it('should display Notes section with notes component (Story 10-2)', () => {
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('Notes');
-      expect(compiled.textContent).toContain('No notes yet');
+      // Notes component shows "No notes yet" in empty state
+      expect(compiled.querySelector('app-work-order-notes')).toBeTruthy();
     });
 
     it('should display Linked Expenses placeholder section', () => {
@@ -320,8 +333,9 @@ describe('WorkOrderDetailComponent', () => {
     });
 
     it('should have placeholder sections with reduced opacity', () => {
+      // Notes is now a real section (Story 10-2), only Photos and Linked Expenses remain as placeholders
       const placeholderSections = fixture.nativeElement.querySelectorAll('.placeholder-section');
-      expect(placeholderSections.length).toBe(3);
+      expect(placeholderSections.length).toBe(2);
     });
   });
 

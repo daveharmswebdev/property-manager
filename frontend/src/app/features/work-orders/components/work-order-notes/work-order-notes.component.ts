@@ -1,0 +1,266 @@
+import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotesService, NoteDto } from '../../services/notes.service';
+
+/**
+ * WorkOrderNotesComponent (Story 10-2)
+ *
+ * Displays and manages notes for a work order.
+ *
+ * Features:
+ * - Display list of existing notes (AC #1, #2)
+ * - Empty state when no notes (AC #3)
+ * - Add new note form (AC #4)
+ * - Validation - empty note disabled (AC #5)
+ * - Long content display (AC #6)
+ * - Real-time update after add (AC #7)
+ */
+@Component({
+  selector: 'app-work-order-notes',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule
+  ],
+  template: `
+    <div class="notes-section">
+      <!-- Add Note Form (AC #1, #4, #5) -->
+      <div class="add-note-form">
+        <mat-form-field appearance="outline" class="note-input">
+          <mat-label>Add a note</mat-label>
+          <textarea
+            matInput
+            [formControl]="noteContent"
+            placeholder="Enter your note..."
+            rows="2"
+          ></textarea>
+        </mat-form-field>
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="add-note-button"
+          [disabled]="noteContent.invalid || isSubmitting()"
+          (click)="addNote()"
+        >
+          <mat-icon>add</mat-icon>
+          Add Note
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      @if (isLoading()) {
+        <div class="loading-container">
+          <mat-spinner diameter="32"></mat-spinner>
+        </div>
+      }
+
+      <!-- Notes List (AC #2) -->
+      @if (!isLoading() && notes().length > 0) {
+        <div class="notes-list">
+          @for (note of notes(); track note.id) {
+            <div class="note-item">
+              <div class="note-header">
+                <span class="note-author">{{ note.createdByUserName }}</span>
+                <span class="note-timestamp">
+                  {{ note.createdAt | date:'MMM d, y, h:mm a' }}
+                </span>
+              </div>
+              <div class="note-content">{{ note.content }}</div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Empty State (AC #3) -->
+      @if (!isLoading() && notes().length === 0) {
+        <div class="empty-state no-notes">
+          <mat-icon class="empty-icon">notes</mat-icon>
+          <p>No notes yet</p>
+        </div>
+      }
+    </div>
+  `,
+  styles: [`
+    .notes-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .add-note-form {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .note-input {
+      flex: 1;
+    }
+
+    .add-note-button {
+      margin-top: 8px;
+      white-space: nowrap;
+    }
+
+    .add-note-button mat-icon {
+      margin-right: 4px;
+    }
+
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .note-item {
+      padding: 12px 16px;
+      background: var(--mat-sys-surface-container-low);
+      border-radius: 8px;
+      border-left: 3px solid var(--mat-sys-primary);
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .note-author {
+      font-weight: 500;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .note-timestamp {
+      color: var(--mat-sys-outline);
+    }
+
+    .note-content {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      text-align: center;
+      color: var(--mat-sys-outline);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      margin: 0;
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .add-note-form {
+        flex-direction: column;
+      }
+
+      .add-note-button {
+        width: 100%;
+        margin-top: 0;
+      }
+
+      .note-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+    }
+  `]
+})
+export class WorkOrderNotesComponent implements OnInit {
+  @Input({ required: true }) workOrderId!: string;
+
+  private readonly notesService = inject(NotesService);
+  private readonly snackBar = inject(MatSnackBar);
+
+  notes = signal<NoteDto[]>([]);
+  isLoading = signal(true);
+  isSubmitting = signal(false);
+
+  noteContent = new FormControl('', [Validators.required, Validators.minLength(1)]);
+
+  ngOnInit(): void {
+    this.loadNotes();
+  }
+
+  /**
+   * Load notes from API (AC #2)
+   */
+  loadNotes(): void {
+    this.isLoading.set(true);
+    this.notesService.getNotes('WorkOrder', this.workOrderId).subscribe({
+      next: (response) => {
+        this.notes.set(response.items);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.snackBar.open('Failed to load notes', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Add a new note (AC #4, #7)
+   */
+  addNote(): void {
+    if (this.noteContent.invalid) return;
+
+    this.isSubmitting.set(true);
+    this.notesService.createNote({
+      entityType: 'WorkOrder',
+      entityId: this.workOrderId,
+      content: this.noteContent.value!.trim()
+    }).subscribe({
+      next: () => {
+        this.loadNotes(); // Reload to get updated list with new note at top
+        this.noteContent.reset();
+        this.noteContent.setValue(''); // Ensure value is empty string not null
+        this.isSubmitting.set(false);
+        this.snackBar.open('Note added', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.isSubmitting.set(false);
+        this.snackBar.open('Failed to add note', 'Close', { duration: 3000 });
+      }
+    });
+  }
+}
