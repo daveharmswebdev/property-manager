@@ -1,43 +1,51 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { NotesService, NoteDto, NotesResponse, CreateNoteRequest } from './notes.service';
+import { of, throwError } from 'rxjs';
+import { NotesService, CreateNoteRequest } from './notes.service';
+import { ApiClient, GetNotesResult, CreateNoteResponse, NoteDto as GeneratedNoteDto } from '../../../core/api/api.service';
 
 describe('NotesService', () => {
   let service: NotesService;
-  let httpMock: HttpTestingController;
+  let apiClientSpy: {
+    notes_GetNotes: ReturnType<typeof vi.fn>;
+    notes_CreateNote: ReturnType<typeof vi.fn>;
+    notes_DeleteNote: ReturnType<typeof vi.fn>;
+    notes_UpdateNote: ReturnType<typeof vi.fn>;
+  };
 
-  const mockNote: NoteDto = {
+  // Generated DTO uses Date objects
+  const mockGeneratedNote: GeneratedNoteDto = {
     id: 'note-1',
     entityType: 'WorkOrder',
     entityId: 'wo-1',
     content: 'Called vendor, they will arrive tomorrow.',
     createdByUserId: 'user-1',
     createdByUserName: 'Dave',
-    createdAt: '2026-01-29T14:30:00Z',
-    updatedAt: '2026-01-29T14:30:00Z'
+    createdAt: new Date('2026-01-29T14:30:00Z'),
+    updatedAt: new Date('2026-01-29T14:30:00Z')
   };
 
-  const mockNotesResponse: NotesResponse = {
-    items: [mockNote],
+  const mockGetNotesResult: GetNotesResult = {
+    items: [mockGeneratedNote],
     totalCount: 1
   };
 
   beforeEach(() => {
+    apiClientSpy = {
+      notes_GetNotes: vi.fn(),
+      notes_CreateNote: vi.fn(),
+      notes_DeleteNote: vi.fn(),
+      notes_UpdateNote: vi.fn()
+    };
+
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         NotesService,
-        provideHttpClient(),
-        provideHttpClientTesting()
+        { provide: ApiClient, useValue: apiClientSpy }
       ]
     });
     service = TestBed.inject(NotesService);
-    httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
   });
 
   it('should be created', () => {
@@ -46,50 +54,51 @@ describe('NotesService', () => {
 
   describe('getNotes', () => {
     it('should get notes for entity', () => {
+      apiClientSpy.notes_GetNotes.mockReturnValue(of(mockGetNotesResult));
+
       service.getNotes('WorkOrder', 'wo-1').subscribe(response => {
         expect(response.items).toHaveLength(1);
         expect(response.items[0].content).toBe('Called vendor, they will arrive tomorrow.');
         expect(response.totalCount).toBe(1);
       });
 
-      const req = httpMock.expectOne(r =>
-        r.url === '/api/v1/notes' &&
-        r.params.get('entityType') === 'WorkOrder' &&
-        r.params.get('entityId') === 'wo-1'
-      );
-      expect(req.request.method).toBe('GET');
-      req.flush(mockNotesResponse);
+      expect(apiClientSpy.notes_GetNotes).toHaveBeenCalledWith('WorkOrder', 'wo-1');
     });
 
     it('should handle empty notes response', () => {
-      const emptyResponse: NotesResponse = { items: [], totalCount: 0 };
+      const emptyResult: GetNotesResult = { items: [], totalCount: 0 };
+      apiClientSpy.notes_GetNotes.mockReturnValue(of(emptyResult));
 
       service.getNotes('WorkOrder', 'wo-empty').subscribe(response => {
         expect(response.items).toHaveLength(0);
         expect(response.totalCount).toBe(0);
       });
-
-      const req = httpMock.expectOne(r => r.url === '/api/v1/notes');
-      req.flush(emptyResponse);
     });
 
     it('should handle multiple notes sorted by API (newest first)', () => {
-      const multipleNotes: NotesResponse = {
+      const multipleNotes: GetNotesResult = {
         items: [
-          { ...mockNote, id: 'note-2', createdAt: '2026-01-30T10:00:00Z', updatedAt: '2026-01-30T10:00:00Z', content: 'Newer note' },
-          { ...mockNote, id: 'note-1', createdAt: '2026-01-29T14:30:00Z', updatedAt: '2026-01-29T14:30:00Z', content: 'Older note' }
+          { ...mockGeneratedNote, id: 'note-2', createdAt: new Date('2026-01-30T10:00:00Z'), updatedAt: new Date('2026-01-30T10:00:00Z'), content: 'Newer note' },
+          { ...mockGeneratedNote, id: 'note-1', createdAt: new Date('2026-01-29T14:30:00Z'), updatedAt: new Date('2026-01-29T14:30:00Z'), content: 'Older note' }
         ],
         totalCount: 2
       };
+      apiClientSpy.notes_GetNotes.mockReturnValue(of(multipleNotes));
 
       service.getNotes('WorkOrder', 'wo-1').subscribe(response => {
         expect(response.items).toHaveLength(2);
         expect(response.items[0].content).toBe('Newer note');
         expect(response.items[1].content).toBe('Older note');
       });
+    });
 
-      const req = httpMock.expectOne(r => r.url === '/api/v1/notes');
-      req.flush(multipleNotes);
+    it('should convert Date objects to ISO strings', () => {
+      apiClientSpy.notes_GetNotes.mockReturnValue(of(mockGetNotesResult));
+
+      service.getNotes('WorkOrder', 'wo-1').subscribe(response => {
+        expect(response.items[0].createdAt).toBe('2026-01-29T14:30:00.000Z');
+        expect(response.items[0].updatedAt).toBe('2026-01-29T14:30:00.000Z');
+      });
     });
   });
 
@@ -100,16 +109,18 @@ describe('NotesService', () => {
         entityId: 'wo-1',
         content: 'New note content'
       };
-      const mockResponse = { id: 'new-note-id' };
+      const mockResponse: CreateNoteResponse = { id: 'new-note-id' };
+      apiClientSpy.notes_CreateNote.mockReturnValue(of(mockResponse));
 
       service.createNote(request).subscribe(response => {
         expect(response.id).toBe('new-note-id');
       });
 
-      const req = httpMock.expectOne('/api/v1/notes');
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(request);
-      req.flush(mockResponse);
+      expect(apiClientSpy.notes_CreateNote).toHaveBeenCalledWith({
+        entityType: 'WorkOrder',
+        entityId: 'wo-1',
+        content: 'New note content'
+      });
     });
 
     it('should send correct request body with entityType and entityId', () => {
@@ -118,20 +129,22 @@ describe('NotesService', () => {
         entityId: 'wo-specific',
         content: 'Test note'
       };
+      apiClientSpy.notes_CreateNote.mockReturnValue(of({ id: 'created-id' }));
 
       service.createNote(request).subscribe();
 
-      const req = httpMock.expectOne('/api/v1/notes');
-      expect(req.request.body.entityType).toBe('WorkOrder');
-      expect(req.request.body.entityId).toBe('wo-specific');
-      expect(req.request.body.content).toBe('Test note');
-      req.flush({ id: 'created-id' });
+      expect(apiClientSpy.notes_CreateNote).toHaveBeenCalledWith({
+        entityType: 'WorkOrder',
+        entityId: 'wo-specific',
+        content: 'Test note'
+      });
     });
   });
 
   describe('deleteNote', () => {
     it('should delete a note successfully', () => {
       let completed = false;
+      apiClientSpy.notes_DeleteNote.mockReturnValue(of(void 0));
 
       service.deleteNote('note-1').subscribe({
         next: () => {
@@ -139,41 +152,36 @@ describe('NotesService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/v1/notes/note-1');
-      expect(req.request.method).toBe('DELETE');
-      req.flush(null, { status: 204, statusText: 'No Content' });
-
       expect(completed).toBe(true);
+      expect(apiClientSpy.notes_DeleteNote).toHaveBeenCalledWith('note-1');
     });
 
     it('should handle 404 error when note not found', () => {
       let errorOccurred = false;
+      const error = { status: 404, message: 'Not Found' };
+      apiClientSpy.notes_DeleteNote.mockReturnValue(throwError(() => error));
 
       service.deleteNote('non-existent').subscribe({
-        error: (error: { status: number }) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(404);
+          expect(err.status).toBe(404);
         }
       });
-
-      const req = httpMock.expectOne('/api/v1/notes/non-existent');
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
 
       expect(errorOccurred).toBe(true);
     });
 
     it('should handle server errors gracefully', () => {
       let errorOccurred = false;
+      const error = { status: 500, message: 'Server Error' };
+      apiClientSpy.notes_DeleteNote.mockReturnValue(throwError(() => error));
 
       service.deleteNote('note-1').subscribe({
-        error: (error: { status: number }) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(500);
+          expect(err.status).toBe(500);
         }
       });
-
-      const req = httpMock.expectOne('/api/v1/notes/note-1');
-      req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
 
       expect(errorOccurred).toBe(true);
     });
@@ -182,6 +190,7 @@ describe('NotesService', () => {
   describe('updateNote', () => {
     it('should update a note successfully', () => {
       let completed = false;
+      apiClientSpy.notes_UpdateNote.mockReturnValue(of(void 0));
 
       service.updateNote('note-1', 'Updated content').subscribe({
         next: () => {
@@ -189,42 +198,36 @@ describe('NotesService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/v1/notes/note-1');
-      expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ content: 'Updated content' });
-      req.flush(null, { status: 204, statusText: 'No Content' });
-
       expect(completed).toBe(true);
+      expect(apiClientSpy.notes_UpdateNote).toHaveBeenCalledWith('note-1', { content: 'Updated content' });
     });
 
     it('should handle 404 error when note not found', () => {
       let errorOccurred = false;
+      const error = { status: 404, message: 'Not Found' };
+      apiClientSpy.notes_UpdateNote.mockReturnValue(throwError(() => error));
 
       service.updateNote('non-existent', 'Updated content').subscribe({
-        error: (error: { status: number }) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(404);
+          expect(err.status).toBe(404);
         }
       });
-
-      const req = httpMock.expectOne('/api/v1/notes/non-existent');
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
 
       expect(errorOccurred).toBe(true);
     });
 
     it('should handle server errors gracefully', () => {
       let errorOccurred = false;
+      const error = { status: 500, message: 'Server Error' };
+      apiClientSpy.notes_UpdateNote.mockReturnValue(throwError(() => error));
 
       service.updateNote('note-1', 'Updated content').subscribe({
-        error: (error: { status: number }) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(500);
+          expect(err.status).toBe(500);
         }
       });
-
-      const req = httpMock.expectOne('/api/v1/notes/note-1');
-      req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
 
       expect(errorOccurred).toBe(true);
     });
@@ -233,16 +236,15 @@ describe('NotesService', () => {
   describe('error handling', () => {
     it('should handle API errors gracefully for getNotes', () => {
       let errorOccurred = false;
+      const error = { status: 500, message: 'Server Error' };
+      apiClientSpy.notes_GetNotes.mockReturnValue(throwError(() => error));
 
       service.getNotes('WorkOrder', 'wo-1').subscribe({
-        error: (error) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(500);
+          expect(err.status).toBe(500);
         }
       });
-
-      const req = httpMock.expectOne(r => r.url === '/api/v1/notes');
-      req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
 
       expect(errorOccurred).toBe(true);
     });
@@ -254,32 +256,30 @@ describe('NotesService', () => {
         content: 'Note'
       };
       let errorOccurred = false;
+      const error = { status: 400, message: 'Bad Request' };
+      apiClientSpy.notes_CreateNote.mockReturnValue(throwError(() => error));
 
       service.createNote(request).subscribe({
-        error: (error) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(400);
+          expect(err.status).toBe(400);
         }
       });
-
-      const req = httpMock.expectOne('/api/v1/notes');
-      req.flush('Bad Request', { status: 400, statusText: 'Bad Request' });
 
       expect(errorOccurred).toBe(true);
     });
 
     it('should handle 404 for non-existent entity', () => {
       let errorOccurred = false;
+      const error = { status: 404, message: 'Not Found' };
+      apiClientSpy.notes_GetNotes.mockReturnValue(throwError(() => error));
 
       service.getNotes('WorkOrder', 'non-existent').subscribe({
-        error: (error) => {
+        error: (err) => {
           errorOccurred = true;
-          expect(error.status).toBe(404);
+          expect(err.status).toBe(404);
         }
       });
-
-      const req = httpMock.expectOne(r => r.url === '/api/v1/notes');
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
 
       expect(errorOccurred).toBe(true);
     });

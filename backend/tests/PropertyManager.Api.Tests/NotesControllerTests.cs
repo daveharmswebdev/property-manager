@@ -387,6 +387,45 @@ public class NotesControllerTests : IClassFixture<PropertyManagerWebApplicationF
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task UpdateNote_SameAccountDifferentUser_Returns404()
+    {
+        // Arrange - Create User 1 with a work order and note
+        var (accessToken1, workOrderId) = await CreateUserWithWorkOrderAsync();
+
+        // Get User 1's account ID from the work order
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var workOrder = await dbContext.WorkOrders.FindAsync(workOrderId);
+        var accountId = workOrder!.AccountId;
+
+        // Create User 2 in the SAME account
+        var user2Email = $"sameaccount-user2-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserInAccountAsync(accountId, user2Email);
+
+        // Login as User 2
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", new { Email = user2Email, Password = "Test@123456" });
+        loginResponse.EnsureSuccessStatusCode();
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var accessToken2 = loginContent!.AccessToken;
+
+        // User 1 creates a note
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/notes", new
+        {
+            EntityType = "WorkOrder",
+            EntityId = workOrderId,
+            Content = "User 1's note"
+        }, accessToken1);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateNoteResponse>();
+
+        // Act - User 2 (same account) tries to update User 1's note
+        var updateRequest = new { Content = "Hacked by same-account user" };
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/notes/{createContent!.Id}", updateRequest, accessToken2);
+
+        // Assert - Should return 404 (only note creator can edit)
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     // =====================================================
     // DELETE /api/v1/notes/{id} Tests (AC #6)
     // =====================================================

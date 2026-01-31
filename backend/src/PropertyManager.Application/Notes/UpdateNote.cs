@@ -48,9 +48,13 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand>
 
     public async Task Handle(UpdateNoteCommand request, CancellationToken cancellationToken)
     {
-        // Find note with tenant isolation and soft-delete check
+        // Find note with tenant isolation, user ownership, and soft-delete check
+        // Only the note creator can edit their own notes (Story 10-3a requirement)
         var note = await _dbContext.Notes
-            .Where(n => n.Id == request.Id && n.AccountId == _currentUser.AccountId && n.DeletedAt == null)
+            .Where(n => n.Id == request.Id
+                && n.AccountId == _currentUser.AccountId
+                && n.CreatedByUserId == _currentUser.UserId
+                && n.DeletedAt == null)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (note == null)
