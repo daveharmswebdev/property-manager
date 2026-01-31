@@ -5,7 +5,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
-import { API_BASE_URL } from './core/api/api.service';
+import { API_BASE_URL } from './core/api/api-base-url.token';
 
 export const appConfig: ApplicationConfig = {
   providers: [
