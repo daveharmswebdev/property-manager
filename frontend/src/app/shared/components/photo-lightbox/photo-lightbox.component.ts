@@ -1,5 +1,5 @@
-import { Component, computed, HostListener, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, HostListener, inject, output, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +14,7 @@ export interface LightboxPhoto {
   thumbnailUrl?: string | null;
   contentType?: string;
   originalFileName?: string;
+  createdAt?: Date | string;  // Story 10-6: Upload date display
   isPrimary?: boolean;
   displayOrder?: number;
 }
@@ -24,6 +25,7 @@ export interface LightboxPhoto {
 export interface PhotoLightboxData {
   photos: LightboxPhoto[];
   currentIndex: number;
+  showDelete?: boolean;  // Story 10-6: Enable delete button in lightbox
 }
 
 /**
@@ -43,6 +45,7 @@ export interface PhotoLightboxData {
   standalone: true,
   imports: [
     CommonModule,
+    DatePipe,
     MatButtonModule,
     MatIconModule,
     PhotoViewerComponent,
@@ -64,19 +67,37 @@ export interface PhotoLightboxData {
             <span class="photo-filename" data-testid="photo-filename">
               {{ currentPhoto()?.originalFileName || 'Photo' }}
             </span>
+            @if (currentPhoto()?.createdAt) {
+              <span class="photo-date" data-testid="photo-date">
+                Uploaded {{ currentPhoto()!.createdAt | date:'mediumDate' }}
+              </span>
+            }
             <span class="photo-counter" data-testid="photo-counter">
-              {{ currentIndex() + 1 }} of {{ data.photos.length }}
+              {{ currentIndex() + 1 }} of {{ photoCount() }}
             </span>
           </div>
-          <button
-            mat-icon-button
-            class="close-button"
-            data-testid="close-button"
-            (click)="close()"
-            aria-label="Close lightbox"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
+          <div class="header-actions">
+            @if (data.showDelete) {
+              <button
+                mat-icon-button
+                class="delete-button"
+                data-testid="lightbox-delete-button"
+                (click)="onDelete()"
+                aria-label="Delete photo"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+            <button
+              mat-icon-button
+              class="close-button"
+              data-testid="close-button"
+              (click)="close()"
+              aria-label="Close lightbox"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
         </header>
 
         <!-- Main content area with photo viewer -->
@@ -174,11 +195,30 @@ export interface PhotoLightboxData {
       opacity: 0.8;
     }
 
+    .photo-date {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     .close-button {
       color: white;
 
       &:hover {
         background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    .delete-button {
+      color: #ff6b6b;
+
+      &:hover {
+        background-color: rgba(255, 107, 107, 0.15);
       }
     }
 
@@ -275,22 +315,32 @@ export class PhotoLightboxComponent {
   private readonly dialogRef = inject(MatDialogRef<PhotoLightboxComponent>);
   protected readonly data: PhotoLightboxData = inject(MAT_DIALOG_DATA);
 
+  /** Emitted when user clicks delete button - parent handles confirmation (Story 10-6) */
+  readonly deleteClick = output<LightboxPhoto>();
+
+  /** Track photos in a signal for reactivity (Story 10-6) */
+  private readonly photos = signal<LightboxPhoto[]>(this.data.photos);
+
   /** Current photo index (clamped to valid range) */
   readonly currentIndex = signal(
     Math.min(Math.max(0, this.data.currentIndex), this.data.photos.length - 1)
   );
 
+  /** Track photo count for dynamic updates after deletions (Story 10-6) */
+  readonly photoCount = computed(() => this.photos().length);
+
   /** Current photo computed from index (may be undefined for empty arrays) */
-  readonly currentPhoto = computed((): LightboxPhoto | undefined => this.data.photos[this.currentIndex()]);
+  readonly currentPhoto = computed((): LightboxPhoto | undefined => this.photos()[this.currentIndex()]);
 
   /** Whether to show navigation buttons (more than one photo) */
-  readonly showNavigation = computed(() => this.data.photos.length > 1);
+  readonly showNavigation = computed(() => this.photoCount() > 1);
 
   /**
    * Navigate to next photo (wraps to first)
    */
   next(): void {
-    const nextIndex = (this.currentIndex() + 1) % this.data.photos.length;
+    const photos = this.photos();
+    const nextIndex = (this.currentIndex() + 1) % photos.length;
     this.currentIndex.set(nextIndex);
   }
 
@@ -298,7 +348,8 @@ export class PhotoLightboxComponent {
    * Navigate to previous photo (wraps to last)
    */
   previous(): void {
-    const prevIndex = (this.currentIndex() - 1 + this.data.photos.length) % this.data.photos.length;
+    const photos = this.photos();
+    const prevIndex = (this.currentIndex() - 1 + photos.length) % photos.length;
     this.currentIndex.set(prevIndex);
   }
 
@@ -307,6 +358,25 @@ export class PhotoLightboxComponent {
    */
   close(): void {
     this.dialogRef.close();
+  }
+
+  /**
+   * Handle delete button click - emit event for parent to handle (Story 10-6, AC #4)
+   */
+  onDelete(): void {
+    const photo = this.currentPhoto();
+    if (photo) {
+      this.deleteClick.emit(photo);
+    }
+  }
+
+  /**
+   * Update photos array and current index after deletion (Story 10-6, AC #6, #7)
+   * Called by parent component after successful delete
+   */
+  updatePhotos(photos: LightboxPhoto[], newIndex: number): void {
+    this.photos.set(photos);
+    this.currentIndex.set(Math.min(Math.max(0, newIndex), photos.length - 1));
   }
 
   /**
