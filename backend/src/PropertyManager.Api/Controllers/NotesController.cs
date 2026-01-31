@@ -20,15 +20,18 @@ public class NotesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateNoteCommand> _createValidator;
+    private readonly IValidator<UpdateNoteCommand> _updateValidator;
     private readonly ILogger<NotesController> _logger;
 
     public NotesController(
         IMediator mediator,
         IValidator<CreateNoteCommand> createValidator,
+        IValidator<UpdateNoteCommand> updateValidator,
         ILogger<NotesController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -99,6 +102,44 @@ public class NotesController : ControllerBase
             nameof(GetNotes),
             new { entityType = request.EntityType, entityId = request.EntityId },
             new CreateNoteResponse(id));
+    }
+
+    /// <summary>
+    /// Update a note (Story 10-3a, AC #3).
+    /// </summary>
+    /// <param name="id">Note GUID</param>
+    /// <param name="request">Update request with new content</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Note updated successfully</response>
+    /// <response code="400">If validation fails</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If note not found</response>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNote(
+        Guid id,
+        [FromBody] UpdateNoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateNoteCommand(id, request.Content);
+
+        var validationResult = await _updateValidator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Note updated: {NoteId}", id);
+
+        return NoContent();
     }
 
     /// <summary>

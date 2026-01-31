@@ -150,6 +150,36 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
         return (user.Id, account.Id);
     }
+
+    /// <summary>
+    /// Creates a test user within an existing account.
+    /// Use this to test same-account multi-user scenarios.
+    /// </summary>
+    public async Task<Guid> CreateTestUserInAccountAsync(Guid accountId, string email, string password = "Test@123456", string role = "Member")
+    {
+        using var scope = Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        // Create the ApplicationUser with confirmed email in existing account
+        var user = new ApplicationUser
+        {
+            Email = email,
+            UserName = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true, // Skip email verification for tests
+            AccountId = accountId,
+            Role = role
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException($"Failed to create test user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+        }
+
+        return user.Id;
+    }
 }
 
 public class FakeEmailService : IEmailService

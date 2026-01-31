@@ -14,7 +14,7 @@ import { NotesService, NoteDto } from '../../services/notes.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
- * WorkOrderNotesComponent (Story 10-2)
+ * WorkOrderNotesComponent (Story 10-2, 10-3, 10-3a)
  *
  * Displays and manages notes for a work order.
  *
@@ -25,6 +25,9 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
  * - Validation - empty note disabled (AC #5)
  * - Long content display (AC #6)
  * - Real-time update after add (AC #7)
+ * - Delete notes with confirmation (Story 10-3)
+ * - Edit notes inline (Story 10-3a)
+ * - Edited annotation display (Story 10-3a AC #4)
  */
 @Component({
   selector: 'app-work-order-notes',
@@ -83,23 +86,72 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
                   <span class="note-timestamp">
                     {{ note.createdAt | date:'MMM d, y' }} at {{ note.createdAt | date:'h:mm a' }}
                   </span>
-                </div>
-                <button
-                  mat-icon-button
-                  class="delete-note-button"
-                  color="warn"
-                  (click)="confirmDelete(note)"
-                  [disabled]="deletingNoteId() === note.id"
-                  aria-label="Delete note"
-                >
-                  @if (deletingNoteId() === note.id) {
-                    <mat-spinner diameter="20"></mat-spinner>
-                  } @else {
-                    <mat-icon>delete</mat-icon>
+                  @if (isEdited(note)) {
+                    <span class="edited-annotation">
+                      • <em>(edited {{ formatEditTime(note) }})</em>
+                    </span>
                   }
-                </button>
+                </div>
+                <div class="note-actions">
+                  <!-- Edit Button (Story 10-3a AC #1) -->
+                  @if (editingNoteId() !== note.id) {
+                    <button
+                      mat-icon-button
+                      class="edit-note-button"
+                      (click)="startEdit(note)"
+                      aria-label="Edit note"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                  <!-- Delete Button -->
+                  <button
+                    mat-icon-button
+                    class="delete-note-button"
+                    color="warn"
+                    (click)="confirmDelete(note)"
+                    [disabled]="deletingNoteId() === note.id"
+                    aria-label="Delete note"
+                  >
+                    @if (deletingNoteId() === note.id) {
+                      <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                      <mat-icon>delete</mat-icon>
+                    }
+                  </button>
+                </div>
               </div>
-              <div class="note-content">{{ note.content }}</div>
+              <!-- Edit Mode (Story 10-3a AC #2) -->
+              @if (editingNoteId() === note.id) {
+                <div class="edit-mode">
+                  <textarea
+                    class="edit-textarea"
+                    [value]="editContent()"
+                    (input)="editContent.set($any($event.target).value)"
+                    rows="3"
+                  ></textarea>
+                  <div class="edit-actions">
+                    <button
+                      mat-button
+                      class="cancel-edit-button"
+                      (click)="cancelEdit()"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      mat-raised-button
+                      color="primary"
+                      class="save-edit-button"
+                      [disabled]="!editContent().trim()"
+                      (click)="saveEdit(note.id)"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="note-content">{{ note.content }}</div>
+              }
             </div>
           }
         </div>
@@ -182,13 +234,59 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
       color: var(--mat-sys-outline);
     }
 
+    .note-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .edit-note-button,
     .delete-note-button {
       opacity: 0;
       transition: opacity 0.2s ease;
     }
 
+    .note-item:hover .edit-note-button,
     .note-item:hover .delete-note-button {
       opacity: 1;
+    }
+
+    .edited-annotation {
+      color: var(--mat-sys-outline);
+      font-size: 12px;
+    }
+
+    .edited-annotation em {
+      font-style: italic;
+    }
+
+    .edit-mode {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .edit-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+      background: var(--mat-sys-surface);
+      color: var(--mat-sys-on-surface);
+    }
+
+    .edit-textarea:focus {
+      outline: none;
+      border-color: var(--mat-sys-primary);
+    }
+
+    .edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
     .note-content {
@@ -242,7 +340,8 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
         gap: 4px;
       }
 
-      /* Always show delete button on mobile (no hover) */
+      /* Always show action buttons on mobile (no hover) */
+      .edit-note-button,
       .delete-note-button {
         opacity: 1;
       }
@@ -261,6 +360,10 @@ export class WorkOrderNotesComponent implements OnInit {
   isLoading = signal(true);
   isSubmitting = signal(false);
   deletingNoteId = signal<string | null>(null);
+
+  // Edit state (Story 10-3a)
+  editingNoteId = signal<string | null>(null);
+  editContent = signal('');
 
   noteContent = new FormControl('', Validators.required);
 
@@ -361,5 +464,89 @@ export class WorkOrderNotesComponent implements OnInit {
         this.snackBar.open('Failed to delete note', 'Close', { duration: 3000 });
       }
     });
+  }
+
+  // ===== Edit Note Methods (Story 10-3a) =====
+
+  /**
+   * Enter edit mode for a note (AC #2)
+   */
+  startEdit(note: NoteDto): void {
+    this.editingNoteId.set(note.id);
+    this.editContent.set(note.content);
+  }
+
+  /**
+   * Cancel edit mode (AC #5)
+   */
+  cancelEdit(): void {
+    this.editingNoteId.set(null);
+    this.editContent.set('');
+  }
+
+  /**
+   * Save edited note (AC #3, #6, #7)
+   */
+  saveEdit(noteId: string): void {
+    const content = this.editContent().trim();
+    if (!content) return; // AC #6 - empty validation
+
+    this.notesService.updateNote(noteId, content).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => {
+        // Update note in local list with new content and updatedAt
+        this.notes.update(notes => notes.map(n =>
+          n.id === noteId
+            ? { ...n, content, updatedAt: new Date().toISOString() }
+            : n
+        ));
+        this.editingNoteId.set(null);
+        this.editContent.set('');
+        this.snackBar.open('Note updated', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        // AC #7 - remain in edit mode on failure
+        this.snackBar.open('Failed to update note', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Check if note has been edited (AC #4)
+   */
+  isEdited(note: NoteDto): boolean {
+    return new Date(note.updatedAt) > new Date(note.createdAt);
+  }
+
+  /**
+   * Format edit timestamp for display (AC #4)
+   * - Same day: just show time (e.g., "3:15 PM")
+   * - Different day: show full date and time
+   */
+  formatEditTime(note: NoteDto): string {
+    const created = new Date(note.createdAt);
+    const updated = new Date(note.updatedAt);
+
+    // Same day: just show time
+    if (this.isSameDay(created, updated)) {
+      return updated.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    // Different day: show full date and time
+    return updated.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  }
+
+  private isSameDay(d1: Date, d2: Date): boolean {
+    return d1.toDateString() === d2.toDateString();
   }
 }

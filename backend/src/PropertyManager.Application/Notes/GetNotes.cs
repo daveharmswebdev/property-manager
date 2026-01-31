@@ -63,7 +63,8 @@ public class GetNotesQueryHandler : IRequestHandler<GetNotesQuery, GetNotesResul
             n.Content,
             n.CreatedByUserId,
             userNames.TryGetValue(n.CreatedByUserId, out var name) ? name : "Unknown",
-            n.CreatedAt
+            n.CreatedAt,
+            n.UpdatedAt
         )).ToList();
 
         return new GetNotesResult(noteDtos, noteDtos.Count);

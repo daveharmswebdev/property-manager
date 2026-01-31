@@ -16,6 +16,7 @@ describe('WorkOrderNotesComponent', () => {
     getNotes: ReturnType<typeof vi.fn>;
     createNote: ReturnType<typeof vi.fn>;
     deleteNote: ReturnType<typeof vi.fn>;
+    updateNote: ReturnType<typeof vi.fn>;
   };
   let snackBarSpy: { open: ReturnType<typeof vi.fn> };
   let dialogSpy: { open: ReturnType<typeof vi.fn> };
@@ -28,7 +29,8 @@ describe('WorkOrderNotesComponent', () => {
     content: 'Called vendor, they will arrive tomorrow.',
     createdByUserId: 'user-1',
     createdByUserName: 'Dave',
-    createdAt: '2026-01-29T14:30:00Z'
+    createdAt: '2026-01-29T14:30:00Z',
+    updatedAt: '2026-01-29T14:30:00Z'
   };
 
   const mockOlderNote: NoteDto = {
@@ -38,7 +40,8 @@ describe('WorkOrderNotesComponent', () => {
     content: 'Reported the leak to management.',
     createdByUserId: 'user-1',
     createdByUserName: 'Dave',
-    createdAt: '2026-01-28T10:00:00Z'
+    createdAt: '2026-01-28T10:00:00Z',
+    updatedAt: '2026-01-28T10:00:00Z'
   };
 
   const mockNotesResponse: NotesResponse = {
@@ -54,7 +57,8 @@ describe('WorkOrderNotesComponent', () => {
     notesServiceSpy = {
       getNotes: vi.fn().mockReturnValue(of(mockNotesResponse)),
       createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' })),
-      deleteNote: vi.fn().mockReturnValue(of(void 0))
+      deleteNote: vi.fn().mockReturnValue(of(void 0)),
+      updateNote: vi.fn().mockReturnValue(of(void 0))
     };
 
     snackBarSpy = {
@@ -416,6 +420,180 @@ describe('WorkOrderNotesComponent', () => {
       component.confirmDelete(mockNote);
 
       expect(component.deletingNoteId()).toBeNull();
+    });
+  });
+
+  describe('Edit Note (Story 10-3a)', () => {
+    it('should display edit button on each note (AC #1)', () => {
+      fixture.detectChanges();
+
+      const editButtons = fixture.nativeElement.querySelectorAll('.edit-note-button');
+      expect(editButtons.length).toBe(2); // Two notes in mock data
+    });
+
+    it('should enter edit mode when edit button clicked (AC #2)', () => {
+      fixture.detectChanges();
+
+      component.startEdit(mockNote);
+
+      expect(component.editingNoteId()).toBe('note-1');
+    });
+
+    it('should show textarea with current content in edit mode (AC #2)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      fixture.detectChanges();
+
+      expect(component.editContent()).toBe('Called vendor, they will arrive tomorrow.');
+    });
+
+    it('should show save and cancel buttons in edit mode (AC #2)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      fixture.detectChanges();
+
+      const saveButton = fixture.nativeElement.querySelector('.save-edit-button');
+      const cancelButton = fixture.nativeElement.querySelector('.cancel-edit-button');
+
+      expect(saveButton).toBeTruthy();
+      expect(cancelButton).toBeTruthy();
+    });
+
+    it('should call service on save (AC #3)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Updated note content');
+
+      component.saveEdit(mockNote.id);
+
+      expect(notesServiceSpy.updateNote).toHaveBeenCalledWith('note-1', 'Updated note content');
+    });
+
+    it('should update note in list after successful edit (AC #3)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Updated note content');
+
+      component.saveEdit(mockNote.id);
+
+      const updatedNote = component.notes().find(n => n.id === 'note-1');
+      expect(updatedNote?.content).toBe('Updated note content');
+    });
+
+    it('should show success snackbar after edit (AC #3)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Updated note content');
+
+      component.saveEdit(mockNote.id);
+
+      expect(snackBarSpy.open).toHaveBeenCalledWith('Note updated', 'Close', expect.any(Object));
+    });
+
+    it('should exit edit mode and revert on cancel (AC #5)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Changed but not saved');
+
+      component.cancelEdit();
+
+      expect(component.editingNoteId()).toBeNull();
+      expect(component.editContent()).toBe('');
+      // Note should still have original content
+      const note = component.notes().find(n => n.id === 'note-1');
+      expect(note?.content).toBe('Called vendor, they will arrive tomorrow.');
+    });
+
+    it('should prevent save when content is empty (AC #6)', () => {
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('   '); // Whitespace only
+
+      component.saveEdit(mockNote.id);
+
+      expect(notesServiceSpy.updateNote).not.toHaveBeenCalled();
+    });
+
+    it('should show error snackbar on edit failure (AC #7)', () => {
+      notesServiceSpy.updateNote.mockReturnValue(throwError(() => new Error('Network error')));
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Updated content');
+
+      component.saveEdit(mockNote.id);
+
+      expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to update note', 'Close', expect.any(Object));
+    });
+
+    it('should remain in edit mode on edit failure (AC #7)', () => {
+      notesServiceSpy.updateNote.mockReturnValue(throwError(() => new Error('Network error')));
+      fixture.detectChanges();
+      component.startEdit(mockNote);
+      component.editContent.set('Updated content');
+
+      component.saveEdit(mockNote.id);
+
+      expect(component.editingNoteId()).toBe('note-1');
+      expect(component.editContent()).toBe('Updated content');
+    });
+
+    it('should display edited annotation when UpdatedAt > CreatedAt (AC #4)', () => {
+      const editedNote: NoteDto = {
+        ...mockNote,
+        updatedAt: '2026-01-30T15:00:00Z' // Later than createdAt
+      };
+      notesServiceSpy.getNotes.mockReturnValue(of({ items: [editedNote], totalCount: 1 }));
+
+      fixture.detectChanges();
+
+      const editedAnnotation = fixture.nativeElement.querySelector('.edited-annotation');
+      expect(editedAnnotation).toBeTruthy();
+      expect(editedAnnotation.textContent).toContain('edited');
+    });
+
+    it('should show same-day edit time without date (AC #4)', () => {
+      // Create note and edit on same day
+      const sameDay = new Date();
+      const editedNote: NoteDto = {
+        ...mockNote,
+        createdAt: new Date(sameDay.setHours(10, 0, 0, 0)).toISOString(),
+        updatedAt: new Date(sameDay.setHours(15, 0, 0, 0)).toISOString()
+      };
+      notesServiceSpy.getNotes.mockReturnValue(of({ items: [editedNote], totalCount: 1 }));
+
+      fixture.detectChanges();
+
+      const editedAnnotation = fixture.nativeElement.querySelector('.edited-annotation');
+      expect(editedAnnotation).toBeTruthy();
+      // Should show time like "3:00 PM" but not the date
+      expect(editedAnnotation.textContent).toMatch(/edited.*PM/i);
+      // Should NOT contain month name for same-day edits
+      expect(editedAnnotation.textContent).not.toMatch(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
+    });
+
+    it('should show different-day edit with full date (AC #4)', () => {
+      // Create note on different day than edit
+      const editedNote: NoteDto = {
+        ...mockNote,
+        createdAt: '2026-01-28T10:00:00Z',
+        updatedAt: '2026-01-30T15:00:00Z'
+      };
+      notesServiceSpy.getNotes.mockReturnValue(of({ items: [editedNote], totalCount: 1 }));
+
+      fixture.detectChanges();
+
+      const editedAnnotation = fixture.nativeElement.querySelector('.edited-annotation');
+      expect(editedAnnotation).toBeTruthy();
+      // Should contain month name for different-day edits
+      expect(editedAnnotation.textContent).toMatch(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
+    });
+
+    it('should not display edited annotation when UpdatedAt equals CreatedAt', () => {
+      // mockNote has updatedAt === createdAt
+      fixture.detectChanges();
+
+      const editedAnnotation = fixture.nativeElement.querySelector('.edited-annotation');
+      expect(editedAnnotation).toBeNull();
     });
   });
 });
