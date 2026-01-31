@@ -3,7 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 /**
- * Note DTO matching backend API response (Story 10-1)
+ * Note DTO matching backend API response (Story 10-1, 10-3a)
+ * - updatedAt enables "(edited)" annotation when updatedAt > createdAt
  */
 export interface NoteDto {
   id: string;
@@ -13,6 +14,7 @@ export interface NoteDto {
   createdByUserId: string;
   createdByUserName: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -72,5 +74,16 @@ export class NotesService {
    */
   deleteNote(noteId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${noteId}`);
+  }
+
+  /**
+   * Update a note (Story 10-3a, AC #3)
+   * Updates note content on the backend.
+   * @param noteId Note GUID
+   * @param content New note content
+   * @returns Observable that completes on success (204 No Content)
+   */
+  updateNote(noteId: string, content: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${noteId}`, { content });
   }
 }

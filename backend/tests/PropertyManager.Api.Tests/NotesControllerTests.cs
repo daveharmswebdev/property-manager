@@ -240,6 +240,154 @@ public class NotesControllerTests : IClassFixture<PropertyManagerWebApplicationF
     }
 
     // =====================================================
+    // PUT /api/v1/notes/{id} Tests (Story 10-3a)
+    // =====================================================
+
+    [Fact]
+    public async Task UpdateNote_ValidRequest_ReturnsNoContent()
+    {
+        // Arrange
+        var (accessToken, workOrderId) = await CreateUserWithWorkOrderAsync();
+
+        // Create a note
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/notes", new
+        {
+            EntityType = "WorkOrder",
+            EntityId = workOrderId,
+            Content = "Original content"
+        }, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateNoteResponse>();
+
+        var updateRequest = new { Content = "Updated content" };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/notes/{createContent!.Id}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify content was actually updated
+        var getResponse = await GetWithAuthAsync($"/api/v1/notes?entityType=WorkOrder&entityId={workOrderId}", accessToken);
+        var getContent = await getResponse.Content.ReadFromJsonAsync<GetNotesResponse>();
+        getContent!.Items.Should().ContainSingle(n => n.Content == "Updated content");
+    }
+
+    [Fact]
+    public async Task UpdateNote_NotFound_Returns404()
+    {
+        // Arrange
+        var accessToken = await GetAccessTokenAsync();
+        var nonExistentId = Guid.NewGuid();
+
+        var updateRequest = new { Content = "Updated content" };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/notes/{nonExistentId}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateNote_EmptyContent_ReturnsBadRequest()
+    {
+        // Arrange
+        var (accessToken, workOrderId) = await CreateUserWithWorkOrderAsync();
+
+        // Create a note
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/notes", new
+        {
+            EntityType = "WorkOrder",
+            EntityId = workOrderId,
+            Content = "Original content"
+        }, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateNoteResponse>();
+
+        var updateRequest = new { Content = "" };
+
+        // Act
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/notes/{createContent!.Id}", updateRequest, accessToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateNote_OtherUsersNote_Returns404()
+    {
+        // Arrange - Create note with user 1
+        var (accessToken1, workOrderId1) = await CreateUserWithWorkOrderAsync();
+        var accessToken2 = await GetAccessTokenAsync();
+
+        // User 1 creates a note
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/notes", new
+        {
+            EntityType = "WorkOrder",
+            EntityId = workOrderId1,
+            Content = "User 1 note"
+        }, accessToken1);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateNoteResponse>();
+
+        var updateRequest = new { Content = "Hacked by user 2" };
+
+        // Act - User 2 tries to update User 1's note
+        var response = await PutAsJsonWithAuthAsync($"/api/v1/notes/{createContent!.Id}", updateRequest, accessToken2);
+
+        // Assert - Should return 404 (not found, not forbidden - hides existence)
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateNote_SetsUpdatedAt()
+    {
+        // Arrange
+        var (accessToken, workOrderId) = await CreateUserWithWorkOrderAsync();
+
+        // Create a note
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/notes", new
+        {
+            EntityType = "WorkOrder",
+            EntityId = workOrderId,
+            Content = "Original content"
+        }, accessToken);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateNoteResponse>();
+
+        // Small delay to ensure different timestamps
+        await Task.Delay(100);
+
+        var beforeUpdate = DateTime.UtcNow;
+        var updateRequest = new { Content = "Updated content" };
+
+        // Act
+        await PutAsJsonWithAuthAsync($"/api/v1/notes/{createContent!.Id}", updateRequest, accessToken);
+
+        var afterUpdate = DateTime.UtcNow;
+
+        // Assert - verify UpdatedAt in database
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var note = await dbContext.Notes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.Id == createContent.Id);
+
+        note.Should().NotBeNull();
+        note!.UpdatedAt.Should().BeAfter(note.CreatedAt);
+        note.UpdatedAt.Should().BeAfter(beforeUpdate.AddSeconds(-1));
+        note.UpdatedAt.Should().BeBefore(afterUpdate.AddSeconds(1));
+    }
+
+    [Fact]
+    public async Task UpdateNote_Unauthorized_Returns401()
+    {
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/v1/notes/{Guid.NewGuid()}", new { Content = "test" });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // =====================================================
     // DELETE /api/v1/notes/{id} Tests (AC #6)
     // =====================================================
 
@@ -469,6 +617,14 @@ public class NotesControllerTests : IClassFixture<PropertyManagerWebApplicationF
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
         return await _client.SendAsync(request);
     }
+
+    private async Task<HttpResponseMessage> PutAsJsonWithAuthAsync<T>(string url, T content, string accessToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url);
+        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+        request.Content = JsonContent.Create(content);
+        return await _client.SendAsync(request);
+    }
 }
 
 // =====================================================
@@ -486,5 +642,6 @@ public record NoteListItemDto(
     string Content,
     Guid CreatedByUserId,
     string CreatedByUserName,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );
