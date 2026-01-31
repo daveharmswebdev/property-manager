@@ -62,7 +62,7 @@ public class ConfirmWorkOrderPhotoUploadHandler : IRequestHandler<ConfirmWorkOrd
 
         // Validate storage key belongs to current user's account
         var keyParts = request.StorageKey.Split('/');
-        if (keyParts.Length < 1 || !Guid.TryParse(keyParts[0], out var keyAccountId))
+        if (keyParts.Length < 2 || !Guid.TryParse(keyParts[0], out var keyAccountId))
         {
             throw new ArgumentException("Invalid storage key format", nameof(request.StorageKey));
         }

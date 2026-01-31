@@ -13,8 +13,6 @@ namespace PropertyManager.Application.WorkOrders;
 public record WorkOrderPhotoDto(
     Guid Id,
     Guid WorkOrderId,
-    string StorageKey,
-    string? ThumbnailStorageKey,
     string? OriginalFileName,
     string? ContentType,
     long? FileSizeBytes,
@@ -27,8 +25,7 @@ public record WorkOrderPhotoDto(
 /// Response model for GetWorkOrderPhotos query.
 /// </summary>
 public record GetWorkOrderPhotosResponse(
-    IReadOnlyList<WorkOrderPhotoDto> Items,
-    int TotalCount);
+    IReadOnlyList<WorkOrderPhotoDto> Items);
 
 /// <summary>
 /// Query to get all photos for a work order (AC #5).
@@ -109,8 +106,6 @@ public class GetWorkOrderPhotosHandler : IRequestHandler<GetWorkOrderPhotosQuery
             return new WorkOrderPhotoDto(
                 Id: photo.Id,
                 WorkOrderId: photo.WorkOrderId,
-                StorageKey: photo.StorageKey,
-                ThumbnailStorageKey: photo.ThumbnailStorageKey,
                 OriginalFileName: photo.OriginalFileName,
                 ContentType: photo.ContentType,
                 FileSizeBytes: photo.FileSizeBytes,
@@ -122,6 +117,6 @@ public class GetWorkOrderPhotosHandler : IRequestHandler<GetWorkOrderPhotosQuery
 
         var photoDtos = await Task.WhenAll(urlTasks);
 
-        return new GetWorkOrderPhotosResponse(photoDtos.ToList(), photoDtos.Length);
+        return new GetWorkOrderPhotosResponse(photoDtos.ToList());
     }
 }

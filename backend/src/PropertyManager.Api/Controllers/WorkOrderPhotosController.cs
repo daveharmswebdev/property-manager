@@ -138,7 +138,7 @@ public class WorkOrderPhotosController : ControllerBase
 
         _logger.LogInformation(
             "Retrieved {Count} photos for work order: {WorkOrderId}",
-            response.TotalCount,
+            response.Items.Count,
             workOrderId);
 
         return Ok(response);

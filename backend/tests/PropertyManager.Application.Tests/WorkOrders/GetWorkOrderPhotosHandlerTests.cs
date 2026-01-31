@@ -73,7 +73,6 @@ public class GetWorkOrderPhotosHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Items.Should().HaveCount(1);
-        result.TotalCount.Should().Be(1);
         result.Items[0].PhotoUrl.Should().NotBeNullOrEmpty();
         result.Items[0].ThumbnailUrl.Should().NotBeNullOrEmpty();
     }
@@ -148,7 +147,6 @@ public class GetWorkOrderPhotosHandlerTests
 
         // Assert
         result.Items.Should().BeEmpty();
-        result.TotalCount.Should().Be(0);
     }
 
     [Fact]
