@@ -307,6 +307,15 @@ describe('WorkOrderNotesComponent', () => {
       expect(deleteButtons.length).toBe(2); // Two notes in mock data
     });
 
+    it('should have accessible aria-label on delete buttons', () => {
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.nativeElement.querySelectorAll('.delete-note-button');
+      deleteButtons.forEach((button: HTMLElement) => {
+        expect(button.getAttribute('aria-label')).toBe('Delete note');
+      });
+    });
+
     it('should open confirmation dialog when delete clicked (AC #2)', () => {
       fixture.detectChanges();
 
@@ -375,6 +384,38 @@ describe('WorkOrderNotesComponent', () => {
       component.confirmDelete(mockNote);
 
       expect(component.notes().length).toBe(2);
+    });
+
+    it('should disable delete button while delete is in progress', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      fixture.detectChanges();
+
+      // Simulate delete in progress by setting the signal directly
+      component.deletingNoteId.set('note-1');
+      fixture.detectChanges();
+
+      const deleteButtons = fixture.nativeElement.querySelectorAll('.delete-note-button');
+      const firstButton = deleteButtons[0] as HTMLButtonElement;
+      expect(firstButton.disabled).toBe(true);
+    });
+
+    it('should reset deletingNoteId after successful delete', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(component.deletingNoteId()).toBeNull();
+    });
+
+    it('should reset deletingNoteId after failed delete', () => {
+      dialogRefSpy.afterClosed.mockReturnValue(of(true));
+      notesServiceSpy.deleteNote.mockReturnValue(throwError(() => new Error('Network error')));
+      fixture.detectChanges();
+
+      component.confirmDelete(mockNote);
+
+      expect(component.deletingNoteId()).toBeNull();
     });
   });
 });

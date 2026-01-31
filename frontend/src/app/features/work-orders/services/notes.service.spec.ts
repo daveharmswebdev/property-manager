@@ -130,16 +130,19 @@ describe('NotesService', () => {
 
   describe('deleteNote', () => {
     it('should delete a note successfully', () => {
+      let completed = false;
+
       service.deleteNote('note-1').subscribe({
         next: () => {
-          // Success - no content returned
-          expect(true).toBe(true);
+          completed = true;
         }
       });
 
       const req = httpMock.expectOne('/api/v1/notes/note-1');
       expect(req.request.method).toBe('DELETE');
       req.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(completed).toBe(true);
     });
 
     it('should handle 404 error when note not found', () => {

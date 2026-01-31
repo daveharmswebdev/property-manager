@@ -89,9 +89,14 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
                   class="delete-note-button"
                   color="warn"
                   (click)="confirmDelete(note)"
+                  [disabled]="deletingNoteId() === note.id"
                   aria-label="Delete note"
                 >
-                  <mat-icon>delete</mat-icon>
+                  @if (deletingNoteId() === note.id) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                  } @else {
+                    <mat-icon>delete</mat-icon>
+                  }
                 </button>
               </div>
               <div class="note-content">{{ note.content }}</div>
@@ -255,6 +260,7 @@ export class WorkOrderNotesComponent implements OnInit {
   notes = signal<NoteDto[]>([]);
   isLoading = signal(true);
   isSubmitting = signal(false);
+  deletingNoteId = signal<string | null>(null);
 
   noteContent = new FormControl('', Validators.required);
 
@@ -320,8 +326,12 @@ export class WorkOrderNotesComponent implements OnInit {
         title: 'Delete this note?',
         message: 'This action cannot be undone.',
         confirmText: 'Delete',
-        cancelText: 'Cancel'
-      }
+        icon: 'warning',
+        iconColor: 'warn',
+        confirmIcon: 'delete'
+      },
+      width: '400px',
+      disableClose: true
     });
 
     dialogRef.afterClosed().pipe(
@@ -337,14 +347,17 @@ export class WorkOrderNotesComponent implements OnInit {
    * Delete a note (Story 10-3, AC #3, #5)
    */
   private deleteNote(noteId: string): void {
+    this.deletingNoteId.set(noteId);
     this.notesService.deleteNote(noteId).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: () => {
         this.notes.update(notes => notes.filter(n => n.id !== noteId));
+        this.deletingNoteId.set(null);
         this.snackBar.open('Note deleted', 'Close', { duration: 3000 });
       },
       error: () => {
+        this.deletingNoteId.set(null);
         this.snackBar.open('Failed to delete note', 'Close', { duration: 3000 });
       }
     });
