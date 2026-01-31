@@ -34,4 +34,7 @@ public class WorkOrder : AuditableEntity, ITenantEntity, ISoftDeletable
 
     // Navigation to tag assignments (junction table)
     public ICollection<WorkOrderTagAssignment> TagAssignments { get; set; } = new List<WorkOrderTagAssignment>();
+
+    // Navigation to photos
+    public ICollection<WorkOrderPhoto> Photos { get; set; } = new List<WorkOrderPhoto>();
 }
