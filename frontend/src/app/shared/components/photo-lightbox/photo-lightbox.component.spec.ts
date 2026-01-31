@@ -2,11 +2,11 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { PropertyPhotoLightboxComponent, PropertyPhotoLightboxData } from './property-photo-lightbox.component';
+import { PhotoLightboxComponent, PhotoLightboxData } from './photo-lightbox.component';
 
-describe('PropertyPhotoLightboxComponent', () => {
-  let component: PropertyPhotoLightboxComponent;
-  let fixture: ComponentFixture<PropertyPhotoLightboxComponent>;
+describe('PhotoLightboxComponent', () => {
+  let component: PhotoLightboxComponent;
+  let fixture: ComponentFixture<PhotoLightboxComponent>;
   let dialogRefSpy: { close: ReturnType<typeof vi.fn> };
 
   const mockPhotos = [
@@ -39,23 +39,23 @@ describe('PropertyPhotoLightboxComponent', () => {
     },
   ];
 
-  const defaultDialogData: PropertyPhotoLightboxData = {
+  const defaultDialogData: PhotoLightboxData = {
     photos: mockPhotos,
     currentIndex: 0,
   };
 
-  async function createComponent(dialogData: PropertyPhotoLightboxData = defaultDialogData): Promise<void> {
+  async function createComponent(dialogData: PhotoLightboxData = defaultDialogData): Promise<void> {
     dialogRefSpy = { close: vi.fn() };
 
     await TestBed.configureTestingModule({
-      imports: [PropertyPhotoLightboxComponent, NoopAnimationsModule],
+      imports: [PhotoLightboxComponent, NoopAnimationsModule],
       providers: [
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PropertyPhotoLightboxComponent);
+    fixture = TestBed.createComponent(PhotoLightboxComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }

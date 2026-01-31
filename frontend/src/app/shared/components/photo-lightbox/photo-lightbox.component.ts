@@ -21,23 +21,25 @@ export interface LightboxPhoto {
 /**
  * Data passed to the lightbox dialog
  */
-export interface PropertyPhotoLightboxData {
+export interface PhotoLightboxData {
   photos: LightboxPhoto[];
   currentIndex: number;
 }
 
 /**
- * PropertyPhotoLightboxComponent (AC-13.3c.1, AC-13.3c.2, AC-13.3c.3)
+ * PhotoLightboxComponent
  *
- * Full-screen lightbox modal for viewing property photos with:
+ * Generic full-screen lightbox modal for viewing photos with:
  * - Navigation (prev/next) buttons
  * - Keyboard navigation (arrow keys, Escape to close)
  * - Close on backdrop click or Escape key
  * - Zoom/rotate controls via PhotoViewerComponent
  * - Photo counter (x of y)
+ *
+ * Used by: PropertyPhotoGallery, WorkOrderPhotoGallery
  */
 @Component({
-  selector: 'app-property-photo-lightbox',
+  selector: 'app-photo-lightbox',
   standalone: true,
   imports: [
     CommonModule,
@@ -269,9 +271,9 @@ export interface PropertyPhotoLightboxData {
     }
   `],
 })
-export class PropertyPhotoLightboxComponent {
-  private readonly dialogRef = inject(MatDialogRef<PropertyPhotoLightboxComponent>);
-  protected readonly data: PropertyPhotoLightboxData = inject(MAT_DIALOG_DATA);
+export class PhotoLightboxComponent {
+  private readonly dialogRef = inject(MatDialogRef<PhotoLightboxComponent>);
+  protected readonly data: PhotoLightboxData = inject(MAT_DIALOG_DATA);
 
   /** Current photo index (clamped to valid range) */
   readonly currentIndex = signal(

@@ -80,6 +80,10 @@ export interface IApiClient {
     vendors_DeleteVendor(id: string): Observable<void>;
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse>;
     vendorTradeTags_CreateVendorTradeTag(request?: CreateVendorTradeTagRequest | undefined): Observable<CreateVendorTradeTagResponse>;
+    workOrderPhotos_GenerateUploadUrl(workOrderId: string, request: WorkOrderPhotoUploadUrlRequest): Observable<GenerateWorkOrderPhotoUploadUrlResponse>;
+    workOrderPhotos_ConfirmUpload(workOrderId: string, request: WorkOrderPhotoConfirmRequest): Observable<ConfirmWorkOrderPhotoUploadResponse>;
+    workOrderPhotos_GetPhotos(workOrderId: string): Observable<GetWorkOrderPhotosResponse>;
+    workOrderPhotos_DeletePhoto(workOrderId: string, photoId: string): Observable<void>;
     workOrders_GetAllWorkOrders(status?: string | null | undefined, propertyId?: string | null | undefined): Observable<GetAllWorkOrdersResponse>;
     workOrders_CreateWorkOrder(request: CreateWorkOrderRequest): Observable<CreateWorkOrderResponse>;
     workOrders_GetWorkOrder(id: string): Observable<WorkOrderDto>;
@@ -4145,6 +4149,278 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    workOrderPhotos_GenerateUploadUrl(workOrderId: string, request: WorkOrderPhotoUploadUrlRequest): Observable<GenerateWorkOrderPhotoUploadUrlResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{workOrderId}/photos/upload-url";
+        if (workOrderId === undefined || workOrderId === null)
+            throw new globalThis.Error("The parameter 'workOrderId' must be defined.");
+        url_ = url_.replace("{workOrderId}", encodeURIComponent("" + workOrderId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrderPhotos_GenerateUploadUrl(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrderPhotos_GenerateUploadUrl(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GenerateWorkOrderPhotoUploadUrlResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GenerateWorkOrderPhotoUploadUrlResponse>;
+        }));
+    }
+
+    protected processWorkOrderPhotos_GenerateUploadUrl(response: HttpResponseBase): Observable<GenerateWorkOrderPhotoUploadUrlResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GenerateWorkOrderPhotoUploadUrlResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrderPhotos_ConfirmUpload(workOrderId: string, request: WorkOrderPhotoConfirmRequest): Observable<ConfirmWorkOrderPhotoUploadResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{workOrderId}/photos";
+        if (workOrderId === undefined || workOrderId === null)
+            throw new globalThis.Error("The parameter 'workOrderId' must be defined.");
+        url_ = url_.replace("{workOrderId}", encodeURIComponent("" + workOrderId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrderPhotos_ConfirmUpload(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrderPhotos_ConfirmUpload(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ConfirmWorkOrderPhotoUploadResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ConfirmWorkOrderPhotoUploadResponse>;
+        }));
+    }
+
+    protected processWorkOrderPhotos_ConfirmUpload(response: HttpResponseBase): Observable<ConfirmWorkOrderPhotoUploadResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ConfirmWorkOrderPhotoUploadResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidationProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrderPhotos_GetPhotos(workOrderId: string): Observable<GetWorkOrderPhotosResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{workOrderId}/photos";
+        if (workOrderId === undefined || workOrderId === null)
+            throw new globalThis.Error("The parameter 'workOrderId' must be defined.");
+        url_ = url_.replace("{workOrderId}", encodeURIComponent("" + workOrderId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrderPhotos_GetPhotos(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrderPhotos_GetPhotos(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetWorkOrderPhotosResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetWorkOrderPhotosResponse>;
+        }));
+    }
+
+    protected processWorkOrderPhotos_GetPhotos(response: HttpResponseBase): Observable<GetWorkOrderPhotosResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetWorkOrderPhotosResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrderPhotos_DeletePhoto(workOrderId: string, photoId: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{workOrderId}/photos/{photoId}";
+        if (workOrderId === undefined || workOrderId === null)
+            throw new globalThis.Error("The parameter 'workOrderId' must be defined.");
+        url_ = url_.replace("{workOrderId}", encodeURIComponent("" + workOrderId));
+        if (photoId === undefined || photoId === null)
+            throw new globalThis.Error("The parameter 'photoId' must be defined.");
+        url_ = url_.replace("{photoId}", encodeURIComponent("" + photoId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrderPhotos_DeletePhoto(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrderPhotos_DeletePhoto(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processWorkOrderPhotos_DeletePhoto(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     workOrders_GetAllWorkOrders(status?: string | null | undefined, propertyId?: string | null | undefined): Observable<GetAllWorkOrdersResponse> {
         let url_ = this.baseUrl + "/api/v1/work-orders?";
         if (status !== undefined && status !== null)
@@ -4954,6 +5230,7 @@ export enum PhotoEntityType {
     Properties = 1,
     Vendors = 2,
     Users = 3,
+    WorkOrders = 4,
 }
 
 export interface ConfirmPhotoUploadResponse {
@@ -5237,6 +5514,49 @@ export interface CreateVendorTradeTagResponse {
 
 export interface CreateVendorTradeTagRequest {
     name?: string;
+}
+
+export interface GenerateWorkOrderPhotoUploadUrlResponse {
+    uploadUrl?: string;
+    storageKey?: string;
+    thumbnailStorageKey?: string;
+    expiresAt?: Date;
+}
+
+export interface WorkOrderPhotoUploadUrlRequest {
+    contentType?: string;
+    fileSizeBytes?: number;
+    originalFileName?: string;
+}
+
+export interface ConfirmWorkOrderPhotoUploadResponse {
+    id?: string;
+    thumbnailUrl?: string | undefined;
+    viewUrl?: string | undefined;
+}
+
+export interface WorkOrderPhotoConfirmRequest {
+    storageKey?: string;
+    thumbnailStorageKey?: string;
+    contentType?: string;
+    fileSizeBytes?: number;
+    originalFileName?: string;
+}
+
+export interface GetWorkOrderPhotosResponse {
+    items?: WorkOrderPhotoDto[];
+}
+
+export interface WorkOrderPhotoDto {
+    id?: string;
+    workOrderId?: string;
+    originalFileName?: string | undefined;
+    contentType?: string | undefined;
+    fileSizeBytes?: number | undefined;
+    createdByUserId?: string;
+    createdAt?: Date;
+    photoUrl?: string | undefined;
+    thumbnailUrl?: string | undefined;
 }
 
 export interface GetAllWorkOrdersResponse {

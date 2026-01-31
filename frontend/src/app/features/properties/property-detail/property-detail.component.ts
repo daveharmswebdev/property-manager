@@ -25,9 +25,9 @@ import {
   ReportDialogData,
 } from '../../reports/components/report-dialog/report-dialog.component';
 import {
-  PropertyPhotoLightboxComponent,
-  PropertyPhotoLightboxData,
-} from '../../../shared/components/property-photo-lightbox/property-photo-lightbox.component';
+  PhotoLightboxComponent,
+  PhotoLightboxData,
+} from '../../../shared/components/photo-lightbox/photo-lightbox.component';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -828,7 +828,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     const photos = this.galleryPhotos();
     const currentIndex = photos.findIndex(p => p.id === photo.id);
 
-    const dialogData: PropertyPhotoLightboxData = {
+    const dialogData: PhotoLightboxData = {
       photos: photos.map(p => ({
         id: p.id,
         viewUrl: p.viewUrl,
@@ -841,7 +841,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
       currentIndex: currentIndex >= 0 ? currentIndex : 0,
     };
 
-    this.dialog.open(PropertyPhotoLightboxComponent, {
+    this.dialog.open(PhotoLightboxComponent, {
       data: dialogData,
       maxWidth: '100vw',
       maxHeight: '100vh',

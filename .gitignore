@@ -29,6 +29,9 @@ bin/
 obj/
 [Dd]ebug/
 [Rr]elease/
+# Handle Windows-style paths with backslashes (created by some cross-platform tools)
+*\\[Dd]ebug/
+*\\[Rr]elease/
 x64/
 x86/
 [Ww][Ii][Nn]32/
