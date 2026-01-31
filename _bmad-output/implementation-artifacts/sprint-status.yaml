@@ -141,8 +141,8 @@ development_status:
   10-2-add-notes-to-work-order: done
   10-3-delete-notes: done
   10-3a-edit-notes: done
-  10-4-work-order-photos-entity: backlog
-  10-5-upload-photos-to-work-order: backlog
+  10-4-work-order-photos-entity: done
+  10-5-upload-photos-to-work-order: done
   10-6-view-work-order-photos: backlog
   10-7-delete-work-order-photos: backlog
   epic-10-retrospective: optional

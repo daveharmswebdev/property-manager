@@ -9,6 +9,7 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
+import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { WorkOrderDto } from '../../services/work-order.service';
 import { NotesService } from '../../services/notes.service';
 
@@ -91,6 +92,26 @@ describe('WorkOrderDetailComponent', () => {
       createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' }))
     };
 
+    const mockPhotoStore = {
+      photos: signal([]),
+      sortedPhotos: signal([]),
+      isLoading: signal(false),
+      error: signal<string | null>(null),
+      uploadError: signal<string | null>(null),
+      isUploading: signal(false),
+      uploadProgress: signal(0),
+      photoCount: signal(0),
+      hasPhotos: signal(false),
+      isEmpty: signal(true),
+      workOrderId: signal<string | null>(null),
+      loadPhotos: vi.fn(),
+      uploadPhoto: vi.fn().mockResolvedValue(true),
+      deletePhoto: vi.fn(),
+      clear: vi.fn(),
+      clearError: vi.fn(),
+      clearUploadError: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [WorkOrderDetailComponent],
       providers: [
@@ -105,6 +126,7 @@ describe('WorkOrderDetailComponent', () => {
           { path: 'vendors/:id', component: WorkOrderDetailComponent },
         ]),
         { provide: WorkOrderStore, useValue: mockWorkOrderStore },
+        { provide: WorkOrderPhotoStore, useValue: mockPhotoStore },
         { provide: NotesService, useValue: mockNotesService },
         {
           provide: ActivatedRoute,
@@ -313,10 +335,11 @@ describe('WorkOrderDetailComponent', () => {
       setupWithWorkOrder();
     });
 
-    it('should display Photos placeholder section', () => {
+    it('should display Photos section with gallery component (Story 10-5)', () => {
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('Photos');
-      expect(compiled.textContent).toContain('No photos yet');
+      // Photos section now uses the gallery component instead of placeholder
+      expect(compiled.querySelector('app-work-order-photo-gallery')).toBeTruthy();
     });
 
     it('should display Notes section with notes component (Story 10-2)', () => {
@@ -333,9 +356,10 @@ describe('WorkOrderDetailComponent', () => {
     });
 
     it('should have placeholder sections with reduced opacity', () => {
-      // Notes is now a real section (Story 10-2), only Photos and Linked Expenses remain as placeholders
+      // Notes is a real section (Story 10-2), Photos is a real section (Story 10-5)
+      // Only Linked Expenses remains as a placeholder
       const placeholderSections = fixture.nativeElement.querySelectorAll('.placeholder-section');
-      expect(placeholderSections.length).toBe(2);
+      expect(placeholderSections.length).toBe(1);
     });
   });
 

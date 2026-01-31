@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -9,8 +9,13 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
+import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-order-notes.component';
+import { WorkOrderPhotoGalleryComponent } from '../../components/work-order-photo-gallery/work-order-photo-gallery.component';
+import { PhotoUploadComponent } from '../../../../shared/components/photo-upload/photo-upload.component';
+import { PhotoLightboxComponent, PhotoLightboxData } from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
+import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -41,6 +46,8 @@ import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-
     MatChipsModule,
     MatDialogModule,
     WorkOrderNotesComponent,
+    WorkOrderPhotoGalleryComponent,
+    PhotoUploadComponent,
   ],
   template: `
     <div class="work-order-detail-page">
@@ -199,20 +206,42 @@ import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-
           </mat-card-content>
         </mat-card>
 
-        <!-- Placeholder Sections (AC #4) -->
+        <!-- Photos Section (Story 10-5) -->
+        <div class="photos-section">
+          <!-- Photo Upload Zone (toggleable) -->
+          @if (showUploadZone()) {
+            <mat-card class="section-card upload-zone-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>cloud_upload</mat-icon>
+                  Upload Photos
+                </mat-card-title>
+                <button
+                  mat-icon-button
+                  (click)="toggleUploadZone()"
+                  aria-label="Close upload zone"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-card-header>
+              <mat-card-content>
+                <app-photo-upload
+                  [uploadFn]="uploadPhoto"
+                  (uploadComplete)="onUploadComplete()"
+                />
+              </mat-card-content>
+            </mat-card>
+          }
 
-        <!-- Photos Placeholder -->
-        <mat-card class="section-card placeholder-section">
-          <mat-card-header>
-            <mat-card-title>Photos</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">photo_library</mat-icon>
-              <p>No photos yet</p>
-            </div>
-          </mat-card-content>
-        </mat-card>
+          <!-- Photo Gallery -->
+          <app-work-order-photo-gallery
+            [photos]="photoStore.sortedPhotos()"
+            [isLoading]="photoStore.isLoading()"
+            (addPhotoClick)="toggleUploadZone()"
+            (photoClick)="onPhotoClick($event)"
+            (deleteClick)="onPhotoDeleteClick($event)"
+          />
+        </div>
 
         <!-- Notes Section (Story 10-2) -->
         <mat-card class="section-card">
@@ -452,6 +481,31 @@ import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-
         opacity: 0.7;
       }
 
+      /* Photos Section */
+      .photos-section {
+        margin-bottom: 16px;
+      }
+
+      .upload-zone-card {
+        margin-bottom: 16px;
+
+        mat-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          mat-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            mat-icon {
+              color: var(--pm-primary);
+            }
+          }
+        }
+      }
+
       .empty-state {
         display: flex;
         flex-direction: column;
@@ -506,21 +560,27 @@ import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-
 })
 export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   protected readonly store = inject(WorkOrderStore);
+  protected readonly photoStore = inject(WorkOrderPhotoStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
 
   protected workOrderId: string | null = null;
 
+  /** Whether the upload zone is visible */
+  protected readonly showUploadZone = signal(false);
+
   ngOnInit(): void {
     this.workOrderId = this.route.snapshot.paramMap.get('id');
     if (this.workOrderId) {
       this.store.loadWorkOrderById(this.workOrderId);
+      this.photoStore.loadPhotos(this.workOrderId);
     }
   }
 
   ngOnDestroy(): void {
     this.store.clearSelectedWorkOrder();
+    this.photoStore.clear();
   }
 
   /**
@@ -549,6 +609,75 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
     const confirmed = await firstValueFrom(dialogRef.afterClosed());
     if (confirmed && this.workOrderId) {
       this.store.deleteWorkOrder(this.workOrderId);
+    }
+  }
+
+  // ========== Photo Methods (Story 10-5) ==========
+
+  /**
+   * Upload photo function passed to PhotoUploadComponent
+   */
+  uploadPhoto = async (file: File): Promise<boolean> => {
+    return this.photoStore.uploadPhoto(file);
+  };
+
+  /**
+   * Toggle the visibility of the upload zone
+   */
+  toggleUploadZone(): void {
+    this.showUploadZone.update((value) => !value);
+  }
+
+  /**
+   * Handle upload completion - close upload zone
+   */
+  onUploadComplete(): void {
+    this.showUploadZone.set(false);
+  }
+
+  /**
+   * Handle photo click - open lightbox (Story 10-5, AC #7)
+   */
+  onPhotoClick(photo: WorkOrderPhotoDto): void {
+    const photos = this.photoStore.sortedPhotos();
+    const currentIndex = photos.findIndex((p) => p.id === photo.id);
+
+    this.dialog.open(PhotoLightboxComponent, {
+      data: {
+        photos: photos.map((p) => ({
+          id: p.id || '',
+          viewUrl: p.photoUrl,
+          thumbnailUrl: p.thumbnailUrl,
+          originalFileName: p.originalFileName,
+        })),
+        currentIndex: currentIndex >= 0 ? currentIndex : 0,
+      } as PhotoLightboxData,
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: '100%',
+      height: '100%',
+      panelClass: 'photo-lightbox-dialog',
+    });
+  }
+
+  /**
+   * Handle photo delete click - confirm and delete (Story 10-5, AC #8)
+   */
+  async onPhotoDeleteClick(photo: WorkOrderPhotoDto): Promise<void> {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete this photo?',
+        message: 'This photo will be permanently removed from this work order.',
+        confirmText: 'Delete',
+        icon: 'warning',
+        iconColor: 'warn',
+        confirmIcon: 'delete',
+      } as ConfirmDialogData,
+    });
+
+    const confirmed = await firstValueFrom(dialogRef.afterClosed());
+    if (confirmed && photo.id) {
+      this.photoStore.deletePhoto(photo.id);
     }
   }
 }

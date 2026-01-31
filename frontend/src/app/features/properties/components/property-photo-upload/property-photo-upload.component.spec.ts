@@ -2,28 +2,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PropertyPhotoUploadComponent } from './property-photo-upload.component';
 import { PhotoUploadService } from '../../../../shared/services/photo-upload.service';
 import { PropertyPhotoStore } from '../../stores/property-photo.store';
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { signal } from '@angular/core';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 describe('PropertyPhotoUploadComponent', () => {
   let component: PropertyPhotoUploadComponent;
   let fixture: ComponentFixture<PropertyPhotoUploadComponent>;
-  let mockPhotoUploadService: {
-    isValidFileType: ReturnType<typeof vi.fn>;
-    isValidFileSize: ReturnType<typeof vi.fn>;
-    getAcceptString: ReturnType<typeof vi.fn>;
-    getMaxFileSizeBytes: ReturnType<typeof vi.fn>;
-  };
+  let mockPhotoUploadService: Partial<PhotoUploadService>;
   let mockPhotoStore: {
     uploadPhoto: ReturnType<typeof vi.fn>;
-    isUploading: ReturnType<typeof signal<boolean>>;
-    uploadProgress: ReturnType<typeof signal<number>>;
-    uploadError: ReturnType<typeof signal<string | null>>;
-  };
-
-  const createMockFile = (name: string, type: string): File => {
-    const blob = new Blob(['test content'], { type });
-    return new File([blob], name, { type });
   };
 
   beforeEach(async () => {
@@ -36,15 +22,12 @@ describe('PropertyPhotoUploadComponent', () => {
 
     mockPhotoStore = {
       uploadPhoto: vi.fn().mockResolvedValue(true),
-      isUploading: signal(false),
-      uploadProgress: signal(0),
-      uploadError: signal<string | null>(null),
     };
 
     await TestBed.configureTestingModule({
       imports: [PropertyPhotoUploadComponent],
       providers: [
-        provideAnimations(),
+        provideNoopAnimations(),
         { provide: PhotoUploadService, useValue: mockPhotoUploadService },
         { provide: PropertyPhotoStore, useValue: mockPhotoStore },
       ],
@@ -60,262 +43,28 @@ describe('PropertyPhotoUploadComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('Idle State', () => {
-    it('should show upload icon and instructions in idle state', () => {
-      const uploadIcon = fixture.nativeElement.querySelector('.upload-icon');
-      const dropText = fixture.nativeElement.querySelector('.drop-text');
-
-      expect(uploadIcon.textContent).toContain('cloud_upload');
-      expect(dropText.textContent).toContain('Drag & drop');
-    });
-
-    it('should show file type info', () => {
-      const fileInfo = fixture.nativeElement.querySelector('.file-info');
-      expect(fileInfo.textContent).toContain('JPEG, PNG, GIF, WebP');
-      expect(fileInfo.textContent).toContain('10MB');
-    });
+  it('should render the photo upload component', () => {
+    const photoUpload = fixture.nativeElement.querySelector('app-photo-upload');
+    expect(photoUpload).toBeTruthy();
   });
 
-  describe('Drag and Drop (AC-13.3b.7)', () => {
-    it('should set dragging state on dragover', () => {
-      component.onDragOver({ preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as DragEvent);
-      fixture.detectChanges();
+  it('should have uploadPhoto function that calls store', async () => {
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+    const result = await component.uploadPhoto(file);
 
-      expect(component.isDragging()).toBe(true);
-      const dropZone = fixture.nativeElement.querySelector('.drop-zone');
-      expect(dropZone.classList.contains('dragging')).toBe(true);
-    });
-
-    it('should clear dragging state on dragleave', () => {
-      component.isDragging.set(true);
-      fixture.detectChanges();
-
-      component.onDragLeave({ preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as DragEvent);
-      fixture.detectChanges();
-
-      expect(component.isDragging()).toBe(false);
-    });
-
-    it('should not set dragging when uploading', () => {
-      component.uploadState.set({ status: 'uploading', progress: 50, error: null, file: null });
-      component.onDragOver({ preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as DragEvent);
-      fixture.detectChanges();
-
-      expect(component.isDragging()).toBe(false);
-    });
+    expect(mockPhotoStore.uploadPhoto).toHaveBeenCalledWith(file);
+    expect(result).toBe(true);
   });
 
-  describe('File Selection', () => {
-    it('should have hidden file input', () => {
-      const fileInput = fixture.nativeElement.querySelector('input[type="file"]');
-      expect(fileInput).toBeTruthy();
-      expect(fileInput.hidden).toBe(true);
-    });
+  it('should emit uploadComplete output', () => {
+    const uploadCompleteSpy = vi.fn();
+    component.uploadComplete.subscribe(uploadCompleteSpy);
+    component.uploadComplete.emit();
 
-    it('should accept correct file types', () => {
-      const fileInput = fixture.nativeElement.querySelector('input[type="file"]');
-      expect(fileInput.accept).toContain('image/jpeg');
-    });
+    expect(uploadCompleteSpy).toHaveBeenCalled();
   });
 
-  describe('Client-side Validation (AC-13.3b.7)', () => {
-    it('should show validation error for invalid file type', () => {
-      mockPhotoUploadService.isValidFileType.mockReturnValue(false);
-
-      const file = createMockFile('test.txt', 'text/plain');
-      component['handleFile'](file);
-      fixture.detectChanges();
-
-      const validationError = fixture.nativeElement.querySelector('.validation-error');
-      expect(validationError).toBeTruthy();
-      expect(validationError.textContent).toContain('Invalid file type');
-    });
-
-    it('should show validation error for file too large', () => {
-      mockPhotoUploadService.isValidFileType.mockReturnValue(true);
-      mockPhotoUploadService.isValidFileSize.mockReturnValue(false);
-
-      const file = createMockFile('large.jpg', 'image/jpeg');
-      component['handleFile'](file);
-      fixture.detectChanges();
-
-      const validationError = fixture.nativeElement.querySelector('.validation-error');
-      expect(validationError).toBeTruthy();
-      expect(validationError.textContent).toContain('File too large');
-    });
-
-    it('should not start upload for invalid file', () => {
-      mockPhotoUploadService.isValidFileType.mockReturnValue(false);
-
-      const file = createMockFile('test.txt', 'text/plain');
-      component['handleFile'](file);
-
-      expect(mockPhotoStore.uploadPhoto).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Upload Progress (AC-13.3b.7)', () => {
-    it('should show progress bar during upload', async () => {
-      // Set uploading state directly to test UI
-      component.uploadState.set({ status: 'uploading', progress: 50, error: null, file: null });
-      fixture.detectChanges();
-
-      expect(component.uploadState().status).toBe('uploading');
-
-      const progressBar = fixture.nativeElement.querySelector('mat-progress-bar');
-      expect(progressBar).toBeTruthy();
-    });
-
-    it('should show spinning icon during upload', async () => {
-      // Set uploading state directly to test UI
-      component.uploadState.set({ status: 'uploading', progress: 50, error: null, file: null });
-      fixture.detectChanges();
-
-      const icon = fixture.nativeElement.querySelector('.upload-icon');
-      expect(icon.classList.contains('spinning')).toBe(true);
-      expect(icon.textContent).toContain('sync');
-    });
-  });
-
-  describe('Upload Success', () => {
-    it('should call store uploadPhoto method', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(true);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      expect(mockPhotoStore.uploadPhoto).toHaveBeenCalledWith(file);
-    });
-
-    it('should show success state after upload completes', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(true);
-      // Simulate store state change after successful upload
-      mockPhotoStore.uploadProgress.set(100);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Manually set success state (normally handled by effect watching store)
-      component.uploadState.set({ status: 'success', progress: 100, error: null, file });
-      fixture.detectChanges();
-
-      expect(component.uploadState().status).toBe('success');
-
-      const icon = fixture.nativeElement.querySelector('.upload-icon');
-      expect(icon.textContent).toContain('check_circle');
-    });
-
-    it('should emit uploadComplete on success', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(true);
-
-      const uploadCompleteSpy = vi.fn();
-      component.uploadComplete.subscribe(uploadCompleteSpy);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Manually trigger what the effect would do
-      component.uploadState.set({ status: 'success', progress: 100, error: null, file });
-      component.uploadComplete.emit();
-
-      expect(uploadCompleteSpy).toHaveBeenCalled();
-    });
-
-    it('should show "Upload Another" button on success', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(true);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Set success state
-      component.uploadState.set({ status: 'success', progress: 100, error: null, file });
-      fixture.detectChanges();
-
-      const button = fixture.nativeElement.querySelector('button');
-      expect(button.textContent).toContain('Upload Another');
-    });
-  });
-
-  describe('Error State (AC-13.3b.8)', () => {
-    it('should show error state on upload failure', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(false);
-      mockPhotoStore.uploadError.set('Network error');
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Manually set error state (normally handled by effect)
-      component.uploadState.set({ status: 'error', progress: 0, error: 'Network error', file });
-      fixture.detectChanges();
-
-      expect(component.uploadState().status).toBe('error');
-
-      const icon = fixture.nativeElement.querySelector('.upload-icon');
-      expect(icon.classList.contains('error')).toBe(true);
-    });
-
-    it('should show error message', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(false);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Set error state
-      component.uploadState.set({ status: 'error', progress: 0, error: 'Network error', file });
-      fixture.detectChanges();
-
-      const errorMessage = fixture.nativeElement.querySelector('.error-message');
-      expect(errorMessage.textContent).toContain('Network error');
-    });
-
-    it('should show retry button on error', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(false);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Set error state
-      component.uploadState.set({ status: 'error', progress: 0, error: 'Network error', file });
-      fixture.detectChanges();
-
-      const retryButton = fixture.nativeElement.querySelector('.error-actions button');
-      expect(retryButton.textContent).toContain('Retry');
-    });
-
-    it('should retry upload when retry button clicked', async () => {
-      mockPhotoStore.uploadPhoto
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Set error state
-      component.uploadState.set({ status: 'error', progress: 0, error: 'Network error', file });
-      fixture.detectChanges();
-
-      // Click retry
-      component.retryUpload({ stopPropagation: vi.fn() } as unknown as Event);
-
-      await vi.waitFor(() => expect(mockPhotoStore.uploadPhoto).toHaveBeenCalledTimes(2));
-    });
-  });
-
-  describe('Reset', () => {
-    it('should reset to idle state when reset is called', async () => {
-      mockPhotoStore.uploadPhoto.mockResolvedValue(true);
-
-      const file = createMockFile('test.jpg', 'image/jpeg');
-      await component['startUpload'](file);
-
-      // Set success state
-      component.uploadState.set({ status: 'success', progress: 100, error: null, file });
-      fixture.detectChanges();
-
-      component.resetUpload({ stopPropagation: vi.fn() } as unknown as Event);
-      fixture.detectChanges();
-
-      expect(component.uploadState().status).toBe('idle');
-    });
+  it('should require propertyId input', () => {
+    expect(component.propertyId()).toBe('property-123');
   });
 });
