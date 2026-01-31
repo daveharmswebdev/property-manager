@@ -1,4 +1,4 @@
-import { Component, input, output, signal, inject } from '@angular/core';
+import { Component, input, output, signal, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -102,9 +102,9 @@ interface UploadState {
             <p class="drop-text error-text">Upload failed</p>
             <p class="error-message" data-testid="error-message">{{ uploadState().error }}</p>
             <div class="error-actions">
-              <button mat-stroked-button color="primary" (click)="retryUpload($event)" data-testid="retry-btn">
+              <button mat-stroked-button color="primary" (click)="retryUpload($event)" [disabled]="isRetryCooldown()" data-testid="retry-btn">
                 <mat-icon>refresh</mat-icon>
-                Retry
+                {{ isRetryCooldown() ? 'Wait...' : 'Retry' }}
               </button>
               <button mat-stroked-button (click)="resetUpload($event)" data-testid="cancel-btn">
                 Cancel
@@ -269,8 +269,13 @@ interface UploadState {
     }
   `]
 })
-export class PhotoUploadComponent {
+export class PhotoUploadComponent implements OnDestroy {
   private readonly photoUploadService = inject(PhotoUploadService);
+
+  /**
+   * Interval ID for progress simulation - cleared on destroy to prevent memory leak
+   */
+  private progressIntervalId: ReturnType<typeof setInterval> | null = null;
 
   /**
    * Required: The upload function to call.
@@ -305,6 +310,11 @@ export class PhotoUploadComponent {
   readonly validationError = signal<string | null>(null);
 
   /**
+   * Whether retry is in cooldown (prevents server spam)
+   */
+  readonly isRetryCooldown = signal(false);
+
+  /**
    * Accepted file types for file input
    */
   readonly acceptedTypes = this.photoUploadService.getAcceptString();
@@ -313,6 +323,11 @@ export class PhotoUploadComponent {
    * Max file size in MB for display
    */
   readonly maxFileSizeMB = this.photoUploadService.getMaxFileSizeBytes() / 1024 / 1024;
+
+  ngOnDestroy(): void {
+    // Clear any running interval to prevent memory leak
+    this.clearProgressInterval();
+  }
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -385,9 +400,12 @@ export class PhotoUploadComponent {
       file,
     });
 
+    // Clear any existing interval before starting a new one
+    this.clearProgressInterval();
+
     // Simulate progress while upload happens
     // Real progress would come from the uploadFn if it supported progress callbacks
-    const progressInterval = setInterval(() => {
+    this.progressIntervalId = setInterval(() => {
       const currentState = this.uploadState();
       if (currentState.status === 'uploading' && currentState.progress < 90) {
         this.uploadState.update(state => ({
@@ -401,7 +419,7 @@ export class PhotoUploadComponent {
       const uploadFn = this.uploadFn();
       const success = await uploadFn(file);
 
-      clearInterval(progressInterval);
+      this.clearProgressInterval();
 
       if (success) {
         this.uploadState.set({
@@ -420,7 +438,7 @@ export class PhotoUploadComponent {
         });
       }
     } catch (error) {
-      clearInterval(progressInterval);
+      this.clearProgressInterval();
       const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.';
       this.uploadState.set({
         status: 'error',
@@ -432,12 +450,32 @@ export class PhotoUploadComponent {
   }
 
   /**
-   * Retry failed upload
+   * Helper to clear progress interval
+   */
+  private clearProgressInterval(): void {
+    if (this.progressIntervalId) {
+      clearInterval(this.progressIntervalId);
+      this.progressIntervalId = null;
+    }
+  }
+
+  /**
+   * Retry failed upload with cooldown to prevent server spam
    */
   retryUpload(event: Event): void {
     event.stopPropagation();
+
+    // Prevent rapid retries
+    if (this.isRetryCooldown()) {
+      return;
+    }
+
     const file = this.uploadState().file;
     if (file) {
+      // Start cooldown
+      this.isRetryCooldown.set(true);
+      setTimeout(() => this.isRetryCooldown.set(false), 2000);
+
       this.startUpload(file);
     }
   }

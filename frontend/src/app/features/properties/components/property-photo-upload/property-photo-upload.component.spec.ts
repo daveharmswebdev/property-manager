@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PropertyPhotoUploadComponent } from './property-photo-upload.component';
 import { PhotoUploadService } from '../../../../shared/services/photo-upload.service';
 import { PropertyPhotoStore } from '../../stores/property-photo.store';

@@ -7,7 +7,7 @@ import {
   withState,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, firstValueFrom } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiClient, WorkOrderPhotoDto } from '../../../core/api/api.service';
 
@@ -149,13 +149,15 @@ export const WorkOrderPhotoStore = signalStore(
 
       try {
         // Step 1: Request presigned URL from work order photos endpoint
-        const uploadUrlResponse = await apiClient.workOrderPhotos_GenerateUploadUrl(workOrderId, {
-          contentType: file.type,
-          fileSizeBytes: file.size,
-          originalFileName: file.name,
-        }).toPromise();
+        const uploadUrlResponse = await firstValueFrom(
+          apiClient.workOrderPhotos_GenerateUploadUrl(workOrderId, {
+            contentType: file.type,
+            fileSizeBytes: file.size,
+            originalFileName: file.name,
+          })
+        );
 
-        if (!uploadUrlResponse?.uploadUrl || !uploadUrlResponse?.storageKey) {
+        if (!uploadUrlResponse.uploadUrl || !uploadUrlResponse.storageKey) {
           throw new Error('Failed to get upload URL');
         }
 
@@ -175,13 +177,15 @@ export const WorkOrderPhotoStore = signalStore(
         patchState(store, { uploadProgress: 80 });
 
         // Step 3: Confirm upload with work order photos endpoint
-        await apiClient.workOrderPhotos_ConfirmUpload(workOrderId, {
-          storageKey: uploadUrlResponse.storageKey,
-          thumbnailStorageKey: uploadUrlResponse.thumbnailStorageKey ?? undefined,
-          contentType: file.type,
-          fileSizeBytes: file.size,
-          originalFileName: file.name,
-        }).toPromise();
+        await firstValueFrom(
+          apiClient.workOrderPhotos_ConfirmUpload(workOrderId, {
+            storageKey: uploadUrlResponse.storageKey,
+            thumbnailStorageKey: uploadUrlResponse.thumbnailStorageKey ?? undefined,
+            contentType: file.type,
+            fileSizeBytes: file.size,
+            originalFileName: file.name,
+          })
+        );
 
         patchState(store, {
           isUploading: false,

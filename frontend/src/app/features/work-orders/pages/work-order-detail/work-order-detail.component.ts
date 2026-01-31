@@ -640,6 +640,12 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
    */
   onPhotoClick(photo: WorkOrderPhotoDto): void {
     const photos = this.photoStore.sortedPhotos();
+
+    // Guard against empty photos array
+    if (photos.length === 0) {
+      return;
+    }
+
     const currentIndex = photos.findIndex((p) => p.id === photo.id);
 
     this.dialog.open(PhotoLightboxComponent, {
