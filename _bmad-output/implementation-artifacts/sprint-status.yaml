@@ -138,8 +138,8 @@ development_status:
   # User Outcome: "I can document everything about a repair with photos and notes"
   epic-10: in-progress
   10-1-polymorphic-notes-entity: done
-  10-2-add-notes-to-work-order: review
-  10-3-delete-notes: backlog
+  10-2-add-notes-to-work-order: done
+  10-3-delete-notes: done
   10-4-work-order-photos-entity: backlog
   10-5-upload-photos-to-work-order: backlog
   10-6-view-work-order-photos: backlog

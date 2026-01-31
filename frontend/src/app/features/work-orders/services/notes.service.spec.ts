@@ -128,6 +128,56 @@ describe('NotesService', () => {
     });
   });
 
+  describe('deleteNote', () => {
+    it('should delete a note successfully', () => {
+      let completed = false;
+
+      service.deleteNote('note-1').subscribe({
+        next: () => {
+          completed = true;
+        }
+      });
+
+      const req = httpMock.expectOne('/api/v1/notes/note-1');
+      expect(req.request.method).toBe('DELETE');
+      req.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(completed).toBe(true);
+    });
+
+    it('should handle 404 error when note not found', () => {
+      let errorOccurred = false;
+
+      service.deleteNote('non-existent').subscribe({
+        error: (error: { status: number }) => {
+          errorOccurred = true;
+          expect(error.status).toBe(404);
+        }
+      });
+
+      const req = httpMock.expectOne('/api/v1/notes/non-existent');
+      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+
+      expect(errorOccurred).toBe(true);
+    });
+
+    it('should handle server errors gracefully', () => {
+      let errorOccurred = false;
+
+      service.deleteNote('note-1').subscribe({
+        error: (error: { status: number }) => {
+          errorOccurred = true;
+          expect(error.status).toBe(500);
+        }
+      });
+
+      const req = httpMock.expectOne('/api/v1/notes/note-1');
+      req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
+
+      expect(errorOccurred).toBe(true);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle API errors gracefully for getNotes', () => {
       let errorOccurred = false;
