@@ -213,33 +213,41 @@ import {
 
         <!-- Photo Gallery Section (AC-13.3b.2, AC-13.3c.5, AC-13.3c.6) -->
         <div class="photo-section">
+          <!-- Upload Zone Card (inline pattern - symmetric with work orders) -->
+          @if (showUploadDialog) {
+            <mat-card class="upload-zone-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>cloud_upload</mat-icon>
+                  Upload Photos
+                </mat-card-title>
+                <button
+                  mat-icon-button
+                  (click)="showUploadDialog = false"
+                  aria-label="Close upload zone"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-card-header>
+              <mat-card-content>
+                <app-property-photo-upload
+                  [propertyId]="propertyStore.selectedProperty()!.id"
+                  (uploadComplete)="onUploadComplete()"
+                />
+              </mat-card-content>
+            </mat-card>
+          }
+
           <app-property-photo-gallery
             [photos]="galleryPhotos()"
             [isLoading]="photoStore.isLoading()"
-            (addPhotoClick)="showUploadDialog = true"
+            [isUploadVisible]="showUploadDialog"
+            (addPhotoClick)="toggleUploadDialog()"
             (photoClick)="onPhotoClick($event)"
             (setPrimaryClick)="onSetPrimaryClick($event)"
             (deleteClick)="onDeletePhotoClick($event)"
             (reorderClick)="onReorderPhotos($event)"
           />
-
-          <!-- Upload Dialog/Overlay -->
-          @if (showUploadDialog) {
-            <div class="upload-overlay" (click)="showUploadDialog = false">
-              <div class="upload-dialog" (click)="$event.stopPropagation()">
-                <div class="upload-dialog-header">
-                  <h3>Upload Photo</h3>
-                  <button mat-icon-button (click)="showUploadDialog = false" aria-label="Close">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </div>
-                <app-property-photo-upload
-                  [propertyId]="propertyStore.selectedProperty()!.id"
-                  (uploadComplete)="onUploadComplete()"
-                />
-              </div>
-            </div>
-          }
         </div>
 
         <!-- Work Orders Section (Story 9-11) -->
@@ -622,48 +630,26 @@ import {
       margin-bottom: 24px;
     }
 
-    // Upload Overlay
-    .upload-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 16px;
-    }
+    // Inline Upload Zone Card (symmetric with work orders)
+    .upload-zone-card {
+      margin-bottom: 16px;
 
-    .upload-dialog {
-      background-color: white;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow: auto;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-
-      .upload-dialog-header {
+      mat-card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--pm-border, #e0e0e0);
+        margin-bottom: 16px;
 
-        h3 {
+        mat-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
           margin: 0;
-          font-size: 18px;
-          font-weight: 500;
-          color: var(--pm-text-primary);
-        }
-      }
 
-      app-property-photo-upload {
-        display: block;
-        padding: 24px;
+          mat-icon {
+            color: var(--pm-primary);
+          }
+        }
       }
     }
   `]
@@ -867,6 +853,13 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
       case 'jpeg':
       default: return 'image/jpeg';
     }
+  }
+
+  /**
+   * Toggle the upload dialog visibility
+   */
+  toggleUploadDialog(): void {
+    this.showUploadDialog = !this.showUploadDialog;
   }
 
   /**

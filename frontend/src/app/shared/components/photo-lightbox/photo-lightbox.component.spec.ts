@@ -2,14 +2,14 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { PhotoLightboxComponent, PhotoLightboxData } from './photo-lightbox.component';
+import { PhotoLightboxComponent, PhotoLightboxData, LightboxPhoto } from './photo-lightbox.component';
 
 describe('PhotoLightboxComponent', () => {
   let component: PhotoLightboxComponent;
   let fixture: ComponentFixture<PhotoLightboxComponent>;
   let dialogRefSpy: { close: ReturnType<typeof vi.fn> };
 
-  const mockPhotos = [
+  const mockPhotos: LightboxPhoto[] = [
     {
       id: 'photo-1',
       viewUrl: 'https://example.com/photo1.jpg',
@@ -18,6 +18,7 @@ describe('PhotoLightboxComponent', () => {
       displayOrder: 0,
       contentType: 'image/jpeg',
       originalFileName: 'photo1.jpg',
+      createdAt: new Date('2026-01-15T10:30:00Z'),
     },
     {
       id: 'photo-2',
@@ -27,6 +28,7 @@ describe('PhotoLightboxComponent', () => {
       displayOrder: 1,
       contentType: 'image/jpeg',
       originalFileName: 'photo2.jpg',
+      createdAt: new Date('2026-01-20T14:00:00Z'),
     },
     {
       id: 'photo-3',
@@ -36,6 +38,7 @@ describe('PhotoLightboxComponent', () => {
       displayOrder: 2,
       contentType: 'image/png',
       originalFileName: 'photo3.png',
+      // No createdAt - test graceful handling
     },
   ];
 
@@ -242,6 +245,104 @@ describe('PhotoLightboxComponent', () => {
       const compiled = fixture.nativeElement as HTMLElement;
       const filename = compiled.querySelector('[data-testid="photo-filename"]');
       expect(filename?.textContent).toContain('photo1.jpg');
+    });
+  });
+
+  // ========== Story 10-6: Upload Date Display (AC #3) ==========
+  describe('Upload Date Display (AC #3)', () => {
+    beforeEach(async () => {
+      await createComponent();
+    });
+
+    it('should display upload date when createdAt is provided', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const dateElement = compiled.querySelector('[data-testid="photo-date"]');
+      expect(dateElement).toBeTruthy();
+      expect(dateElement?.textContent).toContain('Uploaded');
+      expect(dateElement?.textContent).toContain('Jan');
+      expect(dateElement?.textContent).toContain('2026');
+    });
+
+    it('should hide date when createdAt is undefined', async () => {
+      // Navigate to photo-3 which has no createdAt
+      component.next();
+      component.next();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const dateElement = compiled.querySelector('[data-testid="photo-date"]');
+      expect(dateElement).toBeFalsy();
+    });
+  });
+
+  // ========== Story 10-6: Delete Button in Lightbox (AC #4, #5) ==========
+  describe('Delete Button in Lightbox (AC #4, #5)', () => {
+    it('should show delete button when showDelete is true', async () => {
+      await createComponent({ photos: mockPhotos, currentIndex: 0, showDelete: true });
+      const compiled = fixture.nativeElement as HTMLElement;
+      const deleteBtn = compiled.querySelector('[data-testid="lightbox-delete-button"]');
+      expect(deleteBtn).toBeTruthy();
+    });
+
+    it('should hide delete button when showDelete is false', async () => {
+      await createComponent({ photos: mockPhotos, currentIndex: 0, showDelete: false });
+      const compiled = fixture.nativeElement as HTMLElement;
+      const deleteBtn = compiled.querySelector('[data-testid="lightbox-delete-button"]');
+      expect(deleteBtn).toBeFalsy();
+    });
+
+    it('should hide delete button when showDelete is not provided (default)', async () => {
+      await createComponent({ photos: mockPhotos, currentIndex: 0 });
+      const compiled = fixture.nativeElement as HTMLElement;
+      const deleteBtn = compiled.querySelector('[data-testid="lightbox-delete-button"]');
+      expect(deleteBtn).toBeFalsy();
+    });
+
+    it('should emit deleteClick with current photo when delete button is clicked', async () => {
+      await createComponent({ photos: mockPhotos, currentIndex: 1, showDelete: true });
+      const deleteSpy = vi.fn();
+      component.deleteClick.subscribe(deleteSpy);
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const deleteBtn = compiled.querySelector('[data-testid="lightbox-delete-button"]') as HTMLButtonElement;
+      deleteBtn.click();
+
+      expect(deleteSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 'photo-2' }));
+    });
+  });
+
+  // ========== Story 10-6: updatePhotos Method (AC #6, #7) ==========
+  describe('updatePhotos Method (AC #6, #7)', () => {
+    beforeEach(async () => {
+      await createComponent({ photos: mockPhotos, currentIndex: 1, showDelete: true });
+    });
+
+    it('should update photos array and index', () => {
+      const newPhotos = [mockPhotos[0], mockPhotos[2]]; // Remove photo-2
+      component.updatePhotos(newPhotos, 1);
+      fixture.detectChanges();
+
+      expect(component.currentIndex()).toBe(1);
+      expect(component.currentPhoto()?.id).toBe('photo-3');
+    });
+
+    it('should clamp index to valid range when photos are removed', () => {
+      const newPhotos = [mockPhotos[0]]; // Only one photo left
+      component.updatePhotos(newPhotos, 5); // Invalid index
+      fixture.detectChanges();
+
+      expect(component.currentIndex()).toBe(0);
+      expect(component.currentPhoto()?.id).toBe('photo-1');
+    });
+
+    it('should update photo counter after updatePhotos', () => {
+      const newPhotos = [mockPhotos[0], mockPhotos[2]];
+      component.updatePhotos(newPhotos, 0);
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const counter = compiled.querySelector('[data-testid="photo-counter"]');
+      expect(counter?.textContent).toContain('1 of 2');
     });
   });
 });

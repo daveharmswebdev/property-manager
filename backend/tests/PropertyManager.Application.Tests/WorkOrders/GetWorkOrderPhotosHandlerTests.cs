@@ -78,46 +78,53 @@ public class GetWorkOrderPhotosHandlerTests
     }
 
     [Fact]
-    public async Task Handle_MultiplePhotos_SortsByCreatedAtDescending()
+    public async Task Handle_MultiplePhotos_SortsByDisplayOrderAscending()
     {
         // Arrange
         var workOrder = CreateWorkOrder(_testAccountId);
-        var oldestPhoto = new WorkOrderPhoto
+        var firstPhoto = new WorkOrderPhoto
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
             WorkOrderId = _testWorkOrderId,
-            StorageKey = $"{_testAccountId}/workorders/2026/oldest.jpg",
-            OriginalFileName = "oldest.jpg",
+            StorageKey = $"{_testAccountId}/workorders/2026/first.jpg",
+            OriginalFileName = "first.jpg",
+            DisplayOrder = 0,
+            IsPrimary = true,
             CreatedByUserId = _testUserId,
             CreatedAt = DateTime.UtcNow.AddHours(-2),
             UpdatedAt = DateTime.UtcNow.AddHours(-2)
         };
-        var newestPhoto = new WorkOrderPhoto
+        var secondPhoto = new WorkOrderPhoto
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
             WorkOrderId = _testWorkOrderId,
-            StorageKey = $"{_testAccountId}/workorders/2026/newest.jpg",
-            OriginalFileName = "newest.jpg",
+            StorageKey = $"{_testAccountId}/workorders/2026/second.jpg",
+            OriginalFileName = "second.jpg",
+            DisplayOrder = 1,
+            IsPrimary = false,
             CreatedByUserId = _testUserId,
-            CreatedAt = DateTime.UtcNow.AddMinutes(-5),
+            CreatedAt = DateTime.UtcNow.AddMinutes(-5), // Newer but higher DisplayOrder
             UpdatedAt = DateTime.UtcNow.AddMinutes(-5)
         };
-        var middlePhoto = new WorkOrderPhoto
+        var thirdPhoto = new WorkOrderPhoto
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
             WorkOrderId = _testWorkOrderId,
-            StorageKey = $"{_testAccountId}/workorders/2026/middle.jpg",
-            OriginalFileName = "middle.jpg",
+            StorageKey = $"{_testAccountId}/workorders/2026/third.jpg",
+            OriginalFileName = "third.jpg",
+            DisplayOrder = 2,
+            IsPrimary = false,
             CreatedByUserId = _testUserId,
             CreatedAt = DateTime.UtcNow.AddHours(-1),
             UpdatedAt = DateTime.UtcNow.AddHours(-1)
         };
 
         SetupWorkOrdersDbSet(new List<WorkOrder> { workOrder });
-        SetupWorkOrderPhotosDbSet(new List<WorkOrderPhoto> { oldestPhoto, newestPhoto, middlePhoto });
+        // Add in random order to verify sorting works
+        SetupWorkOrderPhotosDbSet(new List<WorkOrderPhoto> { thirdPhoto, firstPhoto, secondPhoto });
         SetupPhotoServiceUrlMocks();
 
         var query = new GetWorkOrderPhotosQuery(_testWorkOrderId);
@@ -127,9 +134,9 @@ public class GetWorkOrderPhotosHandlerTests
 
         // Assert
         result.Items.Should().HaveCount(3);
-        result.Items[0].OriginalFileName.Should().Be("newest.jpg"); // Newest first
-        result.Items[1].OriginalFileName.Should().Be("middle.jpg");
-        result.Items[2].OriginalFileName.Should().Be("oldest.jpg"); // Oldest last
+        result.Items[0].OriginalFileName.Should().Be("first.jpg"); // DisplayOrder 0
+        result.Items[1].OriginalFileName.Should().Be("second.jpg"); // DisplayOrder 1
+        result.Items[2].OriginalFileName.Should().Be("third.jpg"); // DisplayOrder 2
     }
 
     [Fact]

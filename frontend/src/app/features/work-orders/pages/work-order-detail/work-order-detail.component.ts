@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
@@ -14,7 +14,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/co
 import { WorkOrderNotesComponent } from '../../components/work-order-notes/work-order-notes.component';
 import { WorkOrderPhotoGalleryComponent } from '../../components/work-order-photo-gallery/work-order-photo-gallery.component';
 import { PhotoUploadComponent } from '../../../../shared/components/photo-upload/photo-upload.component';
-import { PhotoLightboxComponent, PhotoLightboxData } from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
+import { PhotoLightboxComponent, PhotoLightboxData, LightboxPhoto } from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
 import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
 
 /**
@@ -237,9 +237,12 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
           <app-work-order-photo-gallery
             [photos]="photoStore.sortedPhotos()"
             [isLoading]="photoStore.isLoading()"
+            [isUploadVisible]="showUploadZone()"
             (addPhotoClick)="toggleUploadZone()"
             (photoClick)="onPhotoClick($event)"
             (deleteClick)="onPhotoDeleteClick($event)"
+            (setPrimaryClick)="onSetPrimaryPhoto($event)"
+            (reorderClick)="onReorderPhotos($event)"
           />
         </div>
 
@@ -636,7 +639,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle photo click - open lightbox (Story 10-5, AC #7)
+   * Handle photo click - open lightbox (Story 10-5, AC #7; Story 10-6)
    */
   onPhotoClick(photo: WorkOrderPhotoDto): void {
     const photos = this.photoStore.sortedPhotos();
@@ -648,15 +651,17 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
 
     const currentIndex = photos.findIndex((p) => p.id === photo.id);
 
-    this.dialog.open(PhotoLightboxComponent, {
+    const dialogRef = this.dialog.open(PhotoLightboxComponent, {
       data: {
         photos: photos.map((p) => ({
           id: p.id || '',
           viewUrl: p.photoUrl,
           thumbnailUrl: p.thumbnailUrl,
           originalFileName: p.originalFileName,
+          createdAt: p.createdAt,  // Story 10-6: Pass upload date
         })),
         currentIndex: currentIndex >= 0 ? currentIndex : 0,
+        showDelete: true,  // Story 10-6: Enable delete from lightbox
       } as PhotoLightboxData,
       maxWidth: '100vw',
       maxHeight: '100vh',
@@ -664,6 +669,28 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
       height: '100%',
       panelClass: 'photo-lightbox-dialog',
     });
+
+    // Story 10-6: Subscribe to delete events from lightbox
+    const lightbox = dialogRef.componentInstance;
+    lightbox.deleteClick.subscribe((photoToDelete: LightboxPhoto) => {
+      this.onLightboxDelete(photoToDelete, dialogRef);
+    });
+  }
+
+  /**
+   * Handle set primary photo click
+   */
+  onSetPrimaryPhoto(photo: WorkOrderPhotoDto): void {
+    if (photo.id) {
+      this.photoStore.setPrimaryPhoto(photo.id);
+    }
+  }
+
+  /**
+   * Handle reorder photos
+   */
+  onReorderPhotos(photoIds: string[]): void {
+    this.photoStore.reorderPhotos(photoIds);
   }
 
   /**
@@ -684,6 +711,63 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
     const confirmed = await firstValueFrom(dialogRef.afterClosed());
     if (confirmed && photo.id) {
       this.photoStore.deletePhoto(photo.id);
+    }
+  }
+
+  /**
+   * Handle delete from lightbox (Story 10-6, AC #5, #6, #7)
+   * Shows confirmation, deletes photo, and updates lightbox state.
+   * Uses optimistic UI update - we know which photo is deleted so we can
+   * update the lightbox immediately without waiting for the store.
+   */
+  async onLightboxDelete(
+    photo: LightboxPhoto,
+    lightboxRef: MatDialogRef<PhotoLightboxComponent>
+  ): Promise<void> {
+    const confirmRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete this photo?',
+        message: 'This photo will be permanently removed.',
+        confirmText: 'Delete',
+        icon: 'warning',
+        iconColor: 'warn',
+        confirmIcon: 'delete',
+      } as ConfirmDialogData,
+    });
+
+    const confirmed = await firstValueFrom(confirmRef.afterClosed());
+    if (confirmed && photo.id) {
+      // Get current photos and compute remaining photos optimistically
+      // We know the photo being deleted, so we can update UI immediately
+      const currentPhotos = this.photoStore.sortedPhotos();
+      const remainingPhotos = currentPhotos.filter(p => p.id !== photo.id);
+
+      // Get current index before deletion for proper navigation
+      const lightbox = lightboxRef.componentInstance;
+      const currentIdx = lightbox.currentIndex();
+
+      // Delete the photo via store (this will also update store state)
+      this.photoStore.deletePhoto(photo.id);
+
+      // Update lightbox immediately with optimistic state
+      if (remainingPhotos.length === 0) {
+        // No photos left - close lightbox (AC #7)
+        lightboxRef.close();
+      } else {
+        // Update lightbox with remaining photos (AC #6)
+        const newIdx = Math.min(currentIdx, remainingPhotos.length - 1);
+
+        lightbox.updatePhotos(
+          remainingPhotos.map((p) => ({
+            id: p.id || '',
+            viewUrl: p.photoUrl,
+            thumbnailUrl: p.thumbnailUrl,
+            originalFileName: p.originalFileName,
+            createdAt: p.createdAt,
+          })),
+          newIdx
+        );
+      }
     }
   }
 }

@@ -8,7 +8,7 @@ namespace PropertyManager.Application.WorkOrders;
 
 /// <summary>
 /// DTO for work order photo in list response.
-/// Simpler than PropertyPhotoDto - no IsPrimary or DisplayOrder.
+/// Includes IsPrimary and DisplayOrder for symmetric behavior with PropertyPhoto.
 /// </summary>
 public record WorkOrderPhotoDto(
     Guid Id,
@@ -16,6 +16,8 @@ public record WorkOrderPhotoDto(
     string? OriginalFileName,
     string? ContentType,
     long? FileSizeBytes,
+    int DisplayOrder,
+    bool IsPrimary,
     Guid CreatedByUserId,
     DateTime CreatedAt,
     string? PhotoUrl,
@@ -29,7 +31,7 @@ public record GetWorkOrderPhotosResponse(
 
 /// <summary>
 /// Query to get all photos for a work order (AC #5).
-/// Photos are sorted by CreatedAt descending (newest first).
+/// Photos are sorted by DisplayOrder ascending (primary first).
 /// </summary>
 public record GetWorkOrderPhotosQuery(
     Guid WorkOrderId
@@ -68,10 +70,10 @@ public class GetWorkOrderPhotosHandler : IRequestHandler<GetWorkOrderPhotosQuery
             throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
         }
 
-        // Get all photos ordered by CreatedAt descending (newest first)
+        // Get all photos ordered by DisplayOrder ascending (primary first)
         var photos = await _dbContext.WorkOrderPhotos
             .Where(p => p.WorkOrderId == request.WorkOrderId && p.AccountId == _currentUser.AccountId)
-            .OrderByDescending(p => p.CreatedAt)
+            .OrderBy(p => p.DisplayOrder)
             .Select(p => new
             {
                 p.Id,
@@ -81,6 +83,8 @@ public class GetWorkOrderPhotosHandler : IRequestHandler<GetWorkOrderPhotosQuery
                 p.OriginalFileName,
                 p.ContentType,
                 p.FileSizeBytes,
+                p.DisplayOrder,
+                p.IsPrimary,
                 p.CreatedByUserId,
                 p.CreatedAt
             })
@@ -109,6 +113,8 @@ public class GetWorkOrderPhotosHandler : IRequestHandler<GetWorkOrderPhotosQuery
                 OriginalFileName: photo.OriginalFileName,
                 ContentType: photo.ContentType,
                 FileSizeBytes: photo.FileSizeBytes,
+                DisplayOrder: photo.DisplayOrder,
+                IsPrimary: photo.IsPrimary,
                 CreatedByUserId: photo.CreatedByUserId,
                 CreatedAt: photo.CreatedAt,
                 PhotoUrl: photoUrl,

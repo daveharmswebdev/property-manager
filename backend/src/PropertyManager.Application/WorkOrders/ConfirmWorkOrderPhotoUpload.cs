@@ -29,7 +29,7 @@ public record ConfirmWorkOrderPhotoUploadCommand(
 /// <summary>
 /// Handler for ConfirmWorkOrderPhotoUploadCommand.
 /// Creates WorkOrderPhoto record after confirming upload with IPhotoService.
-/// Simpler than PropertyPhoto - no primary photo or display order logic.
+/// Auto-sets IsPrimary=true if this is the first photo for the work order.
 /// </summary>
 public class ConfirmWorkOrderPhotoUploadHandler : IRequestHandler<ConfirmWorkOrderPhotoUploadCommand, ConfirmWorkOrderPhotoUploadResponse>
 {
@@ -83,6 +83,17 @@ public class ConfirmWorkOrderPhotoUploadHandler : IRequestHandler<ConfirmWorkOrd
             request.FileSizeBytes,
             cancellationToken);
 
+        // Check if this is the first photo for the work order (auto-primary logic)
+        var existingPhotoCount = await _dbContext.WorkOrderPhotos
+            .CountAsync(wp => wp.WorkOrderId == request.WorkOrderId, cancellationToken);
+
+        var isFirstPhoto = existingPhotoCount == 0;
+
+        // Determine DisplayOrder (next in sequence)
+        var maxDisplayOrder = await _dbContext.WorkOrderPhotos
+            .Where(wp => wp.WorkOrderId == request.WorkOrderId)
+            .MaxAsync(wp => (int?)wp.DisplayOrder, cancellationToken) ?? -1;
+
         var workOrderPhoto = new WorkOrderPhoto
         {
             AccountId = _currentUser.AccountId,
@@ -92,6 +103,8 @@ public class ConfirmWorkOrderPhotoUploadHandler : IRequestHandler<ConfirmWorkOrd
             OriginalFileName = request.OriginalFileName,
             ContentType = photoRecord.ContentType,
             FileSizeBytes = photoRecord.FileSizeBytes,
+            DisplayOrder = maxDisplayOrder + 1,
+            IsPrimary = isFirstPhoto,
             CreatedByUserId = _currentUser.UserId
         };
 

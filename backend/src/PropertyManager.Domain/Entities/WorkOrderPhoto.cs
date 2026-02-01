@@ -4,8 +4,7 @@ namespace PropertyManager.Domain.Entities;
 
 /// <summary>
 /// Work order photo entity for storing images related to work orders.
-/// Simpler than PropertyPhoto - no primary photo concept or display ordering.
-/// Photos are sorted by CreatedAt descending (newest first).
+/// Supports display ordering and primary photo designation (symmetric with PropertyPhoto).
 /// </summary>
 public class WorkOrderPhoto : AuditableEntity, ITenantEntity
 {
@@ -16,6 +15,8 @@ public class WorkOrderPhoto : AuditableEntity, ITenantEntity
     public string? OriginalFileName { get; set; }
     public string? ContentType { get; set; }
     public long? FileSizeBytes { get; set; }
+    public int DisplayOrder { get; set; }
+    public bool IsPrimary { get; set; }
     public Guid CreatedByUserId { get; set; }
 
     // Navigation properties

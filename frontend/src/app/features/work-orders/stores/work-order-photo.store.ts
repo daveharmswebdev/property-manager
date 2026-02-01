@@ -14,10 +14,9 @@ import { ApiClient, WorkOrderPhotoDto } from '../../../core/api/api.service';
 /**
  * Work Order Photo Store State Interface
  *
- * Simpler than PropertyPhotoState:
- * - NO isPrimary
- * - NO displayOrder/reordering
- * - Photos sorted by createdAt descending (newest first) from API
+ * Symmetric with PropertyPhotoState:
+ * - Supports isPrimary and displayOrder
+ * - Photos sorted by displayOrder ascending (primary first)
  */
 interface WorkOrderPhotoState {
   /** Current work order ID */
@@ -53,15 +52,16 @@ const initialState: WorkOrderPhotoState = {
  * WorkOrderPhotoStore
  *
  * State management for work order photos using @ngrx/signals.
- * Simpler than PropertyPhotoStore:
- * - NO isPrimary
- * - NO displayOrder/reordering
- * - Photos sorted by createdAt descending (newest first)
+ * Symmetric with PropertyPhotoStore:
+ * - Supports isPrimary and displayOrder
+ * - Photos sorted by displayOrder ascending (primary first)
  *
  * Provides:
  * - Photos list with loading/error states
  * - Upload with progress tracking
  * - Delete operation
+ * - Set primary photo
+ * - Reorder photos
  */
 export const WorkOrderPhotoStore = signalStore(
   { providedIn: 'root' },
@@ -83,14 +83,14 @@ export const WorkOrderPhotoStore = signalStore(
     isEmpty: computed(() => !store.isLoading() && store.photos().length === 0),
 
     /**
-     * Photos sorted by createdAt descending (newest first)
+     * Photos sorted by displayOrder ascending (primary first)
      * Note: API already returns photos sorted, but we ensure consistency
      */
     sortedPhotos: computed(() =>
       [...store.photos()].sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA; // Newest first
+        const orderA = a.displayOrder ?? 0;
+        const orderB = b.displayOrder ?? 0;
+        return orderA - orderB;
       })
     ),
   })),
@@ -253,6 +253,88 @@ export const WorkOrderPhotoStore = signalStore(
                 verticalPosition: 'bottom',
               });
               console.error('Error deleting photo:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
+
+    /**
+     * Set a photo as primary
+     */
+    setPrimaryPhoto: rxMethod<string>(
+      pipe(
+        switchMap((photoId) => {
+          const workOrderId = store.workOrderId();
+          if (!workOrderId) {
+            console.error('No work order ID set');
+            return of(null);
+          }
+
+          return apiClient.workOrderPhotos_SetPrimaryPhoto(workOrderId, photoId).pipe(
+            tap(() => {
+              // Update local state
+              patchState(store, {
+                photos: store.photos().map(p => ({
+                  ...p,
+                  isPrimary: p.id === photoId,
+                })),
+              });
+
+              snackBar.open('Primary photo set', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+            }),
+            catchError((error) => {
+              snackBar.open('Failed to set primary photo', 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+              console.error('Error setting primary photo:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
+
+    /**
+     * Reorder photos
+     */
+    reorderPhotos: rxMethod<string[]>(
+      pipe(
+        switchMap((photoIds) => {
+          const workOrderId = store.workOrderId();
+          if (!workOrderId) {
+            console.error('No work order ID set');
+            return of(null);
+          }
+
+          return apiClient.workOrderPhotos_ReorderPhotos(workOrderId, { photoIds }).pipe(
+            tap(() => {
+              // Update local state with new order
+              const currentPhotos = store.photos();
+              const reorderedPhotos: WorkOrderPhotoDto[] = [];
+              for (let i = 0; i < photoIds.length; i++) {
+                const photo = currentPhotos.find(p => p.id === photoIds[i]);
+                if (photo) {
+                  reorderedPhotos.push({ ...photo, displayOrder: i });
+                }
+              }
+
+              patchState(store, { photos: reorderedPhotos });
+            }),
+            catchError((error) => {
+              snackBar.open('Failed to reorder photos', 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+              console.error('Error reordering photos:', error);
               return of(null);
             })
           );
