@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -61,7 +62,7 @@ public class ReportStorageService : IReportStorageService
 
             _logger.LogInformation(
                 "Saved report to S3: {StorageKey} ({ContentLength} bytes)",
-                storageKey,
+                LogSanitizer.MaskStorageKey(storageKey),
                 content.Length);
 
             return storageKey;
@@ -70,7 +71,7 @@ public class ReportStorageService : IReportStorageService
         {
             _logger.LogError(ex,
                 "Failed to save report to S3: {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to save report: {ex.Message}", ex);
         }
@@ -95,7 +96,7 @@ public class ReportStorageService : IReportStorageService
 
             _logger.LogInformation(
                 "Retrieved report from S3: {StorageKey} ({ContentLength} bytes)",
-                storageKey,
+                LogSanitizer.MaskStorageKey(storageKey),
                 memoryStream.Length);
 
             return memoryStream.ToArray();
@@ -104,14 +105,14 @@ public class ReportStorageService : IReportStorageService
         {
             _logger.LogWarning(
                 "Report not found in S3: {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException($"Report not found: {storageKey}");
         }
         catch (AmazonS3Exception ex)
         {
             _logger.LogError(ex,
                 "Failed to retrieve report from S3: {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to retrieve report: {ex.Message}", ex);
         }
@@ -134,13 +135,13 @@ public class ReportStorageService : IReportStorageService
 
             _logger.LogInformation(
                 "Deleted report from S3: {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
         }
         catch (AmazonS3Exception ex)
         {
             _logger.LogError(ex,
                 "Failed to delete report from S3: {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to delete report: {ex.Message}", ex);
         }

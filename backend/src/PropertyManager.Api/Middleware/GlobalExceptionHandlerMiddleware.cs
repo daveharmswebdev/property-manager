@@ -1,6 +1,7 @@
 using System.Net;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Domain.Exceptions;
 using DomainValidationException = PropertyManager.Domain.Exceptions.ValidationException;
 
@@ -42,22 +43,25 @@ public class GlobalExceptionHandlerMiddleware
     {
         var (statusCode, type, title) = GetErrorDetails(exception);
 
-        // Log at appropriate level
+        // Log at appropriate level (sanitize user-controlled input to prevent log forging)
+        var sanitizedMessage = LogSanitizer.Sanitize(exception.Message);
+        var sanitizedPath = LogSanitizer.Sanitize(context.Request.Path);
+
         if (statusCode >= 500)
         {
             _logger.LogError(
                 exception,
                 "Server error occurred: {Message} at {Path}",
-                exception.Message,
-                context.Request.Path);
+                sanitizedMessage,
+                sanitizedPath);
         }
         else
         {
             _logger.LogWarning(
                 exception,
                 "Client error occurred: {Message} at {Path}",
-                exception.Message,
-                context.Request.Path);
+                sanitizedMessage,
+                sanitizedPath);
         }
 
         // Create ProblemDetails response

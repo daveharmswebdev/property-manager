@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 
@@ -103,7 +104,7 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         // Send invitation email (AC: TD.6.5)
         await _emailService.SendInvitationEmailAsync(email, rawCode, cancellationToken);
 
-        _logger.LogInformation("Invitation created for {Email}, ID: {InvitationId}", email, invitation.Id);
+        _logger.LogInformation("Invitation created for {Email}, ID: {InvitationId}", LogSanitizer.MaskEmail(email), invitation.Id);
 
         return new CreateInvitationResult(invitation.Id, "Invitation sent successfully");
     }

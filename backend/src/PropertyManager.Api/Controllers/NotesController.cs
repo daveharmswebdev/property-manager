@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Api.Contracts.Notes;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Notes;
 
 namespace PropertyManager.Api.Controllers;
@@ -57,7 +58,7 @@ public class NotesController : ControllerBase
 
         _logger.LogInformation(
             "Retrieved {Count} notes for {EntityType}/{EntityId}",
-            result.TotalCount, entityType, entityId);
+            result.TotalCount, LogSanitizer.Sanitize(entityType), entityId);
 
         return Ok(result);
     }
@@ -96,7 +97,7 @@ public class NotesController : ControllerBase
 
         _logger.LogInformation(
             "Note created: {NoteId} for {EntityType}/{EntityId}",
-            id, request.EntityType, request.EntityId);
+            id, LogSanitizer.Sanitize(request.EntityType), request.EntityId);
 
         return CreatedAtAction(
             nameof(GetNotes),

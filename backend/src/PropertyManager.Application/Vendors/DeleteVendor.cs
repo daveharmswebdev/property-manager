@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Exceptions;
 
@@ -46,7 +47,7 @@ public class DeleteVendorCommandHandler : IRequestHandler<DeleteVendorCommand>
             _logger.LogWarning(
                 "Vendor not found for deletion: {VendorId}, AccountId: {AccountId}",
                 request.Id,
-                _currentUser.AccountId);
+                LogSanitizer.MaskId(_currentUser.AccountId));
             throw new NotFoundException("Vendor", request.Id);
         }
 
@@ -60,8 +61,8 @@ public class DeleteVendorCommandHandler : IRequestHandler<DeleteVendorCommand>
         _logger.LogInformation(
             "Vendor deleted: {VendorId}, AccountId: {AccountId}, UserId: {UserId}",
             request.Id,
-            _currentUser.AccountId,
-            _currentUser.UserId);
+            LogSanitizer.MaskId(_currentUser.AccountId),
+            LogSanitizer.MaskId(_currentUser.UserId));
     }
 }
 

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Exceptions;
 
@@ -44,7 +45,7 @@ public class DeletePropertyCommandHandler : IRequestHandler<DeletePropertyComman
             _logger.LogWarning(
                 "Property not found for deletion: {PropertyId}, AccountId: {AccountId}",
                 request.Id,
-                _currentUser.AccountId);
+                LogSanitizer.MaskId(_currentUser.AccountId));
             throw new NotFoundException("Property", request.Id);
         }
 
@@ -58,7 +59,7 @@ public class DeletePropertyCommandHandler : IRequestHandler<DeletePropertyComman
         _logger.LogInformation(
             "Property deleted: {PropertyId}, AccountId: {AccountId}, UserId: {UserId}",
             request.Id,
-            _currentUser.AccountId,
-            _currentUser.UserId);
+            LogSanitizer.MaskId(_currentUser.AccountId),
+            LogSanitizer.MaskId(_currentUser.UserId));
     }
 }

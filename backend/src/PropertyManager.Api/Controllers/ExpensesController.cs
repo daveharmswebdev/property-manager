@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Expenses;
 using PropertyManager.Domain.Exceptions;
 

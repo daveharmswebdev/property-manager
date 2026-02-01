@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -54,7 +55,7 @@ public class PhotoService : IPhotoService
         _logger.LogInformation(
             "Generating upload URL for {EntityType} photo: {StorageKey}",
             request.EntityType,
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         var uploadResult = await _storageService.GeneratePresignedUploadUrlAsync(
             storageKey,
@@ -88,7 +89,7 @@ public class PhotoService : IPhotoService
 
         _logger.LogInformation(
             "Confirming upload and generating thumbnail for {StorageKey}",
-            request.StorageKey);
+            LogSanitizer.MaskStorageKey(request.StorageKey));
 
         string? confirmedThumbnailKey = null;
 
@@ -134,14 +135,14 @@ public class PhotoService : IPhotoService
 
             _logger.LogInformation(
                 "Thumbnail generated and uploaded successfully: {ThumbnailKey}",
-                confirmedThumbnailKey);
+                LogSanitizer.MaskStorageKey(confirmedThumbnailKey));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Thumbnail generation failure should NOT block upload confirmation
             _logger.LogWarning(ex,
                 "Failed to generate thumbnail for {StorageKey}, continuing without thumbnail",
-                request.StorageKey);
+                LogSanitizer.MaskStorageKey(request.StorageKey));
         }
 
         return new PhotoRecord(
@@ -179,8 +180,8 @@ public class PhotoService : IPhotoService
 
         _logger.LogInformation(
             "Deleting photo {StorageKey} and thumbnail {ThumbnailStorageKey}",
-            storageKey,
-            thumbnailStorageKey ?? "(none)");
+            LogSanitizer.MaskStorageKey(storageKey),
+            thumbnailStorageKey != null ? LogSanitizer.MaskStorageKey(thumbnailStorageKey) : "(none)");
 
         await _storageService.DeleteFileAsync(storageKey, cancellationToken);
 

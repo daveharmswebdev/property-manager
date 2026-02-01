@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Mail;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Email;
@@ -36,7 +37,7 @@ public class SmtpEmailService : IEmailService
 
         await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
 
-        _logger.LogInformation("Verification email sent to {Email}", email);
+        _logger.LogInformation("Verification email sent to {Email}", LogSanitizer.MaskEmail(email));
     }
 
     private async Task SendEmailAsync(
@@ -129,7 +130,7 @@ If you did not create an account, you can safely ignore this email.";
 
         await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
 
-        _logger.LogInformation("Password reset email sent to {Email}", email);
+        _logger.LogInformation("Password reset email sent to {Email}", LogSanitizer.MaskEmail(email));
     }
 
     private static string GeneratePasswordResetEmailHtml(string resetUrl)
@@ -190,7 +191,7 @@ SECURITY NOTICE: If you didn't request this password reset, you can safely ignor
 
         await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
 
-        _logger.LogInformation("Invitation email sent to {Email}", email);
+        _logger.LogInformation("Invitation email sent to {Email}", LogSanitizer.MaskEmail(email));
     }
 
     private static string GenerateInvitationEmailHtml(string inviteUrl)
