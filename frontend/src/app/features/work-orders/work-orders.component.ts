@@ -279,30 +279,37 @@ import { PropertyStore } from '../properties/stores/property.store';
 
       .card-layout {
         display: flex;
+        align-items: flex-start;
       }
 
       .card-thumbnail {
-        flex: 0 0 80px;
-        min-height: 100%;
-        overflow: hidden;
-        background-color: var(--mat-sys-surface-variant);
+        flex: 0 0 auto;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .card-thumbnail img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        min-height: 120px;
+        max-width: 80px;
+        max-height: 100px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 6px;
+        border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+        background-color: var(--mat-sys-surface-variant, #f5f5f5);
       }
 
       .card-content {
         flex: 1;
         padding: 16px;
+        padding-left: 4px;
         min-width: 0; /* Allow text truncation */
       }
 
       .card-content.has-thumbnail {
-        padding-left: 12px;
+        padding-left: 4px;
       }
 
       .description {
