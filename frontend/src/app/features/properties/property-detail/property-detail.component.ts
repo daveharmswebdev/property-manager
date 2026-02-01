@@ -241,7 +241,8 @@ import {
           <app-property-photo-gallery
             [photos]="galleryPhotos()"
             [isLoading]="photoStore.isLoading()"
-            (addPhotoClick)="showUploadDialog = true"
+            [isUploadVisible]="showUploadDialog"
+            (addPhotoClick)="toggleUploadDialog()"
             (photoClick)="onPhotoClick($event)"
             (setPrimaryClick)="onSetPrimaryClick($event)"
             (deleteClick)="onDeletePhotoClick($event)"
@@ -852,6 +853,13 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
       case 'jpeg':
       default: return 'image/jpeg';
     }
+  }
+
+  /**
+   * Toggle the upload dialog visibility
+   */
+  toggleUploadDialog(): void {
+    this.showUploadDialog = !this.showUploadDialog;
   }
 
   /**

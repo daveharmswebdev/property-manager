@@ -46,8 +46,8 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
         </mat-card-title>
         @if (!isLoading() && photos().length > 0) {
           <button mat-stroked-button color="primary" class="add-photo-btn" (click)="addPhotoClick.emit()">
-            <mat-icon>add_a_photo</mat-icon>
-            Add Photo
+            <mat-icon>{{ isUploadVisible() ? 'close' : 'add_a_photo' }}</mat-icon>
+            {{ isUploadVisible() ? 'Close' : 'Add Photo' }}
           </button>
         }
       </mat-card-header>
@@ -476,6 +476,12 @@ export class WorkOrderPhotoGalleryComponent {
    * Whether photos are currently loading
    */
   readonly isLoading = input<boolean>(false);
+
+  /**
+   * Whether the upload zone is currently visible
+   * Used to change button text from "Add Photo" to "Close"
+   */
+  readonly isUploadVisible = input<boolean>(false);
 
   /**
    * Emitted when user clicks "Add Photo" button

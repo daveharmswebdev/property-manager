@@ -237,6 +237,7 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
           <app-work-order-photo-gallery
             [photos]="photoStore.sortedPhotos()"
             [isLoading]="photoStore.isLoading()"
+            [isUploadVisible]="showUploadZone()"
             (addPhotoClick)="toggleUploadZone()"
             (photoClick)="onPhotoClick($event)"
             (deleteClick)="onPhotoDeleteClick($event)"
