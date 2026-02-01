@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # npm (Angular frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      # Group minor/patch updates to reduce PR noise
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+      ngrx:
+        patterns:
+          - "@ngrx/*"
+
+  # NuGet (.NET backend)
+  - package-ecosystem: "nuget"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      # Group Microsoft packages together
+      microsoft:
+        patterns:
+          - "Microsoft.*"
+      efcore:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directories:
+      - "/frontend"
+      - "/backend"
+    schedule:
+      interval: "monthly"
+
+  # GitHub Actions (keep your CI/CD workflows updated)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
