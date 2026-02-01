@@ -9,7 +9,7 @@ namespace PropertyManager.Api.Controllers;
 
 /// <summary>
 /// Work order photo management endpoints (Story 10.4).
-/// Simpler than property photos - no primary photo or reordering.
+/// Supports primary photo and reordering (symmetric with property photos).
 /// </summary>
 [ApiController]
 [Route("api/v1/work-orders/{workOrderId:guid}/photos")]
@@ -21,6 +21,8 @@ public class WorkOrderPhotosController : ControllerBase
     private readonly IValidator<GenerateWorkOrderPhotoUploadUrlCommand> _uploadUrlValidator;
     private readonly IValidator<ConfirmWorkOrderPhotoUploadCommand> _confirmValidator;
     private readonly IValidator<DeleteWorkOrderPhotoCommand> _deleteValidator;
+    private readonly IValidator<SetPrimaryWorkOrderPhotoCommand> _setPrimaryValidator;
+    private readonly IValidator<ReorderWorkOrderPhotosCommand> _reorderValidator;
     private readonly ILogger<WorkOrderPhotosController> _logger;
 
     public WorkOrderPhotosController(
@@ -28,12 +30,16 @@ public class WorkOrderPhotosController : ControllerBase
         IValidator<GenerateWorkOrderPhotoUploadUrlCommand> uploadUrlValidator,
         IValidator<ConfirmWorkOrderPhotoUploadCommand> confirmValidator,
         IValidator<DeleteWorkOrderPhotoCommand> deleteValidator,
+        IValidator<SetPrimaryWorkOrderPhotoCommand> setPrimaryValidator,
+        IValidator<ReorderWorkOrderPhotosCommand> reorderValidator,
         ILogger<WorkOrderPhotosController> logger)
     {
         _mediator = mediator;
         _uploadUrlValidator = uploadUrlValidator;
         _confirmValidator = confirmValidator;
         _deleteValidator = deleteValidator;
+        _setPrimaryValidator = setPrimaryValidator;
+        _reorderValidator = reorderValidator;
         _logger = logger;
     }
 
@@ -120,7 +126,7 @@ public class WorkOrderPhotosController : ControllerBase
     }
 
     /// <summary>
-    /// Get all photos for a work order sorted by CreatedAt descending (AC #5).
+    /// Get all photos for a work order sorted by DisplayOrder (AC #5).
     /// </summary>
     /// <param name="workOrderId">Work order GUID</param>
     /// <returns>List of photos with presigned view URLs</returns>
@@ -178,6 +184,78 @@ public class WorkOrderPhotosController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Set a photo as the primary photo for the work order.
+    /// Clears previous primary photo.
+    /// </summary>
+    /// <param name="workOrderId">Work order GUID</param>
+    /// <param name="photoId">Photo GUID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Primary photo set successfully</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order or photo not found</response>
+    [HttpPut("{photoId:guid}/primary")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetPrimaryPhoto(Guid workOrderId, Guid photoId)
+    {
+        var command = new SetPrimaryWorkOrderPhotoCommand(workOrderId, photoId);
+
+        var validationResult = await _setPrimaryValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Set primary work order photo: WorkOrderId={WorkOrderId}, PhotoId={PhotoId}",
+            workOrderId,
+            photoId);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reorder work order photos.
+    /// Updates DisplayOrder values based on array position.
+    /// </summary>
+    /// <param name="workOrderId">Work order GUID</param>
+    /// <param name="request">Array of photo IDs in new order</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Photos reordered successfully</response>
+    /// <response code="400">If validation fails or photo IDs don't match</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order or any photo not found</response>
+    [HttpPut("reorder")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReorderPhotos(Guid workOrderId, [FromBody] ReorderWorkOrderPhotosRequest request)
+    {
+        var command = new ReorderWorkOrderPhotosCommand(workOrderId, request.PhotoIds);
+
+        var validationResult = await _reorderValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Reordered work order photos: WorkOrderId={WorkOrderId}, PhotoCount={PhotoCount}",
+            workOrderId,
+            request.PhotoIds.Count);
+
+        return NoContent();
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -214,3 +292,9 @@ public record WorkOrderPhotoConfirmRequest(
     string ContentType,
     long FileSizeBytes,
     string OriginalFileName);
+
+/// <summary>
+/// Request model for reordering work order photos.
+/// </summary>
+public record ReorderWorkOrderPhotosRequest(
+    List<Guid> PhotoIds);

@@ -240,6 +240,8 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
             (addPhotoClick)="toggleUploadZone()"
             (photoClick)="onPhotoClick($event)"
             (deleteClick)="onPhotoDeleteClick($event)"
+            (setPrimaryClick)="onSetPrimaryPhoto($event)"
+            (reorderClick)="onReorderPhotos($event)"
           />
         </div>
 
@@ -672,6 +674,22 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
     lightbox.deleteClick.subscribe((photoToDelete: LightboxPhoto) => {
       this.onLightboxDelete(photoToDelete, dialogRef);
     });
+  }
+
+  /**
+   * Handle set primary photo click
+   */
+  onSetPrimaryPhoto(photo: WorkOrderPhotoDto): void {
+    if (photo.id) {
+      this.photoStore.setPrimaryPhoto(photo.id);
+    }
+  }
+
+  /**
+   * Handle reorder photos
+   */
+  onReorderPhotos(photoIds: string[]): void {
+    this.photoStore.reorderPhotos(photoIds);
   }
 
   /**

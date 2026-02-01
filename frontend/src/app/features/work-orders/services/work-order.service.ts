@@ -64,6 +64,7 @@ export interface WorkOrderDto {
   createdAt: string;
   createdByUserId: string;
   tags: WorkOrderTagDto[];
+  primaryPhotoThumbnailUrl?: string; // Photo symmetry feature
 }
 
 /**

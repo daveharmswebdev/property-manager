@@ -1,35 +1,38 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
 
 /**
  * WorkOrderPhotoGalleryComponent
  *
- * Displays work order photos in a responsive grid.
- * Simpler than PropertyPhotoGalleryComponent:
- * - NO drag-drop reordering
- * - NO primary photo indicator/button
- * - Just display, click to view, delete
+ * Displays work order photos in a responsive grid with drag-drop reordering
+ * and primary photo selection (symmetric with PropertyPhotoGalleryComponent).
  *
  * Features:
  * - Empty state with upload CTA when no photos
  * - Skeleton loading placeholders during fetch
  * - Fade-in animations when photos load
  * - Responsive grid (1/2/3 columns based on viewport)
+ * - Drag-drop reordering (desktop) with arrow buttons (mobile)
+ * - Primary photo indicator with heart icon
  */
 @Component({
   selector: 'app-work-order-photo-gallery',
   standalone: true,
   imports: [
     CommonModule,
+    DragDropModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   template: `
     <mat-card class="gallery-card">
@@ -73,16 +76,32 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
           </div>
         }
 
-        <!-- Photo Grid (NO drag-drop, simpler than property gallery) -->
+        <!-- Photo Grid with drag-drop -->
         @if (!isLoading() && photos().length > 0) {
-          <div class="gallery-grid" data-testid="photo-grid">
-            @for (photo of photos(); track photo.id) {
+          <div class="gallery-grid" cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="onDrop($event)" data-testid="photo-grid">
+            @for (photo of photos(); track photo.id; let i = $index; let first = $first; let last = $last) {
               <div
                 class="photo-card"
+                cdkDrag
+                [cdkDragDisabled]="photos().length <= 1"
+                [class.is-primary]="photo.isPrimary"
                 tabindex="0"
                 role="button"
                 [attr.data-testid]="'photo-card-' + photo.id"
                 [attr.aria-label]="'View ' + (photo.originalFileName || 'photo')">
+                <!-- Drag Placeholder -->
+                <div class="drag-placeholder" *cdkDragPlaceholder></div>
+                <!-- Favorite Button -->
+                <button
+                  class="favorite-btn"
+                  [class.is-primary]="photo.isPrimary"
+                  (click)="onSetPrimary(photo, $event)"
+                  [attr.aria-label]="photo.isPrimary ? 'Primary photo' : 'Set as primary photo'"
+                  data-testid="favorite-btn">
+                  <mat-icon>{{ photo.isPrimary ? 'favorite' : 'favorite_border' }}</mat-icon>
+                </button>
+
+                <!-- Photo Image (clickable area) -->
                 <img
                   [src]="photo.thumbnailUrl || photo.photoUrl"
                   [alt]="photo.originalFileName || 'Work order photo'"
@@ -92,8 +111,36 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
                   (click)="photoClick.emit(photo)"
                   (keydown.enter)="photoClick.emit(photo)"
                 />
-                <!-- Delete Button (on hover) -->
+
+                <!-- Photo Card Overlay with Actions -->
                 <div class="photo-overlay">
+                  <!-- Reorder Buttons (mobile) -->
+                  @if (photos().length > 1) {
+                    <div class="reorder-buttons">
+                      <button
+                        mat-icon-button
+                        class="reorder-btn"
+                        [disabled]="first"
+                        (click)="onMoveUp(photo, i, $event)"
+                        matTooltip="Move up"
+                        data-testid="move-up-button"
+                        aria-label="Move photo up">
+                        <mat-icon>arrow_upward</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        class="reorder-btn"
+                        [disabled]="last"
+                        (click)="onMoveDown(photo, i, $event)"
+                        matTooltip="Move down"
+                        data-testid="move-down-button"
+                        aria-label="Move photo down">
+                        <mat-icon>arrow_downward</mat-icon>
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Delete Button -->
                   <button
                     mat-icon-button
                     class="delete-btn"
@@ -156,7 +203,7 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
       aspect-ratio: 4 / 3;
       border-radius: 8px;
       overflow: hidden;
-      cursor: pointer;
+      cursor: grab;
       background-color: var(--pm-surface-variant, #f5f5f5);
       transition: box-shadow 0.2s ease;
 
@@ -173,6 +220,10 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
         flex: 0 0 calc(33.333% - 8px);
       }
 
+      &:active {
+        cursor: grabbing;
+      }
+
       &:hover {
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
       }
@@ -180,6 +231,10 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
       &:focus {
         outline: 2px solid var(--pm-primary);
         outline-offset: 2px;
+      }
+
+      &.is-primary {
+        box-shadow: 0 0 0 2px var(--pm-primary);
       }
     }
 
@@ -195,7 +250,42 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
       }
     }
 
-    /* Photo Overlay with Delete Button */
+    /* Favorite Button */
+    .favorite-btn {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #666;
+      }
+
+      &.is-primary mat-icon {
+        color: #e91e63;
+      }
+
+      &:hover {
+        background: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    /* Photo Overlay with Actions */
     .photo-overlay {
       position: absolute;
       top: 0;
@@ -203,16 +293,19 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
       bottom: 0;
       left: 0;
       display: flex;
-      justify-content: flex-end;
+      flex-direction: column;
+      justify-content: space-between;
       align-items: flex-end;
       padding: 8px;
       opacity: 0;
       transition: opacity 0.2s ease;
-      background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.3) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.3) 100%);
+      z-index: 1;
       pointer-events: none;
     }
 
-    .photo-overlay .delete-btn {
+    .photo-overlay button,
+    .photo-overlay .reorder-buttons {
       pointer-events: auto;
     }
 
@@ -221,20 +314,40 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
       opacity: 1;
     }
 
+    .reorder-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .reorder-btn,
     .delete-btn {
       background-color: rgba(255, 255, 255, 0.9);
-      color: #c62828;
+      color: var(--pm-text-primary, #333);
       width: 32px;
       height: 32px;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: white;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       mat-icon {
         font-size: 18px;
         width: 18px;
         height: 18px;
+      }
+    }
+
+    .delete-btn {
+      align-self: flex-end;
+      color: #c62828;
+
+      mat-icon {
         color: #c62828;
       }
     }
@@ -311,6 +424,46 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
         margin-right: 8px;
       }
     }
+
+    /* Drag-and-Drop Styles */
+    .drag-placeholder {
+      aspect-ratio: 4 / 3;
+      background: var(--pm-surface-variant, #f5f5f5);
+      border: 2px dashed var(--pm-primary);
+      border-radius: 8px;
+    }
+
+    .cdk-drag-preview {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      opacity: 0.9;
+    }
+
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
+    }
+
+    .cdk-drop-list-dragging .photo-card:not(.cdk-drag-placeholder) {
+      transition: transform 200ms ease;
+    }
+
+    /* Responsive: Hide move buttons on desktop */
+    @media (min-width: 768px) {
+      .reorder-buttons {
+        display: none;
+      }
+    }
+
+    /* Responsive: Disable drag on mobile, show move buttons */
+    @media (max-width: 767px) {
+      .photo-card {
+        cursor: pointer;
+      }
+
+      .reorder-buttons {
+        display: flex;
+      }
+    }
   `]
 })
 export class WorkOrderPhotoGalleryComponent {
@@ -335,9 +488,20 @@ export class WorkOrderPhotoGalleryComponent {
   readonly photoClick = output<WorkOrderPhotoDto>();
 
   /**
+   * Emitted when user clicks "Set as Primary" (heart icon)
+   */
+  readonly setPrimaryClick = output<WorkOrderPhotoDto>();
+
+  /**
    * Emitted when user clicks delete button
    */
   readonly deleteClick = output<WorkOrderPhotoDto>();
+
+  /**
+   * Emitted when photos are reordered
+   * Emits the new order of photo IDs
+   */
+  readonly reorderClick = output<string[]>();
 
   /**
    * Skeleton placeholder items for loading state
@@ -353,10 +517,61 @@ export class WorkOrderPhotoGalleryComponent {
   }
 
   /**
+   * Set photo as primary
+   * Only emits if photo is not already primary
+   */
+  onSetPrimary(photo: WorkOrderPhotoDto, event: Event): void {
+    event.stopPropagation();
+    if (!photo.isPrimary) {
+      this.setPrimaryClick.emit(photo);
+    }
+  }
+
+  /**
    * Delete photo
    */
   onDelete(photo: WorkOrderPhotoDto, event: Event): void {
     event.stopPropagation();
     this.deleteClick.emit(photo);
+  }
+
+  /**
+   * Handle drag-and-drop photo reordering
+   */
+  onDrop(event: CdkDragDrop<WorkOrderPhotoDto[]>): void {
+    if (event.previousIndex !== event.currentIndex) {
+      const photos = [...this.photos()];
+      moveItemInArray(photos, event.previousIndex, event.currentIndex);
+      const newOrder = photos.map(p => p.id!);
+      this.reorderClick.emit(newOrder);
+    }
+  }
+
+  /**
+   * Move photo up in display order
+   */
+  onMoveUp(photo: WorkOrderPhotoDto, index: number, event: Event): void {
+    event.stopPropagation();
+    if (index > 0) {
+      const photos = [...this.photos()];
+      const newOrder = photos.map(p => p.id!);
+      // Swap with previous
+      [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+      this.reorderClick.emit(newOrder);
+    }
+  }
+
+  /**
+   * Move photo down in display order
+   */
+  onMoveDown(photo: WorkOrderPhotoDto, index: number, event: Event): void {
+    event.stopPropagation();
+    const photos = this.photos();
+    if (index < photos.length - 1) {
+      const newOrder = photos.map(p => p.id!);
+      // Swap with next
+      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+      this.reorderClick.emit(newOrder);
+    }
   }
 }

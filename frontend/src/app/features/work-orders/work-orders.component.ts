@@ -115,35 +115,45 @@ import { PropertyStore } from '../properties/stores/property.store';
         <div class="work-orders-list">
           @for (workOrder of store.workOrders(); track workOrder.id) {
             <mat-card class="work-order-card" [routerLink]="['/work-orders', workOrder.id]">
-              <mat-card-header>
-                <mat-card-title>{{ workOrder.propertyName }}</mat-card-title>
-                <mat-card-subtitle>
-                  <span class="status-badge" [ngClass]="'status-' + workOrder.status.toLowerCase()">
-                    {{ workOrder.status }}
-                  </span>
-                </mat-card-subtitle>
-              </mat-card-header>
-              <mat-card-content>
-                <p class="description">{{ workOrder.description }}</p>
-                <p class="assignee">
-                  <mat-icon class="assignee-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
-                  {{ workOrder.isDiy ? 'Self (DIY)' : (workOrder.vendorName || 'Unknown Vendor') }}
-                </p>
-                @if (workOrder.categoryName) {
-                  <p class="category">Category: {{ workOrder.categoryName }}</p>
+              <div class="card-layout">
+                <!-- Thumbnail (if available) -->
+                @if (workOrder.primaryPhotoThumbnailUrl) {
+                  <div class="card-thumbnail">
+                    <img [src]="workOrder.primaryPhotoThumbnailUrl" alt="" loading="lazy" />
+                  </div>
                 }
-                @if (workOrder.tags && workOrder.tags.length > 0) {
-                  <mat-chip-set class="work-order-tags">
-                    @for (tag of workOrder.tags; track tag.id) {
-                      <mat-chip>{{ tag.name }}</mat-chip>
+                <div class="card-content" [class.has-thumbnail]="workOrder.primaryPhotoThumbnailUrl">
+                  <mat-card-header>
+                    <mat-card-title>{{ workOrder.propertyName }}</mat-card-title>
+                    <mat-card-subtitle>
+                      <span class="status-badge" [ngClass]="'status-' + workOrder.status.toLowerCase()">
+                        {{ workOrder.status }}
+                      </span>
+                    </mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <p class="description">{{ workOrder.description }}</p>
+                    <p class="assignee">
+                      <mat-icon class="assignee-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
+                      {{ workOrder.isDiy ? 'Self (DIY)' : (workOrder.vendorName || 'Unknown Vendor') }}
+                    </p>
+                    @if (workOrder.categoryName) {
+                      <p class="category">Category: {{ workOrder.categoryName }}</p>
                     }
-                  </mat-chip-set>
-                }
-                <span class="created-date">
-                  <mat-icon class="date-icon">calendar_today</mat-icon>
-                  {{ workOrder.createdAt | date:'mediumDate' }}
-                </span>
-              </mat-card-content>
+                    @if (workOrder.tags && workOrder.tags.length > 0) {
+                      <mat-chip-set class="work-order-tags">
+                        @for (tag of workOrder.tags; track tag.id) {
+                          <mat-chip>{{ tag.name }}</mat-chip>
+                        }
+                      </mat-chip-set>
+                    }
+                    <span class="created-date">
+                      <mat-icon class="date-icon">calendar_today</mat-icon>
+                      {{ workOrder.createdAt | date:'mediumDate' }}
+                    </span>
+                  </mat-card-content>
+                </div>
+              </div>
             </mat-card>
           }
         </div>
@@ -259,10 +269,40 @@ import { PropertyStore } from '../properties/stores/property.store';
       .work-order-card {
         cursor: pointer;
         transition: box-shadow 0.2s;
+        padding: 0;
+        overflow: hidden;
       }
 
       .work-order-card:hover {
         box-shadow: var(--mat-sys-level3);
+      }
+
+      .card-layout {
+        display: flex;
+      }
+
+      .card-thumbnail {
+        flex: 0 0 80px;
+        min-height: 100%;
+        overflow: hidden;
+        background-color: var(--mat-sys-surface-variant);
+      }
+
+      .card-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        min-height: 120px;
+      }
+
+      .card-content {
+        flex: 1;
+        padding: 16px;
+        min-width: 0; /* Allow text truncation */
+      }
+
+      .card-content.has-thumbnail {
+        padding-left: 12px;
       }
 
       .description {

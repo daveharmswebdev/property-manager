@@ -6,7 +6,7 @@ namespace PropertyManager.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// EF Core configuration for WorkOrderPhoto entity.
-/// Simpler than PropertyPhoto - no primary photo or display order.
+/// Supports display ordering and primary photo designation (symmetric with PropertyPhoto).
 /// </summary>
 public class WorkOrderPhotoConfiguration : IEntityTypeConfiguration<WorkOrderPhoto>
 {
@@ -38,6 +38,12 @@ public class WorkOrderPhotoConfiguration : IEntityTypeConfiguration<WorkOrderPho
         builder.Property(e => e.ContentType)
             .HasMaxLength(100);
 
+        builder.Property(e => e.DisplayOrder)
+            .IsRequired();
+
+        builder.Property(e => e.IsPrimary)
+            .IsRequired();
+
         builder.Property(e => e.CreatedByUserId)
             .IsRequired();
 
@@ -51,9 +57,15 @@ public class WorkOrderPhotoConfiguration : IEntityTypeConfiguration<WorkOrderPho
         builder.HasIndex(e => e.AccountId)
             .HasDatabaseName("IX_WorkOrderPhotos_AccountId");
 
-        // Index on WorkOrderId for efficient lookups
-        builder.HasIndex(e => e.WorkOrderId)
-            .HasDatabaseName("IX_WorkOrderPhotos_WorkOrderId");
+        // Index on (WorkOrderId, DisplayOrder) for efficient ordering
+        builder.HasIndex(e => new { e.WorkOrderId, e.DisplayOrder })
+            .HasDatabaseName("IX_WorkOrderPhotos_WorkOrderId_DisplayOrder");
+
+        // Unique filtered index: only one primary photo per work order
+        builder.HasIndex(e => new { e.WorkOrderId, e.IsPrimary })
+            .HasDatabaseName("IX_WorkOrderPhotos_WorkOrderId_IsPrimary_Unique")
+            .IsUnique()
+            .HasFilter("\"IsPrimary\" = true");
 
         // Index on CreatedByUserId for audit/reporting queries
         builder.HasIndex(e => e.CreatedByUserId)
