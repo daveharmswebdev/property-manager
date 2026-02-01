@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.WorkOrderTags;
 
 namespace PropertyManager.Api.Controllers;
@@ -113,7 +114,7 @@ public class WorkOrderTagsController : ControllerBase
         _logger.LogInformation(
             "Work order tag created: {TagId}, name '{Name}'",
             tagId,
-            request.Name);
+            LogSanitizer.Sanitize(request.Name));
 
         var response = new CreateWorkOrderTagResponse(tagId);
 

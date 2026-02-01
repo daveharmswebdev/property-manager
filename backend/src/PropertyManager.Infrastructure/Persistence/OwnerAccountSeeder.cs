@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Identity;
 
@@ -95,7 +96,7 @@ public class OwnerAccountSeeder
 
         if (result.Succeeded)
         {
-            _logger.LogInformation("Owner account seeded successfully: {Email}", OwnerEmail);
+            _logger.LogInformation("Owner account seeded successfully: {Email}", LogSanitizer.MaskEmail(OwnerEmail));
         }
         else
         {

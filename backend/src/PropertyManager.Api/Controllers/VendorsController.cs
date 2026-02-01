@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Vendors;
 
 namespace PropertyManager.Api.Controllers;
@@ -145,8 +146,8 @@ public class VendorsController : ControllerBase
         _logger.LogInformation(
             "Vendor updated: {VendorId}, name {FirstName} {LastName} at {Timestamp}",
             id,
-            request.FirstName,
-            request.LastName,
+            LogSanitizer.Sanitize(request.FirstName),
+            LogSanitizer.Sanitize(request.LastName),
             DateTime.UtcNow);
 
         return NoContent();
@@ -201,8 +202,8 @@ public class VendorsController : ControllerBase
         _logger.LogInformation(
             "Vendor created: {VendorId}, name {FirstName} {LastName} at {Timestamp}",
             vendorId,
-            request.FirstName,
-            request.LastName,
+            LogSanitizer.Sanitize(request.FirstName),
+            LogSanitizer.Sanitize(request.LastName),
             DateTime.UtcNow);
 
         var response = new CreateVendorResponse(vendorId);

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Exceptions;
 
@@ -57,7 +58,7 @@ public class DeleteGeneratedReportHandler : IRequestHandler<DeleteGeneratedRepor
             // The file may already be deleted or inaccessible
             _logger.LogWarning(ex,
                 "Failed to delete report file from S3: {StorageKey}. Continuing with database deletion.",
-                report.StorageKey);
+                LogSanitizer.MaskStorageKey(report.StorageKey));
         }
 
         // Soft delete in database
@@ -67,7 +68,7 @@ public class DeleteGeneratedReportHandler : IRequestHandler<DeleteGeneratedRepor
         _logger.LogInformation(
             "Deleted report {ReportId} ({FileName}) for account {AccountId}",
             request.ReportId,
-            report.FileName,
-            _currentUser.AccountId);
+            LogSanitizer.Sanitize(report.FileName),
+            LogSanitizer.MaskId(_currentUser.AccountId));
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using PropertyManager.Application.Common;
 
 namespace PropertyManager.Api.Hubs;
 
@@ -29,10 +30,9 @@ public class ReceiptHub : Hub
             var groupName = $"account-{accountId}";
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             _logger.LogInformation(
-                "User {UserId} connected to account group {GroupName} with connection {ConnectionId}",
-                Context.UserIdentifier,
-                groupName,
-                Context.ConnectionId);
+                "User connected to account {AccountId} with connection {ConnectionId}",
+                LogSanitizer.MaskId(accountId),
+                LogSanitizer.Sanitize(Context.ConnectionId));
         }
         else
         {
@@ -56,10 +56,9 @@ public class ReceiptHub : Hub
             var groupName = $"account-{accountId}";
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
             _logger.LogInformation(
-                "User {UserId} disconnected from account group {GroupName}. ConnectionId: {ConnectionId}",
-                Context.UserIdentifier,
-                groupName,
-                Context.ConnectionId);
+                "User disconnected from account {AccountId}. ConnectionId: {ConnectionId}",
+                LogSanitizer.MaskId(accountId),
+                LogSanitizer.Sanitize(Context.ConnectionId));
         }
 
         if (exception != null)

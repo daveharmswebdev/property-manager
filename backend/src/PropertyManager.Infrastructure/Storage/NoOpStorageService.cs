@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -26,7 +27,7 @@ public class NoOpStorageService : IStorageService
     {
         _logger.LogWarning(
             "NoOp: Cannot generate presigned upload URL for {StorageKey} - S3 storage not configured",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         // Return a dummy URL that won't work, but allows the system to continue
         // This is acceptable for E2E tests that don't test actual file upload
@@ -43,7 +44,7 @@ public class NoOpStorageService : IStorageService
     {
         _logger.LogWarning(
             "NoOp: Cannot generate presigned download URL for {StorageKey} - S3 storage not configured",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         return Task.FromResult($"https://noop-storage.local/{storageKey}");
     }
@@ -55,7 +56,7 @@ public class NoOpStorageService : IStorageService
     {
         _logger.LogInformation(
             "NoOp: Would delete file {StorageKey}",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         return Task.CompletedTask;
     }

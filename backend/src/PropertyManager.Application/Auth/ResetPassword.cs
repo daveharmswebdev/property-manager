@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Application.Auth;
@@ -68,7 +69,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         if (!success)
         {
-            _logger.LogWarning("Password reset failed: {Error}", errorMessage);
+            _logger.LogWarning("Password reset failed: {Error}", LogSanitizer.Sanitize(errorMessage));
             return new ResetPasswordResult(false, errorMessage);
         }
 
@@ -80,7 +81,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
             await _jwtService.RevokeAllUserRefreshTokensAsync(userId.Value, cancellationToken);
             _logger.LogInformation(
                 "Password reset completed for user {UserId}, all sessions invalidated",
-                userId.Value);
+                LogSanitizer.MaskId(userId.Value));
         }
         else
         {
