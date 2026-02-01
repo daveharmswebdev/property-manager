@@ -121,7 +121,7 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
                         mat-icon-button
                         class="reorder-btn"
                         [disabled]="first"
-                        (click)="onMoveUp(photo, i, $event)"
+                        (click)="onMoveUp(i, $event)"
                         matTooltip="Move up"
                         data-testid="move-up-button"
                         aria-label="Move photo up">
@@ -131,7 +131,7 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
                         mat-icon-button
                         class="reorder-btn"
                         [disabled]="last"
-                        (click)="onMoveDown(photo, i, $event)"
+                        (click)="onMoveDown(i, $event)"
                         matTooltip="Move down"
                         data-testid="move-down-button"
                         aria-label="Move photo down">
@@ -510,9 +510,14 @@ export class WorkOrderPhotoGalleryComponent {
   readonly reorderClick = output<string[]>();
 
   /**
+   * Number of skeleton placeholder items during loading state
+   */
+  private readonly SKELETON_ITEM_COUNT = 6;
+
+  /**
    * Skeleton placeholder items for loading state
    */
-  readonly skeletonItems = [1, 2, 3, 4, 5, 6];
+  readonly skeletonItems = Array.from({ length: this.SKELETON_ITEM_COUNT }, (_, i) => i + 1);
 
   /**
    * Handle image load event for fade-in animation
@@ -548,7 +553,7 @@ export class WorkOrderPhotoGalleryComponent {
     if (event.previousIndex !== event.currentIndex) {
       const photos = [...this.photos()];
       moveItemInArray(photos, event.previousIndex, event.currentIndex);
-      const newOrder = photos.map(p => p.id!);
+      const newOrder = photos.map(p => p.id).filter((id): id is string => id != null);
       this.reorderClick.emit(newOrder);
     }
   }
@@ -556,11 +561,11 @@ export class WorkOrderPhotoGalleryComponent {
   /**
    * Move photo up in display order
    */
-  onMoveUp(photo: WorkOrderPhotoDto, index: number, event: Event): void {
+  onMoveUp(index: number, event: Event): void {
     event.stopPropagation();
     if (index > 0) {
       const photos = [...this.photos()];
-      const newOrder = photos.map(p => p.id!);
+      const newOrder = photos.map(p => p.id).filter((id): id is string => id != null);
       // Swap with previous
       [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
       this.reorderClick.emit(newOrder);
@@ -570,11 +575,11 @@ export class WorkOrderPhotoGalleryComponent {
   /**
    * Move photo down in display order
    */
-  onMoveDown(photo: WorkOrderPhotoDto, index: number, event: Event): void {
+  onMoveDown(index: number, event: Event): void {
     event.stopPropagation();
     const photos = this.photos();
     if (index < photos.length - 1) {
-      const newOrder = photos.map(p => p.id!);
+      const newOrder = photos.map(p => p.id).filter((id): id is string => id != null);
       // Swap with next
       [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
       this.reorderClick.emit(newOrder);

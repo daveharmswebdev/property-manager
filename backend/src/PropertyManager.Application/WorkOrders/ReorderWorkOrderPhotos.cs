@@ -64,7 +64,7 @@ public class ReorderWorkOrderPhotosHandler : IRequestHandler<ReorderWorkOrderPho
         // Validate all photos are included in the reorder
         if (request.PhotoIds.Count != photos.Count || request.PhotoIds.Distinct().Count() != photos.Count)
         {
-            throw new ArgumentException("PhotoIds must contain all photos for the work order exactly once");
+            throw new ValidationException("PhotoIds must contain all photos for the work order exactly once");
         }
 
         // Update DisplayOrder based on position in array
