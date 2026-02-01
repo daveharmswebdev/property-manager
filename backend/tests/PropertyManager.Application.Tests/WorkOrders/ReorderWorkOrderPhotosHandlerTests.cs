@@ -148,7 +148,7 @@ public class ReorderWorkOrderPhotosHandlerTests
     }
 
     [Fact]
-    public async Task Handle_MissingPhotoId_ThrowsArgumentException()
+    public async Task Handle_MissingPhotoId_ThrowsValidationException()
     {
         // Arrange
         var photo1Id = Guid.NewGuid();
@@ -164,12 +164,12 @@ public class ReorderWorkOrderPhotosHandlerTests
         var command = new ReorderWorkOrderPhotosCommand(_testWorkOrderId, new List<Guid> { photo1Id });
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<ValidationException>(() =>
             _handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]
-    public async Task Handle_DuplicatePhotoIds_ThrowsArgumentException()
+    public async Task Handle_DuplicatePhotoIds_ThrowsValidationException()
     {
         // Arrange
         var photo1Id = Guid.NewGuid();
@@ -185,7 +185,7 @@ public class ReorderWorkOrderPhotosHandlerTests
         var command = new ReorderWorkOrderPhotosCommand(_testWorkOrderId, new List<Guid> { photo1Id, photo1Id });
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<ValidationException>(() =>
             _handler.Handle(command, CancellationToken.None));
     }
 

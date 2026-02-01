@@ -8,8 +8,9 @@ using PropertyManager.Application.WorkOrders;
 namespace PropertyManager.Api.Controllers;
 
 /// <summary>
-/// Work order photo management endpoints (Story 10.4).
-/// Supports primary photo and reordering (symmetric with property photos).
+/// Work order photo management endpoints.
+/// Story 10-4: Core photo upload/delete functionality.
+/// Story 10-6: Primary photo selection and reordering (symmetric with property photos).
 /// </summary>
 [ApiController]
 [Route("api/v1/work-orders/{workOrderId:guid}/photos")]
