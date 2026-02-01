@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using PropertyManager.Domain.Entities;
 using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
@@ -29,6 +30,11 @@ public interface IAppDbContext
     DbSet<PropertyPhoto> PropertyPhotos { get; }
     DbSet<WorkOrderPhoto> WorkOrderPhotos { get; }
     DbSet<Note> Notes { get; }
+
+    /// <summary>
+    /// Provides access to database-related information and operations (e.g., transactions).
+    /// </summary>
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -53,20 +53,33 @@ public class SetPrimaryWorkOrderPhotoHandler : IRequestHandler<SetPrimaryWorkOrd
             return;
         }
 
-        // Clear previous primary photo first (must save separately to avoid unique constraint violation)
-        var currentPrimary = await _dbContext.WorkOrderPhotos
-            .FirstOrDefaultAsync(wp => wp.WorkOrderId == request.WorkOrderId
-                && wp.IsPrimary
-                && wp.AccountId == _currentUser.AccountId, cancellationToken);
-
-        if (currentPrimary != null)
+        // Use transaction to ensure atomicity - if setting new primary fails,
+        // we don't want to leave the work order without a primary photo
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            currentPrimary.IsPrimary = false;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
+            // Clear previous primary photo first (must save separately to avoid unique constraint violation)
+            var currentPrimary = await _dbContext.WorkOrderPhotos
+                .FirstOrDefaultAsync(wp => wp.WorkOrderId == request.WorkOrderId
+                    && wp.IsPrimary
+                    && wp.AccountId == _currentUser.AccountId, cancellationToken);
 
-        // Set new primary
-        photo.IsPrimary = true;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            if (currentPrimary != null)
+            {
+                currentPrimary.IsPrimary = false;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            // Set new primary
+            photo.IsPrimary = true;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

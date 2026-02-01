@@ -717,6 +717,8 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   /**
    * Handle delete from lightbox (Story 10-6, AC #5, #6, #7)
    * Shows confirmation, deletes photo, and updates lightbox state.
+   * Uses optimistic UI update - we know which photo is deleted so we can
+   * update the lightbox immediately without waiting for the store.
    */
   async onLightboxDelete(
     photo: LightboxPhoto,
@@ -735,21 +737,24 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
 
     const confirmed = await firstValueFrom(confirmRef.afterClosed());
     if (confirmed && photo.id) {
-      // Delete the photo via store
+      // Get current photos and compute remaining photos optimistically
+      // We know the photo being deleted, so we can update UI immediately
+      const currentPhotos = this.photoStore.sortedPhotos();
+      const remainingPhotos = currentPhotos.filter(p => p.id !== photo.id);
+
+      // Get current index before deletion for proper navigation
+      const lightbox = lightboxRef.componentInstance;
+      const currentIdx = lightbox.currentIndex();
+
+      // Delete the photo via store (this will also update store state)
       this.photoStore.deletePhoto(photo.id);
 
-      // Wait a tick for store to update
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Check remaining photos
-      const remainingPhotos = this.photoStore.sortedPhotos();
+      // Update lightbox immediately with optimistic state
       if (remainingPhotos.length === 0) {
         // No photos left - close lightbox (AC #7)
         lightboxRef.close();
       } else {
         // Update lightbox with remaining photos (AC #6)
-        const lightbox = lightboxRef.componentInstance;
-        const currentIdx = lightbox.currentIndex();
         const newIdx = Math.min(currentIdx, remainingPhotos.length - 1);
 
         lightbox.updatePhotos(
