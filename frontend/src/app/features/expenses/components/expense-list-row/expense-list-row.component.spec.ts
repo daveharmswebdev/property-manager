@@ -179,6 +179,64 @@ describe('ExpenseListRowComponent', () => {
     });
   });
 
+  describe('create work order button (AC-11.6.7)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ExpenseListRowComponent);
+      component = fixture.componentInstance;
+    });
+
+    it('should show add_task icon when no workOrderId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeTruthy();
+      expect(button.textContent.trim()).toBe('add_task');
+    });
+
+    it('should hide add_task icon when workOrderId exists', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeNull();
+    });
+
+    it('should emit createWorkOrder event with full expense item when clicked', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const createWoSpy = vi.fn();
+      component.createWorkOrder.subscribe(createWoSpy);
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      button.click();
+
+      expect(createWoSpy).toHaveBeenCalledWith(mockExpenseNoWorkOrder);
+    });
+
+    it('should stop event propagation when clicked', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      button.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+    });
+  });
+
   describe('work order indicator (AC-11.4.4)', () => {
     beforeEach(() => {
       fixture = TestBed.createComponent(ExpenseListRowComponent);

@@ -5,9 +5,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseListStore, FilterChip, DateRangePreset } from './stores/expense-list.store';
 import { ExpenseFiltersComponent } from './components/expense-filters/expense-filters.component';
 import { ExpenseListRowComponent } from './components/expense-list-row/expense-list-row.component';
+import { ExpenseListItemDto } from './services/expense.service';
+import {
+  CreateWoFromExpenseDialogComponent,
+  CreateWoFromExpenseDialogData,
+  CreateWoFromExpenseDialogResult,
+} from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 
 /**
  * ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -112,7 +119,10 @@ import { ExpenseListRowComponent } from './components/expense-list-row/expense-l
 
             <!-- Expense Rows -->
             @for (expense of store.expenses(); track expense.id) {
-              <app-expense-list-row [expense]="expense" />
+              <app-expense-list-row
+                [expense]="expense"
+                (createWorkOrder)="onCreateWorkOrder($event)"
+              />
             }
 
             <!-- Pagination (AC-3.4.8) -->
@@ -275,6 +285,7 @@ import { ExpenseListRowComponent } from './components/expense-list-row/expense-l
 })
 export class ExpensesComponent implements OnInit {
   readonly store = inject(ExpenseListStore);
+  private readonly dialog = inject(MatDialog);
 
   ngOnInit(): void {
     // Initialize store - load categories and expenses
@@ -312,5 +323,27 @@ export class ExpensesComponent implements OnInit {
       // PageEvent uses 0-based index, our API uses 1-based
       this.store.goToPage(event.pageIndex + 1);
     }
+  }
+
+  /**
+   * Handle create work order from expense in all-expenses list (AC-11.6.7)
+   */
+  onCreateWorkOrder(expense: ExpenseListItemDto): void {
+    const dialogRef = this.dialog.open(CreateWoFromExpenseDialogComponent, {
+      width: '500px',
+      data: {
+        expenseId: expense.id,
+        propertyId: expense.propertyId,
+        propertyName: expense.propertyName,
+        description: expense.description,
+        categoryId: expense.categoryId,
+      } as CreateWoFromExpenseDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateWoFromExpenseDialogResult | undefined) => {
+      if (result) {
+        this.store.initialize();
+      }
+    });
   }
 }

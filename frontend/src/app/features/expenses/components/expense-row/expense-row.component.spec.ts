@@ -292,6 +292,50 @@ describe('ExpenseRowComponent', () => {
     });
   });
 
+  describe('create work order button (AC-11.6.1)', () => {
+    it('should show "Create Work Order" button when expense has no workOrderId', () => {
+      // Default mockExpense has no workOrderId
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeTruthy();
+    });
+
+    it('should hide "Create Work Order" button when expense has workOrderId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeNull();
+    });
+
+    it('should emit createWorkOrder event with expense ID when clicked', () => {
+      const createWoSpy = vi.fn();
+      component.createWorkOrder.subscribe(createWoSpy);
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      button.click();
+
+      expect(createWoSpy).toHaveBeenCalledWith('expense-123');
+    });
+
+    it('should stop event propagation when clicked', () => {
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      button.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+    });
+  });
+
   describe('receipt indicator (AC-5.5.1)', () => {
     it('should not show receipt indicator when expense has no receiptId', () => {
       const receiptIndicator = fixture.nativeElement.querySelector(
