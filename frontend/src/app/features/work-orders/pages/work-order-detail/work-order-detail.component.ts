@@ -9,7 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, switchMap } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -267,7 +267,7 @@ import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog
         <mat-card class="section-card">
           <mat-card-header class="expenses-header">
             <mat-card-title>Linked Expenses</mat-card-title>
-            <button mat-stroked-button (click)="openLinkExpenseDialog()">
+            <button mat-stroked-button (click)="openLinkExpenseDialog()" [disabled]="isLinkingExpense()">
               <mat-icon>add_link</mat-icon>
               Link Existing Expense
             </button>
@@ -296,6 +296,7 @@ import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog
                       <button
                         mat-icon-button
                         (click)="unlinkExpense(expense.id)"
+                        [disabled]="isLinkingExpense()"
                         matTooltip="Unlink expense"
                       >
                         <mat-icon>link_off</mat-icon>
@@ -687,6 +688,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   /** Linked expenses state (Story 11.3) */
   protected readonly linkedExpenses = signal<WorkOrderExpenseItemDto[]>([]);
   protected readonly isLoadingExpenses = signal(false);
+  protected readonly isLinkingExpense = signal(false);
   protected readonly expensesTotal = computed(() =>
     this.linkedExpenses().reduce((sum, e) => sum + e.amount, 0)
   );
@@ -763,8 +765,9 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   private linkExpense(expenseId: string): void {
-    this.expenseService.getExpense(expenseId).subscribe({
-      next: (expense) => {
+    this.isLinkingExpense.set(true);
+    this.expenseService.getExpense(expenseId).pipe(
+      switchMap((expense) => {
         const updateRequest: UpdateExpenseRequest = {
           amount: expense.amount,
           date: expense.date,
@@ -772,22 +775,25 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
           description: expense.description,
           workOrderId: this.workOrderId!,
         };
-        this.expenseService.updateExpense(expenseId, updateRequest).subscribe({
-          next: () => {
-            this.snackBar.open('Expense linked', 'Close', { duration: 3000 });
-            this.loadLinkedExpenses(this.workOrderId!);
-          },
-          error: () => {
-            this.snackBar.open('Failed to link expense', 'Close', { duration: 3000 });
-          },
-        });
+        return this.expenseService.updateExpense(expenseId, updateRequest);
+      }),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Expense linked', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+        this.loadLinkedExpenses(this.workOrderId!);
+      },
+      error: () => {
+        this.snackBar.open('Failed to link expense', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
       },
     });
   }
 
   unlinkExpense(expenseId: string): void {
-    this.expenseService.getExpense(expenseId).subscribe({
-      next: (expense) => {
+    this.isLinkingExpense.set(true);
+    this.expenseService.getExpense(expenseId).pipe(
+      switchMap((expense) => {
         const updateRequest: UpdateExpenseRequest = {
           amount: expense.amount,
           date: expense.date,
@@ -795,15 +801,17 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
           description: expense.description,
           workOrderId: undefined,
         };
-        this.expenseService.updateExpense(expenseId, updateRequest).subscribe({
-          next: () => {
-            this.snackBar.open('Expense unlinked', 'Close', { duration: 3000 });
-            this.loadLinkedExpenses(this.workOrderId!);
-          },
-          error: () => {
-            this.snackBar.open('Failed to unlink expense', 'Close', { duration: 3000 });
-          },
-        });
+        return this.expenseService.updateExpense(expenseId, updateRequest);
+      }),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Expense unlinked', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+        this.loadLinkedExpenses(this.workOrderId!);
+      },
+      error: () => {
+        this.snackBar.open('Failed to unlink expense', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
       },
     });
   }

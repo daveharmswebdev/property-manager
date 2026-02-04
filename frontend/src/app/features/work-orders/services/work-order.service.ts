@@ -198,16 +198,21 @@ export class WorkOrderService {
   }
 
   /**
+   * Get expenses linked to a work order (Story 11.3)
+   * @param workOrderId Work order GUID
+   * @returns Observable with linked expenses and total count
+   */
+  getWorkOrderExpenses(workOrderId: string): Observable<WorkOrderExpensesResponse> {
+    return this.http.get<WorkOrderExpensesResponse>(`${this.baseUrl}/${workOrderId}/expenses`);
+  }
+
+  /**
    * Get work orders for a specific property (Story 9-11 AC #1, #5)
    * Used on property detail page to show maintenance history.
    * @param propertyId Property GUID
    * @param limit Optional limit for number of results (e.g., 5 for recent work orders)
    * @returns Observable with list of work orders for the property with total count
    */
-  getWorkOrderExpenses(workOrderId: string): Observable<WorkOrderExpensesResponse> {
-    return this.http.get<WorkOrderExpensesResponse>(`${this.baseUrl}/${workOrderId}/expenses`);
-  }
-
   getWorkOrdersByProperty(propertyId: string, limit?: number): Observable<GetWorkOrdersByPropertyResponse> {
     const params: Record<string, string> = {};
     if (limit !== undefined) {

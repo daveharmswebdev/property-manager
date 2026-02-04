@@ -54,9 +54,9 @@ export interface LinkExpenseDialogData {
             <p>No matching expenses found</p>
           </div>
         } @else {
-          <mat-selection-list [multiple]="false" class="expense-list">
+          <mat-nav-list class="expense-list">
             @for (expense of filteredExpenses(); track expense.id) {
-              <mat-list-option (click)="selectExpense(expense.id)" class="expense-option">
+              <mat-list-item (click)="selectExpense(expense.id)" class="expense-option">
                 <div class="expense-row">
                   <div class="expense-info">
                     <span class="expense-date">{{ expense.date | date:'mediumDate' }}</span>
@@ -65,9 +65,9 @@ export interface LinkExpenseDialogData {
                   </div>
                   <span class="expense-amount">{{ expense.amount | currency:'USD' }}</span>
                 </div>
-              </mat-list-option>
+              </mat-list-item>
             }
-          </mat-selection-list>
+          </mat-nav-list>
         }
       }
     </mat-dialog-content>
