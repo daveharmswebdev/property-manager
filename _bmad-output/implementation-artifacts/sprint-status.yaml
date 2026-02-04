@@ -151,10 +151,10 @@ development_status:
   # User Outcome: "I know the story behind every expense - which work order it came from"
   epic-11: in-progress
   11-1-expense-workorder-relationship: done
-  11-2-link-expense-to-work-order: dev-complete
-  11-3-link-work-order-to-expense: backlog
-  11-4-view-linked-work-order-on-expense: backlog
-  11-5-view-linked-expenses-on-work-order: backlog
+  11-2-link-expense-to-work-order: done
+  11-3-link-work-order-to-expense: done
+  11-4-view-linked-work-order-on-expense: review  # Combined with 11-5 (FR33 + FR34)
+  11-5-view-linked-expenses-on-work-order: done  # Merged into 11-4; FR34 already implemented in Story 11-3
   11-6-create-work-order-from-expense: backlog
   11-7-create-expense-from-work-order: backlog
   11-8-work-order-dropdown-on-receipt-processing: backlog

@@ -106,6 +106,7 @@ import { ExpenseListRowComponent } from './components/expense-list-row/expense-l
               <div class="header-description">Description</div>
               <div class="header-category">Category</div>
               <div class="header-receipt"></div>
+              <div class="header-work-order"></div>
               <div class="header-amount">Amount</div>
             </div>
 
@@ -228,7 +229,7 @@ import { ExpenseListRowComponent } from './components/expense-list-row/expense-l
 
     .list-header {
       display: grid;
-      grid-template-columns: 100px 150px 1fr auto 40px 100px;
+      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px;
       gap: 16px;
       padding: 12px 16px;
       background: var(--mat-sys-surface-container);

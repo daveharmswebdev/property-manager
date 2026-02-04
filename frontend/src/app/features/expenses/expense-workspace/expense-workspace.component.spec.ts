@@ -12,6 +12,18 @@ import { MatDialog } from '@angular/material/dialog';
 import { ExpenseWorkspaceComponent } from './expense-workspace.component';
 import { ExpenseStore } from '../stores/expense.store';
 import { PropertyService } from '../../properties/services/property.service';
+import { WorkOrderService } from '../../work-orders/services/work-order.service';
+
+// Default mock for WorkOrderService - silent success
+const createMockWorkOrderService = (overrides = {}) => ({
+  getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
+    items: [
+      { id: 'wo-1', description: 'Fix plumbing leak', status: 'Assigned', propertyId: 'prop-123', propertyName: 'Test Property', isDiy: false, createdAt: '2026-01-15', createdByUserId: 'user-1', tags: [] },
+    ],
+    totalCount: 1,
+  })),
+  ...overrides,
+});
 
 // Helper to create a complete ExpenseStore mock with all required signals
 const createMockExpenseStore = (overrides = {}) => ({
@@ -90,6 +102,8 @@ describe('ExpenseWorkspaceComponent', () => {
     open: vi.fn().mockReturnValue({ afterClosed: () => of(false) }),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -106,6 +120,7 @@ describe('ExpenseWorkspaceComponent', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
         { provide: MatDialog, useValue: mockDialog },
         {
           provide: ActivatedRoute,
@@ -199,6 +214,75 @@ describe('ExpenseWorkspaceComponent', () => {
     const rows = fixture.debugElement.queryAll(By.css('app-expense-row'));
     expect(rows.length).toBe(2);
   });
+
+  it('should load work orders for property on init (AC-11.4.3)', () => {
+    expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith('prop-123');
+  });
+
+  it('should create workOrderMap from loaded work orders (AC-11.4.3)', () => {
+    const map = component['workOrderMap']();
+    expect(map['wo-1']).toBeTruthy();
+    expect(map['wo-1'].description).toBe('Fix plumbing leak');
+    expect(map['wo-1'].status).toBe('Assigned');
+  });
+});
+
+describe('ExpenseWorkspaceComponent work order loading failure (AC-11.4.3)', () => {
+  let component: ExpenseWorkspaceComponent;
+  let fixture: ComponentFixture<ExpenseWorkspaceComponent>;
+
+  const mockExpenseStore = createMockExpenseStore({
+    expenses: signal([]),
+    ytdTotal: signal(0),
+    totalCount: signal(0),
+    isEmpty: signal(true),
+  });
+
+  const mockPropertyService = {
+    getPropertyById: vi.fn().mockReturnValue(of({ id: 'prop-123', name: 'Test Property' })),
+  };
+
+  const failingWorkOrderService = createMockWorkOrderService({
+    getWorkOrdersByProperty: vi.fn().mockReturnValue(throwError(() => new Error('Network error'))),
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    await TestBed.configureTestingModule({
+      imports: [ExpenseWorkspaceComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideNativeDateAdapter(),
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ExpenseStore, useValue: mockExpenseStore },
+        { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: failingWorkOrderService },
+        { provide: MatDialog, useValue: { open: vi.fn() } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => 'prop-123',
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseWorkspaceComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should handle work order loading failure gracefully', () => {
+    const map = component['workOrderMap']();
+    expect(map).toEqual({});
+  });
 });
 
 describe('ExpenseWorkspaceComponent loading property state', () => {
@@ -221,6 +305,7 @@ describe('ExpenseWorkspaceComponent loading property state', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         {
           provide: ActivatedRoute,
@@ -270,6 +355,7 @@ describe('ExpenseWorkspaceComponent property error state', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         {
           provide: ActivatedRoute,
@@ -327,6 +413,7 @@ describe('ExpenseWorkspaceComponent no property ID', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         {
           provide: ActivatedRoute,
@@ -375,6 +462,7 @@ describe('ExpenseWorkspaceComponent empty expenses state', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         {
           provide: ActivatedRoute,
@@ -439,6 +527,7 @@ describe('ExpenseWorkspaceComponent edit mode (AC-3.2)', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         {
           provide: ActivatedRoute,
@@ -505,6 +594,7 @@ describe('ExpenseWorkspaceComponent delete (AC-3.3)', () => {
         provideHttpClientTesting(),
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
         { provide: MatDialog, useValue: mockDialog },
         {
           provide: ActivatedRoute,
