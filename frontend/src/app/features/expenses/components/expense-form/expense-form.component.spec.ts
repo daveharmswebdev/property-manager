@@ -9,17 +9,19 @@ import { MatDialog } from '@angular/material/dialog';
 import { ExpenseFormComponent } from './expense-form.component';
 import { ExpenseStore } from '../../stores/expense.store';
 import { ExpenseService } from '../../services/expense.service';
+import { WorkOrderService } from '../../../work-orders/services/work-order.service';
 
 /**
- * Unit tests for ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8)
+ * Unit tests for ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8, AC-11.2)
  *
  * Test coverage:
  * - Component creation
- * - Form fields (amount, date, category, description)
+ * - Form fields (amount, date, category, description, workOrderId)
  * - Field validation
  * - Form submission
  * - Loading state
  * - Duplicate check behavior (AC-3.6)
+ * - Work order dropdown (AC-11.2.1, AC-11.2.3, AC-11.2.4, AC-11.2.6)
  */
 
 // Full ExpenseStore mock for tests that render CategorySelectComponent
@@ -33,6 +35,16 @@ const createMockExpenseStore = () => ({
   categories: signal([]),
   createExpense: vi.fn(),
   loadCategories: vi.fn(),
+});
+
+const createMockWorkOrderService = () => ({
+  getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
+    items: [
+      { id: 'wo-1', description: 'Fix plumbing', status: 'Reported', propertyId: 'prop-123' },
+      { id: 'wo-2', description: 'Replace HVAC unit in building A', status: 'Assigned', propertyId: 'prop-123' },
+    ],
+    totalCount: 2,
+  })),
 });
 
 describe('ExpenseFormComponent', () => {
@@ -49,6 +61,8 @@ describe('ExpenseFormComponent', () => {
     open: vi.fn().mockReturnValue({ afterClosed: () => of(false) }),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -60,6 +74,7 @@ describe('ExpenseFormComponent', () => {
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: ExpenseService, useValue: mockExpenseService },
         { provide: MatDialog, useValue: mockDialog },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
       ],
     }).compileComponents();
 
@@ -149,6 +164,8 @@ describe('ExpenseFormComponent validation', () => {
     checkDuplicateExpense: vi.fn().mockReturnValue(of({ isDuplicate: false })),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ExpenseFormComponent],
@@ -158,6 +175,7 @@ describe('ExpenseFormComponent validation', () => {
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: ExpenseService, useValue: mockExpenseService },
         { provide: MatDialog, useValue: { open: vi.fn() } },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
       ],
     }).compileComponents();
 
@@ -231,6 +249,8 @@ describe('ExpenseFormComponent submission (AC-3.1.6)', () => {
     checkDuplicateExpense: vi.fn().mockReturnValue(of({ isDuplicate: false })),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -242,6 +262,7 @@ describe('ExpenseFormComponent submission (AC-3.1.6)', () => {
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: ExpenseService, useValue: mockExpenseService },
         { provide: MatDialog, useValue: { open: vi.fn() } },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
       ],
     }).compileComponents();
 
@@ -316,6 +337,8 @@ describe('ExpenseFormComponent duplicate check (AC-3.6)', () => {
     })),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -331,6 +354,7 @@ describe('ExpenseFormComponent duplicate check (AC-3.6)', () => {
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: ExpenseService, useValue: mockExpenseService },
         { provide: MatDialog, useValue: mockDialog },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
       ],
     }).compileComponents();
 
@@ -382,6 +406,8 @@ describe('ExpenseFormComponent saving state', () => {
     checkDuplicateExpense: vi.fn(),
   };
 
+  const mockWorkOrderService = createMockWorkOrderService();
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ExpenseFormComponent],
@@ -391,6 +417,7 @@ describe('ExpenseFormComponent saving state', () => {
         { provide: ExpenseStore, useValue: mockExpenseStore },
         { provide: ExpenseService, useValue: mockExpenseService },
         { provide: MatDialog, useValue: { open: vi.fn() } },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
       ],
     }).compileComponents();
 
@@ -407,5 +434,128 @@ describe('ExpenseFormComponent saving state', () => {
   it('should show spinner when saving', () => {
     const spinner = fixture.debugElement.query(By.css('mat-spinner'));
     expect(spinner).toBeTruthy();
+  });
+});
+
+describe('ExpenseFormComponent work order dropdown (AC-11.2)', () => {
+  let component: ExpenseFormComponent;
+  let fixture: ComponentFixture<ExpenseFormComponent>;
+
+  const mockExpenseStore = createMockExpenseStore();
+
+  const mockExpenseService = {
+    checkDuplicateExpense: vi.fn().mockReturnValue(of({ isDuplicate: false })),
+  };
+
+  const mockWorkOrderService = createMockWorkOrderService();
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    await TestBed.configureTestingModule({
+      imports: [ExpenseFormComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideNativeDateAdapter(),
+        { provide: ExpenseStore, useValue: mockExpenseStore },
+        { provide: ExpenseService, useValue: mockExpenseService },
+        { provide: MatDialog, useValue: { open: vi.fn() } },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseFormComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('propertyId', 'prop-123');
+    fixture.detectChanges();
+  });
+
+  it('should have workOrderId form control (AC-11.2.1)', () => {
+    expect(component['form'].get('workOrderId')).toBeTruthy();
+  });
+
+  it('should default workOrderId to empty string (AC-11.2.1)', () => {
+    expect(component['form'].get('workOrderId')?.value).toBe('');
+  });
+
+  it('should load work orders on init for current property (AC-11.2.3)', () => {
+    expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith('prop-123');
+  });
+
+  it('should include selected workOrderId in create request (AC-11.2.4)', () => {
+    component['form'].patchValue({
+      amount: 100,
+      date: new Date('2026-01-15'),
+      categoryId: 'cat-1',
+      workOrderId: 'wo-1',
+    });
+
+    component['onSubmit']();
+
+    expect(mockExpenseStore.createExpense).toHaveBeenCalled();
+    const callArg = mockExpenseStore.createExpense.mock.calls[0][0];
+    expect(callArg.workOrderId).toBe('wo-1');
+  });
+
+  it('should send undefined workOrderId when empty string selected (AC-11.2.4)', () => {
+    component['form'].patchValue({
+      amount: 100,
+      date: new Date('2026-01-15'),
+      categoryId: 'cat-1',
+      workOrderId: '',
+    });
+
+    component['onSubmit']();
+
+    expect(mockExpenseStore.createExpense).toHaveBeenCalled();
+    const callArg = mockExpenseStore.createExpense.mock.calls[0][0];
+    expect(callArg.workOrderId).toBeUndefined();
+  });
+});
+
+describe('ExpenseFormComponent work order dropdown - empty state (AC-11.2.6)', () => {
+  let component: ExpenseFormComponent;
+  let fixture: ComponentFixture<ExpenseFormComponent>;
+
+  const mockExpenseStore = createMockExpenseStore();
+
+  const mockExpenseService = {
+    checkDuplicateExpense: vi.fn().mockReturnValue(of({ isDuplicate: false })),
+  };
+
+  const mockEmptyWorkOrderService = {
+    getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
+      items: [],
+      totalCount: 0,
+    })),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    await TestBed.configureTestingModule({
+      imports: [ExpenseFormComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideNativeDateAdapter(),
+        { provide: ExpenseStore, useValue: mockExpenseStore },
+        { provide: ExpenseService, useValue: mockExpenseService },
+        { provide: MatDialog, useValue: { open: vi.fn() } },
+        { provide: WorkOrderService, useValue: mockEmptyWorkOrderService },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseFormComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('propertyId', 'prop-123');
+    fixture.detectChanges();
+  });
+
+  it('should have work order dropdown even with no work orders (AC-11.2.6)', () => {
+    expect(component['form'].get('workOrderId')).toBeTruthy();
+  });
+
+  it('should have empty workOrders signal when property has no work orders', () => {
+    expect(component['workOrders']()).toEqual([]);
   });
 });

@@ -11,6 +11,7 @@ export interface CreateExpenseRequest {
   date: string; // ISO date string (YYYY-MM-DD)
   categoryId: string;
   description?: string;
+  workOrderId?: string; // AC-11.2.1, AC-11.2.4
 }
 
 /**
@@ -53,6 +54,7 @@ export interface ExpenseDto {
   date: string;
   description?: string;
   receiptId?: string;
+  workOrderId?: string; // AC-11.2.1, AC-11.2.2
   createdAt: string;
 }
 
@@ -106,6 +108,7 @@ export interface ExpenseListItemDto {
   date: string;
   description?: string;
   receiptId?: string;
+  workOrderId?: string; // AC-11.2.7
   createdAt: string;
 }
 
@@ -118,6 +121,7 @@ export interface UpdateExpenseRequest {
   date: string; // ISO date string (YYYY-MM-DD)
   categoryId: string;
   description?: string;
+  workOrderId?: string; // AC-11.2.2, AC-11.2.5
 }
 
 /**

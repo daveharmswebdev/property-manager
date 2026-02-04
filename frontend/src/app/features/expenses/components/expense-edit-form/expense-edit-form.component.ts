@@ -1,4 +1,5 @@
-import { Component, inject, input, output, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -13,6 +14,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -29,6 +31,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
 
 /**
  * ExpenseEditFormComponent (AC-3.2.1, AC-3.2.2, AC-3.2.3, AC-3.2.5)
@@ -52,6 +55,7 @@ import {
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatSelectModule,
     MatTooltipModule,
     CategorySelectComponent,
     CurrencyInputDirective,
@@ -119,6 +123,24 @@ import {
           @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
             <mat-error>Description must be 500 characters or less</mat-error>
           }
+        </mat-form-field>
+
+        <!-- Work Order Link (optional) (AC-11.2.2, AC-11.2.3, AC-11.2.5) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Work Order (optional)</mat-label>
+          <mat-select formControlName="workOrderId" data-testid="work-order-select">
+            @if (isLoadingWorkOrders()) {
+              <mat-option disabled>Loading work orders...</mat-option>
+            } @else {
+              <mat-option value="">None</mat-option>
+              @for (wo of workOrders(); track wo.id) {
+                <mat-option [value]="wo.id">
+                  {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                  ({{ wo.status }})
+                </mat-option>
+              }
+            }
+          </mat-select>
         </mat-form-field>
 
         <!-- Receipt Section (AC-5.5.4, AC-5.5.5) -->
@@ -231,7 +253,8 @@ import {
       flex: 1;
     }
 
-    .description-field {
+    .description-field,
+    .full-width {
       width: 100%;
     }
 
@@ -358,6 +381,8 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly api = inject(ApiClient);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Expense to edit (AC-3.2.2)
   expense = input.required<ExpenseDto>();
@@ -378,11 +403,16 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
   protected receiptLoading = signal(false);
   protected isUnlinking = signal(false);
 
+  // Work order dropdown state (AC-11.2.2, AC-11.2.3)
+  protected readonly workOrders = signal<WorkOrderDto[]>([]);
+  protected readonly isLoadingWorkOrders = signal(false);
+
   protected form: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [null, [Validators.required]],
     categoryId: ['', [Validators.required]],
     description: ['', [Validators.maxLength(500)]],
+    workOrderId: [''], // AC-11.2.2 - optional
   });
 
   /** Check if the receipt is a PDF (AC-5.5.4) */
@@ -394,6 +424,26 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.populateForm();
     this.loadReceipt();
+    this.loadWorkOrders(); // AC-11.2.2, AC-11.2.3
+  }
+
+  /**
+   * Load work orders for the expense's property (AC-11.2.3)
+   */
+  private loadWorkOrders(): void {
+    this.isLoadingWorkOrders.set(true);
+    this.workOrderService.getWorkOrdersByProperty(this.expense().propertyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading work orders:', error);
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -417,6 +467,7 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
       date: dateValue,
       categoryId: exp.categoryId,
       description: exp.description || '',
+      workOrderId: exp.workOrderId || '', // AC-11.2.2
     });
   }
 
@@ -450,7 +501,7 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
       return;
     }
 
-    const { amount, date, categoryId, description } = this.form.value;
+    const { amount, date, categoryId, description, workOrderId } = this.form.value;
 
     // Format date as ISO string (YYYY-MM-DD)
     const formattedDate = this.formatDate(date);
@@ -460,6 +511,7 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
       date: formattedDate,
       categoryId,
       description: description?.trim() || undefined,
+      workOrderId: workOrderId || undefined, // AC-11.2.5
     };
 
     // Update expense via store (AC-3.2.3)

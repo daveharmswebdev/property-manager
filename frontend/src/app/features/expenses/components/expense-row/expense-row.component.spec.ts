@@ -27,6 +27,11 @@ describe('ExpenseRowComponent', () => {
     receiptId: 'receipt-999',
   };
 
+  const mockExpenseWithWorkOrder: ExpenseDto = {
+    ...mockExpense,
+    workOrderId: 'wo-123',
+  };
+
   beforeEach(async () => {
     mockDialog = { open: vi.fn() };
 
@@ -118,6 +123,35 @@ describe('ExpenseRowComponent', () => {
       deleteButton.click();
 
       expect(deleteSpy).toHaveBeenCalledWith('expense-123');
+    });
+  });
+
+  describe('work order indicator (AC-11.2.7)', () => {
+    it('should not show work order indicator when expense has no workOrderId', () => {
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator).toBeNull();
+    });
+
+    it('should show work order indicator when expense has workOrderId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator).toBeTruthy();
+    });
+
+    it('should display assignment icon for work order indicator', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator.textContent.trim()).toBe('assignment');
     });
   });
 
