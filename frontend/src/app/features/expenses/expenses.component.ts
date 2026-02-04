@@ -328,7 +328,7 @@ export class ExpensesComponent implements OnInit {
   /**
    * Handle create work order from expense in all-expenses list (AC-11.6.7)
    */
-  onCreateWorkOrder(expense: ExpenseListItemDto): void {
+  protected onCreateWorkOrder(expense: ExpenseListItemDto): void {
     const dialogRef = this.dialog.open(CreateWoFromExpenseDialogComponent, {
       width: '500px',
       data: {

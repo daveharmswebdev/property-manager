@@ -85,7 +85,10 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           <mat-icon
             matTooltip="Create work order"
             class="create-wo-link"
+            role="button"
+            tabindex="0"
             (click)="onCreateWorkOrder($event)"
+            (keydown.enter)="onCreateWorkOrder($event)"
             data-testid="create-work-order-button"
           >add_task</mat-icon>
         }

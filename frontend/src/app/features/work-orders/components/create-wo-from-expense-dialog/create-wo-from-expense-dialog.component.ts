@@ -16,6 +16,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { catchError, switchMap } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
 import {
   WorkOrderService,
   CreateWorkOrderRequest,
@@ -162,51 +164,44 @@ export class CreateWoFromExpenseDialogComponent implements OnInit {
       vendorId: this.form.value.vendorId || undefined,
     };
 
-    this.workOrderService.createWorkOrder(createRequest).subscribe({
-      next: (response) => {
-        this.linkExpenseToWorkOrder(response.id);
-      },
-      error: () => {
-        this.isSubmitting.set(false);
-        this.snackBar.open('Failed to create work order', 'Close', { duration: 3000 });
-      },
-    });
-  }
+    let createdWorkOrderId: string;
 
-  private linkExpenseToWorkOrder(workOrderId: string): void {
-    this.expenseService.getExpense(this.data.expenseId).subscribe({
-      next: (expense) => {
+    this.workOrderService.createWorkOrder(createRequest).pipe(
+      switchMap((response) => {
+        createdWorkOrderId = response.id;
+        return this.expenseService.getExpense(this.data.expenseId);
+      }),
+      switchMap((expense) => {
         const updateRequest: UpdateExpenseRequest = {
           amount: expense.amount,
           date: expense.date,
           categoryId: expense.categoryId,
           description: expense.description,
-          workOrderId: workOrderId,
+          workOrderId: createdWorkOrderId,
         };
-        this.expenseService.updateExpense(this.data.expenseId, updateRequest).subscribe({
-          next: () => {
-            this.snackBar.open('Work order created and linked', 'Close', { duration: 3000 });
-            this.dialogRef.close({ workOrderId, expenseId: this.data.expenseId } as CreateWoFromExpenseDialogResult);
-          },
-          error: () => {
-            this.isSubmitting.set(false);
-            this.snackBar.open(
-              'Work order created but linking failed. Link manually from the work order.',
-              'Close',
-              { duration: 5000 }
-            );
-            this.dialogRef.close({ workOrderId, expenseId: this.data.expenseId, linkFailed: true } as CreateWoFromExpenseDialogResult);
-          },
-        });
-      },
-      error: () => {
-        this.isSubmitting.set(false);
-        this.snackBar.open(
-          'Work order created but linking failed. Link manually from the work order.',
-          'Close',
-          { duration: 5000 }
-        );
-        this.dialogRef.close({ workOrderId, expenseId: this.data.expenseId, linkFailed: true } as CreateWoFromExpenseDialogResult);
+        return this.expenseService.updateExpense(this.data.expenseId, updateRequest);
+      }),
+      catchError(() => {
+        if (!createdWorkOrderId) {
+          // WO creation failed — dialog stays open for retry (AC #6)
+          this.isSubmitting.set(false);
+          this.snackBar.open('Failed to create work order', 'Close', { duration: 3000 });
+        } else {
+          // WO created but linking failed (AC #6)
+          this.isSubmitting.set(false);
+          this.snackBar.open(
+            'Work order created but linking failed. Link manually from the work order.',
+            'Close',
+            { duration: 5000 }
+          );
+          this.dialogRef.close({ workOrderId: createdWorkOrderId, expenseId: this.data.expenseId, linkFailed: true } as CreateWoFromExpenseDialogResult);
+        }
+        return EMPTY;
+      }),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Work order created and linked', 'Close', { duration: 3000 });
+        this.dialogRef.close({ workOrderId: createdWorkOrderId, expenseId: this.data.expenseId } as CreateWoFromExpenseDialogResult);
       },
     });
   }

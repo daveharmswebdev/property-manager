@@ -336,10 +336,11 @@ describe('ExpenseWorkspaceComponent create work order from expense (AC-11.6.1)',
   });
 
   it('should not open dialog when expense not found', () => {
+    vi.clearAllMocks();
+
     component['onCreateWorkOrder']('non-existent');
 
-    // Dialog should not be opened again (it was opened from beforeEach but not for this call)
-    // We cleared mocks in the individual test that checks this
+    expect(mockDialog.open).not.toHaveBeenCalled();
   });
 });
 
