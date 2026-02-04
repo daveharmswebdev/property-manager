@@ -1,4 +1,5 @@
-import { Component, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -128,12 +129,16 @@ import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/wo
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Work Order (optional)</mat-label>
             <mat-select formControlName="workOrderId" data-testid="work-order-select">
-              <mat-option value="">None</mat-option>
-              @for (wo of workOrders(); track wo.id) {
-                <mat-option [value]="wo.id">
-                  {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
-                  ({{ wo.status }})
-                </mat-option>
+              @if (isLoadingWorkOrders()) {
+                <mat-option disabled>Loading work orders...</mat-option>
+              } @else {
+                <mat-option value="">None</mat-option>
+                @for (wo of workOrders(); track wo.id) {
+                  <mat-option [value]="wo.id">
+                    {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                    ({{ wo.status }})
+                  </mat-option>
+                }
               }
             </mat-select>
           </mat-form-field>
@@ -237,6 +242,7 @@ export class ExpenseFormComponent implements OnInit {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog = inject(MatDialog);
   private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Property ID
   propertyId = input.required<string>();
@@ -278,13 +284,18 @@ export class ExpenseFormComponent implements OnInit {
    */
   private loadWorkOrders(): void {
     this.isLoadingWorkOrders.set(true);
-    this.workOrderService.getWorkOrdersByProperty(this.propertyId()).subscribe({
-      next: (response) => {
-        this.workOrders.set(response.items);
-        this.isLoadingWorkOrders.set(false);
-      },
-      error: () => this.isLoadingWorkOrders.set(false),
-    });
+    this.workOrderService.getWorkOrdersByProperty(this.propertyId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading work orders:', error);
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
   }
 
   protected onCategoryChange(categoryId: string): void {

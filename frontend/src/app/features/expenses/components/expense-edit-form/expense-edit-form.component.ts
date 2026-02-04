@@ -1,4 +1,5 @@
-import { Component, inject, input, output, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -125,9 +126,12 @@ import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/wo
         </mat-form-field>
 
         <!-- Work Order Link (optional) (AC-11.2.2, AC-11.2.3, AC-11.2.5) -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Work Order (optional)</mat-label>
-            <mat-select formControlName="workOrderId" data-testid="work-order-select">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Work Order (optional)</mat-label>
+          <mat-select formControlName="workOrderId" data-testid="work-order-select">
+            @if (isLoadingWorkOrders()) {
+              <mat-option disabled>Loading work orders...</mat-option>
+            } @else {
               <mat-option value="">None</mat-option>
               @for (wo of workOrders(); track wo.id) {
                 <mat-option [value]="wo.id">
@@ -135,8 +139,9 @@ import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/wo
                   ({{ wo.status }})
                 </mat-option>
               }
-            </mat-select>
-          </mat-form-field>
+            }
+          </mat-select>
+        </mat-form-field>
 
         <!-- Receipt Section (AC-5.5.4, AC-5.5.5) -->
         @if (expense().receiptId) {
@@ -377,6 +382,7 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
   private readonly snackBar = inject(MatSnackBar);
   private readonly api = inject(ApiClient);
   private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Expense to edit (AC-3.2.2)
   expense = input.required<ExpenseDto>();
@@ -426,13 +432,18 @@ export class ExpenseEditFormComponent implements OnInit, OnChanges {
    */
   private loadWorkOrders(): void {
     this.isLoadingWorkOrders.set(true);
-    this.workOrderService.getWorkOrdersByProperty(this.expense().propertyId).subscribe({
-      next: (response) => {
-        this.workOrders.set(response.items);
-        this.isLoadingWorkOrders.set(false);
-      },
-      error: () => this.isLoadingWorkOrders.set(false),
-    });
+    this.workOrderService.getWorkOrdersByProperty(this.expense().propertyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading work orders:', error);
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
