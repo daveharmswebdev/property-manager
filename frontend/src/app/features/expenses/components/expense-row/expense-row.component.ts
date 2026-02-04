@@ -51,7 +51,10 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
               class="work-order-indicator clickable"
               [matTooltip]="workOrder()?.description || 'Linked to work order'"
               data-testid="work-order-indicator"
+              role="link"
+              tabindex="0"
               (click)="navigateToWorkOrder($event)"
+              (keydown.enter)="navigateToWorkOrder($event)"
             >assignment</mat-icon>
           }
           @if (expense().receiptId) {
@@ -67,7 +70,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           <mat-chip>{{ expense().categoryName }}</mat-chip>
         </mat-chip-set>
         @if (workOrder(); as wo) {
-          <div class="work-order-context" (click)="navigateToWorkOrder($event)" data-testid="work-order-context">
+          <div class="work-order-context" (click)="navigateToWorkOrder($event)" (keydown.enter)="navigateToWorkOrder($event)" role="link" tabindex="0" data-testid="work-order-context">
             <span class="wo-status-chip" [attr.data-status]="wo.status">{{ wo.status }}</span>
             <span class="wo-description">{{ truncateWoDescription(wo.description) }}</span>
             <mat-icon class="wo-link-icon">open_in_new</mat-icon>
@@ -189,8 +192,6 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
     }
 
     .wo-description {
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
     }
 

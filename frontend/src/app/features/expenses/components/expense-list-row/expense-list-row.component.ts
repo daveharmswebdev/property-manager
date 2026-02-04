@@ -75,7 +75,10 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           <mat-icon
             matTooltip="Linked to work order"
             class="work-order-link"
+            role="link"
+            tabindex="0"
             (click)="navigateToWorkOrder($event)"
+            (keydown.enter)="navigateToWorkOrder($event)"
             data-testid="work-order-indicator"
           >assignment</mat-icon>
         }
@@ -271,7 +274,7 @@ export class ExpenseListRowComponent {
   /**
    * Navigate to work order detail page (AC-11.4.4)
    */
-  navigateToWorkOrder(event: Event): void {
+  protected navigateToWorkOrder(event: Event): void {
     event.stopPropagation();
     const workOrderId = this.expense().workOrderId;
     if (workOrderId) {

@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { ExpenseRowComponent } from './expense-row.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
+import { MatTooltip } from '@angular/material/tooltip';
 import { ExpenseDto } from '../../services/expense.service';
 import { WorkOrderDto } from '../../../work-orders/services/work-order.service';
 import { ReceiptLightboxDialogComponent } from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
@@ -194,9 +196,21 @@ describe('ExpenseRowComponent', () => {
       fixture.componentRef.setInput('workOrder', mockWorkOrder);
       fixture.detectChanges();
 
-      // Verify the workOrder input is accepted and available
-      expect(component.workOrder()).toBeTruthy();
-      expect(component.workOrder()!.description).toBe('Fix plumbing leak in kitchen');
+      const indicatorDe = fixture.debugElement.query(By.css('[data-testid="work-order-indicator"]'));
+      expect(indicatorDe).toBeTruthy();
+      const tooltip = indicatorDe.injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Fix plumbing leak in kitchen');
+    });
+
+    it('should fall back to generic tooltip when workOrder input not provided (AC-11.4.2)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      // workOrder not set - undefined
+      fixture.detectChanges();
+
+      const indicatorDe = fixture.debugElement.query(By.css('[data-testid="work-order-indicator"]'));
+      expect(indicatorDe).toBeTruthy();
+      const tooltip = indicatorDe.injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Linked to work order');
     });
 
     it('should still show indicator when workOrderId exists but workOrder input is undefined (graceful fallback)', () => {

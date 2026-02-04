@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -285,6 +286,7 @@ export class ExpenseWorkspaceComponent implements OnInit {
   private readonly propertyService = inject(PropertyService);
   private readonly dialog = inject(MatDialog);
   private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly propertyId = signal<string>('');
   protected readonly propertyName = signal<string>('');
@@ -446,7 +448,9 @@ export class ExpenseWorkspaceComponent implements OnInit {
   }
 
   private loadWorkOrders(propertyId: string): void {
-    this.workOrderService.getWorkOrdersByProperty(propertyId).subscribe({
+    this.workOrderService.getWorkOrdersByProperty(propertyId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
       next: (response) => {
         const map: Record<string, WorkOrderDto> = {};
         response.items.forEach(wo => map[wo.id] = wo);
