@@ -238,6 +238,10 @@ public class WorkOrdersController : ControllerBase
     public async Task<IActionResult> GetWorkOrderExpenses(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetWorkOrderExpensesQuery(id), cancellationToken);
+
+        _logger.LogInformation("Retrieved {Count} expenses for work order {WorkOrderId}",
+            result.TotalCount, id);
+
         return Ok(result);
     }
 

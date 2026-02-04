@@ -345,16 +345,18 @@ public class ExpenseWorkOrderIntegrationTests : IClassFixture<PropertyManagerWeb
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
         return await _client.SendAsync(request);
     }
-}
 
-// Response DTOs for deserialization
-public record CreateExpenseIdResponse(Guid Id);
-public record CreateWorkOrderIdResponse(Guid Id);
-public record ExpenseDetailResponse(
-    Guid Id, Guid PropertyId, string PropertyName, Guid CategoryId, string CategoryName,
-    string? ScheduleELine, decimal Amount, DateOnly Date, string? Description,
-    Guid? ReceiptId, Guid? WorkOrderId, DateTime CreatedAt);
-public record WorkOrderExpensesListResponse(List<WorkOrderExpenseItem> Items, int TotalCount);
-public record WorkOrderExpenseItem(Guid Id, DateOnly Date, string? Description, string CategoryName, decimal Amount);
-public record ExpenseCategoriesListResponse(List<ExpenseCategoryItem> Items, int TotalCount);
-public record ExpenseCategoryItem(Guid Id, string Name);
+    // Response DTOs for deserialization
+    private record CreateExpenseIdResponse(Guid Id);
+    private record CreateWorkOrderIdResponse(Guid Id);
+    private record CreatePropertyResponse(Guid Id);
+    private record LoginResponse(string AccessToken);
+    private record ExpenseDetailResponse(
+        Guid Id, Guid PropertyId, string PropertyName, Guid CategoryId, string CategoryName,
+        string? ScheduleELine, decimal Amount, DateOnly Date, string? Description,
+        Guid? ReceiptId, Guid? WorkOrderId, DateTime CreatedAt);
+    private record WorkOrderExpensesListResponse(List<WorkOrderExpenseItem> Items, int TotalCount);
+    private record WorkOrderExpenseItem(Guid Id, DateOnly Date, string? Description, string CategoryName, decimal Amount);
+    private record ExpenseCategoriesListResponse(List<ExpenseCategoryItem> Items, int TotalCount);
+    private record ExpenseCategoryItem(Guid Id, string Name);
+}

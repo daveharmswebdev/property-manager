@@ -59,7 +59,8 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
-        // Validate work order exists, belongs to same account, and same property (AC #7, #9)
+        // Validate work order exists and belongs to same property (AC #7, #9)
+        // Account isolation enforced by global query filter on WorkOrders DbSet
         if (request.WorkOrderId.HasValue)
         {
             var workOrder = await _dbContext.WorkOrders
