@@ -91,6 +91,7 @@ export interface IApiClient {
     workOrders_GetWorkOrder(id: string): Observable<WorkOrderDto>;
     workOrders_UpdateWorkOrder(id: string, request: UpdateWorkOrderRequest): Observable<void>;
     workOrders_DeleteWorkOrder(id: string): Observable<void>;
+    workOrders_GetWorkOrderExpenses(id: string): Observable<WorkOrderExpensesResponse>;
     workOrders_GetWorkOrdersByProperty(propertyId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByPropertyResult>;
     workOrderTags_GetAllWorkOrderTags(): Observable<GetAllWorkOrderTagsResponse>;
     workOrderTags_CreateWorkOrderTag(request?: CreateWorkOrderTagRequest | undefined): Observable<CreateWorkOrderTagResponse>;
@@ -4889,6 +4890,69 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    workOrders_GetWorkOrderExpenses(id: string): Observable<WorkOrderExpensesResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{id}/expenses";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_GetWorkOrderExpenses(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_GetWorkOrderExpenses(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkOrderExpensesResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkOrderExpensesResponse>;
+        }));
+    }
+
+    protected processWorkOrders_GetWorkOrderExpenses(response: HttpResponseBase): Observable<WorkOrderExpensesResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkOrderExpensesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     workOrders_GetWorkOrdersByProperty(propertyId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByPropertyResult> {
         let url_ = this.baseUrl + "/api/v1/properties/{propertyId}/work-orders?";
         if (propertyId === undefined || propertyId === null)
@@ -5173,6 +5237,7 @@ export interface ExpenseListItemDto {
     date?: Date;
     description?: string | undefined;
     receiptId?: string | undefined;
+    workOrderId?: string | undefined;
     createdAt?: Date;
 }
 
@@ -5186,6 +5251,7 @@ export interface CreateExpenseRequest {
     date?: Date;
     categoryId?: string;
     description?: string | undefined;
+    workOrderId?: string | undefined;
 }
 
 export interface ExpenseCategoriesResponse {
@@ -5221,6 +5287,7 @@ export interface ExpenseDto {
     date?: Date;
     description?: string | undefined;
     receiptId?: string | undefined;
+    workOrderId?: string | undefined;
     createdAt?: Date;
 }
 
@@ -5229,6 +5296,7 @@ export interface UpdateExpenseRequest {
     date?: Date;
     categoryId?: string;
     description?: string | undefined;
+    workOrderId?: string | undefined;
 }
 
 export interface HealthResponse {
@@ -5746,6 +5814,19 @@ export interface UpdateWorkOrderRequest {
     status?: string | undefined;
     vendorId?: string | undefined;
     tagIds?: string[] | undefined;
+}
+
+export interface WorkOrderExpensesResponse {
+    items?: WorkOrderExpenseItemDto[];
+    totalCount?: number;
+}
+
+export interface WorkOrderExpenseItemDto {
+    id?: string;
+    date?: Date;
+    description?: string | undefined;
+    categoryName?: string;
+    amount?: number;
 }
 
 export interface GetWorkOrdersByPropertyResult {

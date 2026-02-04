@@ -94,6 +94,7 @@ public class GetExpensesByPropertyQueryHandler : IRequestHandler<GetExpensesByPr
                 e.Date,
                 e.Description,
                 e.ReceiptId,
+                e.WorkOrderId,
                 e.CreatedAt
             ))
             .AsNoTracking()

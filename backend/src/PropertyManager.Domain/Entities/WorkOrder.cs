@@ -37,4 +37,7 @@ public class WorkOrder : AuditableEntity, ITenantEntity, ISoftDeletable
 
     // Navigation to photos
     public ICollection<WorkOrderPhoto> Photos { get; set; } = new List<WorkOrderPhoto>();
+
+    // Navigation to expenses
+    public ICollection<Expense> Expenses { get; set; } = [];
 }

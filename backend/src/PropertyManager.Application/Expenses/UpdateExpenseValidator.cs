@@ -29,6 +29,10 @@ public partial class UpdateExpenseValidator : AbstractValidator<UpdateExpenseCom
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("Description must be 500 characters or less")
             .Must(NotContainHtml).WithMessage("Description cannot contain HTML");
+
+        RuleFor(x => x.WorkOrderId)
+            .Must(id => id == null || id != Guid.Empty)
+            .WithMessage("WorkOrderId must be a valid GUID or null");
     }
 
     private static bool NotContainHtml(string? description)
