@@ -144,7 +144,7 @@ export class CreateExpenseFromWoDialogComponent implements OnInit {
   private readonly expenseStore = inject(ExpenseStore);
 
   protected readonly categories = this.expenseStore.sortedCategories;
-  isSubmitting = signal(false);
+  readonly isSubmitting = signal(false);
 
   form = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],

@@ -111,7 +111,6 @@ describe('WorkOrderDetailComponent', () => {
       open: vi.fn(),
     };
 
-
     const mockPhotoStore = {
       photos: signal([]),
       sortedPhotos: signal([]),
