@@ -150,8 +150,8 @@ development_status:
   # Epic 11: Work Order-Expense Integration
   # User Outcome: "I know the story behind every expense - which work order it came from"
   epic-11: in-progress
-  11-1-expense-workorder-relationship: review
-  11-2-link-expense-to-work-order: backlog
+  11-1-expense-workorder-relationship: done
+  11-2-link-expense-to-work-order: dev-complete
   11-3-link-work-order-to-expense: backlog
   11-4-view-linked-work-order-on-expense: backlog
   11-5-view-linked-expenses-on-work-order: backlog

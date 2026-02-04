@@ -44,6 +44,13 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       <div class="expense-details">
         <div class="expense-description">
           {{ expense().description || 'No description' }}
+          @if (expense().workOrderId) {
+            <mat-icon
+              class="work-order-indicator"
+              [matTooltip]="'Linked to work order'"
+              data-testid="work-order-indicator"
+            >assignment</mat-icon>
+          }
           @if (expense().receiptId) {
             <mat-icon
               class="receipt-indicator"
@@ -117,6 +124,13 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .work-order-indicator {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .receipt-indicator {
