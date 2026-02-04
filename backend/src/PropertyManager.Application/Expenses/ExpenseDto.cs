@@ -14,5 +14,6 @@ public record ExpenseDto(
     DateOnly Date,
     string? Description,
     Guid? ReceiptId,
+    Guid? WorkOrderId,
     DateTime CreatedAt
 );

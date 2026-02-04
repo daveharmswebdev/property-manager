@@ -14,6 +14,7 @@ public class Expense : AuditableEntity, ITenantEntity, ISoftDeletable
     public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public Guid? ReceiptId { get; set; }
+    public Guid? WorkOrderId { get; set; }
     public Guid CreatedByUserId { get; set; }
     public DateTime? DeletedAt { get; set; }
 
@@ -22,5 +23,6 @@ public class Expense : AuditableEntity, ITenantEntity, ISoftDeletable
     public Property Property { get; set; } = null!;
     public ExpenseCategory Category { get; set; } = null!;
     public Receipt? Receipt { get; set; }
+    public WorkOrder? WorkOrder { get; set; }
     // Note: CreatedByUserId references ApplicationUser (Identity) - navigation configured in Infrastructure
 }

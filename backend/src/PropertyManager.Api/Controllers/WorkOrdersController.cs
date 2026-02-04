@@ -223,6 +223,25 @@ public class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Get expenses linked to a specific work order (AC #6).
+    /// </summary>
+    /// <param name="id">Work order GUID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of expenses linked to the work order</returns>
+    /// <response code="200">Returns the list of expenses</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order not found</response>
+    [HttpGet("{id:guid}/expenses")]
+    [ProducesResponseType(typeof(WorkOrderExpensesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetWorkOrderExpenses(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetWorkOrderExpensesQuery(id), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get work orders for a specific property (Story 9-11 AC #1, #5).
     /// Used on property detail page to show maintenance history.
     /// </summary>

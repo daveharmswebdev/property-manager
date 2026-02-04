@@ -14,7 +14,8 @@ public record CreateExpenseCommand(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 ) : IRequest<Guid>;
 
 /// <summary>
@@ -55,6 +56,20 @@ public class CreateExpenseCommandHandler : IRequestHandler<CreateExpenseCommand,
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
+        // Validate work order exists, belongs to same account, and same property (AC #7, #9)
+        if (request.WorkOrderId.HasValue)
+        {
+            var workOrder = await _dbContext.WorkOrders
+                .Where(w => w.Id == request.WorkOrderId.Value && w.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (workOrder == null)
+                throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
+
+            if (workOrder.PropertyId != request.PropertyId)
+                throw new ValidationException("Expense and work order must belong to the same property");
+        }
+
         var expense = new Expense
         {
             AccountId = _currentUser.AccountId,
@@ -63,6 +78,7 @@ public class CreateExpenseCommandHandler : IRequestHandler<CreateExpenseCommand,
             Amount = request.Amount,
             Date = request.Date,
             Description = request.Description?.Trim(),
+            WorkOrderId = request.WorkOrderId,
             CreatedByUserId = _currentUser.UserId
         };
 

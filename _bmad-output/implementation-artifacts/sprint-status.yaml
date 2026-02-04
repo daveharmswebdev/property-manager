@@ -136,21 +136,21 @@ development_status:
 
   # Epic 10: Work Order Context
   # User Outcome: "I can document everything about a repair with photos and notes"
-  epic-10: in-progress
+  epic-10: done
   10-1-polymorphic-notes-entity: done
   10-2-add-notes-to-work-order: done
   10-3-delete-notes: done
   10-3a-edit-notes: done
   10-4-work-order-photos-entity: done
   10-5-upload-photos-to-work-order: done
-  10-6-view-work-order-photos: dev-complete  # Combined with 10-7
+  10-6-view-work-order-photos: done  # Combined with 10-7 - PR #140 merged
   # 10-7-delete-work-order-photos: merged into 10-6
   epic-10-retrospective: optional
 
   # Epic 11: Work Order-Expense Integration
   # User Outcome: "I know the story behind every expense - which work order it came from"
-  epic-11: backlog
-  11-1-expense-workorder-relationship: backlog
+  epic-11: in-progress
+  11-1-expense-workorder-relationship: review
   11-2-link-expense-to-work-order: backlog
   11-3-link-work-order-to-expense: backlog
   11-4-view-linked-work-order-on-expense: backlog
