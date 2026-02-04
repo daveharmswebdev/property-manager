@@ -7,7 +7,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
@@ -111,6 +110,7 @@ describe('WorkOrderDetailComponent', () => {
     const mockSnackBar = {
       open: vi.fn(),
     };
+
 
     const mockPhotoStore = {
       photos: signal([]),
@@ -509,6 +509,88 @@ describe('WorkOrderDetailComponent', () => {
       const unlinkButton = fixture.debugElement.query(By.css('.expense-actions button'));
       unlinkButton.triggerEventHandler('click', null);
       expect(component.unlinkExpense).toHaveBeenCalledWith('exp-1');
+    });
+  });
+
+  describe('create expense from work order (Story 11.7)', () => {
+    it('should show "Create Expense" button in Linked Expenses section', () => {
+      setupWithWorkOrder();
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Create Expense');
+    });
+
+    it('should call openCreateExpenseDialog when Create Expense button clicked', () => {
+      setupWithWorkOrder();
+      vi.spyOn(component, 'openCreateExpenseDialog');
+
+      const buttons = fixture.nativeElement.querySelectorAll('.expenses-actions button');
+      const createBtn = Array.from(buttons).find((b: any) => b.textContent.includes('Create Expense')) as HTMLButtonElement;
+      expect(createBtn).toBeTruthy();
+      createBtn.click();
+      expect(component.openCreateExpenseDialog).toHaveBeenCalled();
+    });
+
+    it('should open dialog with correct data from work order', () => {
+      setupWithWorkOrder();
+
+      const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(undefined) });
+      (component as any).dialog = { open: openSpy };
+
+      component.openCreateExpenseDialog();
+
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({
+          width: '500px',
+          data: expect.objectContaining({
+            workOrderId: 'wo-123',
+            propertyId: 'prop-456',
+            propertyName: 'Test Property',
+            categoryId: 'cat-101',
+            workOrderDescription: 'Fix the leaky faucet in the kitchen',
+          }),
+        })
+      );
+    });
+
+    it('should refresh linked expenses after dialog closes with created: true', () => {
+      setupWithWorkOrder();
+
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (component as any).dialog = {
+        open: vi.fn().mockReturnValue({
+          afterClosed: () => of({ created: true }),
+        }),
+      };
+
+      // Reset call count after init load, but keep returning valid data
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>)
+        .mockClear()
+        .mockReturnValue(of({ items: [], totalCount: 0 } as WorkOrderExpensesResponse));
+
+      component.openCreateExpenseDialog();
+
+      expect(mockWoService.getWorkOrderExpenses).toHaveBeenCalledWith('wo-123');
+    });
+
+    it('should not refresh linked expenses after dialog cancel (no result)', () => {
+      setupWithWorkOrder();
+
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (component as any).dialog = {
+        open: vi.fn().mockReturnValue({
+          afterClosed: () => of(undefined),
+        }),
+      };
+
+      // Reset call count after init load, but keep returning valid data
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>)
+        .mockClear()
+        .mockReturnValue(of({ items: [], totalCount: 0 } as WorkOrderExpensesResponse));
+
+      component.openCreateExpenseDialog();
+
+      expect(mockWoService.getWorkOrderExpenses).not.toHaveBeenCalled();
     });
   });
 
