@@ -13,6 +13,7 @@ import { ExpenseFormComponent } from '../components/expense-form/expense-form.co
 import { ExpenseRowComponent } from '../components/expense-row/expense-row.component';
 import { ExpenseEditFormComponent } from '../components/expense-edit-form/expense-edit-form.component';
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
+import { WorkOrderService, WorkOrderDto } from '../../work-orders/services/work-order.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -117,6 +118,7 @@ import { formatDateShort } from '../../../shared/utils/date.utils';
                     <!-- Show normal row with edit and delete buttons (AC-3.2.1, AC-3.3.1) -->
                     <app-expense-row
                       [expense]="expense"
+                      [workOrder]="workOrderMap()[expense.workOrderId ?? '']"
                       (edit)="onEditExpense($event)"
                       (delete)="onDeleteExpense($event)"
                     />
@@ -282,11 +284,13 @@ export class ExpenseWorkspaceComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly propertyService = inject(PropertyService);
   private readonly dialog = inject(MatDialog);
+  private readonly workOrderService = inject(WorkOrderService);
 
   protected readonly propertyId = signal<string>('');
   protected readonly propertyName = signal<string>('');
   protected readonly isLoadingProperty = signal(true);
   protected readonly propertyError = signal<string | null>(null);
+  protected readonly workOrderMap = signal<Record<string, WorkOrderDto>>({});
 
   /**
    * Computed: First item number on current page (AC-7.5.3)
@@ -338,6 +342,9 @@ export class ExpenseWorkspaceComponent implements OnInit {
 
         // Load categories if not already loaded
         this.store.loadCategories();
+
+        // Load work orders for expense row context (AC-11.4.3)
+        this.loadWorkOrders(propertyId);
       },
       error: (error) => {
         this.isLoadingProperty.set(false);
@@ -436,6 +443,20 @@ export class ExpenseWorkspaceComponent implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  }
+
+  private loadWorkOrders(propertyId: string): void {
+    this.workOrderService.getWorkOrdersByProperty(propertyId).subscribe({
+      next: (response) => {
+        const map: Record<string, WorkOrderDto> = {};
+        response.items.forEach(wo => map[wo.id] = wo);
+        this.workOrderMap.set(map);
+      },
+      error: () => {
+        // Silent fail - expense rows fall back to generic icon behavior (AC-11.4.3)
+        this.workOrderMap.set({});
+      },
+    });
   }
 
   protected goBack(): void {

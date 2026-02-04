@@ -1,14 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { ExpenseRowComponent } from './expense-row.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { ExpenseDto } from '../../services/expense.service';
+import { WorkOrderDto } from '../../../work-orders/services/work-order.service';
 import { ReceiptLightboxDialogComponent } from '../../../receipts/components/receipt-lightbox-dialog/receipt-lightbox-dialog.component';
 
 describe('ExpenseRowComponent', () => {
   let component: ExpenseRowComponent;
   let fixture: ComponentFixture<ExpenseRowComponent>;
   let mockDialog: { open: ReturnType<typeof vi.fn> };
+  let mockRouter: { navigate: ReturnType<typeof vi.fn> };
 
   const mockExpense: ExpenseDto = {
     id: 'expense-123',
@@ -32,12 +35,28 @@ describe('ExpenseRowComponent', () => {
     workOrderId: 'wo-123',
   };
 
+  const mockWorkOrder: WorkOrderDto = {
+    id: 'wo-123',
+    propertyId: 'property-456',
+    propertyName: 'Oak Street Duplex',
+    isDiy: false,
+    status: 'Assigned',
+    description: 'Fix plumbing leak in kitchen',
+    createdAt: '2026-01-15',
+    createdByUserId: 'user-1',
+    tags: [],
+  };
+
   beforeEach(async () => {
     mockDialog = { open: vi.fn() };
+    mockRouter = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [ExpenseRowComponent, NoopAnimationsModule],
-      providers: [{ provide: MatDialog, useValue: mockDialog }],
+      providers: [
+        { provide: MatDialog, useValue: mockDialog },
+        { provide: Router, useValue: mockRouter },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExpenseRowComponent);
@@ -126,7 +145,7 @@ describe('ExpenseRowComponent', () => {
     });
   });
 
-  describe('work order indicator (AC-11.2.7)', () => {
+  describe('work order indicator (AC-11.2.7, AC-11.4.2)', () => {
     it('should not show work order indicator when expense has no workOrderId', () => {
       const indicator = fixture.nativeElement.querySelector(
         '[data-testid="work-order-indicator"]'
@@ -152,6 +171,110 @@ describe('ExpenseRowComponent', () => {
         '[data-testid="work-order-indicator"]'
       );
       expect(indicator.textContent.trim()).toBe('assignment');
+    });
+
+    it('should navigate to work order detail when indicator clicked (AC-11.4.2)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      indicator.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-123']);
+    });
+
+    it('should use WO description for tooltip when workOrder input provided (AC-11.4.2)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.componentRef.setInput('workOrder', mockWorkOrder);
+      fixture.detectChanges();
+
+      // Verify the workOrder input is accepted and available
+      expect(component.workOrder()).toBeTruthy();
+      expect(component.workOrder()!.description).toBe('Fix plumbing leak in kitchen');
+    });
+
+    it('should still show indicator when workOrderId exists but workOrder input is undefined (graceful fallback)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      // workOrder not set - undefined
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator).toBeTruthy();
+    });
+  });
+
+  describe('work order context sub-line (AC-11.4.1)', () => {
+    it('should show work order context sub-line when workOrder input provided', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.componentRef.setInput('workOrder', mockWorkOrder);
+      fixture.detectChanges();
+
+      const context = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-context"]'
+      );
+      expect(context).toBeTruthy();
+    });
+
+    it('should hide work order context when no workOrder input', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      // workOrder not set
+      fixture.detectChanges();
+
+      const context = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-context"]'
+      );
+      expect(context).toBeNull();
+    });
+
+    it('should display status chip with correct status text', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.componentRef.setInput('workOrder', mockWorkOrder);
+      fixture.detectChanges();
+
+      const statusChip = fixture.nativeElement.querySelector('.wo-status-chip');
+      expect(statusChip).toBeTruthy();
+      expect(statusChip.textContent.trim()).toBe('Assigned');
+      expect(statusChip.getAttribute('data-status')).toBe('Assigned');
+    });
+
+    it('should truncate WO description at 50 chars', () => {
+      const longWo = {
+        ...mockWorkOrder,
+        description: 'This is a very long work order description that should be truncated at fifty characters',
+      };
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.componentRef.setInput('workOrder', longWo);
+      fixture.detectChanges();
+
+      const woDesc = fixture.nativeElement.querySelector('.wo-description');
+      expect(woDesc.textContent.trim()).toBe(
+        'This is a very long work order description that sh...'
+      );
+    });
+
+    it('should navigate to work order detail when context line clicked (AC-11.4.1)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.componentRef.setInput('workOrder', mockWorkOrder);
+      fixture.detectChanges();
+
+      const context = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-context"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      context.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-123']);
     });
   });
 

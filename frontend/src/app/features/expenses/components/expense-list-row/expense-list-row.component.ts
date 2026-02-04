@@ -69,6 +69,18 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
         }
       </div>
 
+      <!-- Work Order Indicator (AC-11.4.4) -->
+      <div class="expense-work-order">
+        @if (expense().workOrderId) {
+          <mat-icon
+            matTooltip="Linked to work order"
+            class="work-order-link"
+            (click)="navigateToWorkOrder($event)"
+            data-testid="work-order-indicator"
+          >assignment</mat-icon>
+        }
+      </div>
+
       <!-- Amount (AC-3.4.2) -->
       <div class="expense-amount">
         {{ expense().amount | currency }}
@@ -78,7 +90,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
   styles: [`
     .expense-list-row {
       display: grid;
-      grid-template-columns: 100px 150px 1fr auto 40px 100px;
+      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px;
       align-items: center;
       padding: 12px 16px;
       border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -151,6 +163,27 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       }
     }
 
+    .expense-work-order {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: var(--mat-sys-on-surface-variant);
+      }
+
+      .work-order-link {
+        cursor: pointer;
+        transition: color 0.2s ease;
+        &:hover {
+          color: var(--mat-sys-primary);
+        }
+      }
+    }
+
     .expense-amount {
       font-weight: 600;
       font-size: 1em;
@@ -196,6 +229,10 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       .expense-receipt {
         display: none;
       }
+
+      .expense-work-order {
+        display: none;
+      }
     }
   `],
 })
@@ -229,6 +266,17 @@ export class ExpenseListRowComponent {
    */
   navigateToExpense(): void {
     this.router.navigate(['/properties', this.expense().propertyId, 'expenses']);
+  }
+
+  /**
+   * Navigate to work order detail page (AC-11.4.4)
+   */
+  navigateToWorkOrder(event: Event): void {
+    event.stopPropagation();
+    const workOrderId = this.expense().workOrderId;
+    if (workOrderId) {
+      this.router.navigate(['/work-orders', workOrderId]);
+    }
   }
 
   /**
