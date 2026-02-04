@@ -12,7 +12,8 @@ import {
   GetAllWorkOrderTagsResponse,
   CreateWorkOrderTagRequest,
   GetWorkOrdersByPropertyResponse,
-  WorkOrderTagDto
+  WorkOrderTagDto,
+  WorkOrderExpensesResponse,
 } from './work-order.service';
 
 describe('WorkOrderService', () => {
@@ -250,6 +251,38 @@ describe('WorkOrderService', () => {
       const req = httpMock.expectOne('/api/v1/work-orders/wo-1');
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
+    });
+  });
+
+  describe('getWorkOrderExpenses', () => {
+    it('should get expenses for a work order', () => {
+      const mockResponse: WorkOrderExpensesResponse = {
+        items: [
+          { id: 'exp-1', date: '2026-01-15', description: 'Faucet parts', categoryName: 'Repairs', amount: 125.50 },
+          { id: 'exp-2', date: '2026-01-10', description: null, categoryName: 'Supplies', amount: 45.00 },
+        ],
+        totalCount: 2,
+      };
+
+      service.getWorkOrderExpenses('wo-1').subscribe(response => {
+        expect(response.items).toHaveLength(2);
+        expect(response.totalCount).toBe(2);
+        expect(response.items[0].amount).toBe(125.50);
+      });
+
+      const req = httpMock.expectOne('/api/v1/work-orders/wo-1/expenses');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
+    });
+
+    it('should call the correct endpoint with work order ID', () => {
+      const mockResponse: WorkOrderExpensesResponse = { items: [], totalCount: 0 };
+
+      service.getWorkOrderExpenses('wo-abc').subscribe();
+
+      const req = httpMock.expectOne('/api/v1/work-orders/wo-abc/expenses');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
     });
   });
 
