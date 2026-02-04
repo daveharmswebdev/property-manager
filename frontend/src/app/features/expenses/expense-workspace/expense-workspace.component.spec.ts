@@ -13,6 +13,7 @@ import { ExpenseWorkspaceComponent } from './expense-workspace.component';
 import { ExpenseStore } from '../stores/expense.store';
 import { PropertyService } from '../../properties/services/property.service';
 import { WorkOrderService } from '../../work-orders/services/work-order.service';
+import { CreateWoFromExpenseDialogComponent } from '../../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 
 // Default mock for WorkOrderService - silent success
 const createMockWorkOrderService = (overrides = {}) => ({
@@ -224,6 +225,122 @@ describe('ExpenseWorkspaceComponent', () => {
     expect(map['wo-1']).toBeTruthy();
     expect(map['wo-1'].description).toBe('Fix plumbing leak');
     expect(map['wo-1'].status).toBe('Assigned');
+  });
+});
+
+describe('ExpenseWorkspaceComponent create work order from expense (AC-11.6.1)', () => {
+  let component: ExpenseWorkspaceComponent;
+  let fixture: ComponentFixture<ExpenseWorkspaceComponent>;
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
+
+  const mockExpenses = [
+    { id: 'exp-1', date: '2026-01-15', description: 'Test expense', categoryId: 'cat-1', categoryName: 'Repairs', amount: 100, propertyId: 'prop-123' },
+    { id: 'exp-2', date: '2026-01-20', description: 'Insurance', categoryId: 'cat-2', categoryName: 'Insurance', amount: 500, propertyId: 'prop-123', workOrderId: 'wo-existing' },
+  ];
+
+  const mockExpenseStoreForDialog = createMockExpenseStore({
+    expenses: signal(mockExpenses),
+    ytdTotal: signal(600),
+    totalCount: signal(2),
+  });
+
+  const mockPropertyService = {
+    getPropertyById: vi.fn().mockReturnValue(of({ id: 'prop-123', name: 'Test Property' })),
+  };
+
+  const mockWorkOrderService = createMockWorkOrderService();
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of({ workOrderId: 'new-wo-1', expenseId: 'exp-1' }),
+      }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ExpenseWorkspaceComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideNativeDateAdapter(),
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ExpenseStore, useValue: mockExpenseStoreForDialog },
+        { provide: PropertyService, useValue: mockPropertyService },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
+        { provide: MatDialog, useValue: mockDialog },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: () => 'prop-123',
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseWorkspaceComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should open dialog with correct data when onCreateWorkOrder called', () => {
+    component['onCreateWorkOrder']('exp-1');
+
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      CreateWoFromExpenseDialogComponent,
+      expect.objectContaining({
+        width: '500px',
+        data: expect.objectContaining({
+          expenseId: 'exp-1',
+          propertyId: 'prop-123',
+          propertyName: 'Test Property',
+          description: 'Test expense',
+          categoryId: 'cat-1',
+        }),
+      })
+    );
+  });
+
+  it('should reload expenses after dialog closes with result', () => {
+    vi.clearAllMocks();
+    component['onCreateWorkOrder']('exp-1');
+
+    expect(mockExpenseStoreForDialog.loadExpensesByProperty).toHaveBeenCalledWith({
+      propertyId: 'prop-123',
+      propertyName: 'Test Property',
+    });
+  });
+
+  it('should reload work orders after dialog closes with result', () => {
+    vi.clearAllMocks();
+    component['onCreateWorkOrder']('exp-1');
+
+    expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith('prop-123');
+  });
+
+  it('should not reload when dialog closes without result (cancel)', () => {
+    mockDialog.open.mockReturnValue({
+      afterClosed: () => of(undefined),
+    });
+    vi.clearAllMocks();
+
+    component['onCreateWorkOrder']('exp-1');
+
+    expect(mockExpenseStoreForDialog.loadExpensesByProperty).not.toHaveBeenCalled();
+  });
+
+  it('should not open dialog when expense not found', () => {
+    vi.clearAllMocks();
+
+    component['onCreateWorkOrder']('non-existent');
+
+    expect(mockDialog.open).not.toHaveBeenCalled();
   });
 });
 

@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
@@ -69,7 +69,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
         }
       </div>
 
-      <!-- Work Order Indicator (AC-11.4.4) -->
+      <!-- Work Order Indicator (AC-11.4.4, AC-11.6.7) -->
       <div class="expense-work-order">
         @if (expense().workOrderId) {
           <mat-icon
@@ -81,6 +81,16 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
             (keydown.enter)="navigateToWorkOrder($event)"
             data-testid="work-order-indicator"
           >assignment</mat-icon>
+        } @else {
+          <mat-icon
+            matTooltip="Create work order"
+            class="create-wo-link"
+            role="button"
+            tabindex="0"
+            (click)="onCreateWorkOrder($event)"
+            (keydown.enter)="onCreateWorkOrder($event)"
+            data-testid="create-work-order-button"
+          >add_task</mat-icon>
         }
       </div>
 
@@ -185,6 +195,15 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           color: var(--mat-sys-primary);
         }
       }
+
+      .create-wo-link {
+        cursor: pointer;
+        color: var(--mat-sys-on-surface-variant);
+        transition: color 0.2s ease;
+        &:hover {
+          color: var(--mat-sys-primary);
+        }
+      }
     }
 
     .expense-amount {
@@ -245,6 +264,9 @@ export class ExpenseListRowComponent {
 
   expense = input.required<ExpenseListItemDto>();
 
+  // Output: Create work order from this expense (AC-11.6.7)
+  createWorkOrder = output<ExpenseListItemDto>();
+
   /**
    * Format date as "Dec 08, 2025" (AC-3.4.2)
    * Uses formatDateShort utility for correct timezone handling
@@ -269,6 +291,14 @@ export class ExpenseListRowComponent {
    */
   navigateToExpense(): void {
     this.router.navigate(['/properties', this.expense().propertyId, 'expenses']);
+  }
+
+  /**
+   * Handle create work order click (AC-11.6.7)
+   */
+  onCreateWorkOrder(event: Event): void {
+    event.stopPropagation();
+    this.createWorkOrder.emit(this.expense());
   }
 
   /**

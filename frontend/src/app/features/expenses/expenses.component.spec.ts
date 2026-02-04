@@ -2,9 +2,12 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { By } from '@angular/platform-browser';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpensesComponent } from './expenses.component';
 import { ExpenseListStore } from './stores/expense-list.store';
+import { CreateWoFromExpenseDialogComponent } from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 
 /**
  * Unit tests for ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -423,5 +426,102 @@ describe('ExpensesComponent pagination (AC-3.4.8)', () => {
   it('should call goToPage when page changes', () => {
     component.onPageChange({ pageIndex: 1, pageSize: 25, length: 50, previousPageIndex: 0 });
     expect(mockExpenseListStore.goToPage).toHaveBeenCalledWith(2); // 0-indexed to 1-indexed
+  });
+});
+
+describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
+  let component: ExpensesComponent;
+  let fixture: ComponentFixture<ExpensesComponent>;
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
+
+  const mockExpenses = [
+    { id: 'exp-1', date: '2026-01-15', propertyId: 'prop-1', propertyName: 'Test Property', description: 'Faucet repair', categoryId: 'cat-1', categoryName: 'Repairs', amount: 100 },
+    { id: 'exp-2', date: '2026-01-16', propertyId: 'prop-1', propertyName: 'Test Property', description: 'Insurance', categoryId: 'cat-2', categoryName: 'Insurance', amount: 200, workOrderId: 'wo-existing' },
+  ];
+
+  const mockExpenseListStore = {
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isTrulyEmpty: signal(false),
+    isFilteredEmpty: signal(false),
+    hasExpenses: signal(true),
+    expenses: signal(mockExpenses),
+    categories: signal([]),
+    dateRangePreset: signal('all'),
+    selectedCategoryIds: signal([]),
+    searchText: signal(''),
+    filterChips: signal([]),
+    totalCount: signal(2),
+    totalDisplay: signal('Showing 1-2 of 2 expenses'),
+    pageSize: signal(25),
+    page: signal(1),
+    initialize: vi.fn(),
+    setDateRangePreset: vi.fn(),
+    setCustomDateRange: vi.fn(),
+    setCategories: vi.fn(),
+    setSearch: vi.fn(),
+    removeFilterChip: vi.fn(),
+    clearFilters: vi.fn(),
+    setPageSize: vi.fn(),
+    goToPage: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of({ workOrderId: 'new-wo-1', expenseId: 'exp-1' }),
+      }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ExpensesComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: MatDialog, useValue: mockDialog },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpensesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should open dialog with correct data when onCreateWorkOrder called', () => {
+    component['onCreateWorkOrder'](mockExpenses[0] as any);
+
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      CreateWoFromExpenseDialogComponent,
+      expect.objectContaining({
+        width: '500px',
+        data: expect.objectContaining({
+          expenseId: 'exp-1',
+          propertyId: 'prop-1',
+          propertyName: 'Test Property',
+          description: 'Faucet repair',
+          categoryId: 'cat-1',
+        }),
+      })
+    );
+  });
+
+  it('should reinitialize store after dialog closes with result', () => {
+    vi.clearAllMocks();
+    component['onCreateWorkOrder'](mockExpenses[0] as any);
+
+    expect(mockExpenseListStore.initialize).toHaveBeenCalled();
+  });
+
+  it('should not reinitialize store when dialog closes without result (cancel)', () => {
+    mockDialog.open.mockReturnValue({
+      afterClosed: () => of(undefined),
+    });
+    vi.clearAllMocks();
+
+    component['onCreateWorkOrder'](mockExpenses[0] as any);
+
+    expect(mockExpenseListStore.initialize).not.toHaveBeenCalled();
   });
 });

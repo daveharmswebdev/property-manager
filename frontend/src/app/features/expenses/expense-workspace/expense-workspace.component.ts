@@ -20,6 +20,11 @@ import {
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { formatDateShort } from '../../../shared/utils/date.utils';
+import {
+  CreateWoFromExpenseDialogComponent,
+  CreateWoFromExpenseDialogData,
+  CreateWoFromExpenseDialogResult,
+} from '../../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 
 /**
  * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2, AC-3.3)
@@ -122,6 +127,7 @@ import { formatDateShort } from '../../../shared/utils/date.utils';
                       [workOrder]="workOrderMap()[expense.workOrderId ?? '']"
                       (edit)="onEditExpense($event)"
                       (delete)="onDeleteExpense($event)"
+                      (createWorkOrder)="onCreateWorkOrder($event)"
                     />
                   }
                 }
@@ -397,6 +403,35 @@ export class ExpenseWorkspaceComponent implements OnInit {
       // Page changed (pageIndex is 0-based, our store uses 1-based)
       this.store.goToPage(event.pageIndex + 1);
     }
+  }
+
+  /**
+   * Handle create work order from expense (AC-11.6.1, AC-11.6.3)
+   */
+  protected onCreateWorkOrder(expenseId: string): void {
+    const expense = this.store.expenses().find(e => e.id === expenseId);
+    if (!expense) return;
+
+    const dialogRef = this.dialog.open(CreateWoFromExpenseDialogComponent, {
+      width: '500px',
+      data: {
+        expenseId: expense.id,
+        propertyId: expense.propertyId,
+        propertyName: this.propertyName(),
+        description: expense.description,
+        categoryId: expense.categoryId,
+      } as CreateWoFromExpenseDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateWoFromExpenseDialogResult | undefined) => {
+      if (result) {
+        this.store.loadExpensesByProperty({
+          propertyId: expense.propertyId,
+          propertyName: this.propertyName(),
+        });
+        this.loadWorkOrders(expense.propertyId);
+      }
+    });
   }
 
   /**

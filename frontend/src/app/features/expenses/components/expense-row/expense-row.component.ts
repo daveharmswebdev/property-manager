@@ -80,8 +80,19 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       <div class="expense-amount">
         {{ expense().amount | currency }}
       </div>
-      <!-- Edit and Delete Actions (AC-3.2.1, AC-3.3.1) -->
+      <!-- Edit and Delete Actions (AC-3.2.1, AC-3.3.1, AC-11.6.1) -->
       <div class="expense-actions">
+        @if (!expense().workOrderId) {
+          <button
+            mat-icon-button
+            class="create-wo-button"
+            matTooltip="Create work order from this expense"
+            (click)="onCreateWorkOrder($event)"
+            data-testid="create-work-order-button"
+          >
+            <mat-icon>add_task</mat-icon>
+          </button>
+        }
         <button
           mat-icon-button
           (click)="onEditClick()"
@@ -244,6 +255,10 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       opacity: 1;
     }
 
+    .create-wo-button {
+      color: var(--mat-sys-primary);
+    }
+
     .edit-button {
       color: var(--mat-sys-primary);
     }
@@ -297,12 +312,23 @@ export class ExpenseRowComponent {
   // Output: Delete icon clicked (AC-3.3.1)
   delete = output<string>();
 
+  // Output: Create work order from this expense (AC-11.6.1)
+  createWorkOrder = output<string>();
+
   /**
    * Format date as "Nov 28, 2025"
    * Uses formatDateShort utility for correct timezone handling
    */
   protected formatDate(dateString: string): string {
     return formatDateShort(dateString);
+  }
+
+  /**
+   * Handle create work order button click (AC-11.6.1)
+   */
+  protected onCreateWorkOrder(event: Event): void {
+    event.stopPropagation();
+    this.createWorkOrder.emit(this.expense().id);
   }
 
   /**
