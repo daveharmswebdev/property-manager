@@ -7,10 +7,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
-import { WorkOrderDto } from '../../services/work-order.service';
+import { WorkOrderDto, WorkOrderService, WorkOrderExpensesResponse } from '../../services/work-order.service';
+import { ExpenseService, ExpenseDto } from '../../../expenses/services/expense.service';
 import { NotesService } from '../../services/notes.service';
 
 /**
@@ -92,6 +95,23 @@ describe('WorkOrderDetailComponent', () => {
       createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' }))
     };
 
+    const mockWorkOrderService = {
+      getWorkOrderExpenses: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 } as WorkOrderExpensesResponse)),
+    };
+
+    const mockExpenseService = {
+      getExpensesByProperty: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 500, totalPages: 1, ytdTotal: 0 })),
+      getExpense: vi.fn().mockReturnValue(of({
+        id: 'exp-1', propertyId: 'prop-456', propertyName: 'Test', categoryId: 'cat-1',
+        categoryName: 'Repairs', amount: 100, date: '2026-01-15', description: 'Test', createdAt: '2026-01-15',
+      } as ExpenseDto)),
+      updateExpense: vi.fn().mockReturnValue(of(undefined)),
+    };
+
+    const mockSnackBar = {
+      open: vi.fn(),
+    };
+
     const mockPhotoStore = {
       photos: signal([]),
       sortedPhotos: signal([]),
@@ -128,6 +148,9 @@ describe('WorkOrderDetailComponent', () => {
         { provide: WorkOrderStore, useValue: mockWorkOrderStore },
         { provide: WorkOrderPhotoStore, useValue: mockPhotoStore },
         { provide: NotesService, useValue: mockNotesService },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
+        { provide: ExpenseService, useValue: mockExpenseService },
+        { provide: MatSnackBar, useValue: mockSnackBar },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -349,17 +372,15 @@ describe('WorkOrderDetailComponent', () => {
       expect(compiled.querySelector('app-work-order-notes')).toBeTruthy();
     });
 
-    it('should display Linked Expenses placeholder section', () => {
+    it('should display Linked Expenses section with empty state', () => {
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('Linked Expenses');
-      expect(compiled.textContent).toContain('No expenses linked');
+      expect(compiled.textContent).toContain('No expenses linked yet');
     });
 
-    it('should have placeholder sections with reduced opacity', () => {
-      // Notes is a real section (Story 10-2), Photos is a real section (Story 10-5)
-      // Only Linked Expenses remains as a placeholder
-      const placeholderSections = fixture.nativeElement.querySelectorAll('.placeholder-section');
-      expect(placeholderSections.length).toBe(1);
+    it('should display Link Existing Expense button', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Link Existing Expense');
     });
   });
 
@@ -405,6 +426,89 @@ describe('WorkOrderDetailComponent', () => {
     it('should have Details section card', () => {
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('Details');
+    });
+  });
+
+  describe('linked expenses section (Story 11.3)', () => {
+    it('should load linked expenses on init', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      fixture.detectChanges();
+      expect(mockWoService.getWorkOrderExpenses).toHaveBeenCalledWith('wo-123');
+    });
+
+    it('should display expense list when expenses are loaded', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>).mockReturnValue(of({
+        items: [
+          { id: 'exp-1', date: '2026-01-15', description: 'Faucet parts', categoryName: 'Repairs', amount: 125.50 },
+          { id: 'exp-2', date: '2026-01-10', description: null, categoryName: 'Supplies', amount: 45.00 },
+        ],
+        totalCount: 2,
+      } as WorkOrderExpensesResponse));
+
+      setupWithWorkOrder();
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Faucet parts');
+      expect(compiled.textContent).toContain('Repairs');
+      expect(compiled.textContent).toContain('No description');
+      expect(compiled.textContent).toContain('Supplies');
+    });
+
+    it('should display expenses total', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>).mockReturnValue(of({
+        items: [
+          { id: 'exp-1', date: '2026-01-15', description: 'Faucet', categoryName: 'Repairs', amount: 125.50 },
+          { id: 'exp-2', date: '2026-01-10', description: 'Pipe', categoryName: 'Supplies', amount: 44.50 },
+        ],
+        totalCount: 2,
+      }));
+
+      setupWithWorkOrder();
+
+      const totalEl = fixture.nativeElement.querySelector('.expenses-total');
+      expect(totalEl).toBeTruthy();
+      expect(totalEl.textContent).toContain('$170.00');
+    });
+
+    it('should show empty state when no expenses', () => {
+      setupWithWorkOrder();
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('No expenses linked yet');
+    });
+
+    it('should show unlink button on each expense row', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>).mockReturnValue(of({
+        items: [
+          { id: 'exp-1', date: '2026-01-15', description: 'Test', categoryName: 'Repairs', amount: 100 },
+        ],
+        totalCount: 1,
+      }));
+
+      setupWithWorkOrder();
+
+      const unlinkButtons = fixture.nativeElement.querySelectorAll('.expense-actions button');
+      expect(unlinkButtons.length).toBe(1);
+    });
+
+    it('should call unlinkExpense when unlink button clicked', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.getWorkOrderExpenses as ReturnType<typeof vi.fn>).mockReturnValue(of({
+        items: [
+          { id: 'exp-1', date: '2026-01-15', description: 'Test', categoryName: 'Repairs', amount: 100 },
+        ],
+        totalCount: 1,
+      }));
+
+      setupWithWorkOrder();
+
+      vi.spyOn(component, 'unlinkExpense');
+      const unlinkButton = fixture.debugElement.query(By.css('.expense-actions button'));
+      unlinkButton.triggerEventHandler('click', null);
+      expect(component.unlinkExpense).toHaveBeenCalledWith('exp-1');
     });
   });
 

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { firstValueFrom } from 'rxjs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { firstValueFrom, switchMap } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -16,6 +18,9 @@ import { WorkOrderPhotoGalleryComponent } from '../../components/work-order-phot
 import { PhotoUploadComponent } from '../../../../shared/components/photo-upload/photo-upload.component';
 import { PhotoLightboxComponent, PhotoLightboxData, LightboxPhoto } from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
 import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
+import { WorkOrderService, WorkOrderExpenseItemDto } from '../../services/work-order.service';
+import { ExpenseService, UpdateExpenseRequest } from '../../../expenses/services/expense.service';
+import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog/link-expense-dialog.component';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -45,6 +50,8 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatDialogModule,
+    MatSnackBarModule,
+    MatTooltipModule,
     WorkOrderNotesComponent,
     WorkOrderPhotoGalleryComponent,
     PhotoUploadComponent,
@@ -256,16 +263,52 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
           </mat-card-content>
         </mat-card>
 
-        <!-- Linked Expenses Placeholder -->
-        <mat-card class="section-card placeholder-section">
-          <mat-card-header>
+        <!-- Linked Expenses Section (Story 11.3) -->
+        <mat-card class="section-card">
+          <mat-card-header class="expenses-header">
             <mat-card-title>Linked Expenses</mat-card-title>
+            <button mat-stroked-button (click)="openLinkExpenseDialog()" [disabled]="isLinkingExpense()">
+              <mat-icon>add_link</mat-icon>
+              Link Existing Expense
+            </button>
           </mat-card-header>
           <mat-card-content>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">receipt_long</mat-icon>
-              <p>No expenses linked</p>
-            </div>
+            @if (isLoadingExpenses()) {
+              <div class="loading-container">
+                <mat-spinner diameter="32"></mat-spinner>
+              </div>
+            } @else if (linkedExpenses().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">receipt_long</mat-icon>
+                <p>No expenses linked yet</p>
+              </div>
+            } @else {
+              <div class="expenses-list">
+                @for (expense of linkedExpenses(); track expense.id) {
+                  <div class="expense-row">
+                    <div class="expense-info">
+                      <span class="expense-date">{{ expense.date | date:'mediumDate' }}</span>
+                      <span class="expense-description">{{ expense.description || 'No description' }}</span>
+                      <span class="expense-category">{{ expense.categoryName }}</span>
+                    </div>
+                    <div class="expense-actions">
+                      <span class="expense-amount">{{ expense.amount | currency:'USD' }}</span>
+                      <button
+                        mat-icon-button
+                        (click)="unlinkExpense(expense.id)"
+                        [disabled]="isLinkingExpense()"
+                        matTooltip="Unlink expense"
+                      >
+                        <mat-icon>link_off</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                }
+                <div class="expenses-total">
+                  <span>Total: {{ expensesTotal() | currency:'USD' }}</span>
+                </div>
+              </div>
+            }
           </mat-card-content>
         </mat-card>
       }
@@ -480,8 +523,74 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
         font-size: 0.9em;
       }
 
-      .placeholder-section {
-        opacity: 0.7;
+      /* Linked Expenses Section */
+      .expenses-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .expenses-header button mat-icon {
+        margin-right: 4px;
+      }
+
+      .expenses-list {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .expense-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+      }
+
+      .expense-row:last-of-type {
+        border-bottom: none;
+      }
+
+      .expense-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .expense-date {
+        font-size: 12px;
+        color: var(--mat-sys-outline);
+      }
+
+      .expense-description {
+        font-size: 14px;
+      }
+
+      .expense-category {
+        font-size: 12px;
+        color: var(--mat-sys-outline);
+      }
+
+      .expense-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .expense-amount {
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .expenses-total {
+        display: flex;
+        justify-content: flex-end;
+        padding: 12px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+        border-top: 2px solid var(--mat-sys-outline-variant, #e0e0e0);
+        margin-top: 4px;
       }
 
       /* Photos Section */
@@ -567,17 +676,29 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly expenseService = inject(ExpenseService);
 
   protected workOrderId: string | null = null;
 
   /** Whether the upload zone is visible */
   protected readonly showUploadZone = signal(false);
 
+  /** Linked expenses state (Story 11.3) */
+  protected readonly linkedExpenses = signal<WorkOrderExpenseItemDto[]>([]);
+  protected readonly isLoadingExpenses = signal(false);
+  protected readonly isLinkingExpense = signal(false);
+  protected readonly expensesTotal = computed(() =>
+    this.linkedExpenses().reduce((sum, e) => sum + e.amount, 0)
+  );
+
   ngOnInit(): void {
     this.workOrderId = this.route.snapshot.paramMap.get('id');
     if (this.workOrderId) {
       this.store.loadWorkOrderById(this.workOrderId);
       this.photoStore.loadPhotos(this.workOrderId);
+      this.loadLinkedExpenses(this.workOrderId);
     }
   }
 
@@ -613,6 +734,86 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
     if (confirmed && this.workOrderId) {
       this.store.deleteWorkOrder(this.workOrderId);
     }
+  }
+
+  // ========== Linked Expenses Methods (Story 11.3) ==========
+
+  private loadLinkedExpenses(workOrderId: string): void {
+    this.isLoadingExpenses.set(true);
+    this.workOrderService.getWorkOrderExpenses(workOrderId).subscribe({
+      next: (response) => {
+        this.linkedExpenses.set(response.items);
+        this.isLoadingExpenses.set(false);
+      },
+      error: () => this.isLoadingExpenses.set(false),
+    });
+  }
+
+  openLinkExpenseDialog(): void {
+    const dialogRef = this.dialog.open(LinkExpenseDialogComponent, {
+      width: '500px',
+      data: {
+        propertyId: this.store.selectedWorkOrder()!.propertyId,
+        workOrderId: this.workOrderId,
+      },
+    });
+    dialogRef.afterClosed().subscribe((expenseId: string | undefined) => {
+      if (expenseId) {
+        this.linkExpense(expenseId);
+      }
+    });
+  }
+
+  private linkExpense(expenseId: string): void {
+    this.isLinkingExpense.set(true);
+    this.expenseService.getExpense(expenseId).pipe(
+      switchMap((expense) => {
+        const updateRequest: UpdateExpenseRequest = {
+          amount: expense.amount,
+          date: expense.date,
+          categoryId: expense.categoryId,
+          description: expense.description,
+          workOrderId: this.workOrderId!,
+        };
+        return this.expenseService.updateExpense(expenseId, updateRequest);
+      }),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Expense linked', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+        this.loadLinkedExpenses(this.workOrderId!);
+      },
+      error: () => {
+        this.snackBar.open('Failed to link expense', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+      },
+    });
+  }
+
+  unlinkExpense(expenseId: string): void {
+    this.isLinkingExpense.set(true);
+    this.expenseService.getExpense(expenseId).pipe(
+      switchMap((expense) => {
+        const updateRequest: UpdateExpenseRequest = {
+          amount: expense.amount,
+          date: expense.date,
+          categoryId: expense.categoryId,
+          description: expense.description,
+          workOrderId: undefined,
+        };
+        return this.expenseService.updateExpense(expenseId, updateRequest);
+      }),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Expense unlinked', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+        this.loadLinkedExpenses(this.workOrderId!);
+      },
+      error: () => {
+        this.snackBar.open('Failed to unlink expense', 'Close', { duration: 3000 });
+        this.isLinkingExpense.set(false);
+      },
+    });
   }
 
   // ========== Photo Methods (Story 10-5) ==========
