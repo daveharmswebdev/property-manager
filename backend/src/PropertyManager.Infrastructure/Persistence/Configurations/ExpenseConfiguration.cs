@@ -73,6 +73,11 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasForeignKey<Expense>(e => e.ReceiptId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(e => e.WorkOrder)
+            .WithMany(w => w.Expenses)
+            .HasForeignKey(e => e.WorkOrderId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Note: CreatedByUserId references ApplicationUser (Identity)
         // No navigation property - just the FK for data integrity
         builder.HasIndex(e => e.CreatedByUserId)
@@ -87,5 +92,8 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 
         builder.HasIndex(e => new { e.AccountId, e.CategoryId })
             .HasDatabaseName("IX_Expenses_AccountId_CategoryId");
+
+        builder.HasIndex(e => new { e.AccountId, e.WorkOrderId })
+            .HasDatabaseName("IX_Expenses_AccountId_WorkOrderId");
     }
 }

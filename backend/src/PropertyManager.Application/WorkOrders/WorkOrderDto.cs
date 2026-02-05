@@ -16,5 +16,6 @@ public record WorkOrderDto(
     string Description,
     DateTime CreatedAt,
     Guid CreatedByUserId,
-    IReadOnlyList<WorkOrderTagDto> Tags
+    IReadOnlyList<WorkOrderTagDto> Tags,
+    string? PrimaryPhotoThumbnailUrl = null
 );

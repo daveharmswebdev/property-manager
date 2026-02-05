@@ -87,6 +87,9 @@ import {
           <div class="work-order-list">
             @for (wo of workOrders(); track wo.id) {
               <a class="work-order-item" [routerLink]="['/work-orders', wo.id]">
+                @if (wo.primaryPhotoThumbnailUrl) {
+                  <img class="item-thumbnail" [src]="wo.primaryPhotoThumbnailUrl" alt="" loading="lazy" />
+                }
                 <span class="status-badge" [class]="wo.status.toLowerCase()">
                   {{ wo.status }}
                 </span>
@@ -204,6 +207,14 @@ import {
 
       &:hover {
         background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      .item-thumbnail {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        object-fit: cover;
+        flex-shrink: 0;
       }
 
       .status-badge {

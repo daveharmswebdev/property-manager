@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -24,7 +25,7 @@ public class NoOpReportStorageService : IReportStorageService
     {
         _logger.LogInformation(
             "NoOp: Would save report to {StorageKey} ({ContentLength} bytes)",
-            storageKey,
+            LogSanitizer.MaskStorageKey(storageKey),
             content.Length);
 
         return Task.FromResult(storageKey);
@@ -37,7 +38,7 @@ public class NoOpReportStorageService : IReportStorageService
     {
         _logger.LogWarning(
             "NoOp: Cannot retrieve report {StorageKey} - storage not configured",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         throw new InvalidOperationException(
             "Report storage not configured. Cannot retrieve stored reports.");
@@ -50,7 +51,7 @@ public class NoOpReportStorageService : IReportStorageService
     {
         _logger.LogInformation(
             "NoOp: Would delete report {StorageKey}",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         return Task.CompletedTask;
     }

@@ -728,7 +728,7 @@ public class IncomeControllerCrudTests : IClassFixture<PropertyManagerWebApplica
     {
         // Arrange
         var (accessToken, propertyId) = await CreateUserWithPropertyAsync();
-        var incomeId1 = await CreateIncomeAsync(propertyId, accessToken, 1500.00m, "Keep");
+        _ = await CreateIncomeAsync(propertyId, accessToken, 1500.00m, "Keep");
         var incomeId2 = await CreateIncomeAsync(propertyId, accessToken, 1600.00m, "Delete");
 
         // Delete one

@@ -32,6 +32,16 @@ describe('ExpenseListRowComponent', () => {
     receiptId: undefined,
   };
 
+  const mockExpenseWithWorkOrder: ExpenseListItemDto = {
+    ...mockExpense,
+    workOrderId: 'wo-123',
+  };
+
+  const mockExpenseNoWorkOrder: ExpenseListItemDto = {
+    ...mockExpense,
+    workOrderId: undefined,
+  };
+
   beforeEach(() => {
     mockDialog = { open: vi.fn() };
     mockRouter = { navigate: vi.fn() };
@@ -166,6 +176,132 @@ describe('ExpenseListRowComponent', () => {
       expect(component.truncateDescription(longDescription)).toBe(
         'This is a very long description that should be tru...'
       );
+    });
+  });
+
+  describe('create work order button (AC-11.6.7)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ExpenseListRowComponent);
+      component = fixture.componentInstance;
+    });
+
+    it('should show add_task icon when no workOrderId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeTruthy();
+      expect(button.textContent.trim()).toBe('add_task');
+    });
+
+    it('should hide add_task icon when workOrderId exists', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      expect(button).toBeNull();
+    });
+
+    it('should emit createWorkOrder event with full expense item when clicked', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const createWoSpy = vi.fn();
+      component.createWorkOrder.subscribe(createWoSpy);
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      button.click();
+
+      expect(createWoSpy).toHaveBeenCalledWith(mockExpenseNoWorkOrder);
+    });
+
+    it('should stop event propagation when clicked', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector(
+        '[data-testid="create-work-order-button"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      button.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+    });
+  });
+
+  describe('work order indicator (AC-11.4.4)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ExpenseListRowComponent);
+      component = fixture.componentInstance;
+    });
+
+    it('should show work order icon when workOrderId exists', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator).toBeTruthy();
+      expect(indicator.textContent.trim()).toBe('assignment');
+    });
+
+    it('should hide work order icon when no workOrderId', () => {
+      fixture.componentRef.setInput('expense', mockExpenseNoWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      expect(indicator).toBeNull();
+    });
+
+    it('should navigate to work order detail when icon clicked (AC-11.4.4)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+
+      indicator.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-123']);
+    });
+
+    it('should NOT propagate click event to row click handler (AC-11.4.4)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      fixture.detectChanges();
+
+      const indicator = fixture.nativeElement.querySelector(
+        '[data-testid="work-order-indicator"]'
+      );
+
+      // Reset to ensure clean state
+      mockRouter.navigate.mockClear();
+
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+      indicator.dispatchEvent(event);
+
+      // Should navigate to work order, NOT to expense workspace
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-123']);
+      expect(mockRouter.navigate).not.toHaveBeenCalledWith([
+        '/properties',
+        'property-456',
+        'expenses',
+      ]);
     });
   });
 });

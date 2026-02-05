@@ -31,13 +31,16 @@ public class GetWorkOrdersByPropertyQueryHandler : IRequestHandler<GetWorkOrders
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IPhotoService _photoService;
 
     public GetWorkOrdersByPropertyQueryHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IPhotoService photoService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _photoService = photoService;
     }
 
     public async Task<GetWorkOrdersByPropertyResult> Handle(GetWorkOrdersByPropertyQuery request, CancellationToken cancellationToken)
@@ -50,6 +53,7 @@ public class GetWorkOrdersByPropertyQueryHandler : IRequestHandler<GetWorkOrders
             .Include(w => w.Category)
             .Include(w => w.TagAssignments)
                 .ThenInclude(a => a.Tag)
+            .Include(w => w.Photos)
             .OrderByDescending(w => w.CreatedAt)
             .AsNoTracking();
 
@@ -59,24 +63,40 @@ public class GetWorkOrdersByPropertyQueryHandler : IRequestHandler<GetWorkOrders
             ? await query.Take(request.Limit.Value).ToListAsync(cancellationToken)
             : await query.ToListAsync(cancellationToken);
 
-        var workOrderDtos = workOrders.Select(w => new WorkOrderDto(
-            w.Id,
-            w.PropertyId,
-            w.Property.Name,
-            w.VendorId,
-            w.Vendor?.FullName,
-            w.IsDiy,
-            w.CategoryId,
-            w.Category?.Name,
-            w.Status.ToString(),
-            w.Description,
-            w.CreatedAt,
-            w.CreatedByUserId,
-            w.TagAssignments
-                .Select(a => new WorkOrderTagDto(a.Tag.Id, a.Tag.Name))
-                .ToList()
-        )).ToList();
+        // Generate presigned URLs for primary photo thumbnails in parallel
+        var thumbnailTasks = workOrders.Select(async w =>
+        {
+            var primaryPhoto = w.Photos.FirstOrDefault(p => p.IsPrimary)
+                ?? w.Photos.OrderBy(p => p.DisplayOrder).FirstOrDefault();
 
-        return new GetWorkOrdersByPropertyResult(workOrderDtos, totalCount);
+            string? thumbnailUrl = null;
+            if (primaryPhoto?.ThumbnailStorageKey != null)
+            {
+                thumbnailUrl = await _photoService.GetThumbnailUrlAsync(primaryPhoto.ThumbnailStorageKey, cancellationToken);
+            }
+
+            return new WorkOrderDto(
+                w.Id,
+                w.PropertyId,
+                w.Property.Name,
+                w.VendorId,
+                w.Vendor?.FullName,
+                w.IsDiy,
+                w.CategoryId,
+                w.Category?.Name,
+                w.Status.ToString(),
+                w.Description,
+                w.CreatedAt,
+                w.CreatedByUserId,
+                w.TagAssignments
+                    .Select(a => new WorkOrderTagDto(a.Tag.Id, a.Tag.Name))
+                    .ToList(),
+                thumbnailUrl
+            );
+        }).ToList();
+
+        var workOrderDtos = await Task.WhenAll(thumbnailTasks);
+
+        return new GetWorkOrdersByPropertyResult(workOrderDtos.ToList(), totalCount);
     }
 }

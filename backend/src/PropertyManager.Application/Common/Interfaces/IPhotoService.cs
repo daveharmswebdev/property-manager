@@ -8,7 +8,8 @@ public enum PhotoEntityType
     Receipts,
     Properties,
     Vendors,
-    Users
+    Users,
+    WorkOrders
 }
 
 /// <summary>

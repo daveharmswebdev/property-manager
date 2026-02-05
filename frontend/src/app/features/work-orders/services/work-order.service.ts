@@ -64,6 +64,7 @@ export interface WorkOrderDto {
   createdAt: string;
   createdByUserId: string;
   tags: WorkOrderTagDto[];
+  primaryPhotoThumbnailUrl?: string; // Photo symmetry feature
 }
 
 /**
@@ -100,6 +101,19 @@ export const WorkOrderStatus = {
 } as const;
 
 export type WorkOrderStatusType = (typeof WorkOrderStatus)[keyof typeof WorkOrderStatus];
+
+export interface WorkOrderExpenseItemDto {
+  id: string;
+  date: string;
+  description: string | null;
+  categoryName: string;
+  amount: number;
+}
+
+export interface WorkOrderExpensesResponse {
+  items: WorkOrderExpenseItemDto[];
+  totalCount: number;
+}
 
 /**
  * WorkOrderService (AC #1, #6)
@@ -181,6 +195,15 @@ export class WorkOrderService {
    */
   deleteWorkOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Get expenses linked to a work order (Story 11.3)
+   * @param workOrderId Work order GUID
+   * @returns Observable with linked expenses and total count
+   */
+  getWorkOrderExpenses(workOrderId: string): Observable<WorkOrderExpensesResponse> {
+    return this.http.get<WorkOrderExpensesResponse>(`${this.baseUrl}/${workOrderId}/expenses`);
   }
 
   /**

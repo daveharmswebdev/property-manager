@@ -285,6 +285,7 @@ export const ExpenseStore = signalStore(
                 amount: request.amount,
                 date: request.date,
                 description: request.description,
+                workOrderId: request.workOrderId ?? undefined, // AC-11.2.4
                 createdAt: new Date().toISOString(),
               };
 
@@ -540,6 +541,7 @@ export const ExpenseStore = signalStore(
                   categoryName: category?.name || expense.categoryName,
                   scheduleELine: category?.scheduleELine,
                   description: request.description,
+                  workOrderId: request.workOrderId ?? undefined, // AC-11.2.5
                 };
               });
 

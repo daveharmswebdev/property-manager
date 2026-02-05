@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -13,11 +14,17 @@ import { ExpenseFormComponent } from '../components/expense-form/expense-form.co
 import { ExpenseRowComponent } from '../components/expense-row/expense-row.component';
 import { ExpenseEditFormComponent } from '../components/expense-edit-form/expense-edit-form.component';
 import { PropertyService, PropertyDetailDto } from '../../properties/services/property.service';
+import { WorkOrderService, WorkOrderDto } from '../../work-orders/services/work-order.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { formatDateShort } from '../../../shared/utils/date.utils';
+import {
+  CreateWoFromExpenseDialogComponent,
+  CreateWoFromExpenseDialogData,
+  CreateWoFromExpenseDialogResult,
+} from '../../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 
 /**
  * ExpenseWorkspaceComponent (AC-3.1.1, AC-3.1.6, AC-3.1.7, AC-3.2, AC-3.3)
@@ -117,8 +124,10 @@ import { formatDateShort } from '../../../shared/utils/date.utils';
                     <!-- Show normal row with edit and delete buttons (AC-3.2.1, AC-3.3.1) -->
                     <app-expense-row
                       [expense]="expense"
+                      [workOrder]="workOrderMap()[expense.workOrderId ?? '']"
                       (edit)="onEditExpense($event)"
                       (delete)="onDeleteExpense($event)"
+                      (createWorkOrder)="onCreateWorkOrder($event)"
                     />
                   }
                 }
@@ -282,11 +291,14 @@ export class ExpenseWorkspaceComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly propertyService = inject(PropertyService);
   private readonly dialog = inject(MatDialog);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly propertyId = signal<string>('');
   protected readonly propertyName = signal<string>('');
   protected readonly isLoadingProperty = signal(true);
   protected readonly propertyError = signal<string | null>(null);
+  protected readonly workOrderMap = signal<Record<string, WorkOrderDto>>({});
 
   /**
    * Computed: First item number on current page (AC-7.5.3)
@@ -338,6 +350,9 @@ export class ExpenseWorkspaceComponent implements OnInit {
 
         // Load categories if not already loaded
         this.store.loadCategories();
+
+        // Load work orders for expense row context (AC-11.4.3)
+        this.loadWorkOrders(propertyId);
       },
       error: (error) => {
         this.isLoadingProperty.set(false);
@@ -391,6 +406,35 @@ export class ExpenseWorkspaceComponent implements OnInit {
   }
 
   /**
+   * Handle create work order from expense (AC-11.6.1, AC-11.6.3)
+   */
+  protected onCreateWorkOrder(expenseId: string): void {
+    const expense = this.store.expenses().find(e => e.id === expenseId);
+    if (!expense) return;
+
+    const dialogRef = this.dialog.open(CreateWoFromExpenseDialogComponent, {
+      width: '500px',
+      data: {
+        expenseId: expense.id,
+        propertyId: expense.propertyId,
+        propertyName: this.propertyName(),
+        description: expense.description,
+        categoryId: expense.categoryId,
+      } as CreateWoFromExpenseDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateWoFromExpenseDialogResult | undefined) => {
+      if (result) {
+        this.store.loadExpensesByProperty({
+          propertyId: expense.propertyId,
+          propertyName: this.propertyName(),
+        });
+        this.loadWorkOrders(expense.propertyId);
+      }
+    });
+  }
+
+  /**
    * Handle delete button click - show modal confirmation (AC-3.3.1)
    */
   protected onDeleteExpense(expenseId: string): void {
@@ -436,6 +480,22 @@ export class ExpenseWorkspaceComponent implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  }
+
+  private loadWorkOrders(propertyId: string): void {
+    this.workOrderService.getWorkOrdersByProperty(propertyId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (response) => {
+        const map: Record<string, WorkOrderDto> = {};
+        response.items.forEach(wo => map[wo.id] = wo);
+        this.workOrderMap.set(map);
+      },
+      error: () => {
+        // Silent fail - expense rows fall back to generic icon behavior (AC-11.4.3)
+        this.workOrderMap.set({});
+      },
+    });
   }
 
   protected goBack(): void {

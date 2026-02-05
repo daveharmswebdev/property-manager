@@ -136,25 +136,26 @@ development_status:
 
   # Epic 10: Work Order Context
   # User Outcome: "I can document everything about a repair with photos and notes"
-  epic-10: backlog
-  10-1-polymorphic-notes-entity: backlog
-  10-2-add-notes-to-work-order: backlog
-  10-3-delete-notes: backlog
-  10-4-work-order-photos-entity: backlog
-  10-5-upload-photos-to-work-order: backlog
-  10-6-view-work-order-photos: backlog
-  10-7-delete-work-order-photos: backlog
+  epic-10: done
+  10-1-polymorphic-notes-entity: done
+  10-2-add-notes-to-work-order: done
+  10-3-delete-notes: done
+  10-3a-edit-notes: done
+  10-4-work-order-photos-entity: done
+  10-5-upload-photos-to-work-order: done
+  10-6-view-work-order-photos: done  # Combined with 10-7 - PR #140 merged
+  # 10-7-delete-work-order-photos: merged into 10-6
   epic-10-retrospective: optional
 
   # Epic 11: Work Order-Expense Integration
   # User Outcome: "I know the story behind every expense - which work order it came from"
-  epic-11: backlog
-  11-1-expense-workorder-relationship: backlog
-  11-2-link-expense-to-work-order: backlog
-  11-3-link-work-order-to-expense: backlog
-  11-4-view-linked-work-order-on-expense: backlog
-  11-5-view-linked-expenses-on-work-order: backlog
-  11-6-create-work-order-from-expense: backlog
+  epic-11: in-progress
+  11-1-expense-workorder-relationship: done
+  11-2-link-expense-to-work-order: done
+  11-3-link-work-order-to-expense: done
+  11-4-view-linked-work-order-on-expense: done  # Combined with 11-5 (FR33 + FR34)
+  11-5-view-linked-expenses-on-work-order: done  # Merged into 11-4; FR34 already implemented in Story 11-3
+  11-6-create-work-order-from-expense: review
   11-7-create-expense-from-work-order: backlog
   11-8-work-order-dropdown-on-receipt-processing: backlog
   epic-11-retrospective: optional

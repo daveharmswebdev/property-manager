@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -58,7 +59,7 @@ public class S3StorageService : IStorageService
 
             _logger.LogInformation(
                 "Generated presigned upload URL for key {StorageKey}, expires at {ExpiresAt}",
-                storageKey,
+                LogSanitizer.MaskStorageKey(storageKey),
                 expiresAt);
 
             return Task.FromResult(new UploadUrlResult(url, expiresAt));
@@ -67,7 +68,7 @@ public class S3StorageService : IStorageService
         {
             _logger.LogError(ex,
                 "Failed to generate presigned upload URL for key {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to generate upload URL: {ex.Message}", ex);
         }
@@ -92,7 +93,7 @@ public class S3StorageService : IStorageService
 
             _logger.LogInformation(
                 "Generated presigned download URL for key {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
 
             return Task.FromResult(url);
         }
@@ -100,7 +101,7 @@ public class S3StorageService : IStorageService
         {
             _logger.LogError(ex,
                 "Failed to generate presigned download URL for key {StorageKey}",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to generate download URL: {ex.Message}", ex);
         }
@@ -123,13 +124,13 @@ public class S3StorageService : IStorageService
 
             _logger.LogInformation(
                 "Deleted file with key {StorageKey} from S3",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
         }
         catch (AmazonS3Exception ex)
         {
             _logger.LogError(ex,
                 "Failed to delete file with key {StorageKey} from S3",
-                storageKey);
+                LogSanitizer.MaskStorageKey(storageKey));
             throw new InvalidOperationException(
                 $"Failed to delete file: {ex.Message}", ex);
         }

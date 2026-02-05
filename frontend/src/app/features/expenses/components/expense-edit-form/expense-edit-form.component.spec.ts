@@ -9,6 +9,17 @@ import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { WorkOrderService } from '../../../work-orders/services/work-order.service';
+
+const createMockWorkOrderService = () => ({
+  getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
+    items: [
+      { id: 'wo-1', description: 'Fix plumbing', status: 'Reported', propertyId: 'property-1' },
+      { id: 'wo-2', description: 'Replace HVAC', status: 'Assigned', propertyId: 'property-1' },
+    ],
+    totalCount: 2,
+  })),
+});
 
 describe('ExpenseEditFormComponent', () => {
   let component: ExpenseEditFormComponent;
@@ -43,6 +54,11 @@ describe('ExpenseEditFormComponent', () => {
   const mockExpenseWithReceipt: ExpenseDto = {
     ...mockExpense,
     receiptId: 'receipt-1',
+  };
+
+  const mockExpenseWithWorkOrder: ExpenseDto = {
+    ...mockExpense,
+    workOrderId: 'wo-1',
   };
 
   const mockReceipt: ReceiptDto = {
@@ -87,6 +103,7 @@ describe('ExpenseEditFormComponent', () => {
         { provide: MatDialog, useValue: mockDialog },
         { provide: MatSnackBar, useValue: mockSnackBar },
         { provide: ApiClient, useValue: mockApiClient },
+        { provide: WorkOrderService, useValue: createMockWorkOrderService() },
       ],
     }).compileComponents();
   });
@@ -280,6 +297,80 @@ describe('ExpenseEditFormComponent', () => {
       expect(dialogConfig.maxWidth).toBe('1400px');
       expect(dialogConfig.height).toBe('90vh');
       expect(dialogConfig.panelClass).toBe('receipt-lightbox-panel');
+    });
+  });
+
+  describe('work order dropdown (AC-11.2.2, AC-11.2.3, AC-11.2.5)', () => {
+    let mockWorkOrderService: ReturnType<typeof createMockWorkOrderService>;
+
+    beforeEach(() => {
+      mockWorkOrderService = createMockWorkOrderService();
+
+      TestBed.overrideProvider(WorkOrderService, { useValue: mockWorkOrderService });
+
+      fixture = TestBed.createComponent(ExpenseEditFormComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('expense', mockExpense);
+      fixture.detectChanges();
+    });
+
+    it('should have workOrderId form control (AC-11.2.2)', () => {
+      expect(component['form'].get('workOrderId')).toBeTruthy();
+    });
+
+    it('should load work orders for expense property on init (AC-11.2.3)', () => {
+      expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith('property-1');
+    });
+
+    it('should pre-populate workOrderId from expense (AC-11.2.2)', () => {
+      fixture.componentRef.setInput('expense', mockExpenseWithWorkOrder);
+      component.ngOnChanges({
+        expense: {
+          currentValue: mockExpenseWithWorkOrder,
+          previousValue: mockExpense,
+          firstChange: false,
+          isFirstChange: () => false,
+        },
+      });
+      fixture.detectChanges();
+
+      expect(component['form'].get('workOrderId')?.value).toBe('wo-1');
+    });
+
+    it('should default workOrderId to empty when expense has no work order', () => {
+      expect(component['form'].get('workOrderId')?.value).toBe('');
+    });
+
+    it('should include workOrderId in update request (AC-11.2.5)', () => {
+      component['form'].patchValue({
+        amount: 200,
+        date: new Date('2024-01-15'),
+        categoryId: 'category-1',
+        description: 'Updated expense',
+        workOrderId: 'wo-2',
+      });
+
+      component['onSubmit']();
+
+      expect(mockStore.updateExpense).toHaveBeenCalled();
+      const callArg = mockStore.updateExpense.mock.calls[0][0];
+      expect(callArg.request.workOrderId).toBe('wo-2');
+    });
+
+    it('should send undefined workOrderId when None selected (AC-11.2.5)', () => {
+      component['form'].patchValue({
+        amount: 200,
+        date: new Date('2024-01-15'),
+        categoryId: 'category-1',
+        description: 'Updated expense',
+        workOrderId: '',
+      });
+
+      component['onSubmit']();
+
+      expect(mockStore.updateExpense).toHaveBeenCalled();
+      const callArg = mockStore.updateExpense.mock.calls[0][0];
+      expect(callArg.request.workOrderId).toBeUndefined();
     });
   });
 });

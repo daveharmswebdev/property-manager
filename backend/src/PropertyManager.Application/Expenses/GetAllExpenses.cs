@@ -43,6 +43,7 @@ public record ExpenseListItemDto(
     DateOnly Date,
     string? Description,
     Guid? ReceiptId,
+    Guid? WorkOrderId,
     DateTime CreatedAt
 );
 
@@ -128,6 +129,7 @@ public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedR
                 e.Date,
                 e.Description,
                 e.ReceiptId,
+                e.WorkOrderId,
                 e.CreatedAt
             ))
             .AsNoTracking()

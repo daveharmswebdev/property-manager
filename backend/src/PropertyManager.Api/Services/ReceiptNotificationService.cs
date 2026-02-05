@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using PropertyManager.Api.Hubs;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Api.Services;
@@ -29,8 +30,8 @@ public class ReceiptNotificationService : IReceiptNotificationService
     {
         var groupName = GetGroupName(accountId);
         _logger.LogInformation(
-            "Broadcasting ReceiptAdded to group {GroupName} for receipt {ReceiptId}",
-            groupName,
+            "Broadcasting ReceiptAdded to account {AccountId} for receipt {ReceiptId}",
+            LogSanitizer.MaskId(accountId),
             receipt.Id);
 
         await _hubContext.Clients.Group(groupName)
@@ -45,8 +46,8 @@ public class ReceiptNotificationService : IReceiptNotificationService
     {
         var groupName = GetGroupName(accountId);
         _logger.LogInformation(
-            "Broadcasting ReceiptLinked to group {GroupName} for receipt {ReceiptId}",
-            groupName,
+            "Broadcasting ReceiptLinked to account {AccountId} for receipt {ReceiptId}",
+            LogSanitizer.MaskId(accountId),
             receipt.ReceiptId);
 
         await _hubContext.Clients.Group(groupName)
@@ -61,8 +62,8 @@ public class ReceiptNotificationService : IReceiptNotificationService
     {
         var groupName = GetGroupName(accountId);
         _logger.LogInformation(
-            "Broadcasting ReceiptDeleted to group {GroupName} for receipt {ReceiptId}",
-            groupName,
+            "Broadcasting ReceiptDeleted to account {AccountId} for receipt {ReceiptId}",
+            LogSanitizer.MaskId(accountId),
             receiptId);
 
         await _hubContext.Clients.Group(groupName)

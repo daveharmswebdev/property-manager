@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Domain.Exceptions;
@@ -46,7 +47,7 @@ public class DeleteWorkOrderCommandHandler : IRequestHandler<DeleteWorkOrderComm
             _logger.LogWarning(
                 "Work order not found for deletion: {WorkOrderId}, AccountId: {AccountId}",
                 request.Id,
-                _currentUser.AccountId);
+                LogSanitizer.MaskId(_currentUser.AccountId));
             throw new NotFoundException(nameof(WorkOrder), request.Id);
         }
 
@@ -58,8 +59,8 @@ public class DeleteWorkOrderCommandHandler : IRequestHandler<DeleteWorkOrderComm
         _logger.LogInformation(
             "Work order deleted: {WorkOrderId}, AccountId: {AccountId}, UserId: {UserId}",
             request.Id,
-            _currentUser.AccountId,
-            _currentUser.UserId);
+            LogSanitizer.MaskId(_currentUser.AccountId),
+            LogSanitizer.MaskId(_currentUser.UserId));
     }
 }
 

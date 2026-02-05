@@ -48,6 +48,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<WorkOrderTag> WorkOrderTags => Set<WorkOrderTag>();
     public DbSet<WorkOrderTagAssignment> WorkOrderTagAssignments => Set<WorkOrderTagAssignment>();
     public DbSet<PropertyPhoto> PropertyPhotos => Set<PropertyPhoto>();
+    public DbSet<WorkOrderPhoto> WorkOrderPhotos => Set<WorkOrderPhoto>();
+    public DbSet<Note> Notes => Set<Note>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -122,6 +124,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         // Apply tenant filter to PropertyPhoto (no soft delete)
         modelBuilder.Entity<PropertyPhoto>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to WorkOrderPhoto (no soft delete)
+        modelBuilder.Entity<WorkOrderPhoto>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to Note (combined with soft delete) (AC #3, #8)
+        modelBuilder.Entity<Note>()
+            .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
+                                 && e.DeletedAt == null);
     }
 
     private void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)

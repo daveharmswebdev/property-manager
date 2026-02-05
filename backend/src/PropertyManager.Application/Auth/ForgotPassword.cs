@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Application.Auth;
@@ -55,7 +56,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
     public async Task<ForgotPasswordResult> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         // Log password reset request for security monitoring (AC6.1)
-        _logger.LogInformation("Password reset requested for email {Email}", request.Email);
+        _logger.LogInformation("Password reset requested for email {Email}", LogSanitizer.MaskEmail(request.Email));
 
         // Look up user by email (case-insensitive)
         var userId = await _identityService.GetUserIdByEmailAsync(request.Email, cancellationToken);
@@ -71,7 +72,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         else
         {
             // User doesn't exist - log but don't reveal this to caller (AC6.1)
-            _logger.LogWarning("Password reset requested for non-existent email {Email}", request.Email);
+            _logger.LogWarning("Password reset requested for non-existent email {Email}", LogSanitizer.MaskEmail(request.Email));
         }
 
         // Always return success to prevent email enumeration (AC6.1)

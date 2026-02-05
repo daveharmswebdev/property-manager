@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.VendorTradeTags;
 
 namespace PropertyManager.Api.Controllers;
@@ -113,7 +114,7 @@ public class VendorTradeTagsController : ControllerBase
         _logger.LogInformation(
             "Trade tag created: {TradeTagId}, name '{Name}'",
             tradeTagId,
-            request.Name);
+            LogSanitizer.Sanitize(request.Name));
 
         var response = new CreateVendorTradeTagResponse(tradeTagId);
 

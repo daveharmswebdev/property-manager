@@ -1,4 +1,5 @@
-import { Component, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, OnInit, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -15,6 +16,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { CategorySelectComponent } from '../category-select/category-select.component';
 import { CreateExpenseRequest, ExpenseService } from '../../services/expense.service';
@@ -24,6 +26,7 @@ import {
   DuplicateWarningDialogComponent,
   DuplicateWarningDialogData,
 } from '../duplicate-warning-dialog/duplicate-warning-dialog.component';
+import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
 
 /**
  * ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8)
@@ -49,6 +52,7 @@ import {
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatSelectModule,
     CategorySelectComponent,
     CurrencyInputDirective,
   ],
@@ -121,6 +125,24 @@ import {
             }
           </mat-form-field>
 
+          <!-- Work Order Link (optional) (AC-11.2.1, AC-11.2.3, AC-11.2.6) -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Work Order (optional)</mat-label>
+            <mat-select formControlName="workOrderId" data-testid="work-order-select">
+              @if (isLoadingWorkOrders()) {
+                <mat-option disabled>Loading work orders...</mat-option>
+              } @else {
+                <mat-option value="">None</mat-option>
+                @for (wo of workOrders(); track wo.id) {
+                  <mat-option [value]="wo.id">
+                    {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                    ({{ wo.status }})
+                  </mat-option>
+                }
+              }
+            </mat-select>
+          </mat-form-field>
+
           <!-- Submit Button -->
           <div class="form-actions">
             <button
@@ -176,7 +198,8 @@ import {
       flex: 1;
     }
 
-    .description-field {
+    .description-field,
+    .full-width {
       width: 100%;
     }
 
@@ -218,6 +241,8 @@ export class ExpenseFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog = inject(MatDialog);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Input: Property ID
   propertyId = input.required<string>();
@@ -230,6 +255,10 @@ export class ExpenseFormComponent implements OnInit {
   // Duplicate check loading state (AC-3.6.1)
   protected readonly isCheckingDuplicate = signal(false);
 
+  // Work order dropdown state (AC-11.2.1, AC-11.2.3)
+  protected readonly workOrders = signal<WorkOrderDto[]>([]);
+  protected readonly isLoadingWorkOrders = signal(false);
+
   // Flag to prevent marking fields as touched during form reset
   private isResetting = false;
 
@@ -238,6 +267,7 @@ export class ExpenseFormComponent implements OnInit {
     date: [this.today, [Validators.required]],
     categoryId: ['', [Validators.required]],
     description: ['', [Validators.maxLength(500)]],
+    workOrderId: [''], // AC-11.2.1 - optional, no validators
   });
 
   // ViewChild to access FormGroupDirective for resetting submitted state
@@ -246,6 +276,26 @@ export class ExpenseFormComponent implements OnInit {
   ngOnInit(): void {
     // Load categories if not already loaded
     this.store.loadCategories();
+    this.loadWorkOrders(); // AC-11.2.1, AC-11.2.3
+  }
+
+  /**
+   * Load work orders for the current property (AC-11.2.3)
+   */
+  private loadWorkOrders(): void {
+    this.isLoadingWorkOrders.set(true);
+    this.workOrderService.getWorkOrdersByProperty(this.propertyId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading work orders:', error);
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
   }
 
   protected onCategoryChange(categoryId: string): void {
@@ -280,7 +330,7 @@ export class ExpenseFormComponent implements OnInit {
       return;
     }
 
-    const { amount, date, categoryId, description } = this.form.value;
+    const { amount, date, categoryId, description, workOrderId } = this.form.value;
     const formattedDate = this.formatDate(date);
 
     // Start duplicate check (AC-3.6.1)
@@ -299,6 +349,7 @@ export class ExpenseFormComponent implements OnInit {
               date: formattedDate,
               categoryId,
               description: description?.trim() || undefined,
+              workOrderId: workOrderId || undefined, // AC-11.2.4
             });
           } else {
             // No duplicate - proceed with save (AC-3.6.5)
@@ -308,6 +359,7 @@ export class ExpenseFormComponent implements OnInit {
               date: formattedDate,
               categoryId,
               description: description?.trim() || undefined,
+              workOrderId: workOrderId || undefined, // AC-11.2.4
             });
           }
         },
@@ -321,6 +373,7 @@ export class ExpenseFormComponent implements OnInit {
             date: formattedDate,
             categoryId,
             description: description?.trim() || undefined,
+            workOrderId: workOrderId || undefined, // AC-11.2.4
           });
         },
       });
@@ -382,6 +435,7 @@ export class ExpenseFormComponent implements OnInit {
       date: this.today,
       categoryId: '',
       description: '',
+      workOrderId: '', // AC-11.2.1
     });
     // Clear the resetting flag after change detection completes
     setTimeout(() => {

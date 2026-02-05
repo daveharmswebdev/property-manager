@@ -15,7 +15,8 @@ public record UpdateExpenseCommand(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 ) : IRequest;
 
 /// <summary>
@@ -58,11 +59,27 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
+        // Validate work order exists and belongs to same property (AC #7, #9)
+        // Account isolation enforced by global query filter on WorkOrders DbSet
+        if (request.WorkOrderId.HasValue)
+        {
+            var workOrder = await _dbContext.WorkOrders
+                .Where(w => w.Id == request.WorkOrderId.Value && w.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (workOrder == null)
+                throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
+
+            if (workOrder.PropertyId != expense.PropertyId)
+                throw new ValidationException("Expense and work order must belong to the same property");
+        }
+
         // Update editable fields only (AC-3.2.1)
         expense.Amount = request.Amount;
         expense.Date = request.Date;
         expense.CategoryId = request.CategoryId;
         expense.Description = request.Description?.Trim();
+        expense.WorkOrderId = request.WorkOrderId;
 
         // Set UpdatedAt timestamp (AC-3.2.3)
         expense.UpdatedAt = DateTime.UtcNow;

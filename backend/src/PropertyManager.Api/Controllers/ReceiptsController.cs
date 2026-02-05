@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Receipts;
 
 namespace PropertyManager.Api.Controllers;
@@ -110,7 +111,7 @@ public class ReceiptsController : ControllerBase
         _logger.LogInformation(
             "Receipt created: {ReceiptId} for StorageKey={StorageKey} at {Timestamp}",
             receiptId,
-            request.StorageKey,
+            LogSanitizer.Sanitize(request.StorageKey),
             DateTime.UtcNow);
 
         var response = new CreateReceiptResponse(receiptId);

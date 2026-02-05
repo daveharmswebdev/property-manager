@@ -142,12 +142,14 @@ import {
                 <mat-option>Loading...</mat-option>
               </mat-select>
             } @else if (vendorStore.error()) {
-              <mat-select formControlName="vendorId">
-                <mat-option [value]="null">
-                  <mat-icon>person</mat-icon> Self (DIY)
-                </mat-option>
-              </mat-select>
-              <mat-error>Failed to load vendors. DIY only available.</mat-error>
+              <ng-container>
+                <mat-select formControlName="vendorId">
+                  <mat-option [value]="null">
+                    <mat-icon>person</mat-icon> Self (DIY)
+                  </mat-option>
+                </mat-select>
+                <mat-error>Failed to load vendors. DIY only available.</mat-error>
+              </ng-container>
             } @else {
               <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)">
                 <mat-option [value]="null">
@@ -226,11 +228,15 @@ import {
               @if (workOrderStore.isSaving() || workOrderStore.isUpdating()) {
                 <mat-spinner diameter="20" />
               } @else if (isEditMode()) {
-                <mat-icon>save</mat-icon>
-                Save Changes
+                <ng-container>
+                  <mat-icon>save</mat-icon>
+                  Save Changes
+                </ng-container>
               } @else {
-                <mat-icon>add</mat-icon>
-                Create Work Order
+                <ng-container>
+                  <mat-icon>add</mat-icon>
+                  Create Work Order
+                </ng-container>
               }
             </button>
           </div>

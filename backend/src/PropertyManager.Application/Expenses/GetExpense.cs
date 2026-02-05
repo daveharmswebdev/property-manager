@@ -42,6 +42,7 @@ public class GetExpenseQueryHandler : IRequestHandler<GetExpenseQuery, ExpenseDt
                 e.Date,
                 e.Description,
                 e.ReceiptId,
+                e.WorkOrderId,
                 e.CreatedAt
             ))
             .FirstOrDefaultAsync(cancellationToken);

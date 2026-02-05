@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Expenses;
 using PropertyManager.Domain.Exceptions;
 
@@ -192,7 +193,8 @@ public class ExpensesController : ControllerBase
             request.Amount,
             request.Date,
             request.CategoryId,
-            request.Description);
+            request.Description,
+            request.WorkOrderId);
 
         // Validate command
         var validationResult = await _createValidator.ValidateAsync(command);
@@ -325,7 +327,8 @@ public class ExpensesController : ControllerBase
             request.Amount,
             request.Date,
             request.CategoryId,
-            request.Description);
+            request.Description,
+            request.WorkOrderId);
 
         // Validate command
         var validationResult = await _updateValidator.ValidateAsync(command);
@@ -425,7 +428,8 @@ public record CreateExpenseRequest(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 );
 
 /// <summary>
@@ -451,5 +455,6 @@ public record UpdateExpenseRequest(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 );

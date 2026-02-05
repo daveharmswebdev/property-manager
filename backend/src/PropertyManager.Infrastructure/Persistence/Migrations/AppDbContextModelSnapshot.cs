@@ -19,7 +19,7 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -230,6 +230,9 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("WorkOrderId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId")
@@ -246,6 +249,8 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.HasIndex("ReceiptId")
                         .IsUnique();
 
+                    b.HasIndex("WorkOrderId");
+
                     b.HasIndex("AccountId", "CategoryId")
                         .HasDatabaseName("IX_Expenses_AccountId_CategoryId");
 
@@ -254,6 +259,9 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AccountId", "PropertyId")
                         .HasDatabaseName("IX_Expenses_AccountId_PropertyId");
+
+                    b.HasIndex("AccountId", "WorkOrderId")
+                        .HasDatabaseName("IX_Expenses_AccountId_WorkOrderId");
 
                     b.ToTable("Expenses", (string)null);
                 });
@@ -544,6 +552,57 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_Invitations_Email");
 
                     b.ToTable("Invitations", (string)null);
+                });
+
+            modelBuilder.Entity("PropertyManager.Domain.Entities.Note", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("IX_Notes_AccountId");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("IX_Notes_CreatedByUserId");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("IX_Notes_EntityType_EntityId");
+
+                    b.HasIndex("AccountId", "EntityType", "EntityId")
+                        .HasDatabaseName("IX_Notes_AccountId_EntityType_EntityId");
+
+                    b.ToTable("Notes", (string)null);
                 });
 
             modelBuilder.Entity("PropertyManager.Domain.Entities.Person", b =>
@@ -930,6 +989,73 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.ToTable("WorkOrders", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyManager.Domain.Entities.WorkOrderPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OriginalFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ThumbnailStorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("IX_WorkOrderPhotos_AccountId");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("IX_WorkOrderPhotos_CreatedByUserId");
+
+                    b.HasIndex("WorkOrderId", "DisplayOrder")
+                        .HasDatabaseName("IX_WorkOrderPhotos_WorkOrderId_DisplayOrder");
+
+                    b.HasIndex("WorkOrderId", "IsPrimary")
+                        .IsUnique()
+                        .HasDatabaseName("IX_WorkOrderPhotos_WorkOrderId_IsPrimary_Unique")
+                        .HasFilter("\"IsPrimary\" = true");
+
+                    b.ToTable("WorkOrderPhotos", (string)null);
+                });
+
             modelBuilder.Entity("PropertyManager.Domain.Entities.WorkOrderTag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1168,6 +1294,11 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PropertyManager.Domain.Entities.Expense", "ReceiptId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("PropertyManager.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany("Expenses")
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Account");
 
                     b.Navigation("Category");
@@ -1175,6 +1306,8 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.Navigation("Property");
 
                     b.Navigation("Receipt");
+
+                    b.Navigation("WorkOrder");
                 });
 
             modelBuilder.Entity("PropertyManager.Domain.Entities.ExpenseCategory", b =>
@@ -1222,6 +1355,23 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("PropertyManager.Domain.Entities.Note", b =>
+                {
+                    b.HasOne("PropertyManager.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PropertyManager.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("PropertyManager.Domain.Entities.Person", b =>
@@ -1346,6 +1496,25 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
                     b.Navigation("Vendor");
                 });
 
+            modelBuilder.Entity("PropertyManager.Domain.Entities.WorkOrderPhoto", b =>
+                {
+                    b.HasOne("PropertyManager.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PropertyManager.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany("Photos")
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("WorkOrder");
+                });
+
             modelBuilder.Entity("PropertyManager.Domain.Entities.WorkOrderTag", b =>
                 {
                     b.HasOne("PropertyManager.Domain.Entities.Account", "Account")
@@ -1445,6 +1614,10 @@ namespace PropertyManager.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PropertyManager.Domain.Entities.WorkOrder", b =>
                 {
+                    b.Navigation("Expenses");
+
+                    b.Navigation("Photos");
+
                     b.Navigation("TagAssignments");
                 });
 

@@ -16,6 +16,7 @@ public class GetWorkOrdersByPropertyHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IPhotoService> _photoServiceMock;
     private readonly GetWorkOrdersByPropertyQueryHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
@@ -24,10 +25,11 @@ public class GetWorkOrdersByPropertyHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _photoServiceMock = new Mock<IPhotoService>();
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
-        _handler = new GetWorkOrdersByPropertyQueryHandler(_dbContextMock.Object, _currentUserMock.Object);
+        _handler = new GetWorkOrdersByPropertyQueryHandler(_dbContextMock.Object, _currentUserMock.Object, _photoServiceMock.Object);
     }
 
     [Fact]
@@ -337,6 +339,7 @@ public class GetWorkOrdersByPropertyHandlerTests
             Status = WorkOrderStatus.Reported,
             CreatedByUserId = Guid.NewGuid(),
             TagAssignments = new List<WorkOrderTagAssignment>(),
+            Photos = new List<WorkOrderPhoto>(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

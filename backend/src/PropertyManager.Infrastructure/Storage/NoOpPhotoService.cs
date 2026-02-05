@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -39,7 +40,7 @@ public class NoOpPhotoService : IPhotoService
 
         _logger.LogWarning(
             "NoOp: Cannot generate presigned upload URL for photo - S3 storage not configured. StorageKey: {StorageKey}",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         return Task.FromResult(new PhotoUploadResult(
             $"https://noop-storage.local/{storageKey}",
@@ -67,7 +68,7 @@ public class NoOpPhotoService : IPhotoService
 
         _logger.LogWarning(
             "NoOp: Cannot confirm photo upload - S3 storage not configured. StorageKey: {StorageKey}",
-            request.StorageKey);
+            LogSanitizer.MaskStorageKey(request.StorageKey));
 
         return Task.FromResult(new PhotoRecord(
             request.StorageKey,
@@ -85,7 +86,7 @@ public class NoOpPhotoService : IPhotoService
 
         _logger.LogWarning(
             "NoOp: Cannot generate presigned download URL for photo - S3 storage not configured. StorageKey: {StorageKey}",
-            storageKey);
+            LogSanitizer.MaskStorageKey(storageKey));
 
         return Task.FromResult($"https://noop-storage.local/{storageKey}");
     }
@@ -99,7 +100,7 @@ public class NoOpPhotoService : IPhotoService
 
         _logger.LogWarning(
             "NoOp: Cannot generate presigned download URL for thumbnail - S3 storage not configured. ThumbnailKey: {ThumbnailKey}",
-            thumbnailStorageKey);
+            LogSanitizer.MaskStorageKey(thumbnailStorageKey));
 
         return Task.FromResult($"https://noop-storage.local/{thumbnailStorageKey}");
     }
@@ -114,8 +115,8 @@ public class NoOpPhotoService : IPhotoService
 
         _logger.LogInformation(
             "NoOp: Would delete photo {StorageKey} and thumbnail {ThumbnailKey}",
-            storageKey,
-            thumbnailStorageKey ?? "(none)");
+            LogSanitizer.MaskStorageKey(storageKey),
+            thumbnailStorageKey != null ? LogSanitizer.MaskStorageKey(thumbnailStorageKey) : "(none)");
 
         return Task.CompletedTask;
     }

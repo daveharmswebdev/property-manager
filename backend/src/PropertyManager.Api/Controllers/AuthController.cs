@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManager.Application.Auth;
+using PropertyManager.Application.Common;
 
 namespace PropertyManager.Api.Controllers;
 
@@ -105,8 +106,8 @@ public class AuthController : ControllerBase
             // Log failed login attempt for security monitoring (AC4.3)
             _logger.LogWarning(
                 "Failed login attempt for email {Email}: {Error}",
-                request.Email,
-                ex.Message);
+                LogSanitizer.MaskEmail(request.Email),
+                LogSanitizer.Sanitize(ex.Message));
 
             return Unauthorized(CreateProblemDetails(ex.Message));
         }
@@ -213,7 +214,7 @@ public class AuthController : ControllerBase
         // Log password reset request for security monitoring
         _logger.LogInformation(
             "Password reset requested for email {Email} at {Timestamp}",
-            request.Email,
+            LogSanitizer.MaskEmail(request.Email),
             DateTime.UtcNow);
 
         return NoContent();
