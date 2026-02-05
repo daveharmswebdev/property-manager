@@ -74,15 +74,22 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
-        // Validate work order exists if provided (global query filter handles account isolation)
+        // Validate work order exists and belongs to same property (consistent with CreateExpenseCommandHandler)
+        // Account isolation enforced by global query filter on WorkOrders DbSet
         if (request.WorkOrderId.HasValue)
         {
-            var workOrderExists = await _dbContext.WorkOrders
-                .AnyAsync(w => w.Id == request.WorkOrderId.Value, cancellationToken);
+            var workOrder = await _dbContext.WorkOrders
+                .Where(w => w.Id == request.WorkOrderId.Value && w.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!workOrderExists)
+            if (workOrder == null)
             {
                 throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
+            }
+
+            if (workOrder.PropertyId != request.PropertyId)
+            {
+                throw new ValidationException("Expense and work order must belong to the same property");
             }
         }
 

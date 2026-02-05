@@ -441,6 +441,44 @@ public class ProcessReceiptHandlerTests
             .WithMessage($"*{otherAccountWorkOrderId}*");
     }
 
+    [Fact]
+    public async Task Handle_WithWorkOrderFromDifferentProperty_ThrowsValidationException()
+    {
+        // Arrange - work order exists but belongs to a different property
+        var receipt = CreateTestReceipt(processed: false);
+        var differentPropertyId = Guid.NewGuid();
+        var workOrderForDifferentProperty = new WorkOrder
+        {
+            Id = _testWorkOrderId,
+            AccountId = _testAccountId,
+            PropertyId = differentPropertyId, // Different property!
+            CreatedByUserId = _testUserId,
+            Status = WorkOrderStatus.Reported,
+            Description = "Work order for different property"
+        };
+
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        SetupWorkOrdersDbSet(new List<WorkOrder> { workOrderForDifferentProperty });
+
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId, // Expense for _testPropertyId
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: null,
+            WorkOrderId: _testWorkOrderId); // But work order belongs to differentPropertyId
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("Expense and work order must belong to the same property");
+    }
+
     private WorkOrder CreateTestWorkOrder()
     {
         return new WorkOrder
