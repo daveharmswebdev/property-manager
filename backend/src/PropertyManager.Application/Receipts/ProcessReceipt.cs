@@ -15,7 +15,8 @@ public record ProcessReceiptCommand(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 ) : IRequest<Guid>;
 
 /// <summary>
@@ -73,6 +74,25 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
+        // Validate work order exists and belongs to same property (consistent with CreateExpenseCommandHandler)
+        // Account isolation enforced by global query filter on WorkOrders DbSet
+        if (request.WorkOrderId.HasValue)
+        {
+            var workOrder = await _dbContext.WorkOrders
+                .Where(w => w.Id == request.WorkOrderId.Value && w.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (workOrder == null)
+            {
+                throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
+            }
+
+            if (workOrder.PropertyId != request.PropertyId)
+            {
+                throw new ValidationException("Expense and work order must belong to the same property");
+            }
+        }
+
         // Create expense linked to receipt
         var expense = new Expense
         {
@@ -83,6 +103,7 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
             Date = request.Date,
             Description = request.Description?.Trim(),
             ReceiptId = receipt.Id,
+            WorkOrderId = request.WorkOrderId,
             CreatedByUserId = _currentUser.UserId
         };
 

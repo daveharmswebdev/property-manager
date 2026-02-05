@@ -1,6 +1,6 @@
 # Story 11.7: Create Expense from Work Order
 
-Status: review-ready
+Status: done
 
 ## Story
 

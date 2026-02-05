@@ -4,6 +4,7 @@ using Moq;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Receipts;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Domain.Enums;
 using PropertyManager.Domain.Exceptions;
 
 namespace PropertyManager.Application.Tests.Receipts;
@@ -22,6 +23,7 @@ public class ProcessReceiptHandlerTests
     private readonly Guid _testPropertyId = Guid.NewGuid();
     private readonly Guid _testReceiptId = Guid.NewGuid();
     private readonly Guid _testCategoryId = Guid.NewGuid();
+    private readonly Guid _testWorkOrderId = Guid.NewGuid();
 
     public ProcessReceiptHandlerTests()
     {
@@ -324,6 +326,176 @@ public class ProcessReceiptHandlerTests
     {
         var mockDbSet = categories.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
+    }
+
+    [Fact]
+    public async Task Handle_WithWorkOrderId_CreatesExpenseLinkedToWorkOrder()
+    {
+        // Arrange
+        var receipt = CreateTestReceipt(processed: false);
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        SetupWorkOrdersDbSet(new List<WorkOrder> { CreateTestWorkOrder() });
+        SetupExpensesDbSet(new List<Expense>());
+
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId,
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: "Linked to work order",
+            WorkOrderId: _testWorkOrderId);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeEmpty();
+        _dbContextMock.Verify(x => x.Expenses.Add(It.Is<Expense>(e =>
+            e.WorkOrderId == _testWorkOrderId)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WithoutWorkOrderId_CreatesExpenseWithNullWorkOrderId()
+    {
+        // Arrange
+        var receipt = CreateTestReceipt(processed: false);
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        SetupExpensesDbSet(new List<Expense>());
+
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId,
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: null,
+            WorkOrderId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _dbContextMock.Verify(x => x.Expenses.Add(It.Is<Expense>(e =>
+            e.WorkOrderId == null)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WithInvalidWorkOrderId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var receipt = CreateTestReceipt(processed: false);
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        SetupWorkOrdersDbSet(new List<WorkOrder>()); // empty - no work orders exist
+
+        var nonExistentWorkOrderId = Guid.NewGuid();
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId,
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: null,
+            WorkOrderId: nonExistentWorkOrderId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{nonExistentWorkOrderId}*");
+    }
+
+    [Fact]
+    public async Task Handle_WithWorkOrderFromDifferentAccount_ThrowsNotFoundException()
+    {
+        // Arrange - work order exists but with different accountId (global query filter would exclude it)
+        var receipt = CreateTestReceipt(processed: false);
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        // Simulate global query filter excluding other account's work orders by returning empty set
+        SetupWorkOrdersDbSet(new List<WorkOrder>());
+
+        var otherAccountWorkOrderId = Guid.NewGuid();
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId,
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: null,
+            WorkOrderId: otherAccountWorkOrderId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{otherAccountWorkOrderId}*");
+    }
+
+    [Fact]
+    public async Task Handle_WithWorkOrderFromDifferentProperty_ThrowsValidationException()
+    {
+        // Arrange - work order exists but belongs to a different property
+        var receipt = CreateTestReceipt(processed: false);
+        var differentPropertyId = Guid.NewGuid();
+        var workOrderForDifferentProperty = new WorkOrder
+        {
+            Id = _testWorkOrderId,
+            AccountId = _testAccountId,
+            PropertyId = differentPropertyId, // Different property!
+            CreatedByUserId = _testUserId,
+            Status = WorkOrderStatus.Reported,
+            Description = "Work order for different property"
+        };
+
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupPropertiesDbSet(new List<Property> { CreateTestProperty() });
+        SetupExpenseCategoriesDbSet(new List<ExpenseCategory> { CreateTestCategory() });
+        SetupWorkOrdersDbSet(new List<WorkOrder> { workOrderForDifferentProperty });
+
+        var command = new ProcessReceiptCommand(
+            ReceiptId: _testReceiptId,
+            PropertyId: _testPropertyId, // Expense for _testPropertyId
+            Amount: 50.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            CategoryId: _testCategoryId,
+            Description: null,
+            WorkOrderId: _testWorkOrderId); // But work order belongs to differentPropertyId
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("Expense and work order must belong to the same property");
+    }
+
+    private WorkOrder CreateTestWorkOrder()
+    {
+        return new WorkOrder
+        {
+            Id = _testWorkOrderId,
+            AccountId = _testAccountId,
+            PropertyId = _testPropertyId,
+            CreatedByUserId = _testUserId,
+            Status = WorkOrderStatus.Reported,
+            Description = "Test work order"
+        };
+    }
+
+    private void SetupWorkOrdersDbSet(List<WorkOrder> workOrders)
+    {
+        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
     private void SetupExpensesDbSet(List<Expense> expenses)

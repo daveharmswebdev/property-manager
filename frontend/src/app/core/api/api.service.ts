@@ -5624,6 +5624,7 @@ export interface ProcessReceiptRequest {
     date?: string;
     categoryId?: string;
     description?: string | undefined;
+    workOrderId?: string | undefined;
 }
 
 export interface GenerateScheduleERequest {

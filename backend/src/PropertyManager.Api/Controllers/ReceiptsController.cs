@@ -221,7 +221,8 @@ public class ReceiptsController : ControllerBase
             request.Amount,
             DateOnly.Parse(request.Date),
             request.CategoryId,
-            request.Description);
+            request.Description,
+            request.WorkOrderId);
 
         // Validate command
         var validationResult = await _processValidator.ValidateAsync(command);
@@ -302,7 +303,8 @@ public record ProcessReceiptRequest(
     decimal Amount,
     string Date,
     Guid CategoryId,
-    string? Description = null
+    string? Description = null,
+    Guid? WorkOrderId = null
 );
 
 /// <summary>
