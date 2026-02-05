@@ -21,6 +21,11 @@ import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
 import { WorkOrderService, WorkOrderExpenseItemDto } from '../../services/work-order.service';
 import { ExpenseService, UpdateExpenseRequest } from '../../../expenses/services/expense.service';
 import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog/link-expense-dialog.component';
+import {
+  CreateExpenseFromWoDialogComponent,
+  CreateExpenseFromWoDialogData,
+  CreateExpenseFromWoDialogResult,
+} from '../../../expenses/components/create-expense-from-wo-dialog/create-expense-from-wo-dialog.component';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -267,10 +272,16 @@ import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog
         <mat-card class="section-card">
           <mat-card-header class="expenses-header">
             <mat-card-title>Linked Expenses</mat-card-title>
-            <button mat-stroked-button (click)="openLinkExpenseDialog()" [disabled]="isLinkingExpense()">
-              <mat-icon>add_link</mat-icon>
-              Link Existing Expense
-            </button>
+            <div class="expenses-actions">
+              <button mat-stroked-button (click)="openCreateExpenseDialog()">
+                <mat-icon>add_circle</mat-icon>
+                Create Expense
+              </button>
+              <button mat-stroked-button (click)="openLinkExpenseDialog()" [disabled]="isLinkingExpense()">
+                <mat-icon>add_link</mat-icon>
+                Link Existing Expense
+              </button>
+            </div>
           </mat-card-header>
           <mat-card-content>
             @if (isLoadingExpenses()) {
@@ -534,6 +545,12 @@ import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog
         margin-right: 4px;
       }
 
+      .expenses-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
       .expenses-list {
         display: flex;
         flex-direction: column;
@@ -746,6 +763,28 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
         this.isLoadingExpenses.set(false);
       },
       error: () => this.isLoadingExpenses.set(false),
+    });
+  }
+
+  openCreateExpenseDialog(): void {
+    const wo = this.store.selectedWorkOrder();
+    if (!wo) return;
+
+    const dialogRef = this.dialog.open(CreateExpenseFromWoDialogComponent, {
+      width: '500px',
+      data: {
+        workOrderId: wo.id,
+        propertyId: wo.propertyId,
+        propertyName: wo.propertyName,
+        categoryId: wo.categoryId,
+        workOrderDescription: wo.description,
+      } as CreateExpenseFromWoDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateExpenseFromWoDialogResult | undefined) => {
+      if (result?.created) {
+        this.loadLinkedExpenses(this.workOrderId!);
+      }
     });
   }
 
