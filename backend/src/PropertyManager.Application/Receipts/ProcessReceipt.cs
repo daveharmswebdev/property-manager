@@ -15,7 +15,8 @@ public record ProcessReceiptCommand(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
-    string? Description
+    string? Description,
+    Guid? WorkOrderId = null
 ) : IRequest<Guid>;
 
 /// <summary>
@@ -73,6 +74,18 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
+        // Validate work order exists if provided (global query filter handles account isolation)
+        if (request.WorkOrderId.HasValue)
+        {
+            var workOrderExists = await _dbContext.WorkOrders
+                .AnyAsync(w => w.Id == request.WorkOrderId.Value, cancellationToken);
+
+            if (!workOrderExists)
+            {
+                throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
+            }
+        }
+
         // Create expense linked to receipt
         var expense = new Expense
         {
@@ -83,6 +96,7 @@ public class ProcessReceiptHandler : IRequestHandler<ProcessReceiptCommand, Guid
             Date = request.Date,
             Description = request.Description?.Trim(),
             ReceiptId = receipt.Id,
+            WorkOrderId = request.WorkOrderId,
             CreatedByUserId = _currentUser.UserId
         };
 

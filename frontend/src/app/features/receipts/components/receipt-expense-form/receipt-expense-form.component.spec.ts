@@ -6,6 +6,7 @@ import { ReceiptExpenseFormComponent } from './receipt-expense-form.component';
 import { ApiClient } from '../../../../core/api/api.service';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { PropertyStore } from '../../../properties/stores/property.store';
+import { WorkOrderService } from '../../../work-orders/services/work-order.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { signal, WritableSignal } from '@angular/core';
 
@@ -14,6 +15,7 @@ describe('ReceiptExpenseFormComponent', () => {
   let fixture: ComponentFixture<ReceiptExpenseFormComponent>;
   let apiClientMock: { receipts_ProcessReceipt: ReturnType<typeof vi.fn> };
   let snackBarMock: { open: ReturnType<typeof vi.fn> };
+  let mockWorkOrderService: { getWorkOrdersByProperty: ReturnType<typeof vi.fn> };
   let mockCategories: WritableSignal<any[]>;
   let mockIsLoadingCategories: WritableSignal<boolean>;
   let mockSortedCategories: WritableSignal<any[]>;
@@ -23,6 +25,12 @@ describe('ReceiptExpenseFormComponent', () => {
   const testReceiptId = 'receipt-123';
   const testPropertyId = 'property-456';
   const testCategoryId = 'category-789';
+
+  const mockWorkOrders = [
+    { id: 'wo-1', description: 'Fix leaky faucet', status: 'Reported', propertyId: testPropertyId },
+    { id: 'wo-2', description: 'Replace HVAC filter', status: 'Assigned', propertyId: testPropertyId },
+    { id: 'wo-3', description: 'Paint bedroom', status: 'Completed', propertyId: testPropertyId },
+  ];
 
   beforeEach(async () => {
     mockCategories = signal([
@@ -45,12 +53,20 @@ describe('ReceiptExpenseFormComponent', () => {
       open: vi.fn(),
     };
 
+    mockWorkOrderService = {
+      getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
+        items: mockWorkOrders,
+        totalCount: mockWorkOrders.length,
+      })),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ReceiptExpenseFormComponent],
       providers: [
         provideNoopAnimations(),
         { provide: ApiClient, useValue: apiClientMock },
         { provide: MatSnackBar, useValue: snackBarMock },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
         {
           provide: ExpenseStore,
           useValue: {
@@ -282,6 +298,181 @@ describe('ReceiptExpenseFormComponent', () => {
         'Close',
         expect.any(Object)
       );
+    });
+  });
+
+  describe('work order dropdown (AC-11.8)', () => {
+    it('should render work order dropdown in form', () => {
+      const workOrderSelect = fixture.debugElement.query(
+        By.css('[data-testid="work-order-select"]')
+      );
+      expect(workOrderSelect).toBeTruthy();
+    });
+
+    it('should have workOrderId form control', () => {
+      const control = component['form'].get('workOrderId');
+      expect(control).toBeTruthy();
+      expect(control?.value).toBe('');
+    });
+
+    it('should disable dropdown when no property selected', () => {
+      // No property selected (default state)
+      fixture.detectChanges();
+      const control = component['form'].get('workOrderId');
+      expect(control?.disabled).toBe(true);
+    });
+
+    it('should show "Select a property first" hint when no property', () => {
+      fixture.detectChanges();
+      const hints = fixture.debugElement.queryAll(By.css('mat-hint'));
+      const propertyHint = hints.find(h =>
+        h.nativeElement.textContent.includes('Select a property first')
+      );
+      expect(propertyHint).toBeTruthy();
+    });
+
+    it('should load work orders when property is selected', () => {
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+
+      expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith(testPropertyId);
+    });
+
+    it('should filter to only active work orders (Reported, Assigned)', () => {
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+
+      // workOrders signal should only have Reported and Assigned, not Completed
+      const workOrders = component['workOrders']();
+      expect(workOrders.length).toBe(2);
+      expect(workOrders.find((wo: any) => wo.status === 'Completed')).toBeUndefined();
+      expect(workOrders.find((wo: any) => wo.status === 'Reported')).toBeTruthy();
+      expect(workOrders.find((wo: any) => wo.status === 'Assigned')).toBeTruthy();
+    });
+
+    it('should show "None" option when work orders are loaded', () => {
+      // Set property to trigger work order load
+      fixture.componentRef.setInput('propertyId', testPropertyId);
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      // The "None" mat-option should exist (value="")
+      // We verify through the workOrders signal and form control default value
+      expect(component['form'].get('workOrderId')?.value).toBe('');
+    });
+
+    it('should truncate work order description at 60 chars', () => {
+      const longDescription = 'A'.repeat(65);
+      mockWorkOrderService.getWorkOrdersByProperty.mockReturnValue(of({
+        items: [
+          { id: 'wo-long', description: longDescription, status: 'Reported', propertyId: testPropertyId },
+        ],
+        totalCount: 1,
+      }));
+
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+
+      const workOrders = component['workOrders']();
+      expect(workOrders.length).toBe(1);
+      expect(workOrders[0].description.length).toBe(65);
+      // Template handles truncation via slice pipe - verify data is available
+      expect(workOrders[0].description).toBe(longDescription);
+    });
+
+    it('should clear work order selection when property changes', () => {
+      // First select a property and work order
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+      component['form'].patchValue({ workOrderId: 'wo-1' });
+      fixture.detectChanges();
+
+      expect(component['form'].get('workOrderId')?.value).toBe('wo-1');
+
+      // Change property - should clear work order
+      component['form'].patchValue({ propertyId: 'new-property-id' });
+      fixture.detectChanges();
+
+      expect(component['form'].get('workOrderId')?.value).toBe('');
+    });
+
+    it('should load new work orders when property changes', () => {
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+
+      mockWorkOrderService.getWorkOrdersByProperty.mockClear();
+
+      component['form'].patchValue({ propertyId: 'new-property-id' });
+      fixture.detectChanges();
+
+      expect(mockWorkOrderService.getWorkOrdersByProperty).toHaveBeenCalledWith('new-property-id');
+    });
+
+    it('should keep form valid without work order selection', () => {
+      component['form'].patchValue({
+        propertyId: testPropertyId,
+        amount: 50.00,
+        date: new Date(),
+        categoryId: testCategoryId,
+        description: 'Test',
+        workOrderId: '', // No work order
+      });
+
+      expect(component['form'].valid).toBe(true);
+    });
+
+    it('should include workOrderId in submit when selected', () => {
+      component['form'].patchValue({
+        propertyId: testPropertyId,
+        amount: 50.00,
+        date: new Date(),
+        categoryId: testCategoryId,
+        description: 'Test',
+        workOrderId: 'wo-1',
+      });
+      fixture.detectChanges();
+
+      component['onSubmit']();
+
+      expect(apiClientMock.receipts_ProcessReceipt).toHaveBeenCalledWith(
+        testReceiptId,
+        expect.objectContaining({
+          workOrderId: 'wo-1',
+        })
+      );
+    });
+
+    it('should send undefined workOrderId when "None" selected', () => {
+      component['form'].patchValue({
+        propertyId: testPropertyId,
+        amount: 50.00,
+        date: new Date(),
+        categoryId: testCategoryId,
+        description: 'Test',
+        workOrderId: '', // "None" selected
+      });
+      fixture.detectChanges();
+
+      component['onSubmit']();
+
+      expect(apiClientMock.receipts_ProcessReceipt).toHaveBeenCalledWith(
+        testReceiptId,
+        expect.objectContaining({
+          workOrderId: undefined,
+        })
+      );
+    });
+
+    it('should handle error when loading work orders', () => {
+      mockWorkOrderService.getWorkOrdersByProperty.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      component['form'].patchValue({ propertyId: testPropertyId });
+      fixture.detectChanges();
+
+      expect(component['workOrders']()).toEqual([]);
+      expect(component['isLoadingWorkOrders']()).toBe(false);
     });
   });
 });

@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   inject,
   input,
   output,
@@ -7,6 +8,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -31,6 +33,7 @@ import { CategorySelectComponent } from '../../../expenses/components/category-s
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
 import { PropertyStore } from '../../../properties/stores/property.store';
+import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
 
 /**
  * ReceiptExpenseFormComponent (AC-5.4.3, AC-5.4.4)
@@ -145,6 +148,28 @@ import { PropertyStore } from '../../../properties/stores/property.store';
           }
         </mat-form-field>
 
+        <!-- Work Order Dropdown (AC-11.8.1, AC-11.8.2, AC-11.8.3) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Work Order (optional)</mat-label>
+          <mat-select formControlName="workOrderId"
+            data-testid="work-order-select">
+            @if (isLoadingWorkOrders()) {
+              <mat-option disabled>Loading work orders...</mat-option>
+            } @else {
+              <mat-option value="">None</mat-option>
+              @for (wo of workOrders(); track wo.id) {
+                <mat-option [value]="wo.id">
+                  {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                  ({{ wo.status }})
+                </mat-option>
+              }
+            }
+          </mat-select>
+          @if (form.controls['workOrderId'].disabled) {
+            <mat-hint>Select a property first</mat-hint>
+          }
+        </mat-form-field>
+
         <!-- Form Actions -->
         <div class="form-actions">
           <button
@@ -247,6 +272,8 @@ export class ReceiptExpenseFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ApiClient);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** The receipt ID being processed */
   receiptId = input.required<string>();
@@ -266,12 +293,17 @@ export class ReceiptExpenseFormComponent implements OnInit {
   protected readonly today = new Date();
   protected readonly isSaving = signal(false);
 
+  // Work order dropdown state (AC-11.8.1, AC-11.8.2)
+  protected readonly workOrders = signal<WorkOrderDto[]>([]);
+  protected readonly isLoadingWorkOrders = signal(false);
+
   protected form: FormGroup = this.fb.group({
     propertyId: ['', [Validators.required]],
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [this.today, [Validators.required]],
     categoryId: ['', [Validators.required]],
     description: ['', [Validators.maxLength(500)]],
+    workOrderId: [''], // AC-11.8.1 - optional, no validators
   });
 
   @ViewChild(FormGroupDirective) private formDirective!: FormGroupDirective;
@@ -283,15 +315,36 @@ export class ReceiptExpenseFormComponent implements OnInit {
     // Load properties if not already loaded
     this.propertyStore.loadProperties(undefined);
 
+    // Disable work order dropdown initially (AC-11.8.3)
+    this.form.get('workOrderId')?.disable();
+
     // Pre-populate property if provided
     if (this.propertyId()) {
       this.form.patchValue({ propertyId: this.propertyId() });
+      // Enable and load work orders for pre-selected property (AC-11.8.2)
+      this.form.get('workOrderId')?.enable();
+      this.loadWorkOrders(this.propertyId()!);
     }
 
     // Pre-populate date from receipt's createdAt (AC-5.4.3)
     if (this.defaultDate()) {
       this.form.patchValue({ date: this.defaultDate() });
     }
+
+    // Watch property changes to reload work orders (AC-11.8.6)
+    this.form.get('propertyId')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((propertyId: string) => {
+        // Clear work order selection when property changes (AC-11.8.6)
+        this.form.get('workOrderId')?.setValue('');
+        if (propertyId) {
+          this.form.get('workOrderId')?.enable();
+          this.loadWorkOrders(propertyId);
+        } else {
+          this.form.get('workOrderId')?.disable();
+          this.workOrders.set([]);
+        }
+      });
   }
 
   protected onCategoryChange(categoryId: string): void {
@@ -307,13 +360,36 @@ export class ReceiptExpenseFormComponent implements OnInit {
     return null;
   }
 
+  /**
+   * Load work orders for the selected property (AC-11.8.2)
+   * Filters to active work orders only (Reported, Assigned)
+   */
+  private loadWorkOrders(propertyId: string): void {
+    this.isLoadingWorkOrders.set(true);
+    this.workOrderService.getWorkOrdersByProperty(propertyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          const active = response.items.filter(
+            wo => wo.status === 'Reported' || wo.status === 'Assigned'
+          );
+          this.workOrders.set(active);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: () => {
+          this.workOrders.set([]);
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
+  }
+
   protected onSubmit(): void {
     if (!this.form.valid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const { propertyId, amount, date, categoryId, description } = this.form.value;
+    const { propertyId, amount, date, categoryId, description, workOrderId } = this.form.value;
     const formattedDate = this.formatDate(date);
 
     this.isSaving.set(true);
@@ -326,6 +402,7 @@ export class ReceiptExpenseFormComponent implements OnInit {
         date: formattedDate,
         categoryId,
         description: description?.trim(),
+        workOrderId: workOrderId || undefined, // AC-11.8.4, AC-11.8.5
       })
       .subscribe({
         next: () => {
