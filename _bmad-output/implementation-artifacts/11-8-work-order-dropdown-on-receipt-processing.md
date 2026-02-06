@@ -1,6 +1,6 @@
 # Story 11.8: Work Order Dropdown on Receipt Processing
 
-Status: review
+Status: done
 
 ## Story
 
