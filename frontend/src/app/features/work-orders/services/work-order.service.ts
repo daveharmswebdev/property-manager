@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -204,6 +204,18 @@ export class WorkOrderService {
    */
   getWorkOrderExpenses(workOrderId: string): Observable<WorkOrderExpensesResponse> {
     return this.http.get<WorkOrderExpensesResponse>(`${this.baseUrl}/${workOrderId}/expenses`);
+  }
+
+  /**
+   * Generate a PDF for a work order (Story 12-2, AC #2, #3, #8)
+   * @param id Work order GUID
+   * @returns Observable with full HTTP response containing PDF blob and headers
+   */
+  generateWorkOrderPdf(id: string): Observable<HttpResponse<Blob>> {
+    return this.http.post(`${this.baseUrl}/${id}/pdf`, null, {
+      responseType: 'blob' as 'json',
+      observe: 'response',
+    }) as Observable<HttpResponse<Blob>>;
   }
 
   /**
