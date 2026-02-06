@@ -92,8 +92,9 @@ else
 // Register thumbnail service (always available - no external dependencies)
 builder.Services.AddScoped<IThumbnailService, ImageSharpThumbnailService>();
 
-// Register PDF report generator (AC-6.1.4)
+// Register PDF report generators (AC-6.1.4, AC-12.1)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();
+builder.Services.AddScoped<IWorkOrderPdfGenerator, WorkOrderPdfGenerator>();
 
 // Register report bundle service for ZIP creation (AC-6.2.4, AC-6.2.5)
 builder.Services.AddScoped<IReportBundleService, ReportBundleService>();

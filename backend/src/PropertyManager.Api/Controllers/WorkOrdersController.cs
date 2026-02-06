@@ -21,6 +21,7 @@ public class WorkOrdersController : ControllerBase
     private readonly IValidator<CreateWorkOrderCommand> _createValidator;
     private readonly IValidator<UpdateWorkOrderCommand> _updateValidator;
     private readonly IValidator<DeleteWorkOrderCommand> _deleteValidator;
+    private readonly IValidator<GenerateWorkOrderPdfQuery> _generatePdfValidator;
     private readonly ILogger<WorkOrdersController> _logger;
 
     public WorkOrdersController(
@@ -29,6 +30,7 @@ public class WorkOrdersController : ControllerBase
         IValidator<CreateWorkOrderCommand> createValidator,
         IValidator<UpdateWorkOrderCommand> updateValidator,
         IValidator<DeleteWorkOrderCommand> deleteValidator,
+        IValidator<GenerateWorkOrderPdfQuery> generatePdfValidator,
         ILogger<WorkOrdersController> logger)
     {
         _mediator = mediator;
@@ -36,6 +38,7 @@ public class WorkOrdersController : ControllerBase
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _deleteValidator = deleteValidator;
+        _generatePdfValidator = generatePdfValidator;
         _logger = logger;
     }
 
@@ -243,6 +246,39 @@ public class WorkOrdersController : ControllerBase
             result.TotalCount, id);
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Generate a PDF document for a specific work order (AC #1, #4).
+    /// </summary>
+    /// <param name="id">Work order GUID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>PDF document binary</returns>
+    /// <response code="200">Returns the PDF document</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order not found</response>
+    [HttpPost("{id:guid}/pdf")]
+    [Produces("application/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateWorkOrderPdf(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GenerateWorkOrderPdfQuery(id);
+
+        var validationResult = await _generatePdfValidator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Generated PDF for work order {WorkOrderId}", id);
+
+        return File(result.PdfBytes, "application/pdf", result.FileName);
     }
 
     /// <summary>
