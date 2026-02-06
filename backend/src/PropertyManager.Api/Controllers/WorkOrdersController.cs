@@ -246,6 +246,29 @@ public class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Generate a PDF document for a specific work order (AC #1, #4).
+    /// </summary>
+    /// <param name="id">Work order GUID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>PDF document binary</returns>
+    /// <response code="200">Returns the PDF document</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If work order not found</response>
+    [HttpPost("{id:guid}/pdf")]
+    [Produces("application/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateWorkOrderPdf(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GenerateWorkOrderPdfQuery(id), cancellationToken);
+
+        _logger.LogInformation("Generated PDF for work order {WorkOrderId}", id);
+
+        return File(result.PdfBytes, "application/pdf", result.FileName);
+    }
+
+    /// <summary>
     /// Get work orders for a specific property (Story 9-11 AC #1, #5).
     /// Used on property detail page to show maintenance history.
     /// </summary>
