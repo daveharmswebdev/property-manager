@@ -116,8 +116,11 @@ public class GenerateWorkOrderPdfQueryHandler : IRequestHandler<GenerateWorkOrde
 
     public async Task<WorkOrderPdfResult> Handle(GenerateWorkOrderPdfQuery request, CancellationToken cancellationToken)
     {
+        var now = DateTime.UtcNow;
+
         // Load work order with all related data (Task 3.2)
         var workOrder = await _dbContext.WorkOrders
+            .AsNoTracking()
             .Include(w => w.Property)
             .Include(w => w.Vendor)
                 .ThenInclude(v => v!.TradeTagAssignments)
@@ -126,8 +129,8 @@ public class GenerateWorkOrderPdfQueryHandler : IRequestHandler<GenerateWorkOrde
             .Include(w => w.TagAssignments)
                 .ThenInclude(a => a.Tag)
             .Include(w => w.Photos)
-            .Where(w => w.DeletedAt == null)
-            .FirstOrDefaultAsync(w => w.Id == request.WorkOrderId, cancellationToken);
+            .Where(w => w.Id == request.WorkOrderId && w.AccountId == _currentUser.AccountId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (workOrder == null)
         {
@@ -136,13 +139,15 @@ public class GenerateWorkOrderPdfQueryHandler : IRequestHandler<GenerateWorkOrde
 
         // Load notes separately (polymorphic table) (Task 3.3)
         var notes = await _dbContext.Notes
-            .Where(n => n.EntityType == "WorkOrder" && n.EntityId == request.WorkOrderId && n.DeletedAt == null)
+            .AsNoTracking()
+            .Where(n => n.EntityType == "WorkOrder" && n.EntityId == request.WorkOrderId)
             .OrderBy(n => n.CreatedAt)
             .ToListAsync(cancellationToken);
 
         // Load linked expenses separately (Task 3.4)
         var expenses = await _dbContext.Expenses
-            .Where(e => e.WorkOrderId == request.WorkOrderId && e.DeletedAt == null)
+            .AsNoTracking()
+            .Where(e => e.WorkOrderId == request.WorkOrderId)
             .Include(e => e.Category)
             .OrderByDescending(e => e.Date)
             .ToListAsync(cancellationToken);
@@ -186,7 +191,7 @@ public class GenerateWorkOrderPdfQueryHandler : IRequestHandler<GenerateWorkOrde
             WorkOrderId: workOrder.Id,
             ShortId: shortId,
             Status: workOrder.Status.ToString(),
-            GeneratedDate: DateTime.UtcNow,
+            GeneratedDate: now,
             PropertyName: workOrder.Property.Name,
             PropertyAddress: address,
             Description: workOrder.Description,
@@ -209,7 +214,7 @@ public class GenerateWorkOrderPdfQueryHandler : IRequestHandler<GenerateWorkOrde
             .ToArray())
             .Replace(' ', '-');
 
-        var fileName = $"WorkOrder-{sanitizedPropertyName}-{DateTime.UtcNow:yyyy-MM-dd}-{shortId}.pdf";
+        var fileName = $"WorkOrder-{sanitizedPropertyName}-{now:yyyy-MM-dd}-{shortId}.pdf";
 
         return new WorkOrderPdfResult(pdfBytes, fileName);
     }
