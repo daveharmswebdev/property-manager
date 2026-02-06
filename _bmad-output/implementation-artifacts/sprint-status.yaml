@@ -163,9 +163,9 @@ development_status:
   # Epic 12: Work Order Output
   # User Outcome: "I can generate a professional work order PDF to share with vendors"
   epic-12: in-progress
-  12-1-work-order-pdf-generation-service: review
-  12-2-download-work-order-pdf: backlog
-  12-3-preview-work-order-pdf: backlog
+  12-1-work-order-pdf-generation-service: done
+  12-2-work-order-pdf-download-and-preview: review  # Combined 12-2 + 12-3 (FR50 + FR51)
+  # 12-3-preview-work-order-pdf: merged into 12-2
   epic-12-retrospective: optional
 
   # ============================================================

@@ -6,7 +6,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
-import { of } from 'rxjs';
+import { of, throwError, NEVER } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';
@@ -94,8 +94,19 @@ describe('WorkOrderDetailComponent', () => {
       createNote: vi.fn().mockReturnValue(of({ id: 'new-note-id' }))
     };
 
+    const mockPdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+    const mockPdfResponse = {
+      body: mockPdfBlob,
+      headers: {
+        get: (name: string) => name === 'Content-Disposition'
+          ? 'attachment; filename="WorkOrder-TestProp-2026-01-20-wo123456.pdf"'
+          : null,
+      },
+    };
+
     const mockWorkOrderService = {
       getWorkOrderExpenses: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 } as WorkOrderExpensesResponse)),
+      generateWorkOrderPdf: vi.fn().mockReturnValue(of(mockPdfResponse)),
     };
 
     const mockExpenseService = {
@@ -342,13 +353,15 @@ describe('WorkOrderDetailComponent', () => {
       expect(deleteButton.nativeElement.textContent).toContain('Delete');
     });
 
-    it('should have both edit and delete buttons', () => {
+    it('should have edit, delete, preview PDF, and download PDF buttons', () => {
       const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button');
-      expect(buttons.length).toBe(2);
+      expect(buttons.length).toBe(4);
 
       const buttonText = Array.from(buttons).map((b: any) => b.textContent);
       expect(buttonText.some((t: string) => t.includes('Edit'))).toBe(true);
       expect(buttonText.some((t: string) => t.includes('Delete'))).toBe(true);
+      expect(buttonText.some((t: string) => t.includes('Preview PDF'))).toBe(true);
+      expect(buttonText.some((t: string) => t.includes('Download PDF'))).toBe(true);
     });
   });
 
@@ -590,6 +603,77 @@ describe('WorkOrderDetailComponent', () => {
       component.openCreateExpenseDialog();
 
       expect(mockWoService.getWorkOrderExpenses).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PDF actions (Story 12-2)', () => {
+    beforeEach(() => {
+      URL.createObjectURL = vi.fn().mockReturnValue('blob:test-pdf-url');
+      URL.revokeObjectURL = vi.fn();
+      setupWithWorkOrder();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should display Preview PDF button (AC #1)', () => {
+      const btn = fixture.nativeElement.querySelector('[data-testid="preview-pdf-btn"]');
+      expect(btn).toBeTruthy();
+      expect(btn.textContent).toContain('Preview PDF');
+    });
+
+    it('should display Download PDF button (AC #1)', () => {
+      const btn = fixture.nativeElement.querySelector('[data-testid="download-pdf-btn"]');
+      expect(btn).toBeTruthy();
+      expect(btn.textContent).toContain('Download PDF');
+    });
+
+    it('should call service on Download PDF click (AC #2)', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+
+      component.onDownloadPdf();
+
+      expect(mockWoService.generateWorkOrderPdf).toHaveBeenCalledWith('wo-123');
+    });
+
+    it('should set loading state during download', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.generateWorkOrderPdf as ReturnType<typeof vi.fn>).mockReturnValue(NEVER);
+
+      component.onDownloadPdf();
+
+      expect(component['isDownloadingPdf']()).toBe(true);
+    });
+
+    it('should reset download state on error (AC #8)', () => {
+      const mockWoService = TestBed.inject(WorkOrderService);
+      (mockWoService.generateWorkOrderPdf as ReturnType<typeof vi.fn>).mockReturnValue(
+        throwError(() => ({ status: 500 }))
+      );
+
+      component.onDownloadPdf();
+      fixture.detectChanges();
+
+      // Verify loading state was reset after error
+      expect(component['isDownloadingPdf']()).toBe(false);
+    });
+
+    it('should open preview dialog on Preview PDF click (AC #3)', () => {
+      const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(undefined) });
+      (component as any).dialog = { open: openSpy };
+
+      component.onPreviewPdf();
+
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({
+          data: { workOrderId: 'wo-123' },
+          width: '90vw',
+          maxWidth: '1200px',
+          height: '85vh',
+        })
+      );
     });
   });
 

@@ -9,7 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, Subscription, switchMap } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -26,6 +26,7 @@ import {
   CreateExpenseFromWoDialogData,
   CreateExpenseFromWoDialogResult,
 } from '../../../expenses/components/create-expense-from-wo-dialog/create-expense-from-wo-dialog.component';
+import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-pdf-preview-dialog/work-order-pdf-preview-dialog.component';
 
 /**
  * WorkOrderDetailComponent (Story 9-8)
@@ -125,6 +126,27 @@ import {
             >
               <mat-icon>delete</mat-icon>
               Delete
+            </button>
+            <button
+              mat-stroked-button
+              (click)="onPreviewPdf()"
+              data-testid="preview-pdf-btn"
+            >
+              <mat-icon>visibility</mat-icon>
+              Preview PDF
+            </button>
+            <button
+              mat-stroked-button
+              (click)="onDownloadPdf()"
+              [disabled]="isDownloadingPdf()"
+              data-testid="download-pdf-btn"
+            >
+              @if (isDownloadingPdf()) {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>download</mat-icon>
+              }
+              Download PDF
             </button>
           </div>
         </header>
@@ -702,6 +724,10 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   /** Whether the upload zone is visible */
   protected readonly showUploadZone = signal(false);
 
+  /** PDF download loading state (Story 12-2) */
+  protected readonly isDownloadingPdf = signal(false);
+  private downloadPdfSub: Subscription | null = null;
+
   /** Linked expenses state (Story 11.3) */
   protected readonly linkedExpenses = signal<WorkOrderExpenseItemDto[]>([]);
   protected readonly isLoadingExpenses = signal(false);
@@ -720,6 +746,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.downloadPdfSub?.unsubscribe();
     this.store.clearSelectedWorkOrder();
     this.photoStore.clear();
   }
@@ -751,6 +778,62 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
     if (confirmed && this.workOrderId) {
       this.store.deleteWorkOrder(this.workOrderId);
     }
+  }
+
+  // ========== PDF Methods (Story 12-2) ==========
+
+  /**
+   * Open PDF preview dialog (AC #3)
+   */
+  onPreviewPdf(): void {
+    if (!this.workOrderId) return;
+    this.dialog.open(WorkOrderPdfPreviewDialogComponent, {
+      data: { workOrderId: this.workOrderId },
+      width: '90vw',
+      maxWidth: '1200px',
+      height: '85vh',
+    });
+  }
+
+  /**
+   * Download work order PDF (AC #2)
+   */
+  onDownloadPdf(): void {
+    if (!this.workOrderId) return;
+    this.isDownloadingPdf.set(true);
+    this.downloadPdfSub?.unsubscribe();
+
+    this.downloadPdfSub = this.workOrderService.generateWorkOrderPdf(this.workOrderId).subscribe({
+      next: (response) => {
+        const blob = response.body;
+        if (!blob) {
+          this.snackBar.open('Failed to generate PDF. Please try again.', 'Dismiss', { duration: 5000 });
+          this.isDownloadingPdf.set(false);
+          return;
+        }
+
+        // Extract filename from Content-Disposition header (Task 3.5)
+        const disposition = response.headers.get('Content-Disposition');
+        const match = disposition?.match(/filename="?([^";\n]*)"?/);
+        const filename = match?.[1] || `WorkOrder-${this.workOrderId!.substring(0, 8)}.pdf`;
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        this.snackBar.open('PDF downloaded', 'Dismiss', { duration: 3000 });
+        this.isDownloadingPdf.set(false);
+      },
+      error: () => {
+        this.snackBar.open('Failed to generate PDF. Please try again.', 'Dismiss', { duration: 5000 });
+        this.isDownloadingPdf.set(false);
+      },
+    });
   }
 
   // ========== Linked Expenses Methods (Story 11.3) ==========

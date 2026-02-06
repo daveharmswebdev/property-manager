@@ -15,6 +15,7 @@ import {
   WorkOrderTagDto,
   WorkOrderExpensesResponse,
 } from './work-order.service';
+import { HttpHeaders } from '@angular/common/http';
 
 describe('WorkOrderService', () => {
   let service: WorkOrderService;
@@ -331,6 +332,43 @@ describe('WorkOrderService', () => {
       const req = httpMock.expectOne('/api/v1/properties/prop-1/work-orders');
       expect(req.request.params.has('limit')).toBe(false);
       req.flush(mockResponse);
+    });
+  });
+
+  describe('generateWorkOrderPdf', () => {
+    it('should POST to /api/v1/work-orders/{id}/pdf and return blob response', () => {
+      const mockBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+
+      service.generateWorkOrderPdf('wo-1').subscribe(response => {
+        expect(response.body).toBeTruthy();
+        expect(response.body!.type).toBe('application/pdf');
+      });
+
+      const req = httpMock.expectOne('/api/v1/work-orders/wo-1/pdf');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toBeNull();
+      expect(req.request.responseType).toBe('blob');
+      req.flush(mockBlob, {
+        headers: new HttpHeaders({
+          'Content-Disposition': 'attachment; filename="WorkOrder-TestProp-2026-01-15-abc12345.pdf"',
+          'Content-Type': 'application/pdf',
+        }),
+      });
+    });
+
+    it('should propagate errors from the API', () => {
+      let errorOccurred = false;
+
+      service.generateWorkOrderPdf('wo-bad').subscribe({
+        error: (err) => {
+          errorOccurred = true;
+          expect(err.status).toBe(404);
+        },
+      });
+
+      const req = httpMock.expectOne('/api/v1/work-orders/wo-bad/pdf');
+      req.error(new ProgressEvent('error'), { status: 404, statusText: 'Not Found' });
+      expect(errorOccurred).toBe(true);
     });
   });
 });
