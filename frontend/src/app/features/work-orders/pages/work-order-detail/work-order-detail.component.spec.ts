@@ -6,7 +6,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
-import { of, throwError, Subject, NEVER } from 'rxjs';
+import { of, throwError, NEVER } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { WorkOrderDetailComponent } from './work-order-detail.component';
 import { WorkOrderStore } from '../../stores/work-order.store';

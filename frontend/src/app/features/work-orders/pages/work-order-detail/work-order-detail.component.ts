@@ -9,7 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, Subscription, switchMap } from 'rxjs';
 import { WorkOrderStore } from '../../stores/work-order.store';
 import { WorkOrderPhotoStore } from '../../stores/work-order-photo.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -726,6 +726,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
 
   /** PDF download loading state (Story 12-2) */
   protected readonly isDownloadingPdf = signal(false);
+  private downloadPdfSub: Subscription | null = null;
 
   /** Linked expenses state (Story 11.3) */
   protected readonly linkedExpenses = signal<WorkOrderExpenseItemDto[]>([]);
@@ -745,6 +746,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.downloadPdfSub?.unsubscribe();
     this.store.clearSelectedWorkOrder();
     this.photoStore.clear();
   }
@@ -799,10 +801,16 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   onDownloadPdf(): void {
     if (!this.workOrderId) return;
     this.isDownloadingPdf.set(true);
+    this.downloadPdfSub?.unsubscribe();
 
-    this.workOrderService.generateWorkOrderPdf(this.workOrderId).subscribe({
+    this.downloadPdfSub = this.workOrderService.generateWorkOrderPdf(this.workOrderId).subscribe({
       next: (response) => {
-        const blob = response.body!;
+        const blob = response.body;
+        if (!blob) {
+          this.snackBar.open('Failed to generate PDF. Please try again.', 'Dismiss', { duration: 5000 });
+          this.isDownloadingPdf.set(false);
+          return;
+        }
 
         // Extract filename from Content-Disposition header (Task 3.5)
         const disposition = response.headers.get('Content-Disposition');

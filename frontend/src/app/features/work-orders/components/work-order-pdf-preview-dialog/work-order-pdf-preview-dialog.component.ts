@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -272,6 +273,7 @@ export class WorkOrderPdfPreviewDialogComponent implements OnDestroy {
   private cachedBlob: Blob | null = null;
   private cachedFilename: string = 'WorkOrder.pdf';
   private printIframe: HTMLIFrameElement | null = null;
+  private loadSub: Subscription | null = null;
 
   constructor() {
     this.loadPdf();
@@ -281,10 +283,16 @@ export class WorkOrderPdfPreviewDialogComponent implements OnDestroy {
     this.isLoading.set(true);
     this.error.set(null);
     this.cleanupBlobUrl();
+    this.loadSub?.unsubscribe();
 
-    this.workOrderService.generateWorkOrderPdf(this.data.workOrderId).subscribe({
+    this.loadSub = this.workOrderService.generateWorkOrderPdf(this.data.workOrderId).subscribe({
       next: (response) => {
-        const blob = response.body!;
+        const blob = response.body;
+        if (!blob) {
+          this.error.set('Failed to generate PDF. Please try again.');
+          this.isLoading.set(false);
+          return;
+        }
         this.cachedBlob = blob;
 
         // Extract filename from Content-Disposition header
@@ -374,6 +382,7 @@ export class WorkOrderPdfPreviewDialogComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.loadSub?.unsubscribe();
     this.cleanupBlobUrl();
     this.cachedBlob = null;
     this.printIframe?.remove();

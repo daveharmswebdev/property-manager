@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError, NEVER, Subject } from 'rxjs';
+import { of, throwError, NEVER } from 'rxjs';
 import {
   WorkOrderPdfPreviewDialogComponent,
   WorkOrderPdfPreviewDialogData,
@@ -242,11 +242,47 @@ describe('WorkOrderPdfPreviewDialogComponent', () => {
   });
 
   describe('filename extraction', () => {
-    it('should extract filename from Content-Disposition header', () => {
+    it('should use filename from Content-Disposition header when downloading', () => {
       fixture.detectChanges();
-      // The cachedFilename is private, but we can verify download uses it
-      // by checking that the service was called and blob URL created
-      expect(mockWorkOrderService.generateWorkOrderPdf).toHaveBeenCalledWith('wo-123');
+
+      // Capture the anchor element without breaking Angular's createElement calls
+      let capturedLink: HTMLAnchorElement | null = null;
+      const origCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === 'a') capturedLink = el as HTMLAnchorElement;
+        return el;
+      });
+
+      component.download();
+
+      expect(capturedLink).toBeTruthy();
+      expect(capturedLink!.download).toBe('WorkOrder-TestProp-2026-01-20-wo123456.pdf');
+    });
+
+    it('should use fallback filename when Content-Disposition header is missing', () => {
+      const noHeaderResponse = {
+        body: mockPdfBlob,
+        headers: { get: () => null },
+      };
+      mockWorkOrderService.generateWorkOrderPdf.mockReturnValue(of(noHeaderResponse));
+
+      fixture = TestBed.createComponent(WorkOrderPdfPreviewDialogComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      let capturedLink: HTMLAnchorElement | null = null;
+      const origCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === 'a') capturedLink = el as HTMLAnchorElement;
+        return el;
+      });
+
+      component.download();
+
+      expect(capturedLink).toBeTruthy();
+      expect(capturedLink!.download).toBe('WorkOrder-wo-123.pdf');
     });
   });
 });
