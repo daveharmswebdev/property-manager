@@ -164,7 +164,7 @@ development_status:
   # User Outcome: "I can generate a professional work order PDF to share with vendors"
   epic-12: in-progress
   12-1-work-order-pdf-generation-service: done
-  12-2-work-order-pdf-download-and-preview: review  # Combined 12-2 + 12-3 (FR50 + FR51)
+  12-2-work-order-pdf-download-and-preview: done  # Combined 12-2 + 12-3 (FR50 + FR51)
   # 12-3-preview-work-order-pdf: merged into 12-2
   epic-12-retrospective: optional
 
@@ -185,3 +185,20 @@ development_status:
   13-3c-property-photo-lightbox-management: done  # Lightbox + management + sprint refinements (Tasks 5-7) COMPLETE
   13-4-photo-gallery-drag-drop-fix: done  # GitHub Issue #113 - Fix inconsistent drag-drop with cdkDropListOrientation="mixed"
   epic-13-retrospective: optional
+
+  # ============================================================
+  # PHASE 1 PRE-PRODUCTION: SECURITY HARDENING & OBSERVABILITY
+  # Source: epic-14-security-hardening-observability.md
+  # Added: 2026-02-07
+  # All 5 stories are independent (can be parallelized)
+  # ============================================================
+
+  # Epic 14: Security Hardening & Observability
+  # User Outcome: "The app is hardened and observable — ready for beta users"
+  epic-14: pending
+  14-1-cors-configuration: pending
+  14-2-security-headers-middleware: pending
+  14-3-api-rate-limiting: pending
+  14-4-backend-sentry-integration: pending
+  14-5-frontend-sentry-integration: pending
+  epic-14-retrospective: optional
