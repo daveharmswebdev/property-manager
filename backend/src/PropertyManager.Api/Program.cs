@@ -236,6 +236,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseHsts();
+app.UseSecurityHeaders();
 app.UseSerilogRequestLogging();
 app.UseCors(corsPolicyName);
 
