@@ -84,8 +84,27 @@ public class CorsIntegrationTests : IClassFixture<PropertyManagerWebApplicationF
         // Act
         var response = await client.SendAsync(request);
 
-        // Assert
+        // Assert — server still processes the request (CORS is browser-enforced), but no CORS headers
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Contains("Access-Control-Allow-Origin").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Preflight_FromDisallowedOrigin_DoesNotReturnCorsHeaders()
+    {
+        // Arrange — AC #2: preflight OPTIONS from disallowed origin
+        var client = _factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Options, "/api/v1/health");
+        request.Headers.Add("Origin", "https://evil-site.com");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+        request.Headers.Add("Access-Control-Request-Headers", "Authorization, Content-Type");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert — no CORS headers means browser will block the cross-origin request
+        response.Headers.Contains("Access-Control-Allow-Origin").Should().BeFalse();
+        response.Headers.Contains("Access-Control-Allow-Methods").Should().BeFalse();
     }
 
     [Fact]
