@@ -193,6 +193,19 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromHours(24);
 });
 
+// Configure CORS (AC-14.1)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowedOrigins", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type")
+              .AllowCredentials();
+    });
+});
+
 // Configure NSwag/OpenAPI
 builder.Services.AddOpenApiDocument(config =>
 {
@@ -219,6 +232,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
+app.UseCors("AllowedOrigins");
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
