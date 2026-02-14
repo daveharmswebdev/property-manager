@@ -1,6 +1,6 @@
 # Story 14.1: CORS Configuration
 
-Status: dev-complete
+Status: done
 
 ## Story
 
