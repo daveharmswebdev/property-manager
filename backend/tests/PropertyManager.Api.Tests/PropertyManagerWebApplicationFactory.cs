@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PropertyManager.Application.Common.Interfaces;
@@ -89,6 +90,15 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<FakeReportStorageService>();
             services.AddSingleton<IReportStorageService>(sp => sp.GetRequiredService<FakeReportStorageService>());
+        });
+
+        // Provide explicit CORS origins so tests don't depend on appsettings.Development.json
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Cors:AllowedOrigins:0"] = "http://localhost:4200"
+            });
         });
 
         builder.UseEnvironment("Development"); // Use Development for detailed error messages in tests

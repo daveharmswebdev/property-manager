@@ -193,6 +193,24 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromHours(24);
 });
 
+// Configure CORS (AC-14.1)
+const string corsPolicyName = "AllowedOrigins";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+if (allowedOrigins.Length == 0)
+{
+    Log.Warning("No CORS allowed origins configured — all cross-origin requests will be blocked. Set Cors:AllowedOrigins in appsettings.");
+}
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicyName, policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type")
+              .AllowCredentials();
+    });
+});
+
 // Configure NSwag/OpenAPI
 builder.Services.AddOpenApiDocument(config =>
 {
@@ -219,6 +237,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
+app.UseCors(corsPolicyName);
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
