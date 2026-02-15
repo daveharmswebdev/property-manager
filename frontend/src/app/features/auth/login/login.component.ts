@@ -1,14 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService, ApiError } from '../../../core/services/auth.service';
 
@@ -25,7 +24,6 @@ import { AuthService, ApiError } from '../../../core/services/auth.service';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    MatCheckboxModule,
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
@@ -34,16 +32,25 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly loading = signal(false);
   protected readonly serverError = signal<string | null>(null);
   protected readonly hidePassword = signal(true);
 
   protected readonly form: FormGroup = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, Validators.email, Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/)]],
     password: ['', [Validators.required]],
-    rememberMe: [false],
   });
+
+  private getSafeReturnUrl(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (!returnUrl) return '/dashboard';
+    if (returnUrl.startsWith('/') && !returnUrl.startsWith('//') && !returnUrl.includes('://')) {
+      return returnUrl;
+    }
+    return '/dashboard';
+  }
 
   protected onSubmit(): void {
     if (!this.form.valid) {
@@ -59,8 +66,7 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: () => {
         this.loading.set(false);
-        // Navigate to dashboard on successful login (AC4.8)
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(this.getSafeReturnUrl());
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
