@@ -19,7 +19,15 @@ test.describe('Story 15.3: Expense List UX Improvements', () => {
     page,
     authenticatedUser,
   }) => {
-    // GIVEN: Seeded account has exactly 1 property ("Test Property")
+    // GIVEN: Intercept properties API to simulate single-property account
+    // (earlier tests may have created additional properties in the shared DB)
+    await page.route('*/**/api/v1/properties', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      const singleProperty = { items: json.items.slice(0, 1), totalCount: 1 };
+      await route.fulfill({ response, json: singleProperty });
+    });
+
     await page.goto('/expenses');
     await page.waitForLoadState('networkidle');
 
