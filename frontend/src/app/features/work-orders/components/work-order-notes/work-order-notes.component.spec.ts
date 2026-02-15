@@ -182,13 +182,31 @@ describe('WorkOrderNotesComponent', () => {
       });
     });
 
-    it('should clear input after successful add (AC #4)', () => {
+    it('should reset input to pristine state after successful add (AC #4, Story 15.2 AC #1)', () => {
       fixture.detectChanges();
 
       component.noteContent.setValue('New test note');
       component.addNote();
 
-      expect(component.noteContent.value).toBe('');
+      expect(component.noteContent.value).toBe(null);
+      expect(component.noteContent.pristine).toBe(true);
+      expect(component.noteContent.untouched).toBe(true);
+    });
+
+    it('should have no displayed validation errors after successful add (Story 15.2 AC #1)', () => {
+      fixture.detectChanges();
+
+      component.noteContent.setValue('New test note');
+      component.noteContent.markAsDirty();
+      component.noteContent.markAsTouched();
+      component.addNote();
+
+      // reset() sets value to null. The required validator considers null invalid,
+      // but since the control is pristine and untouched, no error border displays.
+      // Verify the control is in its initial-like state.
+      expect(component.noteContent.pristine).toBe(true);
+      expect(component.noteContent.untouched).toBe(true);
+      expect(component.noteContent.value).toBe(null);
     });
 
     it('should show snackbar on success (AC #4)', () => {

@@ -24,7 +24,7 @@ import { ExpenseStore } from '../../stores/expense.store';
   ],
   template: `
     <mat-form-field appearance="outline" class="category-select">
-      <mat-label>Category</mat-label>
+      <mat-label>Category *</mat-label>
       @if (store.isLoadingCategories()) {
         <mat-select disabled>
           <mat-option>Loading...</mat-option>
