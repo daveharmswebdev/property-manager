@@ -1,10 +1,14 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Identity;
@@ -54,6 +58,23 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
             });
 
             services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+            // Disable rate limiting for general integration tests (Story 14.3 tests use their own factory)
+            var rateLimiterConfigs = services
+                .Where(d => d.ServiceType.IsGenericType
+                    && d.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>)
+                    && d.ServiceType.GenericTypeArguments[0] == typeof(RateLimiterOptions))
+                .ToList();
+            foreach (var d in rateLimiterConfigs) services.Remove(d);
+
+            services.AddSingleton<IConfigureOptions<RateLimiterOptions>>(
+                new ConfigureOptions<RateLimiterOptions>(options =>
+                {
+                    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+                        RateLimitPartition.GetNoLimiter("noop"));
+                    options.AddPolicy<string>("auth", _ => RateLimitPartition.GetNoLimiter("noop"));
+                    options.AddPolicy<string>("refresh", _ => RateLimitPartition.GetNoLimiter("noop"));
+                }));
 
             // Replace email service with a singleton fake for testing
             var emailServiceDescriptor = services.SingleOrDefault(

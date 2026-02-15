@@ -1,6 +1,9 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -211,6 +214,71 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure Rate Limiting (AC-14.3)
+builder.Services.AddRateLimiter(options =>
+{
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        var retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? Math.Max(1, (int)retryAfter.TotalSeconds)
+            : 60;
+
+        context.HttpContext.Response.Headers.RetryAfter =
+            retryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+
+        var user = context.HttpContext.User.Identity?.Name ?? "anonymous";
+        var path = context.HttpContext.Request.Path;
+        Log.Warning("Rate limit exceeded for {User} at {Path}", user, path);
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            type = "https://propertymanager.app/errors/rate-limit-exceeded",
+            title = "Too many requests",
+            status = 429,
+            detail = $"Rate limit exceeded. Try again in {retryAfterSeconds} seconds."
+        }, cancellationToken);
+    };
+
+    // Named policy: "auth" — 5 requests per minute per IP (AC #1)
+    options.AddSlidingWindowLimiter("auth", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.QueueLimit = 0;
+        opt.AutoReplenishment = true;
+    });
+
+    // Named policy: "refresh" — 10 requests per minute per IP (AC #2)
+    options.AddSlidingWindowLimiter("refresh", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.QueueLimit = 0;
+        opt.AutoReplenishment = true;
+    });
+
+    // Global policy: "api" — 100 requests per minute, keyed by user ID or IP (AC #3, #4)
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var partitionKey = userId ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetSlidingWindowLimiter(partitionKey, _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 100,
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+});
+
 // Configure NSwag/OpenAPI
 builder.Services.AddOpenApiDocument(config =>
 {
@@ -244,6 +312,12 @@ app.UseCors(corsPolicyName);
 // Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Skip rate limiting when explicitly disabled (e.g., E2E tests in CI)
+if (!app.Configuration.GetValue<bool>("RateLimiting:Disabled"))
+{
+    app.UseRateLimiter();
+}
 
 app.MapControllers();
 
