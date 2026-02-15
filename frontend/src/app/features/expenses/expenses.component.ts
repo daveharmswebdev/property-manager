@@ -368,6 +368,8 @@ export class ExpensesComponent implements OnInit {
   ngOnInit(): void {
     // Initialize store - load categories and expenses
     this.store.initialize();
+    // Load properties for "Add Expense" button routing (single vs multi-property)
+    this.propertyStore.loadProperties(undefined);
   }
 
   onDateRangePresetChange(preset: DateRangePreset): void {

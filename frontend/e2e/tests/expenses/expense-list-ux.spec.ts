@@ -195,7 +195,6 @@ test.describe('Story 15.3: Expense List UX Improvements', () => {
     await page.waitForLoadState('networkidle');
 
     // THEN: Sort icon changes direction
-    const secondDirection = await sortIcon.textContent();
-    expect(secondDirection).not.toBe(firstDirection);
+    await expect(sortIcon).not.toHaveText(firstDirection!);
   });
 });
