@@ -56,7 +56,7 @@ public record ExpenseListItemDto(
 /// - Tax year
 /// - Categories (multi-select)
 /// - Description search (case-insensitive, partial match)
-/// Results sorted by Date descending (newest first).
+/// Results sorted by specified column and direction (default: Date descending).
 /// </summary>
 public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedResult<ExpenseListItemDto>>
 {

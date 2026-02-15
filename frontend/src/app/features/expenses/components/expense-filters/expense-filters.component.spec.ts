@@ -333,4 +333,18 @@ describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
 
     expect(component.customDateFrom.value!.toISOString().split('T')[0]).toBe('2026-06-15');
   });
+
+  it('should clear FormControls when date inputs become null', () => {
+    // Verify dates are set first
+    expect(component.customDateFrom.value).toBeInstanceOf(Date);
+    expect(component.customDateTo.value).toBeInstanceOf(Date);
+
+    // Set inputs to null (simulates chip removal / clear filters)
+    fixture.componentRef.setInput('dateFrom', null);
+    fixture.componentRef.setInput('dateTo', null);
+    fixture.detectChanges();
+
+    expect(component.customDateFrom.value).toBeNull();
+    expect(component.customDateTo.value).toBeNull();
+  });
 });

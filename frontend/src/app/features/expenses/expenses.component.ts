@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -8,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseListStore, FilterChip, DateRangePreset } from './stores/expense-list.store';
 import { ExpenseFiltersComponent } from './components/expense-filters/expense-filters.component';
 import { ExpenseListRowComponent } from './components/expense-list-row/expense-list-row.component';
@@ -36,7 +36,6 @@ import { PropertyService } from '../properties/services/property.service';
   selector: 'app-expenses',
   standalone: true,
   imports: [
-    CommonModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -126,30 +125,14 @@ import { PropertyService } from '../properties/services/property.service';
           <mat-card class="expense-list-card">
             <!-- List Header -->
             <div class="list-header">
-              <button class="sort-header header-date" [class.active]="store.sortBy() === 'date'" (click)="store.setSort('date')">
-                Date
-                @if (store.sortBy() === 'date') {
-                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                }
-              </button>
-              <button class="sort-header header-property" [class.active]="store.sortBy() === 'property'" (click)="store.setSort('property')">
-                Property
-                @if (store.sortBy() === 'property') {
-                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                }
-              </button>
-              <button class="sort-header header-description" [class.active]="store.sortBy() === 'description'" (click)="store.setSort('description')">
-                Description
-                @if (store.sortBy() === 'description') {
-                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                }
-              </button>
-              <button class="sort-header header-category" [class.active]="store.sortBy() === 'category'" (click)="store.setSort('category')">
-                Category
-                @if (store.sortBy() === 'category') {
-                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-                }
-              </button>
+              @for (col of sortColumns; track col.key) {
+                <button class="sort-header header-{{col.key}}" [class.active]="store.sortBy() === col.key" (click)="store.setSort(col.key)">
+                  {{ col.label }}
+                  @if (store.sortBy() === col.key) {
+                    <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  }
+                </button>
+              }
               <div class="header-receipt"></div>
               <div class="header-work-order"></div>
               <button class="sort-header header-amount" [class.active]="store.sortBy() === 'amount'" (click)="store.setSort('amount')">
@@ -367,6 +350,14 @@ export class ExpensesComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly propertyStore = inject(PropertyStore);
   private readonly propertyService = inject(PropertyService);
+  private readonly snackBar = inject(MatSnackBar);
+
+  readonly sortColumns = [
+    { key: 'date', label: 'Date' },
+    { key: 'property', label: 'Property' },
+    { key: 'description', label: 'Description' },
+    { key: 'category', label: 'Category' },
+  ];
 
   ngOnInit(): void {
     // Initialize store - load categories and expenses
@@ -402,12 +393,21 @@ export class ExpensesComponent implements OnInit {
   async onAddExpense(): Promise<void> {
     let properties = this.propertyStore.properties();
     if (properties.length === 0) {
-      const response = await firstValueFrom(this.propertyService.getProperties());
-      properties = response.items;
+      try {
+        const response = await firstValueFrom(this.propertyService.getProperties());
+        properties = response.items;
+      } catch {
+        this.snackBar.open('Failed to load properties. Please try again.', 'Dismiss', { duration: 5000 });
+        return;
+      }
+    }
+    if (properties.length === 0) {
+      this.snackBar.open('Create a property first before adding expenses.', 'Dismiss', { duration: 5000 });
+      return;
     }
     if (properties.length === 1) {
       this.router.navigate(['/properties', properties[0].id, 'expenses']);
-    } else if (properties.length > 1) {
+    } else {
       const dialogRef = this.dialog.open(PropertyPickerDialogComponent, {
         width: '400px',
         data: {

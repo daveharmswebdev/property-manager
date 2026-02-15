@@ -2,10 +2,11 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpensesComponent } from './expenses.component';
 import { ExpenseListStore } from './stores/expense-list.store';
 import { PropertyStore } from '../properties/stores/property.store';
@@ -602,6 +603,8 @@ describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockPropertyStore: { properties: ReturnType<typeof signal>; loadProperties: ReturnType<typeof vi.fn> };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
+  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockPropertyService: { getProperties: ReturnType<typeof vi.fn> };
 
   const mockExpenseListStore = {
     isLoading: signal(false),
@@ -649,6 +652,10 @@ describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
         afterClosed: () => of('prop-2'),
       }),
     };
+    mockSnackBar = { open: vi.fn() };
+    mockPropertyService = {
+      getProperties: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+    };
 
     await TestBed.configureTestingModule({
       imports: [ExpensesComponent],
@@ -656,9 +663,10 @@ describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: PropertyService, useValue: mockPropertyService },
         { provide: Router, useValue: mockRouter },
         { provide: MatDialog, useValue: mockDialog },
+        { provide: MatSnackBar, useValue: mockSnackBar },
       ],
     }).compileComponents();
 
@@ -707,6 +715,32 @@ describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
 
     component.onAddExpense();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/properties', 'prop-2', 'expenses']);
+  });
+
+  it('should show snackbar when zero properties after fetch', async () => {
+    mockPropertyStore.properties = signal([]);
+    mockPropertyService.getProperties.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+    await component.onAddExpense();
+    expect(mockSnackBar.open).toHaveBeenCalledWith(
+      'Create a property first before adding expenses.',
+      'Dismiss',
+      { duration: 5000 }
+    );
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should show snackbar on fetch error', async () => {
+    mockPropertyStore.properties = signal([]);
+    mockPropertyService.getProperties.mockReturnValue(throwError(() => new Error('Network')));
+
+    await component.onAddExpense();
+    expect(mockSnackBar.open).toHaveBeenCalledWith(
+      'Failed to load properties. Please try again.',
+      'Dismiss',
+      { duration: 5000 }
+    );
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 });
 

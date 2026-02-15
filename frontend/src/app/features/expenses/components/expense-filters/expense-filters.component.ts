@@ -267,6 +267,8 @@ export class ExpenseFiltersComponent {
         if (!currentFrom || currentFrom.getTime() !== fromDate.getTime()) {
           this.customDateFrom.setValue(fromDate, { emitEvent: false });
         }
+      } else if (currentFrom) {
+        this.customDateFrom.setValue(null, { emitEvent: false });
       }
     });
 
@@ -278,6 +280,8 @@ export class ExpenseFiltersComponent {
         if (!currentTo || currentTo.getTime() !== toDate.getTime()) {
           this.customDateTo.setValue(toDate, { emitEvent: false });
         }
+      } else if (currentTo) {
+        this.customDateTo.setValue(null, { emitEvent: false });
       }
     });
   }
