@@ -312,7 +312,12 @@ app.UseCors(corsPolicyName);
 // Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
+
+// Skip rate limiting when explicitly disabled (e.g., E2E tests in CI)
+if (!app.Configuration.GetValue<bool>("RateLimiting:Disabled"))
+{
+    app.UseRateLimiter();
+}
 
 app.MapControllers();
 

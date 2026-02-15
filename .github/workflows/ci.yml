@@ -170,6 +170,7 @@ jobs:
           Email__FromAddress: noreply@test.com
           ASPNETCORE_ENVIRONMENT: Development
           ASPNETCORE_URLS: http://localhost:5292
+          RateLimiting__Disabled: "true"
         run: |
           dotnet run --project src/PropertyManager.Api --no-build --configuration Release &
           sleep 10
