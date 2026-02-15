@@ -214,7 +214,7 @@ development_status:
   # Epic 15: Manual Testing Bug Fixes
   # User Outcome: "The bugs I found during testing are fixed"
   epic-15: in-progress
-  15-1-login-form-fixes: pending                    # Issues #198, #199, #200 - email validation, remove remember me, honor returnUrl
+  15-1-login-form-fixes: review               # Issues #198, #199, #200 - email validation, remove remember me, honor returnUrl
   15-2-quick-fix-form-validation-bugs: pending      # Issues #202, #205 - note field reset, category required indicator
   15-3-expense-list-ux-improvements: pending         # Issues #204, #206, #207 - add expense button, date filter persistence, column sorting
   15-4-fix-unlink-receipt-backend-bug: done           # Issue #210 - FIXED: UnlinkReceipt uses Include-based approach, clears both FK sides

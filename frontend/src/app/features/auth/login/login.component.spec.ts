@@ -32,6 +32,7 @@ describe('LoginComponent', () => {
 
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockImplementation(() => Promise.resolve(true));
+    vi.spyOn(router, 'navigateByUrl').mockImplementation(() => Promise.resolve(true));
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
@@ -68,10 +69,6 @@ describe('LoginComponent', () => {
       expect(passwordControl?.valid).toBe(true);
     });
 
-    it('should have rememberMe field defaulting to false', () => {
-      const rememberMeControl = component['form'].get('rememberMe');
-      expect(rememberMeControl?.value).toBe(false);
-    });
   });
 
   describe('form validation', () => {
@@ -79,7 +76,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: '',
         password: '',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -102,7 +98,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password123',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -117,7 +112,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password123',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -138,12 +132,11 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password123',
-        rememberMe: false,
       });
 
       component['onSubmit']();
 
-      expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
     });
 
     it('should clear server error on successful login', () => {
@@ -155,7 +148,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password123',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -175,7 +167,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'wrongpassword',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -194,7 +185,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'wrongpassword',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -212,7 +202,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -230,7 +219,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -248,7 +236,6 @@ describe('LoginComponent', () => {
       component['form'].setValue({
         email: 'test@example.com',
         password: 'password',
-        rememberMe: false,
       });
 
       component['onSubmit']();
@@ -260,6 +247,119 @@ describe('LoginComponent', () => {
   describe('password visibility', () => {
     it('should start with password hidden', () => {
       expect(component['hidePassword']()).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC1: Stricter email validation (GitHub #198)
+  // ---------------------------------------------------------------------------
+  describe('email pattern validation', () => {
+    it('should reject email without TLD (user@g) with pattern error', () => {
+      const emailControl = component['form'].get('email');
+      emailControl?.setValue('user@g');
+
+      expect(emailControl?.hasError('pattern')).toBe(true);
+      expect(emailControl?.valid).toBe(false);
+    });
+
+    it('should reject email with single-char TLD (user@domain.c) with pattern error', () => {
+      const emailControl = component['form'].get('email');
+      emailControl?.setValue('user@domain.c');
+
+      expect(emailControl?.hasError('pattern')).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC3: Honor returnUrl after login (GitHub #200)
+  // Uses separate TestBed configurations per returnUrl scenario.
+  // ---------------------------------------------------------------------------
+  describe('returnUrl redirect', () => {
+    async function setupWithReturnUrl(returnUrl: string | null) {
+      TestBed.resetTestingModule();
+
+      const authService = { login: vi.fn() };
+
+      await TestBed.configureTestingModule({
+        imports: [LoginComponent],
+        providers: [
+          provideNoopAnimations(),
+          provideRouter([]),
+          { provide: AuthService, useValue: authService },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                queryParamMap: {
+                  get: (key: string) => (key === 'returnUrl' ? returnUrl : null),
+                },
+              },
+            },
+          },
+        ],
+      }).compileComponents();
+
+      const testRouter = TestBed.inject(Router);
+      vi.spyOn(testRouter, 'navigate').mockImplementation(() => Promise.resolve(true));
+      vi.spyOn(testRouter, 'navigateByUrl').mockImplementation(() => Promise.resolve(true));
+
+      const testFixture = TestBed.createComponent(LoginComponent);
+      const testComponent = testFixture.componentInstance;
+      testFixture.detectChanges();
+
+      return { component: testComponent, router: testRouter, authService };
+    }
+
+    it('should navigate to /properties when returnUrl is /properties', async () => {
+      const ctx = await setupWithReturnUrl('/properties');
+      ctx.authService.login.mockReturnValue(of({}));
+
+      ctx.component['form'].patchValue({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/properties');
+    });
+
+    it('should navigate to /dashboard when returnUrl is absent', async () => {
+      const ctx = await setupWithReturnUrl(null);
+      ctx.authService.login.mockReturnValue(of({}));
+
+      ctx.component['form'].patchValue({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    });
+
+    it('should navigate to /dashboard when returnUrl is absolute external URL', async () => {
+      const ctx = await setupWithReturnUrl('https://evil.com');
+      ctx.authService.login.mockReturnValue(of({}));
+
+      ctx.component['form'].patchValue({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    });
+
+    it('should navigate to /dashboard when returnUrl is protocol-relative', async () => {
+      const ctx = await setupWithReturnUrl('//evil.com');
+      ctx.authService.login.mockReturnValue(of({}));
+
+      ctx.component['form'].patchValue({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
     });
   });
 });
