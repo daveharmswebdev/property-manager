@@ -409,7 +409,7 @@ export class WorkOrderNotesComponent implements OnInit {
     ).subscribe({
       next: () => {
         this.loadNotes(); // Reload to get updated list with new note at top
-        this.noteContent.setValue('');
+        this.noteContent.reset();
         this.isSubmitting.set(false);
         this.snackBar.open('Note added', 'Close', { duration: 3000 });
       },

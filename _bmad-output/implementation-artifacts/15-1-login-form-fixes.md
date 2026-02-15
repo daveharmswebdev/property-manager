@@ -1,6 +1,6 @@
 # Story 15.1: Login Form Fixes
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

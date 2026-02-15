@@ -61,9 +61,9 @@ describe('CategorySelectComponent', () => {
     expect(select).toBeTruthy();
   });
 
-  it('should have "Category" label', () => {
+  it('should have "Category *" label with required indicator (Story 15.2 AC #2)', () => {
     const label = fixture.debugElement.query(By.css('mat-label'));
-    expect(label.nativeElement.textContent.trim()).toBe('Category');
+    expect(label.nativeElement.textContent.trim()).toBe('Category *');
   });
 
   it('should have default value as null', () => {
