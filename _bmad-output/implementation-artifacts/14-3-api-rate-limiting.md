@@ -1,6 +1,6 @@
 # Story 14.3: API Rate Limiting
 
-Status: dev-complete
+Status: done
 
 ## Story
 
@@ -208,8 +208,9 @@ None
 
 ### File List
 
-- `backend/src/PropertyManager.Api/Program.cs` — rate limiter service registration + UseRateLimiter() pipeline placement
+- `backend/src/PropertyManager.Api/Program.cs` — rate limiter service registration + UseRateLimiter() pipeline placement + configurable disable flag for CI E2E
 - `backend/src/PropertyManager.Api/Controllers/AuthController.cs` — [EnableRateLimiting] attributes on auth endpoints
 - `backend/tests/PropertyManager.Api.Tests/Middleware/RateLimitingTests.cs` — 6 integration tests (NEW)
 - `backend/tests/PropertyManager.Api.Tests/PropertyManagerWebApplicationFactory.cs` — disabled rate limiting for shared test factory
 - `backend/tests/PropertyManager.Api.Tests/PropertyManager.Api.Tests.csproj` — added InMemory EF Core package
+- `.github/workflows/ci.yml` — added `RateLimiting__Disabled=true` env var to E2E API start step

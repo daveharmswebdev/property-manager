@@ -10,7 +10,8 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.Tests.Expenses;
 
 /// <summary>
-/// Unit tests for UnlinkReceiptHandler (AC-5.5.5).
+/// Unit tests for UnlinkReceiptHandler.
+/// Tests use Include-based approach: Receipt is accessed via Expense.Receipt navigation property.
 /// </summary>
 public class UnlinkReceiptHandlerTests
 {
@@ -35,7 +36,6 @@ public class UnlinkReceiptHandlerTests
     {
         // Arrange
         SetupExpensesDbSet(new List<Expense>());
-        SetupReceiptsDbSet(new List<Receipt>());
 
         var nonExistentId = Guid.NewGuid();
         var command = new UnlinkReceiptCommand(nonExistentId);
@@ -51,10 +51,9 @@ public class UnlinkReceiptHandlerTests
     [Fact]
     public async Task Handle_NoReceiptLinked_ThrowsNotFoundException()
     {
-        // Arrange
+        // Arrange - expense exists but Receipt navigation is null, ReceiptId is null
         var expense = CreateExpense();
         SetupExpensesDbSet(new List<Expense> { expense });
-        SetupReceiptsDbSet(new List<Receipt>()); // No receipt linked
 
         var command = new UnlinkReceiptCommand(expense.Id);
 
@@ -67,22 +66,40 @@ public class UnlinkReceiptHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_UnlinksReceiptFromExpense()
+    public async Task Handle_ValidCommand_ClearsExpenseReceiptId()
     {
         // Arrange
-        var expense = CreateExpense();
-        var receipt = CreateReceipt(expense.Id);
-        receipt.ExpenseId.Should().Be(expense.Id); // Precondition
+        var receipt = CreateReceipt();
+        var expense = CreateExpense(receipt);
+        expense.ReceiptId.Should().Be(receipt.Id); // Precondition
 
         SetupExpensesDbSet(new List<Expense> { expense });
-        SetupReceiptsDbSet(new List<Receipt> { receipt });
 
         var command = new UnlinkReceiptCommand(expense.Id);
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
+        // Assert - the real FK is cleared
+        expense.ReceiptId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_ValidCommand_ClearsReceiptExpenseId()
+    {
+        // Arrange
+        var receipt = CreateReceipt();
+        var expense = CreateExpense(receipt);
+        receipt.ExpenseId.Should().Be(expense.Id); // Precondition
+
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var command = new UnlinkReceiptCommand(expense.Id);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - the shadow property is cleared
         receipt.ExpenseId.Should().BeNull();
     }
 
@@ -90,13 +107,12 @@ public class UnlinkReceiptHandlerTests
     public async Task Handle_ValidCommand_ClearsProcessedAtTimestamp()
     {
         // Arrange
-        var expense = CreateExpense();
-        var receipt = CreateReceipt(expense.Id);
+        var receipt = CreateReceipt();
+        var expense = CreateExpense(receipt);
         receipt.ProcessedAt = DateTime.UtcNow.AddHours(-1);
         receipt.ProcessedAt.Should().NotBeNull(); // Precondition
 
         SetupExpensesDbSet(new List<Expense> { expense });
-        SetupReceiptsDbSet(new List<Receipt> { receipt });
 
         var command = new UnlinkReceiptCommand(expense.Id);
 
@@ -111,10 +127,9 @@ public class UnlinkReceiptHandlerTests
     public async Task Handle_ValidCommand_CallsSaveChanges()
     {
         // Arrange
-        var expense = CreateExpense();
-        var receipt = CreateReceipt(expense.Id);
+        var receipt = CreateReceipt();
+        var expense = CreateExpense(receipt);
         SetupExpensesDbSet(new List<Expense> { expense });
-        SetupReceiptsDbSet(new List<Receipt> { receipt });
 
         var command = new UnlinkReceiptCommand(expense.Id);
 
@@ -125,30 +140,9 @@ public class UnlinkReceiptHandlerTests
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task Handle_ReceiptLinkedToDifferentExpense_ThrowsNotFoundException()
+    private Expense CreateExpense(Receipt? receipt = null)
     {
-        // Arrange
-        var expense = CreateExpense();
-        var differentExpenseId = Guid.NewGuid();
-        var receipt = CreateReceipt(differentExpenseId); // Linked to different expense
-
-        SetupExpensesDbSet(new List<Expense> { expense });
-        SetupReceiptsDbSet(new List<Receipt> { receipt });
-
-        var command = new UnlinkReceiptCommand(expense.Id);
-
-        // Act
-        var act = () => _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        await act.Should().ThrowAsync<NotFoundException>()
-            .WithMessage("*Receipt for expense*");
-    }
-
-    private Expense CreateExpense()
-    {
-        return new Expense
+        var expense = new Expense
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
@@ -161,22 +155,30 @@ public class UnlinkReceiptHandlerTests
             CreatedAt = DateTime.UtcNow.AddDays(-1),
             UpdatedAt = DateTime.UtcNow.AddDays(-1)
         };
+
+        if (receipt != null)
+        {
+            expense.ReceiptId = receipt.Id;
+            expense.Receipt = receipt;
+            receipt.ExpenseId = expense.Id;
+        }
+
+        return expense;
     }
 
-    private Receipt CreateReceipt(Guid? expenseId)
+    private Receipt CreateReceipt()
     {
         return new Receipt
         {
             Id = Guid.NewGuid(),
             AccountId = _testAccountId,
             PropertyId = _testPropertyId,
-            ExpenseId = expenseId,
             StorageKey = "receipts/test-key.jpg",
             ContentType = "image/jpeg",
             OriginalFileName = "receipt.jpg",
             FileSizeBytes = 12345,
             CreatedByUserId = _testUserId,
-            ProcessedAt = expenseId.HasValue ? DateTime.UtcNow : null,
+            ProcessedAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow.AddDays(-1)
         };
     }
@@ -187,11 +189,5 @@ public class UnlinkReceiptHandlerTests
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-    }
-
-    private void SetupReceiptsDbSet(List<Receipt> receipts)
-    {
-        var mockDbSet = receipts.AsQueryable().BuildMockDbSet();
-        _dbContextMock.Setup(x => x.Receipts).Returns(mockDbSet.Object);
     }
 }
