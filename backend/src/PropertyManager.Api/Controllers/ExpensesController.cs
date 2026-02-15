@@ -147,6 +147,8 @@ public class ExpensesController : ControllerBase
         [FromQuery] List<Guid>? categoryIds = null,
         [FromQuery] string? search = null,
         [FromQuery] int? year = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
@@ -156,6 +158,8 @@ public class ExpensesController : ControllerBase
             categoryIds,
             search,
             year,
+            sortBy,
+            sortDirection,
             page,
             pageSize);
 

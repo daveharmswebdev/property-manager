@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +16,11 @@ import {
   CreateWoFromExpenseDialogData,
   CreateWoFromExpenseDialogResult,
 } from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
+import {
+  PropertyPickerDialogComponent,
+  PropertyPickerDialogData,
+} from './components/property-picker-dialog/property-picker-dialog.component';
+import { PropertyStore } from '../properties/stores/property.store';
 
 /**
  * ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -41,14 +47,24 @@ import {
     <div class="expenses-container">
       <!-- Page Header -->
       <div class="page-header">
-        <h1>Expenses</h1>
-        <p class="subtitle">View and filter all expenses across your properties</p>
+        <div class="page-header-content">
+          <div>
+            <h1>Expenses</h1>
+            <p class="subtitle">View and filter all expenses across your properties</p>
+          </div>
+          <button mat-stroked-button color="primary" (click)="onAddExpense()">
+            <mat-icon>add</mat-icon>
+            <span class="button-text">Add Expense</span>
+          </button>
+        </div>
       </div>
 
       <!-- Filters (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6) -->
       <app-expense-filters
         [categories]="store.categories()"
         [dateRangePreset]="store.dateRangePreset()"
+        [dateFrom]="store.dateFrom()"
+        [dateTo]="store.dateTo()"
         [selectedCategoryIds]="store.selectedCategoryIds()"
         [searchText]="store.searchText()"
         [filterChips]="store.filterChips()"
@@ -108,13 +124,38 @@ import {
           <mat-card class="expense-list-card">
             <!-- List Header -->
             <div class="list-header">
-              <div class="header-date">Date</div>
-              <div class="header-property">Property</div>
-              <div class="header-description">Description</div>
-              <div class="header-category">Category</div>
+              <button class="sort-header header-date" [class.active]="store.sortBy() === 'date'" (click)="store.setSort('date')">
+                Date
+                @if (store.sortBy() === 'date') {
+                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                }
+              </button>
+              <button class="sort-header header-property" [class.active]="store.sortBy() === 'property'" (click)="store.setSort('property')">
+                Property
+                @if (store.sortBy() === 'property') {
+                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                }
+              </button>
+              <button class="sort-header header-description" [class.active]="store.sortBy() === 'description'" (click)="store.setSort('description')">
+                Description
+                @if (store.sortBy() === 'description') {
+                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                }
+              </button>
+              <button class="sort-header header-category" [class.active]="store.sortBy() === 'category'" (click)="store.setSort('category')">
+                Category
+                @if (store.sortBy() === 'category') {
+                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                }
+              </button>
               <div class="header-receipt"></div>
               <div class="header-work-order"></div>
-              <div class="header-amount">Amount</div>
+              <button class="sort-header header-amount" [class.active]="store.sortBy() === 'amount'" (click)="store.setSort('amount')">
+                Amount
+                @if (store.sortBy() === 'amount') {
+                  <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                }
+              </button>
             </div>
 
             <!-- Expense Rows -->
@@ -152,6 +193,12 @@ import {
 
     .page-header {
       margin-bottom: 24px;
+
+      .page-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
 
       h1 {
         margin: 0 0 8px 0;
@@ -249,8 +296,37 @@ import {
       color: var(--mat-sys-on-surface-variant);
     }
 
+    .sort-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: inherit;
+      color: inherit;
+      font-family: inherit;
+
+      &:hover {
+        color: var(--mat-sys-primary);
+      }
+
+      &.active {
+        color: var(--mat-sys-primary);
+      }
+
+      .sort-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+
     .header-amount {
       text-align: right;
+      justify-content: flex-end;
     }
 
     .pagination-container {
@@ -286,6 +362,8 @@ import {
 export class ExpensesComponent implements OnInit {
   readonly store = inject(ExpenseListStore);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly propertyStore = inject(PropertyStore);
 
   ngOnInit(): void {
     // Initialize store - load categories and expenses
@@ -314,6 +392,25 @@ export class ExpensesComponent implements OnInit {
 
   onClearAllFilters(): void {
     this.store.clearFilters();
+  }
+
+  onAddExpense(): void {
+    const properties = this.propertyStore.properties();
+    if (properties.length === 1) {
+      this.router.navigate(['/properties', properties[0].id, 'expenses']);
+    } else if (properties.length > 1) {
+      const dialogRef = this.dialog.open(PropertyPickerDialogComponent, {
+        width: '400px',
+        data: {
+          properties: properties.map((p) => ({ id: p.id, name: p.name })),
+        } as PropertyPickerDialogData,
+      });
+      dialogRef.afterClosed().subscribe((propertyId: string | undefined) => {
+        if (propertyId) {
+          this.router.navigate(['/properties', propertyId, 'expenses']);
+        }
+      });
+    }
   }
 
   onPageChange(event: PageEvent): void {

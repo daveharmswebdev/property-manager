@@ -53,6 +53,8 @@ describe('ExpenseListStore', () => {
   };
 
   beforeEach(() => {
+    sessionStorage.clear();
+
     expenseServiceMock = {
       getExpenses: vi.fn().mockReturnValue(of(mockExpensesResponse)),
       getCategories: vi.fn().mockReturnValue(of(mockCategoriesResponse)),
@@ -551,6 +553,127 @@ describe('ExpenseListStore', () => {
       expect(filters.categoryIds).toBeUndefined();
       expect(filters.search).toBeUndefined();
       expect(filters.year).toBeUndefined();
+    });
+  });
+
+  describe('sessionStorage persistence (AC2 Story 15.3)', () => {
+    const STORAGE_KEY = 'propertyManager.expenseList.dateFilter';
+
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('should persist date filter to sessionStorage after setCustomDateRange', () => {
+      store.setCustomDateRange('2026-03-01', '2026-03-31');
+
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      expect(stored).toBeTruthy();
+      const parsed = JSON.parse(stored!);
+      expect(parsed.dateRangePreset).toBe('custom');
+      expect(parsed.dateFrom).toBe('2026-03-01');
+      expect(parsed.dateTo).toBe('2026-03-31');
+    });
+
+    it('should persist date filter to sessionStorage after setDateRangePreset', () => {
+      store.setDateRangePreset('this-month');
+
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      expect(stored).toBeTruthy();
+      const parsed = JSON.parse(stored!);
+      expect(parsed.dateRangePreset).toBe('this-month');
+    });
+
+    it('should restore date filter from sessionStorage on initialize', () => {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        dateRangePreset: 'custom',
+        dateFrom: '2026-06-01',
+        dateTo: '2026-06-30',
+      }));
+
+      store.initialize();
+
+      expect(store.dateRangePreset()).toBe('custom');
+      expect(store.dateFrom()).toBe('2026-06-01');
+      expect(store.dateTo()).toBe('2026-06-30');
+    });
+
+    it('should clear sessionStorage on clearFilters', () => {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        dateRangePreset: 'custom',
+        dateFrom: '2026-01-01',
+        dateTo: '2026-01-31',
+      }));
+
+      store.clearFilters();
+
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+
+    it('should clear sessionStorage on date-range chip removal', () => {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        dateRangePreset: 'this-month',
+        dateFrom: null,
+        dateTo: null,
+      }));
+      store.setDateRangePreset('this-month');
+
+      const chip: FilterChip = { type: 'date-range', label: 'Date', value: 'This Month' };
+      store.removeFilterChip(chip);
+
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+  });
+
+  describe('sort (AC3 Story 15.3)', () => {
+    it('should have null sortBy initially', () => {
+      expect(store.sortBy()).toBeNull();
+    });
+
+    it('should have desc sortDirection initially', () => {
+      expect(store.sortDirection()).toBe('desc');
+    });
+
+    it('should set sortBy and direction to asc on first sort', () => {
+      store.setSort('amount');
+      expect(store.sortBy()).toBe('amount');
+      expect(store.sortDirection()).toBe('asc');
+    });
+
+    it('should toggle direction when clicking same column', () => {
+      store.setSort('amount');
+      expect(store.sortDirection()).toBe('asc');
+
+      store.setSort('amount');
+      expect(store.sortDirection()).toBe('desc');
+    });
+
+    it('should reset direction to asc when switching to new column', () => {
+      store.setSort('amount');
+      store.setSort('amount'); // now desc
+      expect(store.sortDirection()).toBe('desc');
+
+      store.setSort('date');
+      expect(store.sortBy()).toBe('date');
+      expect(store.sortDirection()).toBe('asc');
+    });
+
+    it('should include sortBy/sortDirection in currentFilters when set', () => {
+      store.setSort('amount');
+      const filters = store.currentFilters();
+      expect(filters.sortBy).toBe('amount');
+      expect(filters.sortDirection).toBe('asc');
+    });
+
+    it('should not include sort in currentFilters when sortBy is null', () => {
+      const filters = store.currentFilters();
+      expect(filters.sortBy).toBeUndefined();
+      expect(filters.sortDirection).toBeUndefined();
+    });
+
+    it('should reload expenses on setSort', () => {
+      store.setSort('date');
+      // initialize called once in setup if any, plus setSort triggers loadExpenses
+      expect(expenseServiceMock.getExpenses).toHaveBeenCalled();
     });
   });
 });

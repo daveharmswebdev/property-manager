@@ -46,6 +46,10 @@ interface ExpenseListState {
   searchText: string;
   year: number | null;
 
+  // Sorting (AC-15.3.3)
+  sortBy: string | null;
+  sortDirection: 'asc' | 'desc';
+
   // Pagination (AC-3.4.8)
   page: number;
   pageSize: number;
@@ -74,6 +78,10 @@ const initialState: ExpenseListState = {
   selectedCategoryIds: [],
   searchText: '',
   year: null,
+
+  // Sorting
+  sortBy: null,
+  sortDirection: 'desc',
 
   // Pagination - default page size 50 (AC-3.4.8)
   page: 1,
@@ -121,6 +129,23 @@ function getDateRangeFromPreset(preset: DateRangePreset, year?: number | null): 
     case 'custom':
     default:
       return { dateFrom: null, dateTo: null };
+  }
+}
+
+const DATE_FILTER_STORAGE_KEY = 'propertyManager.expenseList.dateFilter';
+
+function persistDateFilter(preset: DateRangePreset, dateFrom: string | null, dateTo: string | null): void {
+  sessionStorage.setItem(DATE_FILTER_STORAGE_KEY, JSON.stringify({ dateRangePreset: preset, dateFrom, dateTo }));
+}
+
+function restoreDateFilter(): Partial<ExpenseListState> | null {
+  const stored = sessionStorage.getItem(DATE_FILTER_STORAGE_KEY);
+  if (!stored) return null;
+  try {
+    const { dateRangePreset, dateFrom, dateTo } = JSON.parse(stored);
+    return { dateRangePreset, dateFrom, dateTo };
+  } catch {
+    return null;
   }
 }
 
@@ -254,6 +279,8 @@ export const ExpenseListStore = signalStore(
         categoryIds: store.selectedCategoryIds().length > 0 ? store.selectedCategoryIds() : undefined,
         search: store.searchText().trim() || undefined,
         year: store.year() ?? undefined,
+        sortBy: store.sortBy() ?? undefined,
+        sortDirection: store.sortBy() ? store.sortDirection() : undefined,
         page: store.page(),
         pageSize: store.pageSize(),
       };
@@ -335,6 +362,7 @@ export const ExpenseListStore = signalStore(
         dateTo,
         page: 1, // Reset to first page on filter change
       });
+      persistDateFilter(preset, dateFrom, dateTo);
       this.loadExpenses(store.currentFilters());
     },
 
@@ -348,6 +376,7 @@ export const ExpenseListStore = signalStore(
         dateTo,
         page: 1,
       });
+      persistDateFilter('custom', dateFrom, dateTo);
       this.loadExpenses(store.currentFilters());
     },
 
@@ -386,6 +415,23 @@ export const ExpenseListStore = signalStore(
     },
 
     /**
+     * Set sort column — toggles direction if same column, resets to asc for new column (AC-15.3.3)
+     */
+    setSort(sortBy: string): void {
+      const currentSortBy = store.sortBy();
+      const currentDirection = store.sortDirection();
+      const newDirection = currentSortBy === sortBy
+        ? (currentDirection === 'asc' ? 'desc' : 'asc')
+        : 'asc';
+      patchState(store, {
+        sortBy,
+        sortDirection: newDirection,
+        page: 1,
+      });
+      this.loadExpenses(store.currentFilters());
+    },
+
+    /**
      * Go to specific page (AC-3.4.8)
      */
     goToPage(page: number): void {
@@ -416,6 +462,7 @@ export const ExpenseListStore = signalStore(
             dateTo: null,
             page: 1,
           });
+          sessionStorage.removeItem(DATE_FILTER_STORAGE_KEY);
           break;
         case 'category':
           const category = store.categories().find((c) => c.name === chip.value);
@@ -448,6 +495,7 @@ export const ExpenseListStore = signalStore(
         searchText: '',
         page: 1,
       });
+      sessionStorage.removeItem(DATE_FILTER_STORAGE_KEY);
       this.loadExpenses(store.currentFilters());
     },
 
@@ -462,6 +510,10 @@ export const ExpenseListStore = signalStore(
      * Initialize store - load categories and expenses
      */
     initialize(): void {
+      const restored = restoreDateFilter();
+      if (restored) {
+        patchState(store, restored);
+      }
       this.loadCategories(undefined);
       this.loadExpenses(store.currentFilters());
     },

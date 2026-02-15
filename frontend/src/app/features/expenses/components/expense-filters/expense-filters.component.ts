@@ -222,6 +222,8 @@ export class ExpenseFiltersComponent {
   selectedCategoryIds = input.required<string[]>();
   searchText = input.required<string>();
   filterChips = input.required<FilterChip[]>();
+  dateFrom = input<string | null>(null);
+  dateTo = input<string | null>(null);
 
   // Outputs
   dateRangePresetChange = output<DateRangePreset>();
@@ -253,6 +255,29 @@ export class ExpenseFiltersComponent {
       const search = this.searchText();
       if (this.searchControl.value !== search) {
         this.searchControl.setValue(search, { emitEvent: false });
+      }
+    });
+
+    // Sync dateFrom/dateTo inputs with custom date picker FormControls
+    effect(() => {
+      const from = this.dateFrom();
+      const currentFrom = this.customDateFrom.value;
+      if (from) {
+        const fromDate = new Date(from + 'T00:00:00');
+        if (!currentFrom || currentFrom.getTime() !== fromDate.getTime()) {
+          this.customDateFrom.setValue(fromDate, { emitEvent: false });
+        }
+      }
+    });
+
+    effect(() => {
+      const to = this.dateTo();
+      const currentTo = this.customDateTo.value;
+      if (to) {
+        const toDate = new Date(to + 'T00:00:00');
+        if (!currentTo || currentTo.getTime() !== toDate.getTime()) {
+          this.customDateTo.setValue(toDate, { emitEvent: false });
+        }
       }
     });
   }

@@ -25,7 +25,7 @@ export interface IApiClient {
     dashboard_GetTotals(year?: number | undefined): Observable<DashboardTotalsDto>;
     expenses_CheckDuplicateExpense(propertyId?: string | null | undefined, amount?: number | null | undefined, date?: Date | null | undefined): Observable<DuplicateCheckResult>;
     expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto>;
-    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
     expenses_CreateExpense(request: CreateExpenseRequest): Observable<CreateExpenseResponse>;
     expenses_GetExpenseCategories(): Observable<ExpenseCategoriesResponse>;
     expenses_GetExpensesByProperty(id: string, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedExpenseListDto>;
@@ -92,6 +92,7 @@ export interface IApiClient {
     workOrders_UpdateWorkOrder(id: string, request: UpdateWorkOrderRequest): Observable<void>;
     workOrders_DeleteWorkOrder(id: string): Observable<void>;
     workOrders_GetWorkOrderExpenses(id: string): Observable<WorkOrderExpensesResponse>;
+    workOrders_GenerateWorkOrderPdf(id: string): Observable<FileResponse>;
     workOrders_GetWorkOrdersByProperty(propertyId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByPropertyResult>;
     workOrderTags_GetAllWorkOrderTags(): Observable<GetAllWorkOrderTagsResponse>;
     workOrderTags_CreateWorkOrderTag(request?: CreateWorkOrderTagRequest | undefined): Observable<CreateWorkOrderTagResponse>;
@@ -624,7 +625,7 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
-    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto> {
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto> {
         let url_ = this.baseUrl + "/api/v1/expenses?";
         if (dateFrom !== undefined && dateFrom !== null)
             url_ += "dateFrom=" + encodeURIComponent(dateFrom ? "" + dateFrom.toISOString() : "") + "&";
@@ -636,6 +637,10 @@ export class ApiClient implements IApiClient {
             url_ += "search=" + encodeURIComponent("" + search) + "&";
         if (year !== undefined && year !== null)
             url_ += "year=" + encodeURIComponent("" + year) + "&";
+        if (sortBy !== undefined && sortBy !== null)
+            url_ += "sortBy=" + encodeURIComponent("" + sortBy) + "&";
+        if (sortDirection !== undefined && sortDirection !== null)
+            url_ += "sortDirection=" + encodeURIComponent("" + sortDirection) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -4933,6 +4938,74 @@ export class ApiClient implements IApiClient {
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkOrderExpensesResponse;
             return _observableOf(result200);
             }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    workOrders_GenerateWorkOrderPdf(id: string): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/v1/work-orders/{id}/pdf";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_GenerateWorkOrderPdf(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_GenerateWorkOrderPdf(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processWorkOrders_GenerateWorkOrderPdf(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
         } else if (status === 401) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result401: any = null;
