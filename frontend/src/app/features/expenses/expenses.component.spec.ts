@@ -11,6 +11,7 @@ import { ExpenseListStore } from './stores/expense-list.store';
 import { PropertyStore } from '../properties/stores/property.store';
 import { CreateWoFromExpenseDialogComponent } from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 import { PropertyPickerDialogComponent } from './components/property-picker-dialog/property-picker-dialog.component';
+import { PropertyService } from '../properties/services/property.service';
 
 /**
  * Unit tests for ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -29,6 +30,10 @@ import { PropertyPickerDialogComponent } from './components/property-picker-dial
 const defaultMockPropertyStore = {
   properties: signal<{ id: string; name: string }[]>([]),
   loadProperties: vi.fn(),
+};
+
+const defaultMockPropertyService = {
+  getProperties: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
 };
 
 const defaultMockRouter = {
@@ -83,6 +88,7 @@ describe('ExpensesComponent', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -211,6 +217,7 @@ describe('ExpensesComponent loading state', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -264,6 +271,7 @@ describe('ExpensesComponent error state', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -323,6 +331,7 @@ describe('ExpensesComponent truly empty state (AC-3.4.7)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -383,6 +392,7 @@ describe('ExpensesComponent filtered empty state (AC-3.4.7)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -460,6 +470,7 @@ describe('ExpensesComponent pagination (AC-3.4.8)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
@@ -537,6 +548,7 @@ describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
         { provide: MatDialog, useValue: mockDialog },
       ],
@@ -644,6 +656,7 @@ describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: mockRouter },
         { provide: MatDialog, useValue: mockDialog },
       ],
@@ -735,6 +748,7 @@ describe('ExpensesComponent sort headers (AC3 Story 15.3)', () => {
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
         { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
         { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();

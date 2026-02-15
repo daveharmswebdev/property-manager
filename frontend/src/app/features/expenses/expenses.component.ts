@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,6 +22,7 @@ import {
   PropertyPickerDialogData,
 } from './components/property-picker-dialog/property-picker-dialog.component';
 import { PropertyStore } from '../properties/stores/property.store';
+import { PropertyService } from '../properties/services/property.service';
 
 /**
  * ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -364,6 +366,7 @@ export class ExpensesComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly propertyStore = inject(PropertyStore);
+  private readonly propertyService = inject(PropertyService);
 
   ngOnInit(): void {
     // Initialize store - load categories and expenses
@@ -396,8 +399,12 @@ export class ExpensesComponent implements OnInit {
     this.store.clearFilters();
   }
 
-  onAddExpense(): void {
-    const properties = this.propertyStore.properties();
+  async onAddExpense(): Promise<void> {
+    let properties = this.propertyStore.properties();
+    if (properties.length === 0) {
+      const response = await firstValueFrom(this.propertyService.getProperties());
+      properties = response.items;
+    }
     if (properties.length === 1) {
       this.router.navigate(['/properties', properties[0].id, 'expenses']);
     } else if (properties.length > 1) {
