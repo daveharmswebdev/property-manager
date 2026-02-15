@@ -197,8 +197,8 @@ development_status:
   # User Outcome: "The app is hardened and observable — ready for beta users"
   epic-14: in-progress
   14-1-cors-configuration: done
-  14-2-security-headers-middleware: review
-  14-3-api-rate-limiting: pending
+  14-2-security-headers-middleware: done
+  14-3-api-rate-limiting: dev-complete
   14-4-backend-sentry-integration: pending
   14-5-frontend-sentry-integration: pending
   epic-14-retrospective: optional

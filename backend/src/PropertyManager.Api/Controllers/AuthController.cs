@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PropertyManager.Application.Auth;
 using PropertyManager.Application.Common;
 
@@ -46,6 +47,7 @@ public class AuthController : ControllerBase
     /// <response code="204">Email verified successfully</response>
     /// <response code="400">If token is invalid, expired, or already used</response>
     [HttpPost("verify-email")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
@@ -76,6 +78,7 @@ public class AuthController : ControllerBase
     /// <response code="400">If validation fails</response>
     /// <response code="401">If credentials are invalid or email not verified</response>
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -120,6 +123,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Token refreshed successfully</response>
     /// <response code="401">If refresh token is invalid or expired</response>
     [HttpPost("refresh")]
+    [EnableRateLimiting("refresh")]
     [ProducesResponseType(typeof(RefreshResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh()
@@ -194,6 +198,7 @@ public class AuthController : ControllerBase
     /// <response code="204">Request processed (email sent if account exists)</response>
     /// <response code="400">If validation fails</response>
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
@@ -230,6 +235,7 @@ public class AuthController : ControllerBase
     /// <response code="204">Password reset successful</response>
     /// <response code="400">If token is invalid/expired or password validation fails</response>
     [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
