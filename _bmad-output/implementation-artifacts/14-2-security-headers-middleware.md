@@ -1,6 +1,6 @@
 # Story 14.2: Security Headers Middleware
 
-Status: review
+Status: done
 
 ## Story
 

@@ -8,14 +8,14 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.Expenses;
 
 /// <summary>
-/// Command to unlink a receipt from an expense (AC-5.5.5).
-/// Sets ExpenseId to null on the receipt and returns it to unprocessed queue.
+/// Command to unlink a receipt from an expense.
+/// Clears both sides of the relationship and returns receipt to unprocessed queue.
 /// </summary>
 public record UnlinkReceiptCommand(Guid ExpenseId) : IRequest<Unit>;
 
 /// <summary>
 /// Handler for UnlinkReceiptCommand.
-/// Finds the receipt linked to the expense, unlinks it, and returns it to unprocessed state.
+/// Loads expense with its receipt via navigation property, clears both FK sides.
 /// Tenant isolation is enforced via global query filter.
 /// </summary>
 public class UnlinkReceiptHandler : IRequestHandler<UnlinkReceiptCommand, Unit>
@@ -35,8 +35,9 @@ public class UnlinkReceiptHandler : IRequestHandler<UnlinkReceiptCommand, Unit>
         UnlinkReceiptCommand request,
         CancellationToken cancellationToken)
     {
-        // First verify the expense exists and belongs to the user
+        // Load expense WITH its receipt via navigation property
         var expense = await _dbContext.Expenses
+            .Include(e => e.Receipt)
             .FirstOrDefaultAsync(e => e.Id == request.ExpenseId, cancellationToken);
 
         if (expense == null)
@@ -44,18 +45,16 @@ public class UnlinkReceiptHandler : IRequestHandler<UnlinkReceiptCommand, Unit>
             throw new NotFoundException(nameof(Expense), request.ExpenseId);
         }
 
-        // Find the receipt linked to this expense
-        var receipt = await _dbContext.Receipts
-            .FirstOrDefaultAsync(r => r.ExpenseId == request.ExpenseId, cancellationToken);
-
+        var receipt = expense.Receipt;
         if (receipt == null)
         {
             throw new NotFoundException("Receipt for expense", request.ExpenseId);
         }
 
-        // Unlink the receipt
-        receipt.ExpenseId = null;
-        receipt.ProcessedAt = null; // Return to unprocessed queue
+        // Clear BOTH sides of the relationship
+        expense.ReceiptId = null;      // The real FK
+        receipt.ExpenseId = null;      // The shadow property
+        receipt.ProcessedAt = null;    // Return to unprocessed queue
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
