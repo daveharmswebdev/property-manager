@@ -2,12 +2,17 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { By } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpensesComponent } from './expenses.component';
 import { ExpenseListStore } from './stores/expense-list.store';
+import { PropertyStore } from '../properties/stores/property.store';
 import { CreateWoFromExpenseDialogComponent } from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
+import { PropertyPickerDialogComponent } from './components/property-picker-dialog/property-picker-dialog.component';
+import { PropertyService } from '../properties/services/property.service';
 
 /**
  * Unit tests for ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -23,6 +28,19 @@ import { CreateWoFromExpenseDialogComponent } from '../work-orders/components/cr
  * - Pagination (AC-3.4.8)
  * - Filter interactions
  */
+const defaultMockPropertyStore = {
+  properties: signal<{ id: string; name: string }[]>([]),
+  loadProperties: vi.fn(),
+};
+
+const defaultMockPropertyService = {
+  getProperties: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+};
+
+const defaultMockRouter = {
+  navigate: vi.fn(),
+};
+
 describe('ExpensesComponent', () => {
   let component: ExpensesComponent;
   let fixture: ComponentFixture<ExpensesComponent>;
@@ -39,6 +57,8 @@ describe('ExpensesComponent', () => {
     ]),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -55,6 +75,9 @@ describe('ExpensesComponent', () => {
     clearFilters: vi.fn(),
     setPageSize: vi.fn(),
     goToPage: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -65,6 +88,9 @@ describe('ExpensesComponent', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -170,6 +196,8 @@ describe('ExpensesComponent loading state', () => {
     expenses: signal([]),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -178,6 +206,9 @@ describe('ExpensesComponent loading state', () => {
     pageSize: signal(25),
     page: signal(1),
     initialize: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -186,6 +217,9 @@ describe('ExpensesComponent loading state', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -216,6 +250,8 @@ describe('ExpensesComponent error state', () => {
     expenses: signal([]),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -224,6 +260,9 @@ describe('ExpensesComponent error state', () => {
     pageSize: signal(25),
     page: signal(1),
     initialize: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -232,6 +271,9 @@ describe('ExpensesComponent error state', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -268,6 +310,8 @@ describe('ExpensesComponent truly empty state (AC-3.4.7)', () => {
     expenses: signal([]),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -276,6 +320,9 @@ describe('ExpensesComponent truly empty state (AC-3.4.7)', () => {
     pageSize: signal(25),
     page: signal(1),
     initialize: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -284,6 +331,9 @@ describe('ExpensesComponent truly empty state (AC-3.4.7)', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -321,6 +371,8 @@ describe('ExpensesComponent filtered empty state (AC-3.4.7)', () => {
     expenses: signal([]),
     categories: signal([]),
     dateRangePreset: signal('this-month'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal(['cat-1']),
     searchText: signal(''),
     filterChips: signal([]),
@@ -340,6 +392,9 @@ describe('ExpensesComponent filtered empty state (AC-3.4.7)', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -390,6 +445,8 @@ describe('ExpensesComponent pagination (AC-3.4.8)', () => {
     expenses: signal([{ id: 'exp-1', date: '2026-01-15', description: 'Test', amount: 100 }]),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -400,6 +457,9 @@ describe('ExpensesComponent pagination (AC-3.4.8)', () => {
     initialize: vi.fn(),
     setPageSize: vi.fn(),
     goToPage: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -410,6 +470,9 @@ describe('ExpensesComponent pagination (AC-3.4.8)', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
       ],
     }).compileComponents();
 
@@ -448,6 +511,8 @@ describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
     expenses: signal(mockExpenses),
     categories: signal([]),
     dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     selectedCategoryIds: signal([]),
     searchText: signal(''),
     filterChips: signal([]),
@@ -464,6 +529,9 @@ describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
     clearFilters: vi.fn(),
     setPageSize: vi.fn(),
     goToPage: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -480,6 +548,9 @@ describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
       providers: [
         provideNoopAnimations(),
         { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
         { provide: MatDialog, useValue: mockDialog },
       ],
     }).compileComponents();
@@ -523,5 +594,217 @@ describe('ExpensesComponent create work order from expense (AC-11.6.7)', () => {
     component['onCreateWorkOrder'](mockExpenses[0] as any);
 
     expect(mockExpenseListStore.initialize).not.toHaveBeenCalled();
+  });
+});
+
+describe('ExpensesComponent Add Expense button (AC1 Story 15.3)', () => {
+  let component: ExpensesComponent;
+  let fixture: ComponentFixture<ExpensesComponent>;
+  let mockRouter: { navigate: ReturnType<typeof vi.fn> };
+  let mockPropertyStore: { properties: ReturnType<typeof signal>; loadProperties: ReturnType<typeof vi.fn> };
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
+  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockPropertyService: { getProperties: ReturnType<typeof vi.fn> };
+
+  const mockExpenseListStore = {
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isTrulyEmpty: signal(false),
+    isFilteredEmpty: signal(false),
+    hasExpenses: signal(true),
+    expenses: signal([
+      { id: 'exp-1', date: '2026-01-15', propertyId: 'prop-1', propertyName: 'Test Property', description: 'Test', categoryId: 'cat-1', categoryName: 'Repairs', amount: 100 },
+    ]),
+    categories: signal([]),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
+    selectedCategoryIds: signal([]),
+    searchText: signal(''),
+    filterChips: signal([]),
+    totalCount: signal(1),
+    totalDisplay: signal('Showing 1 of 1 expense'),
+    pageSize: signal(25),
+    page: signal(1),
+    initialize: vi.fn(),
+    setDateRangePreset: vi.fn(),
+    setCustomDateRange: vi.fn(),
+    setCategories: vi.fn(),
+    setSearch: vi.fn(),
+    removeFilterChip: vi.fn(),
+    clearFilters: vi.fn(),
+    setPageSize: vi.fn(),
+    goToPage: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    mockRouter = { navigate: vi.fn() };
+    mockPropertyStore = {
+      properties: signal([{ id: 'prop-1', name: 'Test Property' }]),
+      loadProperties: vi.fn(),
+    };
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of('prop-2'),
+      }),
+    };
+    mockSnackBar = { open: vi.fn() };
+    mockPropertyService = {
+      getProperties: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ExpensesComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: PropertyService, useValue: mockPropertyService },
+        { provide: Router, useValue: mockRouter },
+        { provide: MatDialog, useValue: mockDialog },
+        { provide: MatSnackBar, useValue: mockSnackBar },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpensesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should render "Add Expense" button in page header', () => {
+    const button = fixture.debugElement.query(By.css('.page-header button'));
+    expect(button).toBeTruthy();
+    expect(button.nativeElement.textContent).toContain('Add Expense');
+  });
+
+  it('should navigate directly when single property', () => {
+    component.onAddExpense();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/properties', 'prop-1', 'expenses']);
+  });
+
+  it('should open dialog when multiple properties', () => {
+    mockPropertyStore.properties = signal([
+      { id: 'prop-1', name: 'Property A' },
+      { id: 'prop-2', name: 'Property B' },
+    ]);
+
+    component.onAddExpense();
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      PropertyPickerDialogComponent,
+      expect.objectContaining({
+        width: '400px',
+        data: expect.objectContaining({
+          properties: [
+            { id: 'prop-1', name: 'Property A' },
+            { id: 'prop-2', name: 'Property B' },
+          ],
+        }),
+      })
+    );
+  });
+
+  it('should navigate after selecting property from dialog', () => {
+    mockPropertyStore.properties = signal([
+      { id: 'prop-1', name: 'Property A' },
+      { id: 'prop-2', name: 'Property B' },
+    ]);
+
+    component.onAddExpense();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/properties', 'prop-2', 'expenses']);
+  });
+
+  it('should show snackbar when zero properties after fetch', async () => {
+    mockPropertyStore.properties = signal([]);
+    mockPropertyService.getProperties.mockReturnValue(of({ items: [], totalCount: 0 }));
+
+    await component.onAddExpense();
+    expect(mockSnackBar.open).toHaveBeenCalledWith(
+      'Create a property first before adding expenses.',
+      'Dismiss',
+      { duration: 5000 }
+    );
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should show snackbar on fetch error', async () => {
+    mockPropertyStore.properties = signal([]);
+    mockPropertyService.getProperties.mockReturnValue(throwError(() => new Error('Network')));
+
+    await component.onAddExpense();
+    expect(mockSnackBar.open).toHaveBeenCalledWith(
+      'Failed to load properties. Please try again.',
+      'Dismiss',
+      { duration: 5000 }
+    );
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('ExpensesComponent sort headers (AC3 Story 15.3)', () => {
+  let fixture: ComponentFixture<ExpensesComponent>;
+
+  const mockExpenseListStore = {
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isTrulyEmpty: signal(false),
+    isFilteredEmpty: signal(false),
+    hasExpenses: signal(true),
+    expenses: signal([
+      { id: 'exp-1', date: '2026-01-15', propertyId: 'prop-1', propertyName: 'Test Property', description: 'Test', categoryId: 'cat-1', categoryName: 'Repairs', amount: 100 },
+    ]),
+    categories: signal([]),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
+    selectedCategoryIds: signal([]),
+    searchText: signal(''),
+    filterChips: signal([]),
+    totalCount: signal(1),
+    totalDisplay: signal('Showing 1 of 1 expense'),
+    pageSize: signal(25),
+    page: signal(1),
+    initialize: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    await TestBed.configureTestingModule({
+      imports: [ExpensesComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpensesComponent);
+    fixture.detectChanges();
+  });
+
+  it('should render sort header buttons for sortable columns', () => {
+    const sortHeaders = fixture.debugElement.queryAll(By.css('.list-header .sort-header'));
+    expect(sortHeaders.length).toBe(5); // date, property, description, category, amount
+  });
+
+  it('should call store.setSort("date") when Date header clicked', () => {
+    const dateHeader = fixture.debugElement.query(By.css('.header-date'));
+    dateHeader.nativeElement.click();
+    expect(mockExpenseListStore.setSort).toHaveBeenCalledWith('date');
+  });
+
+  it('should call store.setSort("amount") when Amount header clicked', () => {
+    const amountHeader = fixture.debugElement.query(By.css('.header-amount'));
+    amountHeader.nativeElement.click();
+    expect(mockExpenseListStore.setSort).toHaveBeenCalledWith('amount');
   });
 });

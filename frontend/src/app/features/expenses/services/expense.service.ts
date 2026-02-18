@@ -79,6 +79,8 @@ export interface ExpenseFilters {
   categoryIds?: string[];
   search?: string;
   year?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
   page: number;
   pageSize: number;
 }
@@ -266,6 +268,12 @@ export class ExpenseService {
     }
     if (filters.year) {
       params['year'] = filters.year.toString();
+    }
+    if (filters.sortBy) {
+      params['sortBy'] = filters.sortBy;
+    }
+    if (filters.sortDirection) {
+      params['sortDirection'] = filters.sortDirection;
     }
 
     return this.http.get<PagedResult<ExpenseListItemDto>>(`${this.baseUrl}/expenses`, { params });

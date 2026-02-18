@@ -292,3 +292,59 @@ describe('ExpenseFiltersComponent no filter chips', () => {
     expect(clearAllBtn).toBeFalsy();
   });
 });
+
+describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
+  let component: ExpenseFiltersComponent;
+  let fixture: ComponentFixture<ExpenseFiltersComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ExpenseFiltersComponent],
+      providers: [provideNoopAnimations()],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseFiltersComponent);
+    component = fixture.componentInstance;
+
+    fixture.componentRef.setInput('categories', []);
+    fixture.componentRef.setInput('dateRangePreset', 'custom');
+    fixture.componentRef.setInput('selectedCategoryIds', []);
+    fixture.componentRef.setInput('searchText', '');
+    fixture.componentRef.setInput('filterChips', []);
+    fixture.componentRef.setInput('dateFrom', '2026-03-01');
+    fixture.componentRef.setInput('dateTo', '2026-03-31');
+
+    fixture.detectChanges();
+  });
+
+  it('should sync dateFrom input to customDateFrom FormControl', () => {
+    expect(component.customDateFrom.value).toBeInstanceOf(Date);
+    expect(component.customDateFrom.value!.toISOString().split('T')[0]).toBe('2026-03-01');
+  });
+
+  it('should sync dateTo input to customDateTo FormControl', () => {
+    expect(component.customDateTo.value).toBeInstanceOf(Date);
+    expect(component.customDateTo.value!.toISOString().split('T')[0]).toBe('2026-03-31');
+  });
+
+  it('should update FormControl when dateFrom input changes', () => {
+    fixture.componentRef.setInput('dateFrom', '2026-06-15');
+    fixture.detectChanges();
+
+    expect(component.customDateFrom.value!.toISOString().split('T')[0]).toBe('2026-06-15');
+  });
+
+  it('should clear FormControls when date inputs become null', () => {
+    // Verify dates are set first
+    expect(component.customDateFrom.value).toBeInstanceOf(Date);
+    expect(component.customDateTo.value).toBeInstanceOf(Date);
+
+    // Set inputs to null (simulates chip removal / clear filters)
+    fixture.componentRef.setInput('dateFrom', null);
+    fixture.componentRef.setInput('dateTo', null);
+    fixture.detectChanges();
+
+    expect(component.customDateFrom.value).toBeNull();
+    expect(component.customDateTo.value).toBeNull();
+  });
+});

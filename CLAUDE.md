@@ -97,6 +97,24 @@ Frontend API proxy configured in `proxy.conf.json` (proxies `/api` to backend).
 |-------|----------|-------|
 | claude@claude.com | 1@mClaude | Primary test account with 1 property (Test Property - Austin, TX) |
 
+## E2E Testing Rules (Playwright)
+
+**All E2E tests share a single database and test account (`claude@claude.com`).** Tests that create data (properties, expenses, vendors, etc.) pollute state for all subsequent tests. This is the #1 source of flaky E2E failures.
+
+**NEVER assume seed-data counts.** A test like "given the user has exactly 1 property" will break because earlier specs (e.g., `expense-flow.spec.ts`) call `createPropertyAndGetId()` and leave those properties behind.
+
+**Use `page.route()` to control what the component sees** when a test requires a specific data shape:
+```typescript
+// Intercept API to simulate single-property account
+await page.route('*/**/api/v1/properties', async (route) => {
+  const response = await route.fetch();
+  const json = await response.json();
+  await route.fulfill({ response, json: { items: json.items.slice(0, 1), totalCount: 1 } });
+});
+```
+
+**E2E tests run with 1 worker in CI** (`Running N tests using 1 worker`). Run locally with `--workers=1` to match CI behavior. Never use `npx vitest` directly for frontend tests (see memory notes).
+
 ## BMad Method Workflows
 
 This project uses BMad Method for planning. Key slash commands:

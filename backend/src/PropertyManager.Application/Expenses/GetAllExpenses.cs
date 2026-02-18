@@ -13,6 +13,8 @@ public record GetAllExpensesQuery(
     List<Guid>? CategoryIds,
     string? Search,
     int? Year,
+    string? SortBy = null,
+    string? SortDirection = null,
     int Page = 1,
     int PageSize = 50
 ) : IRequest<PagedResult<ExpenseListItemDto>>;
@@ -54,7 +56,7 @@ public record ExpenseListItemDto(
 /// - Tax year
 /// - Categories (multi-select)
 /// - Description search (case-insensitive, partial match)
-/// Results sorted by Date descending (newest first).
+/// Results sorted by specified column and direction (default: Date descending).
 /// </summary>
 public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedResult<ExpenseListItemDto>>
 {
@@ -112,9 +114,20 @@ public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedR
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var skip = (page - 1) * pageSize;
 
-        // Execute query with sorting and pagination (AC-3.4.1 - sorted by date descending)
-        var expenses = await query
-            .OrderByDescending(e => e.Date)
+        // Execute query with dynamic sorting and pagination (AC-3.4.1, AC-15.3.3)
+        var sortBy = request.SortBy?.ToLowerInvariant();
+        var ascending = string.Equals(request.SortDirection, "asc", StringComparison.OrdinalIgnoreCase);
+
+        IOrderedQueryable<Domain.Entities.Expense> orderedQuery = sortBy switch
+        {
+            "amount" => ascending ? query.OrderBy(e => e.Amount) : query.OrderByDescending(e => e.Amount),
+            "property" => ascending ? query.OrderBy(e => e.Property.Name) : query.OrderByDescending(e => e.Property.Name),
+            "category" => ascending ? query.OrderBy(e => e.Category.Name) : query.OrderByDescending(e => e.Category.Name),
+            "description" => ascending ? query.OrderBy(e => e.Description) : query.OrderByDescending(e => e.Description),
+            _ => ascending ? query.OrderBy(e => e.Date) : query.OrderByDescending(e => e.Date),
+        };
+
+        var expenses = await orderedQuery
             .ThenByDescending(e => e.CreatedAt)
             .Skip(skip)
             .Take(pageSize)
