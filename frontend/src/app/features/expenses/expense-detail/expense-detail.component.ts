@@ -1,5 +1,6 @@
-import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, OnDestroy, signal, DestroyRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   FormBuilder,
@@ -17,6 +18,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseDetailStore } from '../stores/expense-detail.store';
 import { ExpenseStore } from '../stores/expense.store';
 import { UpdateExpenseRequest } from '../services/expense.service';
@@ -495,11 +497,13 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   private readonly expenseStore = inject(ExpenseStore);
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
   private readonly propertyService = inject(PropertyService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly today = new Date();
-  protected readonly categories = signal(this.expenseStore.sortedCategories());
+  protected readonly categories = computed(() => this.expenseStore.sortedCategories());
   protected readonly properties = signal<PropertySummaryDto[]>([]);
 
   protected editForm: FormGroup = this.fb.group({
@@ -513,10 +517,19 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   private expenseId: string | null = null;
 
   ngOnInit(): void {
-    this.expenseId = this.route.snapshot.paramMap.get('id');
-    if (this.expenseId) {
-      this.store.loadExpense(this.expenseId);
-    }
+    // Subscribe to route param changes so the component reloads on param-only navigation
+    this.route.paramMap.pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((params) => {
+      const id = params.get('id');
+      if (id && id !== this.expenseId) {
+        this.expenseId = id;
+        this.store.loadExpense(id);
+      } else if (id && !this.expenseId) {
+        this.expenseId = id;
+        this.store.loadExpense(id);
+      }
+    });
     // Load categories (cached by ExpenseStore)
     this.expenseStore.loadCategories(undefined);
   }
@@ -533,8 +546,6 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
     this.store.startEditing();
     this.populateEditForm();
     this.loadProperties();
-    // Refresh categories from store
-    this.categories.set(this.expenseStore.sortedCategories());
   }
 
   protected onCancel(): void {
@@ -601,7 +612,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
     const dialogData: ConfirmDialogData = {
       title: 'Unlink Receipt?',
       message: 'The receipt will be removed from this expense and returned to the unprocessed queue.',
-      confirmText: 'Delete',
+      confirmText: 'Unlink',
       cancelText: 'Cancel',
       icon: 'link_off',
       iconColor: 'warn',
@@ -640,7 +651,13 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   private loadProperties(): void {
     this.propertyService.getProperties().subscribe({
       next: (response) => this.properties.set(response.items),
-      error: (err) => console.error('Error loading properties:', err),
+      error: () => {
+        this.snackBar.open('Failed to load properties', 'Close', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+        });
+      },
     });
   }
 

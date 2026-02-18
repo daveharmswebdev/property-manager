@@ -65,11 +65,13 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
         var effectivePropertyId = expense.PropertyId;
         if (request.PropertyId.HasValue && request.PropertyId.Value != expense.PropertyId)
         {
-            // Validate the new property exists and belongs to same account
-            var propertyExists = await _dbContext.Properties
-                .AnyAsync(p => p.Id == request.PropertyId.Value && p.DeletedAt == null, cancellationToken);
+            // Validate the new property exists, belongs to same account, and is not deleted
+            var newProperty = await _dbContext.Properties
+                .Where(p => p.Id == request.PropertyId.Value && p.DeletedAt == null)
+                .Select(p => new { p.Id, p.AccountId })
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!propertyExists)
+            if (newProperty == null || newProperty.AccountId != _currentUser.AccountId)
                 throw new NotFoundException(nameof(Property), request.PropertyId.Value);
 
             effectivePropertyId = request.PropertyId.Value;

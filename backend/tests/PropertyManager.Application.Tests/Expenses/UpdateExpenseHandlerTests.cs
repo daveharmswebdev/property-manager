@@ -372,12 +372,15 @@ public class UpdateExpenseHandlerTests
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
+    private readonly Guid _otherAccountPropertyId = Guid.NewGuid();
+
     private void SetupProperties()
     {
         var properties = new List<Property>
         {
             new() { Id = _testPropertyId, AccountId = _testAccountId, Name = "Test Property" },
-            new() { Id = _newPropertyId, AccountId = _testAccountId, Name = "New Property" }
+            new() { Id = _newPropertyId, AccountId = _testAccountId, Name = "New Property" },
+            new() { Id = _otherAccountPropertyId, AccountId = _otherAccountId, Name = "Other Account Property" }
         };
 
         var mockDbSet = properties.AsQueryable().BuildMockDbSet();
@@ -474,5 +477,28 @@ public class UpdateExpenseHandlerTests
         // Assert
         await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage($"*{invalidPropertyId}*");
+    }
+
+    [Fact]
+    public async Task Handle_CrossAccountPropertyId_ThrowsNotFoundException()
+    {
+        // Arrange — property exists but belongs to a different account
+        var expense = CreateExpense(_testAccountId, 100.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var command = new UpdateExpenseCommand(
+            Id: expense.Id,
+            Amount: expense.Amount,
+            Date: expense.Date,
+            CategoryId: expense.CategoryId,
+            Description: expense.Description,
+            PropertyId: _otherAccountPropertyId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{_otherAccountPropertyId}*");
     }
 }

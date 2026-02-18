@@ -8,6 +8,8 @@ import { ExpenseDetailComponent } from './expense-detail.component';
 import { ExpenseDetailStore } from '../stores/expense-detail.store';
 import { ExpenseStore } from '../stores/expense.store';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
+import { convertToParamMap } from '@angular/router';
 
 describe('ExpenseDetailComponent', () => {
   let component: ExpenseDetailComponent;
@@ -70,6 +72,7 @@ describe('ExpenseDetailComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
+            paramMap: of(convertToParamMap({ id: 'exp-1' })),
             snapshot: { paramMap: { get: () => 'exp-1' } },
           },
         },
