@@ -106,12 +106,12 @@ export abstract class BasePage {
   }
 
   /**
-   * Locator for the confirm/delete button within a dialog.
+   * Locator for the confirm button within a dialog.
    *
-   * Matches button with "Delete" text by default.
+   * Matches the warn-colored raised button (works for Delete, Unlink, Discard, etc.).
    */
   get confirmDialogConfirmButton(): Locator {
-    return this.confirmDialog.locator('button', { hasText: 'Delete' });
+    return this.confirmDialog.locator('button[mat-raised-button]');
   }
 
   /**
