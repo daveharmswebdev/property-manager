@@ -115,8 +115,8 @@ export interface ExpenseListItemDto {
 }
 
 /**
- * Request model for updating an expense (AC-3.2.1)
- * Note: PropertyId is not included - expenses cannot be moved between properties
+ * Request model for updating an expense (AC-3.2.1, AC-15.5.3)
+ * PropertyId is optional — when provided, reassigns the expense to the new property.
  */
 export interface UpdateExpenseRequest {
   amount: number;
@@ -124,6 +124,7 @@ export interface UpdateExpenseRequest {
   categoryId: string;
   description?: string;
   workOrderId?: string; // AC-11.2.2, AC-11.2.5
+  propertyId?: string; // AC-15.5.3 — property reassignment
 }
 
 /**
@@ -241,6 +242,15 @@ export class ExpenseService {
         date,
       },
     });
+  }
+
+  /**
+   * Unlink a receipt from an expense (AC-15.5.5)
+   * @param expenseId Expense GUID
+   * @returns Observable that completes on success (204)
+   */
+  unlinkReceipt(expenseId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/expenses/${expenseId}/receipt`);
   }
 
   /**

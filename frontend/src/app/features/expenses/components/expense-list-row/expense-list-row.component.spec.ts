@@ -133,14 +133,13 @@ describe('ExpenseListRowComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should navigate to expense workspace when row clicked', () => {
+    it('should navigate to expense detail when row clicked', () => {
       const row = fixture.nativeElement.querySelector('.expense-list-row');
       row.click();
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([
-        '/properties',
-        'property-456',
-        'expenses',
+        '/expenses',
+        'expense-123',
       ]);
     });
   });

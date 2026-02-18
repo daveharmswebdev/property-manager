@@ -287,10 +287,10 @@ export class ExpenseListRowComponent {
   }
 
   /**
-   * Navigate to expense workspace for this property
+   * Navigate to expense detail page (AC-15.5.1)
    */
   navigateToExpense(): void {
-    this.router.navigate(['/properties', this.expense().propertyId, 'expenses']);
+    this.router.navigate(['/expenses', this.expense().id]);
   }
 
   /**
