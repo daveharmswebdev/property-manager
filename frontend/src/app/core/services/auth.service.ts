@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, computed, signal, WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, BehaviorSubject, of } from 'rxjs';
+import { Observable, tap, catchError, throwError, BehaviorSubject, of, shareReplay } from 'rxjs';
 
 export interface LoginResponse {
   accessToken: string;
@@ -46,6 +46,9 @@ export class AuthService {
 
   // Token refresh tracking
   private refreshTokenInProgress$ = new BehaviorSubject<boolean>(false);
+
+  // Deduplication for initializeAuth — prevents racing refresh calls
+  private initializeAuth$: Observable<LoginResponse | null> | null = null;
 
   // Public readonly signals
   readonly accessToken = this._accessToken.asReadonly();
@@ -233,11 +236,16 @@ export class AuthService {
    * Sets isInitializing to false when complete (AC7.8).
    */
   initializeAuth(): Observable<LoginResponse | null> {
+    // Deduplicate concurrent calls — return the same in-flight Observable
+    if (this.initializeAuth$) {
+      return this.initializeAuth$;
+    }
+
     this._isInitializing.set(true);
 
     // Try to refresh the token on app initialization
     // This handles the case where the user refreshes the page
-    return this.http.post<LoginResponse>(
+    this.initializeAuth$ = this.http.post<LoginResponse>(
       `${this.baseUrl}/refresh`,
       {},
       { withCredentials: true }
@@ -249,14 +257,19 @@ export class AuthService {
           this._currentUser.set(user);
         }
         this._isInitializing.set(false);
+        this.initializeAuth$ = null;
       }),
       catchError(() => {
         // Refresh failed - user needs to login
         this.clearAuthState();
         this._isInitializing.set(false);
+        this.initializeAuth$ = null;
         return of(null);
-      })
+      }),
+      shareReplay(1),
     );
+
+    return this.initializeAuth$;
   }
 
   /**

@@ -215,8 +215,8 @@ development_status:
   # User Outcome: "The bugs I found during testing are fixed"
   epic-15: in-progress
   15-1-login-form-fixes: done                  # Issues #198, #199, #200 - email validation, remove remember me, honor returnUrl
-  15-2-quick-fix-form-validation-bugs: review      # Issues #202, #205 - note field reset, category required indicator
-  15-3-expense-list-ux-improvements: pending         # Issues #204, #206, #207 - add expense button, date filter persistence, column sorting
+  15-2-quick-fix-form-validation-bugs: done      # Issues #202, #205 - note field reset, category required indicator
+  15-3-expense-list-ux-improvements: done              # Issues #204, #206, #207 - add expense button, date filter persistence, column sorting
   15-4-fix-unlink-receipt-backend-bug: done           # Issue #210 - FIXED: UnlinkReceipt uses Include-based approach, clears both FK sides
-  15-5-expense-detail-edit-view: pending             # Issue #208 - LARGE: Build /expenses/:id detail/edit page (depends on 15.4)
+  15-5-expense-detail-edit-view: done                  # Issue #208 - LARGE: Build /expenses/:id detail/edit page — all 9 E2E tests GREEN
   epic-15-retrospective: optional

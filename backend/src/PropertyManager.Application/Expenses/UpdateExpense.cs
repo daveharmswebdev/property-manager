@@ -7,8 +7,8 @@ using PropertyManager.Domain.Exceptions;
 namespace PropertyManager.Application.Expenses;
 
 /// <summary>
-/// Command for updating an existing expense (AC-3.2.1, AC-3.2.3).
-/// PropertyId is NOT editable - delete and recreate to change property.
+/// Command for updating an existing expense (AC-3.2.1, AC-3.2.3, AC-15.5.3).
+/// PropertyId is optional — when provided, reassigns the expense to the new property.
 /// </summary>
 public record UpdateExpenseCommand(
     Guid Id,
@@ -16,13 +16,15 @@ public record UpdateExpenseCommand(
     DateOnly Date,
     Guid CategoryId,
     string? Description,
-    Guid? WorkOrderId = null
+    Guid? WorkOrderId = null,
+    Guid? PropertyId = null
 ) : IRequest;
 
 /// <summary>
 /// Handler for UpdateExpenseCommand.
 /// Updates an existing expense with AccountId validation.
-/// Preserves CreatedAt, CreatedByUserId, PropertyId.
+/// Preserves CreatedAt, CreatedByUserId.
+/// Optionally reassigns PropertyId when provided (AC-15.5.3).
 /// Sets UpdatedAt to current UTC time (AC-3.2.3).
 /// </summary>
 public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
@@ -59,7 +61,21 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
             throw new NotFoundException(nameof(ExpenseCategory), request.CategoryId);
         }
 
-        // Validate work order exists and belongs to same property (AC #7, #9)
+        // Handle property reassignment (AC-15.5.3)
+        var effectivePropertyId = expense.PropertyId;
+        if (request.PropertyId.HasValue && request.PropertyId.Value != expense.PropertyId)
+        {
+            // Validate the new property exists and belongs to same account
+            var propertyExists = await _dbContext.Properties
+                .AnyAsync(p => p.Id == request.PropertyId.Value && p.DeletedAt == null, cancellationToken);
+
+            if (!propertyExists)
+                throw new NotFoundException(nameof(Property), request.PropertyId.Value);
+
+            effectivePropertyId = request.PropertyId.Value;
+        }
+
+        // Validate work order exists and belongs to the effective property (AC #7, #9)
         // Account isolation enforced by global query filter on WorkOrders DbSet
         if (request.WorkOrderId.HasValue)
         {
@@ -70,7 +86,7 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
             if (workOrder == null)
                 throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId.Value);
 
-            if (workOrder.PropertyId != expense.PropertyId)
+            if (workOrder.PropertyId != effectivePropertyId)
                 throw new ValidationException("Expense and work order must belong to the same property");
         }
 
@@ -80,11 +96,10 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand>
         expense.CategoryId = request.CategoryId;
         expense.Description = request.Description?.Trim();
         expense.WorkOrderId = request.WorkOrderId;
+        expense.PropertyId = effectivePropertyId;
 
         // Set UpdatedAt timestamp (AC-3.2.3)
         expense.UpdatedAt = DateTime.UtcNow;
-
-        // Preserve: CreatedAt, CreatedByUserId, PropertyId, AccountId (not modified)
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

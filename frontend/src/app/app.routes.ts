@@ -110,6 +110,14 @@ export const routes: Routes = [
             (m) => m.ExpensesComponent
           ),
       },
+      // Expense Detail (AC-15.5.1)
+      {
+        path: 'expenses/:id',
+        loadComponent: () =>
+          import('./features/expenses/expense-detail/expense-detail.component').then(
+            (m) => m.ExpenseDetailComponent
+          ),
+      },
       // Income (AC7.7)
       {
         path: 'income',

@@ -5370,6 +5370,7 @@ export interface UpdateExpenseRequest {
     categoryId?: string;
     description?: string | undefined;
     workOrderId?: string | undefined;
+    propertyId?: string | undefined;
 }
 
 export interface HealthResponse {

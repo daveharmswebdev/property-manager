@@ -20,6 +20,7 @@ public class UpdateExpenseHandlerTests
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
     private readonly Guid _testPropertyId = Guid.NewGuid();
+    private readonly Guid _newPropertyId = Guid.NewGuid();
     private readonly Guid _testCategoryId = Guid.NewGuid();
     private readonly Guid _newCategoryId = Guid.NewGuid();
 
@@ -33,8 +34,9 @@ public class UpdateExpenseHandlerTests
 
         _handler = new UpdateExpenseCommandHandler(_dbContextMock.Object, _currentUserMock.Object);
 
-        // Setup expense categories
+        // Setup expense categories and properties
         SetupExpenseCategories();
+        SetupProperties();
     }
 
     [Fact]
@@ -368,5 +370,109 @@ public class UpdateExpenseHandlerTests
 
         var mockDbSet = categories.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
+    }
+
+    private void SetupProperties()
+    {
+        var properties = new List<Property>
+        {
+            new() { Id = _testPropertyId, AccountId = _testAccountId, Name = "Test Property" },
+            new() { Id = _newPropertyId, AccountId = _testAccountId, Name = "New Property" }
+        };
+
+        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
+    }
+
+    // ─── Property Reassignment Tests (AC-15.5.3) ────────────────────
+
+    [Fact]
+    public async Task Handle_PropertyReassignment_UpdatesPropertyId()
+    {
+        // Arrange
+        var expense = CreateExpense(_testAccountId, 100.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var command = new UpdateExpenseCommand(
+            Id: expense.Id,
+            Amount: expense.Amount,
+            Date: expense.Date,
+            CategoryId: expense.CategoryId,
+            Description: expense.Description,
+            PropertyId: _newPropertyId);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        expense.PropertyId.Should().Be(_newPropertyId);
+    }
+
+    [Fact]
+    public async Task Handle_SamePropertyId_KeepsPropertyId()
+    {
+        // Arrange
+        var expense = CreateExpense(_testAccountId, 100.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var command = new UpdateExpenseCommand(
+            Id: expense.Id,
+            Amount: expense.Amount,
+            Date: expense.Date,
+            CategoryId: expense.CategoryId,
+            Description: expense.Description,
+            PropertyId: _testPropertyId);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        expense.PropertyId.Should().Be(_testPropertyId);
+    }
+
+    [Fact]
+    public async Task Handle_NullPropertyId_PreservesPropertyId()
+    {
+        // Arrange
+        var expense = CreateExpense(_testAccountId, 100.00m, DateOnly.FromDateTime(DateTime.Today));
+        var originalPropertyId = expense.PropertyId;
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var command = new UpdateExpenseCommand(
+            Id: expense.Id,
+            Amount: expense.Amount,
+            Date: expense.Date,
+            CategoryId: expense.CategoryId,
+            Description: expense.Description);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        expense.PropertyId.Should().Be(originalPropertyId);
+    }
+
+    [Fact]
+    public async Task Handle_InvalidPropertyId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var expense = CreateExpense(_testAccountId, 100.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupExpensesDbSet(new List<Expense> { expense });
+
+        var invalidPropertyId = Guid.NewGuid();
+        var command = new UpdateExpenseCommand(
+            Id: expense.Id,
+            Amount: expense.Amount,
+            Date: expense.Date,
+            CategoryId: expense.CategoryId,
+            Description: expense.Description,
+            PropertyId: invalidPropertyId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{invalidPropertyId}*");
     }
 }

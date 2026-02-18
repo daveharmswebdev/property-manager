@@ -309,8 +309,8 @@ public class ExpensesController : ControllerBase
     }
 
     /// <summary>
-    /// Update an existing expense (AC-3.2.1, AC-3.2.3, AC-3.2.4).
-    /// PropertyId cannot be changed - delete and recreate to move expense to different property.
+    /// Update an existing expense (AC-3.2.1, AC-3.2.3, AC-3.2.4, AC-15.5.3).
+    /// PropertyId can optionally be changed to reassign expense to a different property.
     /// </summary>
     /// <param name="id">Expense GUID</param>
     /// <param name="request">Updated expense details</param>
@@ -332,7 +332,8 @@ public class ExpensesController : ControllerBase
             request.Date,
             request.CategoryId,
             request.Description,
-            request.WorkOrderId);
+            request.WorkOrderId,
+            request.PropertyId);
 
         // Validate command
         var validationResult = await _updateValidator.ValidateAsync(command);
@@ -452,13 +453,14 @@ public record ExpenseCategoriesResponse(
 );
 
 /// <summary>
-/// Request model for updating an expense (AC-3.2.1).
-/// Note: PropertyId is not included - expenses cannot be moved between properties.
+/// Request model for updating an expense (AC-3.2.1, AC-15.5.3).
+/// PropertyId is optional — when provided, reassigns the expense to the new property.
 /// </summary>
 public record UpdateExpenseRequest(
     decimal Amount,
     DateOnly Date,
     Guid CategoryId,
     string? Description,
-    Guid? WorkOrderId = null
+    Guid? WorkOrderId = null,
+    Guid? PropertyId = null
 );
