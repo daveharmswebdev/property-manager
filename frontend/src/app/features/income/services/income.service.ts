@@ -78,6 +78,7 @@ export interface UpdateIncomeRequest {
   date: string; // ISO date string (YYYY-MM-DD)
   source?: string;
   description?: string;
+  propertyId?: string; // AC-16.2.4: Optional property reassignment
 }
 
 /**

@@ -220,7 +220,8 @@ public class IncomeController : ControllerBase
             request.Amount,
             request.Date,
             request.Source,
-            request.Description);
+            request.Description,
+            request.PropertyId);
 
         // Validate command
         var validationResult = await _updateValidator.ValidateAsync(command);
@@ -312,11 +313,12 @@ public record IncomeTotalResponse(
 );
 
 /// <summary>
-/// Request model for updating an income entry (AC-4.2.2).
+/// Request model for updating an income entry (AC-4.2.2, AC-16.2.4).
 /// </summary>
 public record UpdateIncomeRequest(
     decimal Amount,
     DateOnly Date,
     string? Source,
-    string? Description
+    string? Description,
+    Guid? PropertyId
 );

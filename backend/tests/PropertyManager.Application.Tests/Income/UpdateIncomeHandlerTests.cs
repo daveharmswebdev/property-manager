@@ -3,6 +3,7 @@ using MockQueryable.Moq;
 using Moq;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.Income;
+using PropertyManager.Domain.Entities;
 using PropertyManager.Domain.Exceptions;
 using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
@@ -20,6 +21,8 @@ public class UpdateIncomeHandlerTests
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
     private readonly Guid _testPropertyId = Guid.NewGuid();
+    private readonly Guid _newPropertyId = Guid.NewGuid();
+    private readonly Guid _otherAccountPropertyId = Guid.NewGuid();
 
     public UpdateIncomeHandlerTests()
     {
@@ -30,6 +33,8 @@ public class UpdateIncomeHandlerTests
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
         _handler = new UpdateIncomeCommandHandler(_dbContextMock.Object, _currentUserMock.Object);
+
+        SetupProperties();
     }
 
     [Fact]
@@ -350,5 +355,111 @@ public class UpdateIncomeHandlerTests
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
+    }
+
+    private void SetupProperties()
+    {
+        var properties = new List<Property>
+        {
+            new() { Id = _testPropertyId, AccountId = _testAccountId, Name = "Test Property" },
+            new() { Id = _newPropertyId, AccountId = _testAccountId, Name = "New Property" },
+            new() { Id = _otherAccountPropertyId, AccountId = _otherAccountId, Name = "Other Account Property" }
+        };
+
+        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
+    }
+
+    // ─── Property Reassignment Tests (AC-16.2.4) ────────────────────
+
+    [Fact]
+    public async Task Handle_ValidPropertyId_ReassignsProperty()
+    {
+        // Arrange
+        var income = CreateIncome(_testAccountId, 1000.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupIncomeDbSet(new List<IncomeEntity> { income });
+
+        var command = new UpdateIncomeCommand(
+            Id: income.Id,
+            Amount: income.Amount,
+            Date: income.Date,
+            Source: income.Source,
+            Description: income.Description,
+            PropertyId: _newPropertyId);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        income.PropertyId.Should().Be(_newPropertyId);
+    }
+
+    [Fact]
+    public async Task Handle_InvalidPropertyId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var income = CreateIncome(_testAccountId, 1000.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupIncomeDbSet(new List<IncomeEntity> { income });
+
+        var invalidPropertyId = Guid.NewGuid();
+        var command = new UpdateIncomeCommand(
+            Id: income.Id,
+            Amount: income.Amount,
+            Date: income.Date,
+            Source: income.Source,
+            Description: income.Description,
+            PropertyId: invalidPropertyId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{invalidPropertyId}*");
+    }
+
+    [Fact]
+    public async Task Handle_NullPropertyId_PreservesExistingProperty()
+    {
+        // Arrange
+        var income = CreateIncome(_testAccountId, 1000.00m, DateOnly.FromDateTime(DateTime.Today));
+        var originalPropertyId = income.PropertyId;
+        SetupIncomeDbSet(new List<IncomeEntity> { income });
+
+        var command = new UpdateIncomeCommand(
+            Id: income.Id,
+            Amount: income.Amount,
+            Date: income.Date,
+            Source: income.Source,
+            Description: income.Description);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        income.PropertyId.Should().Be(originalPropertyId);
+    }
+
+    [Fact]
+    public async Task Handle_PropertyFromDifferentAccount_ThrowsNotFoundException()
+    {
+        // Arrange — property exists but belongs to a different account
+        var income = CreateIncome(_testAccountId, 1000.00m, DateOnly.FromDateTime(DateTime.Today));
+        SetupIncomeDbSet(new List<IncomeEntity> { income });
+
+        var command = new UpdateIncomeCommand(
+            Id: income.Id,
+            Amount: income.Amount,
+            Date: income.Date,
+            Source: income.Source,
+            Description: income.Description,
+            PropertyId: _otherAccountPropertyId);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*{_otherAccountPropertyId}*");
     }
 }

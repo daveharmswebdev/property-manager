@@ -2,6 +2,9 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { IncomeComponent } from './income.component';
@@ -70,6 +73,9 @@ describe('IncomeComponent', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
@@ -205,6 +211,9 @@ describe('IncomeComponent loading state', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
@@ -259,6 +268,9 @@ describe('IncomeComponent error state', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
@@ -319,6 +331,9 @@ describe('IncomeComponent truly empty state (AC-4.3.5)', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
@@ -383,6 +398,9 @@ describe('IncomeComponent filtered empty state (AC-4.3.5)', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
@@ -463,6 +481,9 @@ describe('IncomeComponent property filter (AC-4.3.4)', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: YearSelectorService, useValue: mockYearService },
