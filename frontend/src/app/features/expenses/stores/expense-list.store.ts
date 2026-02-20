@@ -9,6 +9,7 @@ import {
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { formatLocalDate } from '../../../shared/utils/date.utils';
 import {
   ExpenseService,
   ExpenseFilters,
@@ -107,16 +108,16 @@ function getDateRangeFromPreset(preset: DateRangePreset, year?: number | null): 
     case 'this-month': {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
       return {
-        dateFrom: firstDay.toISOString().split('T')[0],
-        dateTo: today.toISOString().split('T')[0],
+        dateFrom: formatLocalDate(firstDay),
+        dateTo: formatLocalDate(today),
       };
     }
     case 'this-quarter': {
       const quarter = Math.floor(today.getMonth() / 3);
       const firstDay = new Date(today.getFullYear(), quarter * 3, 1);
       return {
-        dateFrom: firstDay.toISOString().split('T')[0],
-        dateTo: today.toISOString().split('T')[0],
+        dateFrom: formatLocalDate(firstDay),
+        dateTo: formatLocalDate(today),
       };
     }
     case 'this-year': {

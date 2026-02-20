@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { ExpenseFiltersComponent } from './expense-filters.component';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * Unit tests for ExpenseFiltersComponent (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6)
@@ -199,8 +200,8 @@ describe('ExpenseFiltersComponent custom date range (AC-3.4.3)', () => {
     const emitSpy = vi.fn();
     component.customDateRangeChange.subscribe(emitSpy);
 
-    const fromDate = new Date('2026-01-01');
-    const toDate = new Date('2026-01-31');
+    const fromDate = new Date(2026, 0, 1); // Jan 1 local
+    const toDate = new Date(2026, 0, 31); // Jan 31 local
     component.customDateFrom.setValue(fromDate);
     component.customDateTo.setValue(toDate);
 
@@ -319,19 +320,19 @@ describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
 
   it('should sync dateFrom input to customDateFrom FormControl', () => {
     expect(component.customDateFrom.value).toBeInstanceOf(Date);
-    expect(component.customDateFrom.value!.toISOString().split('T')[0]).toBe('2026-03-01');
+    expect(formatLocalDate(component.customDateFrom.value!)).toBe('2026-03-01');
   });
 
   it('should sync dateTo input to customDateTo FormControl', () => {
     expect(component.customDateTo.value).toBeInstanceOf(Date);
-    expect(component.customDateTo.value!.toISOString().split('T')[0]).toBe('2026-03-31');
+    expect(formatLocalDate(component.customDateTo.value!)).toBe('2026-03-31');
   });
 
   it('should update FormControl when dateFrom input changes', () => {
     fixture.componentRef.setInput('dateFrom', '2026-06-15');
     fixture.detectChanges();
 
-    expect(component.customDateFrom.value!.toISOString().split('T')[0]).toBe('2026-06-15');
+    expect(formatLocalDate(component.customDateFrom.value!)).toBe('2026-06-15');
   });
 
   it('should clear FormControls when date inputs become null', () => {

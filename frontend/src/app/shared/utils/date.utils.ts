@@ -38,6 +38,17 @@ export function parseLocalDate(dateString: string): Date {
 }
 
 /**
+ * Format a Date object to an ISO date string (YYYY-MM-DD) using local timezone.
+ * Avoids the UTC shift bug of toISOString().split('T')[0].
+ */
+export function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Format a date string for display in a short format.
  * Uses parseLocalDate to ensure correct timezone handling.
  *

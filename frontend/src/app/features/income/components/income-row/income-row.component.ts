@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { IncomeDto, UpdateIncomeRequest } from '../../services/income.service';
+import { formatLocalDate, formatDateShort, parseLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * IncomeRowComponent (AC-4.1.6, AC-4.2.1, AC-4.2.2, AC-4.2.4, AC-4.2.5, AC-4.2.7)
@@ -407,7 +408,7 @@ export class IncomeRowComponent implements OnInit {
     const income = this.income();
     this.editForm = this.fb.group({
       amount: [income.amount, [Validators.required, Validators.min(0.01)]],
-      date: [new Date(income.date), Validators.required],
+      date: [parseLocalDate(income.date), Validators.required],
       source: [income.source || ''],
       description: [income.description || ''],
     });
@@ -420,7 +421,7 @@ export class IncomeRowComponent implements OnInit {
     const income = this.income();
     this.editForm.patchValue({
       amount: income.amount,
-      date: new Date(income.date),
+      date: parseLocalDate(income.date),
       source: income.source || '',
       description: income.description || '',
     });
@@ -430,12 +431,7 @@ export class IncomeRowComponent implements OnInit {
    * Format date as "Jan 15, 2025" (AC-4.1.6)
    */
   protected formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDateShort(dateString);
   }
 
   /**
@@ -454,7 +450,7 @@ export class IncomeRowComponent implements OnInit {
 
     const formValue = this.editForm.value;
     const dateValue = formValue.date instanceof Date
-      ? formValue.date.toISOString().split('T')[0]
+      ? formatLocalDate(formValue.date)
       : formValue.date;
 
     const request: UpdateIncomeRequest = {

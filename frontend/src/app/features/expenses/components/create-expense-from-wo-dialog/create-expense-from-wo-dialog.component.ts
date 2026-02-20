@@ -21,6 +21,7 @@ import {
   CreateExpenseRequest,
 } from '../../services/expense.service';
 import { ExpenseStore } from '../../stores/expense.store';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * Data passed to the dialog (AC #2)
@@ -148,7 +149,7 @@ export class CreateExpenseFromWoDialogComponent implements OnInit {
 
   form = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    date: [new Date().toISOString().split('T')[0], [Validators.required]],
+    date: [formatLocalDate(new Date()), [Validators.required]],
     categoryId: [this.data.categoryId || '', [Validators.required]],
     description: [''],
   });
