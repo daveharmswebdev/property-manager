@@ -32,6 +32,7 @@ import { ApiClient } from '../../../../core/api/api.service';
 import { CategorySelectComponent } from '../../../expenses/components/category-select/category-select.component';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 import { PropertyStore } from '../../../properties/stores/property.store';
 import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
 
@@ -440,9 +441,6 @@ export class ReceiptExpenseFormComponent implements OnInit {
   }
 
   private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatLocalDate(date);
   }
 }

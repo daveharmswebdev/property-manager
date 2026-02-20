@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
@@ -89,7 +90,7 @@ describe('CreateExpenseFromWoDialogComponent', () => {
     });
 
     it('should default date to today', () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatLocalDate(new Date());
       expect(component.form.controls.date.value).toBe(today);
     });
 

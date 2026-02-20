@@ -27,6 +27,7 @@ import {
   DuplicateWarningDialogData,
 } from '../duplicate-warning-dialog/duplicate-warning-dialog.component';
 import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * ExpenseFormComponent (AC-3.1.1, AC-3.1.2, AC-3.1.3, AC-3.1.4, AC-3.1.5, AC-3.1.8)
@@ -420,10 +421,7 @@ export class ExpenseFormComponent implements OnInit {
   }
 
   private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatLocalDate(date);
   }
 
   private resetForm(): void {

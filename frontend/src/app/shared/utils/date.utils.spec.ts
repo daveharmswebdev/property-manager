@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseLocalDate, formatDateShort, formatDateLong } from './date.utils';
+import { parseLocalDate, formatLocalDate, formatDateShort, formatDateLong } from './date.utils';
 
 describe('Date Utils', () => {
   describe('parseLocalDate', () => {
@@ -75,6 +75,34 @@ describe('Date Utils', () => {
       expect(result.getFullYear()).toBe(now.getFullYear());
       expect(result.getMonth()).toBe(now.getMonth());
       expect(result.getDate()).toBe(now.getDate());
+    });
+  });
+
+  describe('formatLocalDate', () => {
+    it('should format Date to YYYY-MM-DD using local timezone', () => {
+      // Nov 1 2025 — would shift to Oct 31 under toISOString() in UTC-5
+      const date = new Date(2025, 10, 1); // month 10 = November
+      expect(formatLocalDate(date)).toBe('2025-11-01');
+    });
+
+    it('should pad single-digit month and day', () => {
+      const date = new Date(2025, 0, 5); // Jan 5
+      expect(formatLocalDate(date)).toBe('2025-01-05');
+    });
+
+    it('should handle Dec 31 (year boundary)', () => {
+      const date = new Date(2025, 11, 31);
+      expect(formatLocalDate(date)).toBe('2025-12-31');
+    });
+
+    it('should handle Jan 1 (year boundary)', () => {
+      const date = new Date(2026, 0, 1);
+      expect(formatLocalDate(date)).toBe('2026-01-01');
+    });
+
+    it('should handle leap year Feb 29', () => {
+      const date = new Date(2024, 1, 29);
+      expect(formatLocalDate(date)).toBe('2024-02-29');
     });
   });
 

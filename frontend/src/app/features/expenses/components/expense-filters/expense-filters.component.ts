@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ExpenseCategoryDto } from '../../services/expense.service';
 import { DateRangePreset, FilterChip } from '../../stores/expense-list.store';
+import { formatLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * ExpenseFiltersComponent (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6)
@@ -301,8 +302,8 @@ export class ExpenseFiltersComponent {
 
     if (fromDate && toDate) {
       this.customDateRangeChange.emit({
-        dateFrom: fromDate.toISOString().split('T')[0],
-        dateTo: toDate.toISOString().split('T')[0],
+        dateFrom: formatLocalDate(fromDate),
+        dateTo: formatLocalDate(toDate),
       });
     }
   }

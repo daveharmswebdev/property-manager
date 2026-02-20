@@ -13,6 +13,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { IncomeListStore } from './stores/income-list.store';
 import { PropertyStore } from '../properties/stores/property.store';
 import { YearSelectorService } from '../../core/services/year-selector.service';
+import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils';
 import { IncomeDto } from './services/income.service';
 
 /**
@@ -503,7 +504,7 @@ export class IncomeComponent implements OnInit, OnDestroy {
    * Format date for API (YYYY-MM-DD)
    */
   private formatDateForApi(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return formatLocalDate(date);
   }
 
   /**
@@ -528,11 +529,6 @@ export class IncomeComponent implements OnInit, OnDestroy {
    * Format: "Dec 15, 2025"
    */
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDateShort(dateString);
   }
 }
