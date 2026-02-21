@@ -55,6 +55,8 @@ export interface ExpenseDto {
   description?: string;
   receiptId?: string;
   workOrderId?: string; // AC-11.2.1, AC-11.2.2
+  workOrderDescription?: string;
+  workOrderStatus?: string;
   createdAt: string;
 }
 

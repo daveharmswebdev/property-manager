@@ -253,6 +253,7 @@ describe('ExpenseDetailComponent', () => {
     it('should show Link Receipt button when receipt is selected (AC3)', () => {
       // GIVEN: A receipt thumbnail is selected and unprocessed receipts exist
       mockDetailStore.hasReceipt.set(false);
+      (component as any).showReceiptPicker.set(true);
       (component as any).unprocessedReceipts.set([
         { id: 'r-1', viewUrl: 'https://example.com/r1.jpg', contentType: 'image/jpeg', propertyName: 'Prop' },
       ]);

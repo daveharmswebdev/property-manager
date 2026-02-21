@@ -208,13 +208,23 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
               </mat-card-header>
               <mat-card-content>
                 @if (store.hasWorkOrder()) {
-                  <a
-                    [routerLink]="['/work-orders', store.expense()!.workOrderId]"
-                    data-testid="work-order-link"
-                    class="work-order-link"
-                  >
-                    View Work Order
-                  </a>
+                  <div class="work-order-info">
+                    <div class="work-order-description" data-testid="work-order-description">
+                      {{ store.expense()!.workOrderDescription }}
+                    </div>
+                    <div class="work-order-status" data-testid="work-order-status">
+                      <span class="status-badge" [attr.data-status]="store.expense()!.workOrderStatus?.toLowerCase()">
+                        {{ store.expense()!.workOrderStatus }}
+                      </span>
+                    </div>
+                    <a
+                      [routerLink]="['/work-orders', store.expense()!.workOrderId]"
+                      data-testid="work-order-link"
+                      class="work-order-link"
+                    >
+                      View Work Order
+                    </a>
+                  </div>
                 } @else {
                   <p class="empty-text">No work order linked</p>
                 }
@@ -327,45 +337,58 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
               </div>
             } @else {
               <div class="receipt-link-section" data-testid="receipt-link-section">
-                <div class="section-label">Link Receipt (optional)</div>
-                @if (isLoadingReceipts()) {
-                  <mat-spinner diameter="24"></mat-spinner>
-                } @else if (unprocessedReceipts().length === 0) {
-                  <p class="empty-text">No unprocessed receipts available</p>
-                } @else {
-                  <div class="receipt-picker">
-                    @for (receipt of unprocessedReceipts(); track receipt.id) {
-                      <button
-                        type="button"
-                        class="receipt-option"
-                        [class.selected]="selectedReceiptId() === receipt.id"
-                        (click)="selectedReceiptId.set(receipt.id!)"
-                        data-testid="receipt-option"
-                      >
-                        @if (receipt.contentType === 'application/pdf') {
-                          <mat-icon class="pdf-icon">description</mat-icon>
-                        } @else {
-                          <img [src]="receipt.viewUrl" alt="Receipt" class="receipt-thumb" />
-                        }
-                        <span class="receipt-name">{{ receipt.propertyName || 'Receipt' }}</span>
-                      </button>
-                    }
-                  </div>
+                <div class="section-label">Receipt</div>
+                <p class="empty-text">No receipt linked</p>
+                @if (!showReceiptPicker()) {
                   <button
                     mat-stroked-button
-                    color="primary"
                     type="button"
-                    (click)="linkReceipt()"
-                    [disabled]="!selectedReceiptId() || isLinkingReceipt()"
-                    data-testid="link-receipt-btn"
+                    (click)="onShowReceiptPicker()"
+                    data-testid="browse-receipts-btn"
                   >
-                    @if (isLinkingReceipt()) {
-                      <mat-spinner diameter="18"></mat-spinner>
-                    } @else {
-                      <mat-icon>link</mat-icon>
-                      Link Selected Receipt
-                    }
+                    <mat-icon>attach_file</mat-icon>
+                    Browse Receipts to Link
                   </button>
+                } @else {
+                  @if (isLoadingReceipts()) {
+                    <mat-spinner diameter="24"></mat-spinner>
+                  } @else if (unprocessedReceipts().length === 0) {
+                    <p class="empty-text">No unprocessed receipts available</p>
+                  } @else {
+                    <div class="receipt-picker">
+                      @for (receipt of unprocessedReceipts(); track receipt.id) {
+                        <button
+                          type="button"
+                          class="receipt-option"
+                          [class.selected]="selectedReceiptId() === receipt.id"
+                          (click)="selectedReceiptId.set(receipt.id!)"
+                          data-testid="receipt-option"
+                        >
+                          @if (receipt.contentType === 'application/pdf') {
+                            <mat-icon class="pdf-icon">description</mat-icon>
+                          } @else {
+                            <img [src]="receipt.viewUrl" alt="Receipt" class="receipt-thumb" />
+                          }
+                          <span class="receipt-name">{{ receipt.propertyName || 'Receipt' }}</span>
+                        </button>
+                      }
+                    </div>
+                    <button
+                      mat-stroked-button
+                      color="primary"
+                      type="button"
+                      (click)="linkReceipt()"
+                      [disabled]="!selectedReceiptId() || isLinkingReceipt()"
+                      data-testid="link-receipt-btn"
+                    >
+                      @if (isLinkingReceipt()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                      } @else {
+                        <mat-icon>link</mat-icon>
+                        Link Selected Receipt
+                      }
+                    </button>
+                  }
                 }
               </div>
             }
@@ -499,6 +522,41 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
 
       button mat-icon {
         margin-right: 4px;
+      }
+    }
+
+    .work-order-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .work-order-description {
+      color: var(--mat-sys-on-surface);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface);
+
+      &[data-status="completed"] {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      &[data-status="assigned"] {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      &[data-status="reported"] {
+        background: #fff3e0;
+        color: #e65100;
       }
     }
 
@@ -669,6 +727,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   protected readonly isLoadingReceipts = signal(false);
   protected readonly isLinkingReceipt = signal(false);
   protected readonly selectedReceiptId = signal<string | null>(null);
+  protected readonly showReceiptPicker = signal(false);
 
   protected editForm: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
@@ -718,10 +777,9 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
       this.loadWorkOrders(expense.propertyId);
     }
 
-    // Load unprocessed receipts if no receipt linked (AC3)
-    if (!this.store.hasReceipt()) {
-      this.loadUnprocessedReceipts();
-    }
+    // Reset receipt picker state (AC3)
+    this.showReceiptPicker.set(false);
+    this.selectedReceiptId.set(null);
 
     // Property change listener — reset work orders on property change (AC2)
     this.editForm
@@ -865,6 +923,11 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
           this.isLoadingWorkOrders.set(false);
         },
       });
+  }
+
+  protected onShowReceiptPicker(): void {
+    this.showReceiptPicker.set(true);
+    this.loadUnprocessedReceipts();
   }
 
   private loadUnprocessedReceipts(): void {
