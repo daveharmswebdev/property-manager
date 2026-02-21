@@ -2,15 +2,15 @@ import { test, expect } from '../../fixtures/test-fixtures';
 
 test.describe('Receipt Queue E2E Tests (AC-5.3)', () => {
   test.describe('Receipts Page (AC-5.3.2, AC-5.3.3)', () => {
-    test('should display page title "Receipts to Process"', async ({
+    test('should display page title "Receipts"', async ({
       page,
       authenticatedUser,
     }) => {
       await page.goto('/receipts');
       await page.waitForLoadState('networkidle');
 
-      const title = page.locator('.page-title');
-      await expect(title).toContainText('Receipts to Process');
+      const title = page.locator('.page-header h1');
+      await expect(title).toContainText('Receipts');
     });
 
     test('should display empty state when no unprocessed receipts', async ({
@@ -100,9 +100,7 @@ test.describe('Receipt Queue E2E Tests (AC-5.3)', () => {
       await page.waitForURL('**/receipts');
 
       // Verify we're on receipts page
-      await expect(page.locator('.page-title')).toContainText(
-        'Receipts to Process'
-      );
+      await expect(page.locator('.page-header h1')).toContainText('Receipts');
     });
 
     test('should navigate to receipts page when bottom nav clicked', async ({
@@ -118,9 +116,7 @@ test.describe('Receipt Queue E2E Tests (AC-5.3)', () => {
       await page.waitForURL('**/receipts');
 
       // Verify we're on receipts page
-      await expect(page.locator('.page-title')).toContainText(
-        'Receipts to Process'
-      );
+      await expect(page.locator('.page-header h1')).toContainText('Receipts');
     });
 
     test('should not show badge when no unprocessed receipts', async ({
