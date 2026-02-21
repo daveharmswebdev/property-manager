@@ -273,4 +273,48 @@ describe('IncomeRowComponent delete confirmation (AC-4.2.5)', () => {
 
     expect(component.isConfirmingDelete()).toBe(false);
   });
+
+  it('should display record details (amount and date) in delete confirmation (AC-16.5.1)', () => {
+    const detailsEl = fixture.debugElement.query(By.css('.confirm-details'));
+    expect(detailsEl).toBeTruthy();
+    const text = detailsEl.nativeElement.textContent;
+    expect(text).toContain('$1,500.00');
+    expect(text).toMatch(/Jan\s+\d{1,2},?\s+2026/);
+  });
+});
+
+describe('IncomeRowComponent delete confirmation with source (AC-16.5.1)', () => {
+  let fixture: ComponentFixture<IncomeRowComponent>;
+
+  const mockIncomeWithSource: IncomeDto = {
+    id: 'income-125',
+    propertyId: 'prop-456',
+    propertyName: 'Test Property',
+    amount: 2500.00,
+    date: '2026-03-01',
+    source: 'Jane Doe - Rent',
+    createdAt: '2026-03-01T10:00:00Z',
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [IncomeRowComponent],
+      providers: [provideNoopAnimations()],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(IncomeRowComponent);
+    fixture.componentRef.setInput('income', mockIncomeWithSource);
+    fixture.detectChanges();
+
+    // Enter confirming state
+    fixture.componentInstance['onDeleteClick']();
+    fixture.detectChanges();
+  });
+
+  it('should show source in delete confirmation details when available', () => {
+    const detailsEl = fixture.debugElement.query(By.css('.confirm-details'));
+    expect(detailsEl).toBeTruthy();
+    const text = detailsEl.nativeElement.textContent;
+    expect(text).toContain('Jane Doe - Rent');
+  });
 });

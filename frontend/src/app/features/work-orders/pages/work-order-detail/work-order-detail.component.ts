@@ -763,10 +763,13 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
    * Opens confirmation dialog and deletes work order if confirmed.
    */
   async onDeleteClick(): Promise<void> {
+    const wo = this.store.selectedWorkOrder();
+    const description = wo?.description || '';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete this work order?',
         message: 'This will remove the work order. Linked expenses will be unlinked.',
+        secondaryMessage: description.length > 80 ? description.substring(0, 80) + '...' : description,
         confirmText: 'Delete',
         icon: 'warning',
         iconColor: 'warn',

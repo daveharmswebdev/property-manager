@@ -458,9 +458,11 @@ export class IncomeDetailComponent implements OnInit, OnDestroy {
   }
 
   protected onDelete(): void {
+    const income = this.store.income()!;
     const dialogData: ConfirmDialogData = {
       title: 'Delete Income?',
       message: 'This income entry will be permanently removed.',
+      secondaryMessage: `${income.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} on ${this.formatDate(income.date)}`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       icon: 'warning',
