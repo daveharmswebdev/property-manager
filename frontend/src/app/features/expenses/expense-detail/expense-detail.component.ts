@@ -236,6 +236,7 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
         <!-- EDIT MODE -->
         @if (store.isEditing()) {
           <form [formGroup]="editForm" (ngSubmit)="onSubmit()" class="edit-form">
+            <!-- Info Card -->
             <mat-card class="detail-card">
               <mat-card-content>
                 <div class="form-fields">
@@ -300,98 +301,119 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
                       }
                     </mat-select>
                   </mat-form-field>
-
-                  <!-- Work Order (optional) — AC1, AC2 -->
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Work Order (optional)</mat-label>
-                    <mat-select formControlName="workOrderId" data-testid="work-order-select">
-                      @if (isLoadingWorkOrders()) {
-                        <mat-option disabled>Loading work orders...</mat-option>
-                      } @else {
-                        <mat-option value="">None</mat-option>
-                        @for (wo of workOrders(); track wo.id) {
-                          <mat-option [value]="wo.id">
-                            {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
-                            ({{ wo.status }})
-                          </mat-option>
-                        }
-                      }
-                    </mat-select>
-                  </mat-form-field>
                 </div>
               </mat-card-content>
             </mat-card>
 
-            <!-- Receipt Section (Edit Mode) — AC3, AC4 -->
-            @if (store.hasReceipt()) {
-              <div class="receipt-section" data-testid="receipt-section-edit">
-                <div class="section-label">Attached Receipt</div>
-                <button mat-stroked-button color="warn" (click)="onUnlinkReceipt()" [disabled]="store.isUnlinkingReceipt()">
-                  @if (store.isUnlinkingReceipt()) {
-                    <mat-spinner diameter="18"></mat-spinner>
-                  } @else {
-                    <mat-icon>link_off</mat-icon>
-                    Unlink Receipt
-                  }
-                </button>
-              </div>
-            } @else {
-              <div class="receipt-link-section" data-testid="receipt-link-section">
-                <div class="section-label">Receipt</div>
-                <p class="empty-text">No receipt linked</p>
-                @if (!showReceiptPicker()) {
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    (click)="onShowReceiptPicker()"
-                    data-testid="browse-receipts-btn"
-                  >
-                    <mat-icon>attach_file</mat-icon>
-                    Browse Receipts to Link
-                  </button>
-                } @else {
-                  @if (isLoadingReceipts()) {
-                    <mat-spinner diameter="24"></mat-spinner>
-                  } @else if (unprocessedReceipts().length === 0) {
-                    <p class="empty-text">No unprocessed receipts available</p>
-                  } @else {
-                    <div class="receipt-picker">
-                      @for (receipt of unprocessedReceipts(); track receipt.id) {
-                        <button
-                          type="button"
-                          class="receipt-option"
-                          [class.selected]="selectedReceiptId() === receipt.id"
-                          (click)="selectedReceiptId.set(receipt.id!)"
-                          data-testid="receipt-option"
-                        >
-                          @if (receipt.contentType === 'application/pdf') {
-                            <mat-icon class="pdf-icon">description</mat-icon>
-                          } @else {
-                            <img [src]="receipt.viewUrl" alt="Receipt" class="receipt-thumb" />
-                          }
-                          <span class="receipt-name">{{ receipt.propertyName || 'Receipt' }}</span>
-                        </button>
-                      }
-                    </div>
+            <!-- Receipt Card (Edit Mode) — AC3, AC4 -->
+            <mat-card class="section-card" data-testid="receipt-section-edit">
+              <mat-card-header>
+                <mat-card-title>Receipt</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                @if (store.hasReceipt()) {
+                  <div class="receipt-actions">
+                    <span data-testid="receipt-thumbnail">Receipt attached</span>
+                    <button mat-stroked-button type="button" (click)="onViewReceipt()">
+                      <mat-icon>visibility</mat-icon>
+                      View Receipt
+                    </button>
                     <button
                       mat-stroked-button
-                      color="primary"
+                      color="warn"
                       type="button"
-                      (click)="linkReceipt()"
-                      [disabled]="!selectedReceiptId() || isLinkingReceipt()"
-                      data-testid="link-receipt-btn"
+                      (click)="onUnlinkReceipt()"
+                      [disabled]="store.isUnlinkingReceipt()"
                     >
-                      @if (isLinkingReceipt()) {
+                      @if (store.isUnlinkingReceipt()) {
                         <mat-spinner diameter="18"></mat-spinner>
                       } @else {
-                        <mat-icon>link</mat-icon>
-                        Link Selected Receipt
+                        <mat-icon>link_off</mat-icon>
                       }
+                      Unlink Receipt
                     </button>
+                  </div>
+                } @else {
+                  <p class="empty-text">No receipt linked</p>
+                  @if (!showReceiptPicker()) {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      (click)="onShowReceiptPicker()"
+                      data-testid="browse-receipts-btn"
+                    >
+                      <mat-icon>attach_file</mat-icon>
+                      Browse Receipts to Link
+                    </button>
+                  } @else {
+                    @if (isLoadingReceipts()) {
+                      <mat-spinner diameter="24"></mat-spinner>
+                    } @else if (unprocessedReceipts().length === 0) {
+                      <p class="empty-text">No unprocessed receipts available</p>
+                    } @else {
+                      <div class="receipt-picker">
+                        @for (receipt of unprocessedReceipts(); track receipt.id) {
+                          <button
+                            type="button"
+                            class="receipt-option"
+                            [class.selected]="selectedReceiptId() === receipt.id"
+                            (click)="selectedReceiptId.set(receipt.id!)"
+                            data-testid="receipt-option"
+                          >
+                            @if (receipt.contentType === 'application/pdf') {
+                              <mat-icon class="pdf-icon">description</mat-icon>
+                            } @else {
+                              <img [src]="receipt.viewUrl" alt="Receipt" class="receipt-thumb" />
+                            }
+                            <span class="receipt-name">{{ receipt.propertyName || 'Receipt' }}</span>
+                          </button>
+                        }
+                      </div>
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        type="button"
+                        (click)="linkReceipt()"
+                        [disabled]="!selectedReceiptId() || isLinkingReceipt()"
+                        data-testid="link-receipt-btn"
+                      >
+                        @if (isLinkingReceipt()) {
+                          <mat-spinner diameter="18"></mat-spinner>
+                        } @else {
+                          <mat-icon>link</mat-icon>
+                          Link Selected Receipt
+                        }
+                      </button>
+                    }
                   }
                 }
-              </div>
-            }
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Work Order Card (Edit Mode) — AC1, AC2 -->
+            <mat-card class="section-card" data-testid="work-order-section-edit">
+              <mat-card-header>
+                <mat-card-title>Work Order</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Work Order (optional)</mat-label>
+                  <mat-select formControlName="workOrderId" data-testid="work-order-select">
+                    @if (isLoadingWorkOrders()) {
+                      <mat-option disabled>Loading work orders...</mat-option>
+                    } @else {
+                      <mat-option value="">None</mat-option>
+                      @for (wo of workOrders(); track wo.id) {
+                        <mat-option [value]="wo.id">
+                          {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                          ({{ wo.status }})
+                        </mat-option>
+                      }
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </mat-card-content>
+            </mat-card>
 
             <div class="form-actions">
               <button mat-button type="button" (click)="onCancel()">

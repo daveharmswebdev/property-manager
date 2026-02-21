@@ -226,11 +226,11 @@ describe('ExpenseDetailComponent', () => {
       mockDetailStore.hasReceipt.set(false);
       fixture.detectChanges();
 
-      // THEN: Receipt link section is visible in edit mode
-      const linkSection = fixture.nativeElement.querySelector(
-        '[data-testid="receipt-link-section"]',
+      // THEN: Receipt section card is visible in edit mode
+      const receiptSection = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-section-edit"]',
       );
-      expect(linkSection).toBeTruthy();
+      expect(receiptSection).toBeTruthy();
     });
 
     it('should show unprocessed receipt thumbnails in picker (AC3)', () => {
@@ -238,16 +238,11 @@ describe('ExpenseDetailComponent', () => {
       mockDetailStore.hasReceipt.set(false);
       fixture.detectChanges();
 
-      // THEN: Receipt picker with thumbnails is visible
-      const receiptOptions = fixture.nativeElement.querySelectorAll(
-        '[data-testid="receipt-option"]',
+      // THEN: Receipt section card is visible in edit mode
+      const receiptSection = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-section-edit"]',
       );
-      // After implementation, this should show unprocessed receipts
-      // For now, we just verify the link section container exists
-      const linkSection = fixture.nativeElement.querySelector(
-        '[data-testid="receipt-link-section"]',
-      );
-      expect(linkSection).toBeTruthy();
+      expect(receiptSection).toBeTruthy();
     });
 
     it('should show Link Receipt button when receipt is selected (AC3)', () => {
@@ -288,13 +283,11 @@ describe('ExpenseDetailComponent', () => {
       mockDetailStore.hasReceipt.set(false);
       fixture.detectChanges();
 
-      // After implementation, when unprocessedReceipts() is empty,
-      // component should show "No unprocessed receipts available"
-      // For now, verify the link section area exists
-      const linkSection = fixture.nativeElement.querySelector(
-        '[data-testid="receipt-link-section"]',
+      // THEN: Receipt section card exists in edit mode
+      const receiptSection = fixture.nativeElement.querySelector(
+        '[data-testid="receipt-section-edit"]',
       );
-      expect(linkSection).toBeTruthy();
+      expect(receiptSection).toBeTruthy();
     });
   });
 });
