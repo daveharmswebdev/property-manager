@@ -21,17 +21,20 @@ public class ExpensesController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateExpenseCommand> _createValidator;
     private readonly IValidator<UpdateExpenseCommand> _updateValidator;
+    private readonly IValidator<LinkReceiptToExpenseCommand> _linkReceiptValidator;
     private readonly ILogger<ExpensesController> _logger;
 
     public ExpensesController(
         IMediator mediator,
         IValidator<CreateExpenseCommand> createValidator,
         IValidator<UpdateExpenseCommand> updateValidator,
+        IValidator<LinkReceiptToExpenseCommand> linkReceiptValidator,
         ILogger<ExpensesController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _linkReceiptValidator = linkReceiptValidator;
         _logger = logger;
     }
 
@@ -423,8 +426,7 @@ public class ExpensesController : ControllerBase
     public async Task<IActionResult> LinkReceipt(Guid id, [FromBody] LinkReceiptRequest request)
     {
         var command = new LinkReceiptToExpenseCommand(id, request.ReceiptId);
-        var validator = new LinkReceiptToExpenseValidator();
-        var validationResult = await validator.ValidateAsync(command);
+        var validationResult = await _linkReceiptValidator.ValidateAsync(command);
         if (!validationResult.IsValid)
         {
             var problemDetails = CreateValidationProblemDetails(validationResult);

@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, OnDestroy, signal, DestroyRef } from '@angular/core';
 import { CommonModule, CurrencyPipe, SlicePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   FormBuilder,
@@ -751,6 +752,8 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   protected readonly selectedReceiptId = signal<string | null>(null);
   protected readonly showReceiptPicker = signal(false);
 
+  private propertyChangeSubscription: Subscription | null = null;
+
   protected editForm: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
     date: [null, [Validators.required]],
@@ -781,6 +784,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.propertyChangeSubscription?.unsubscribe();
     this.store.reset();
   }
 
@@ -804,7 +808,8 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
     this.selectedReceiptId.set(null);
 
     // Property change listener — reset work orders on property change (AC2)
-    this.editForm
+    this.propertyChangeSubscription?.unsubscribe();
+    this.propertyChangeSubscription = this.editForm
       .get('propertyId')!
       .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((newPropertyId) => {
@@ -817,6 +822,8 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   }
 
   protected onCancel(): void {
+    this.propertyChangeSubscription?.unsubscribe();
+    this.propertyChangeSubscription = null;
     this.store.cancelEditing();
   }
 
