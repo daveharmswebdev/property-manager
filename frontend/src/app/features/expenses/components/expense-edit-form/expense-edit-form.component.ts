@@ -225,6 +225,8 @@ import { formatLocalDate } from '../../../../shared/utils/date.utils';
       background-color: var(--mat-sys-surface-container-low);
       border-radius: 8px;
       margin: 8px 0;
+      border: 1px solid var(--mat-sys-outline-variant);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     }
 
     .edit-form {

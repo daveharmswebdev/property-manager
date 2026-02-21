@@ -128,6 +128,12 @@ import { formatLocalDate, formatDateShort, parseLocalDate } from '../../../../sh
         <div class="confirm-message">
           Delete this income entry?
         </div>
+        <div class="confirm-details">
+          {{ income().amount | currency }} on {{ formatDate(income().date) }}
+          @if (income().source) {
+            &mdash; {{ income().source }}
+          }
+        </div>
         <div class="confirm-actions">
           <button
             mat-button
@@ -223,6 +229,10 @@ import { formatLocalDate, formatDateShort, parseLocalDate } from '../../../../sh
       flex-direction: column;
       align-items: stretch;
       background-color: var(--mat-sys-surface-container);
+      border: 1px solid var(--mat-sys-outline-variant);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      margin: 4px 0;
     }
 
     .income-date {
@@ -318,7 +328,13 @@ import { formatLocalDate, formatDateShort, parseLocalDate } from '../../../../sh
     .confirm-message {
       font-size: 1em;
       color: var(--mat-sys-on-surface);
-      margin-bottom: 16px;
+      margin-bottom: 8px;
+    }
+
+    .confirm-details {
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 12px;
     }
 
     .confirm-actions {

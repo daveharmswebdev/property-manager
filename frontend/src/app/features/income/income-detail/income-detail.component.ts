@@ -52,6 +52,7 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
     CurrencyPipe,
     CurrencyInputDirective,
   ],
+  providers: [CurrencyPipe],
   template: `
     <div class="income-detail-container">
       <!-- Loading State -->
@@ -393,6 +394,7 @@ export class IncomeDetailComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly propertyService = inject(PropertyService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly currencyPipe = inject(CurrencyPipe);
 
   protected readonly today = new Date();
   protected readonly properties = signal<PropertySummaryDto[]>([]);
@@ -458,9 +460,11 @@ export class IncomeDetailComponent implements OnInit, OnDestroy {
   }
 
   protected onDelete(): void {
+    const income = this.store.income()!;
     const dialogData: ConfirmDialogData = {
       title: 'Delete Income?',
       message: 'This income entry will be permanently removed.',
+      secondaryMessage: `${this.currencyPipe.transform(income.amount, 'USD') ?? income.amount} on ${this.formatDate(income.date)}`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       icon: 'warning',

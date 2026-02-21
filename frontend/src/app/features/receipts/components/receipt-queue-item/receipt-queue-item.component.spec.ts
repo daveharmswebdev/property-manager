@@ -160,6 +160,38 @@ describe('ReceiptQueueItemComponent', () => {
     });
   });
 
+  describe('exact timestamp (AC-16.5.3)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ReceiptQueueItemComponent);
+      component = fixture.componentInstance;
+      // Use a fixed date for predictable test output
+      const fixedDate = new Date('2026-01-14T15:42:00Z');
+      const receiptWithFixedDate: UnprocessedReceiptDto = {
+        ...mockImageReceipt,
+        createdAt: fixedDate,
+      };
+      fixture.componentRef.setInput('receipt', receiptWithFixedDate);
+      fixture.detectChanges();
+    });
+
+    it('should display exact timestamp alongside relative time', () => {
+      const exactDateEl = fixture.debugElement.query(
+        By.css('[data-testid="receipt-exact-date"]')
+      );
+      expect(exactDateEl).toBeTruthy();
+    });
+
+    it('should render exact timestamp in correct format', () => {
+      const exactDateEl = fixture.debugElement.query(
+        By.css('[data-testid="receipt-exact-date"]')
+      );
+      expect(exactDateEl).toBeTruthy();
+      const text = exactDateEl.nativeElement.textContent.trim();
+      // Should contain month, day, year, and time
+      expect(text).toMatch(/Jan\s+14,?\s+2026/);
+    });
+  });
+
   describe('delete button (AC-5.5.3)', () => {
     beforeEach(() => {
       fixture = TestBed.createComponent(ReceiptQueueItemComponent);

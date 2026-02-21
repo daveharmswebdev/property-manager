@@ -234,9 +234,16 @@ export class ReceiptsComponent implements OnInit {
    * Handle delete receipt event from queue item (AC-5.5.3)
    */
   onDeleteReceipt(receiptId: string): void {
+    const receipt = this.store.unprocessedReceipts().find(r => r.id === receiptId);
+    const parts = [
+      receipt?.propertyName,
+      receipt?.createdAt ? new Date(receipt.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : undefined,
+    ].filter(Boolean);
+    const secondaryMessage = parts.length > 0 ? parts.join(' — ') : undefined;
     const dialogData: ConfirmDialogData = {
       title: 'Delete Receipt',
       message: 'Are you sure you want to delete this receipt? This action cannot be undone.',
+      secondaryMessage,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       icon: 'delete',

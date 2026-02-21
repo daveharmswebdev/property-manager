@@ -180,6 +180,22 @@ describe('IncomeDetailComponent', () => {
       expect(mockStore.deleteIncome).toHaveBeenCalled();
     });
 
+    it('should pass secondaryMessage with amount and date to delete dialog (AC-16.5.1)', () => {
+      const dialog = fixture.debugElement.injector.get(MatDialog);
+      vi.spyOn(dialog, 'open').mockReturnValue({
+        afterClosed: () => of(false),
+      } as any);
+
+      const deleteBtn = fixture.debugElement.queryAll(By.css('.action-bar button'))
+        .find(b => b.nativeElement.textContent.includes('Delete'));
+      deleteBtn!.nativeElement.click();
+
+      const dialogData = (dialog.open as ReturnType<typeof vi.fn>).mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBeTruthy();
+      expect(dialogData.secondaryMessage).toContain('$1,500.00');
+      expect(dialogData.secondaryMessage).toMatch(/Jan\s+\d{1,2},?\s+2026/);
+    });
+
     it('should not call store.deleteIncome when dialog is cancelled', () => {
       const dialog = fixture.debugElement.injector.get(MatDialog);
       vi.spyOn(dialog, 'open').mockReturnValue({

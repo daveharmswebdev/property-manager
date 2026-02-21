@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
 
@@ -54,6 +54,9 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
         </div>
         <div class="details">
           <span class="date" data-testid="receipt-date">{{ formattedDate() }}</span>
+          @if (exactDate()) {
+            <span class="exact-date" data-testid="receipt-exact-date">{{ exactDate() }}</span>
+          }
           <span
             class="property"
             [class.unassigned]="!receipt().propertyName"
@@ -135,6 +138,11 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
       .date {
         font-weight: 500;
         color: rgba(0, 0, 0, 0.87);
+      }
+
+      .exact-date {
+        font-size: 0.75rem;
+        color: var(--mat-sys-on-surface-variant);
       }
 
       .property {
@@ -229,6 +237,14 @@ export class ReceiptQueueItemComponent {
     if (!createdAt) return 'Unknown date';
     const date = new Date(createdAt);
     return formatDistanceToNow(date, { addSuffix: true });
+  });
+
+  /** Exact formatted timestamp (e.g., "Jan 14, 2026 3:42 PM") */
+  exactDate = computed(() => {
+    const createdAt = this.receipt().createdAt;
+    if (!createdAt) return '';
+    const date = new Date(createdAt);
+    return format(date, 'MMM d, yyyy h:mm a');
   });
 
   onClick(): void {

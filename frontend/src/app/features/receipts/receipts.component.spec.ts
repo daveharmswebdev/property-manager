@@ -232,6 +232,34 @@ describe('ReceiptsComponent', () => {
       expect(dialogConfig.data.confirmText).toBe('Delete');
     });
 
+    it('should pass secondaryMessage with property name and date to delete dialog (AC-16.5.1)', () => {
+      mockStore.isLoading.set(false);
+      mockStore.isEmpty.set(false);
+      mockStore.unprocessedReceipts.set(mockReceipts);
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-1');
+
+      const dialogData = mockDialog.open.mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBeTruthy();
+      expect(dialogData.secondaryMessage).toContain('Oak Street Duplex');
+    });
+
+    it('should pass undefined secondaryMessage when receipt has no property or date (AC-16.5.1)', () => {
+      const receiptNoInfo: UnprocessedReceiptDto[] = [
+        { id: 'receipt-x', contentType: 'image/jpeg' },
+      ];
+      mockStore.isLoading.set(false);
+      mockStore.isEmpty.set(false);
+      mockStore.unprocessedReceipts.set(receiptNoInfo);
+      fixture.detectChanges();
+
+      component.onDeleteReceipt('receipt-x');
+
+      const dialogData = mockDialog.open.mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBeUndefined();
+    });
+
     it('should not delete receipt when dialog is cancelled', () => {
       mockDialog.open.mockReturnValue({
         afterClosed: () => of(false),
