@@ -233,8 +233,8 @@ development_status:
   # User Outcome: "Every feature works completely, looks consistent, and I can manage my data from any view without workarounds"
   epic-16: in-progress
   16-1-fix-date-utc-offset-bug: done             # Issue #217 - MERGED: commit 429f11f
-  16-2-income-feature-parity: review             # Issues #218, #219 - depends on 16.1 (DONE)
-  16-3-desktop-receipt-upload: backlog            # Issue #234
+  16-2-income-feature-parity: done               # Issues #218, #219 - depends on 16.1 (DONE)
+  16-3-desktop-receipt-upload: done                  # Issue #234
   16-4-expense-workorder-and-receipt-linking: backlog  # Issue #235
   16-5-ux-polish-bundle: backlog                 # Issues #220, #222, #223
   16-6-shared-component-extraction: backlog      # Issues #215, #216 - depends on 16.2
