@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, OnDestroy, signal, DestroyRef } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, SlicePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   FormBuilder,
@@ -21,11 +22,16 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseDetailStore } from '../stores/expense-detail.store';
 import { ExpenseStore } from '../stores/expense.store';
-import { UpdateExpenseRequest } from '../services/expense.service';
+import { ExpenseService, UpdateExpenseRequest } from '../services/expense.service';
 import {
   PropertyService,
   PropertySummaryDto,
 } from '../../properties/services/property.service';
+import {
+  WorkOrderService,
+  WorkOrderDto,
+} from '../../work-orders/services/work-order.service';
+import { ApiClient, UnprocessedReceiptDto } from '../../../core/api/api.service';
 import { CurrencyInputDirective } from '../../../shared/directives/currency-input.directive';
 import {
   ConfirmDialogComponent,
@@ -55,6 +61,7 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
     MatNativeDateModule,
     MatDialogModule,
     CurrencyPipe,
+    SlicePipe,
     CurrencyInputDirective,
   ],
   template: `
@@ -202,13 +209,23 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
               </mat-card-header>
               <mat-card-content>
                 @if (store.hasWorkOrder()) {
-                  <a
-                    [routerLink]="['/work-orders', store.expense()!.workOrderId]"
-                    data-testid="work-order-link"
-                    class="work-order-link"
-                  >
-                    View Work Order
-                  </a>
+                  <div class="work-order-info">
+                    <div class="work-order-description" data-testid="work-order-description">
+                      {{ store.expense()!.workOrderDescription }}
+                    </div>
+                    <div class="work-order-status" data-testid="work-order-status">
+                      <span class="status-badge" [attr.data-status]="store.expense()!.workOrderStatus?.toLowerCase()">
+                        {{ store.expense()!.workOrderStatus }}
+                      </span>
+                    </div>
+                    <a
+                      [routerLink]="['/work-orders', store.expense()!.workOrderId]"
+                      data-testid="work-order-link"
+                      class="work-order-link"
+                    >
+                      View Work Order
+                    </a>
+                  </div>
                 } @else {
                   <p class="empty-text">No work order linked</p>
                 }
@@ -220,6 +237,7 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
         <!-- EDIT MODE -->
         @if (store.isEditing()) {
           <form [formGroup]="editForm" (ngSubmit)="onSubmit()" class="edit-form">
+            <!-- Info Card -->
             <mat-card class="detail-card">
               <mat-card-content>
                 <div class="form-fields">
@@ -285,6 +303,116 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
                     </mat-select>
                   </mat-form-field>
                 </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Receipt Card (Edit Mode) — AC3, AC4 -->
+            <mat-card class="section-card" data-testid="receipt-section-edit">
+              <mat-card-header>
+                <mat-card-title>Receipt</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                @if (store.hasReceipt()) {
+                  <div class="receipt-actions">
+                    <span data-testid="receipt-thumbnail">Receipt attached</span>
+                    <button mat-stroked-button type="button" (click)="onViewReceipt()">
+                      <mat-icon>visibility</mat-icon>
+                      View Receipt
+                    </button>
+                    <button
+                      mat-stroked-button
+                      color="warn"
+                      type="button"
+                      (click)="onUnlinkReceipt()"
+                      [disabled]="store.isUnlinkingReceipt()"
+                    >
+                      @if (store.isUnlinkingReceipt()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                      } @else {
+                        <mat-icon>link_off</mat-icon>
+                      }
+                      Unlink Receipt
+                    </button>
+                  </div>
+                } @else {
+                  <p class="empty-text">No receipt linked</p>
+                  @if (!showReceiptPicker()) {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      (click)="onShowReceiptPicker()"
+                      data-testid="browse-receipts-btn"
+                    >
+                      <mat-icon>attach_file</mat-icon>
+                      Browse Receipts to Link
+                    </button>
+                  } @else {
+                    @if (isLoadingReceipts()) {
+                      <mat-spinner diameter="24"></mat-spinner>
+                    } @else if (unprocessedReceipts().length === 0) {
+                      <p class="empty-text">No unprocessed receipts available</p>
+                    } @else {
+                      <div class="receipt-picker">
+                        @for (receipt of unprocessedReceipts(); track receipt.id) {
+                          <button
+                            type="button"
+                            class="receipt-option"
+                            [class.selected]="selectedReceiptId() === receipt.id"
+                            (click)="selectedReceiptId.set(receipt.id!)"
+                            data-testid="receipt-option"
+                          >
+                            @if (receipt.contentType === 'application/pdf') {
+                              <mat-icon class="pdf-icon">description</mat-icon>
+                            } @else {
+                              <img [src]="receipt.viewUrl" alt="Receipt" class="receipt-thumb" />
+                            }
+                            <span class="receipt-name">{{ receipt.propertyName || 'Receipt' }}</span>
+                          </button>
+                        }
+                      </div>
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        type="button"
+                        (click)="linkReceipt()"
+                        [disabled]="!selectedReceiptId() || isLinkingReceipt()"
+                        data-testid="link-receipt-btn"
+                      >
+                        @if (isLinkingReceipt()) {
+                          <mat-spinner diameter="18"></mat-spinner>
+                        } @else {
+                          <mat-icon>link</mat-icon>
+                          Link Selected Receipt
+                        }
+                      </button>
+                    }
+                  }
+                }
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Work Order Card (Edit Mode) — AC1, AC2 -->
+            <mat-card class="section-card" data-testid="work-order-section-edit">
+              <mat-card-header>
+                <mat-card-title>Work Order</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Work Order (optional)</mat-label>
+                  <mat-select formControlName="workOrderId" data-testid="work-order-select">
+                    @if (isLoadingWorkOrders()) {
+                      <mat-option disabled>Loading work orders...</mat-option>
+                    } @else {
+                      <mat-option value="">None</mat-option>
+                      @for (wo of workOrders(); track wo.id) {
+                        <mat-option [value]="wo.id">
+                          {{ wo.description.length > 60 ? (wo.description | slice:0:60) + '...' : wo.description }}
+                          ({{ wo.status }})
+                        </mat-option>
+                      }
+                    }
+                  </mat-select>
+                </mat-form-field>
               </mat-card-content>
             </mat-card>
 
@@ -420,6 +548,41 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
       }
     }
 
+    .work-order-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .work-order-description {
+      color: var(--mat-sys-on-surface);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface);
+
+      &[data-status="completed"] {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      &[data-status="assigned"] {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      &[data-status="reported"] {
+        background: #fff3e0;
+        color: #e65100;
+      }
+    }
+
     .work-order-link {
       color: var(--mat-sys-primary);
       text-decoration: none;
@@ -476,6 +639,75 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
       }
     }
 
+    .section-label {
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .receipt-link-section {
+      margin: 16px 0;
+    }
+
+    .receipt-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+    }
+
+    .receipt-option {
+      width: 80px;
+      height: 80px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0;
+      background: var(--mat-sys-surface-container);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      &.selected {
+        border-color: var(--mat-sys-primary);
+      }
+
+      .receipt-thumb {
+        width: 100%;
+        height: 60px;
+        object-fit: cover;
+      }
+
+      .pdf-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: var(--mat-sys-on-surface-variant);
+      }
+
+      .receipt-name {
+        font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 76px;
+        padding: 2px;
+      }
+    }
+
+    .receipt-section {
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      button mat-icon {
+        margin-right: 4px;
+      }
+    }
+
     @media (max-width: 600px) {
       .expense-detail-container {
         padding: 16px;
@@ -500,11 +732,27 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   private readonly snackBar = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
   private readonly propertyService = inject(PropertyService);
+  private readonly workOrderService = inject(WorkOrderService);
+  private readonly expenseService = inject(ExpenseService);
+  private readonly apiClient = inject(ApiClient);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly today = new Date();
   protected readonly categories = computed(() => this.expenseStore.sortedCategories());
   protected readonly properties = signal<PropertySummaryDto[]>([]);
+
+  // Work order state (AC1, AC2)
+  protected readonly workOrders = signal<WorkOrderDto[]>([]);
+  protected readonly isLoadingWorkOrders = signal(false);
+
+  // Receipt linking state (AC3, AC4)
+  protected readonly unprocessedReceipts = signal<UnprocessedReceiptDto[]>([]);
+  protected readonly isLoadingReceipts = signal(false);
+  protected readonly isLinkingReceipt = signal(false);
+  protected readonly selectedReceiptId = signal<string | null>(null);
+  protected readonly showReceiptPicker = signal(false);
+
+  private propertyChangeSubscription: Subscription | null = null;
 
   protected editForm: FormGroup = this.fb.group({
     amount: [null, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
@@ -512,6 +760,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
     categoryId: ['', [Validators.required]],
     description: ['', [Validators.maxLength(500)]],
     propertyId: ['', [Validators.required]],
+    workOrderId: [''],
   });
 
   private expenseId: string | null = null;
@@ -535,6 +784,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.propertyChangeSubscription?.unsubscribe();
     this.store.reset();
   }
 
@@ -546,9 +796,34 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
     this.store.startEditing();
     this.populateEditForm();
     this.loadProperties();
+
+    // Load work orders for current property (AC1)
+    const expense = this.store.expense();
+    if (expense?.propertyId) {
+      this.loadWorkOrders(expense.propertyId);
+    }
+
+    // Reset receipt picker state (AC3)
+    this.showReceiptPicker.set(false);
+    this.selectedReceiptId.set(null);
+
+    // Property change listener — reset work orders on property change (AC2)
+    this.propertyChangeSubscription?.unsubscribe();
+    this.propertyChangeSubscription = this.editForm
+      .get('propertyId')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((newPropertyId) => {
+        this.editForm.patchValue({ workOrderId: '' });
+        this.workOrders.set([]);
+        if (newPropertyId) {
+          this.loadWorkOrders(newPropertyId);
+        }
+      });
   }
 
   protected onCancel(): void {
+    this.propertyChangeSubscription?.unsubscribe();
+    this.propertyChangeSubscription = null;
     this.store.cancelEditing();
   }
 
@@ -558,7 +833,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const { amount, date, categoryId, description, propertyId } = this.editForm.value;
+    const { amount, date, categoryId, description, propertyId, workOrderId } = this.editForm.value;
     const formattedDate = this.formatDateForApi(date);
 
     const request: UpdateExpenseRequest = {
@@ -567,6 +842,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
       categoryId,
       description: description?.trim() || undefined,
       propertyId,
+      workOrderId: workOrderId || undefined,
     };
 
     this.store.updateExpense({ expenseId: this.expenseId!, request });
@@ -645,6 +921,7 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
       categoryId: expense.categoryId,
       description: expense.description || '',
       propertyId: expense.propertyId,
+      workOrderId: expense.workOrderId || '',
     });
   }
 
@@ -659,6 +936,65 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private loadWorkOrders(propertyId: string): void {
+    this.isLoadingWorkOrders.set(true);
+    this.workOrderService
+      .getWorkOrdersByProperty(propertyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.workOrders.set(response.items);
+          this.isLoadingWorkOrders.set(false);
+        },
+        error: () => {
+          this.isLoadingWorkOrders.set(false);
+        },
+      });
+  }
+
+  protected onShowReceiptPicker(): void {
+    this.showReceiptPicker.set(true);
+    this.loadUnprocessedReceipts();
+  }
+
+  private loadUnprocessedReceipts(): void {
+    this.isLoadingReceipts.set(true);
+    this.apiClient
+      .receipts_GetUnprocessed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.unprocessedReceipts.set(response.items ?? []);
+          this.isLoadingReceipts.set(false);
+        },
+        error: () => {
+          this.isLoadingReceipts.set(false);
+        },
+      });
+  }
+
+  protected linkReceipt(): void {
+    const receiptId = this.selectedReceiptId();
+    if (!receiptId) return;
+
+    this.isLinkingReceipt.set(true);
+    this.expenseService
+      .linkReceipt(this.expenseId!, receiptId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isLinkingReceipt.set(false);
+          this.snackBar.open('Receipt linked', 'Close', { duration: 3000 });
+          this.store.loadExpense(this.expenseId!);
+          this.selectedReceiptId.set(null);
+        },
+        error: () => {
+          this.isLinkingReceipt.set(false);
+          this.snackBar.open('Failed to link receipt', 'Close', { duration: 5000 });
+        },
+      });
   }
 
   private formatDateForApi(date: Date): string {

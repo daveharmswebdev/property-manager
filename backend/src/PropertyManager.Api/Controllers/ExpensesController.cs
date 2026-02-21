@@ -21,17 +21,20 @@ public class ExpensesController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateExpenseCommand> _createValidator;
     private readonly IValidator<UpdateExpenseCommand> _updateValidator;
+    private readonly IValidator<LinkReceiptToExpenseCommand> _linkReceiptValidator;
     private readonly ILogger<ExpensesController> _logger;
 
     public ExpensesController(
         IMediator mediator,
         IValidator<CreateExpenseCommand> createValidator,
         IValidator<UpdateExpenseCommand> updateValidator,
+        IValidator<LinkReceiptToExpenseCommand> linkReceiptValidator,
         ILogger<ExpensesController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _linkReceiptValidator = linkReceiptValidator;
         _logger = logger;
     }
 
@@ -406,6 +409,41 @@ public class ExpensesController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Link an unprocessed receipt to an existing expense (AC-16.4.3).
+    /// Sets both FK sides and marks receipt as processed.
+    /// </summary>
+    /// <param name="id">Expense GUID</param>
+    /// <param name="request">Link receipt request containing the receipt ID</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Receipt linked successfully</response>
+    /// <response code="404">If expense or receipt not found</response>
+    /// <response code="409">If expense already has a receipt or receipt is already processed</response>
+    [HttpPost("expenses/{id:guid}/link-receipt")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> LinkReceipt(Guid id, [FromBody] LinkReceiptRequest request)
+    {
+        var command = new LinkReceiptToExpenseCommand(id, request.ReceiptId);
+        var validationResult = await _linkReceiptValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            var problemDetails = CreateValidationProblemDetails(validationResult);
+            return BadRequest(problemDetails);
+        }
+
+        await _mediator.Send(command);
+
+        _logger.LogInformation(
+            "Receipt {ReceiptId} linked to expense {ExpenseId} at {Timestamp}",
+            request.ReceiptId,
+            id,
+            DateTime.UtcNow);
+
+        return NoContent();
+    }
+
     private ValidationProblemDetails CreateValidationProblemDetails(FluentValidation.Results.ValidationResult validationResult)
     {
         var errors = validationResult.Errors
@@ -464,3 +502,8 @@ public record UpdateExpenseRequest(
     Guid? WorkOrderId = null,
     Guid? PropertyId = null
 );
+
+/// <summary>
+/// Request model for linking a receipt to an expense (AC-16.4.3).
+/// </summary>
+public record LinkReceiptRequest(Guid ReceiptId);

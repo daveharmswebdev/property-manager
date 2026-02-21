@@ -55,6 +55,8 @@ export interface ExpenseDto {
   description?: string;
   receiptId?: string;
   workOrderId?: string; // AC-11.2.1, AC-11.2.2
+  workOrderDescription?: string;
+  workOrderStatus?: string;
   createdAt: string;
 }
 
@@ -251,6 +253,16 @@ export class ExpenseService {
    */
   unlinkReceipt(expenseId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/expenses/${expenseId}/receipt`);
+  }
+
+  /**
+   * Link an unprocessed receipt to an existing expense (AC-16.4.3)
+   * @param expenseId Expense GUID
+   * @param receiptId Receipt GUID
+   * @returns Observable that completes on success (204)
+   */
+  linkReceipt(expenseId: string, receiptId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/expenses/${expenseId}/link-receipt`, { receiptId });
   }
 
   /**

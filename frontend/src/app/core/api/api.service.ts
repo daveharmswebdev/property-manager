@@ -33,6 +33,7 @@ export interface IApiClient {
     expenses_UpdateExpense(id: string, request: UpdateExpenseRequest): Observable<void>;
     expenses_DeleteExpense(id: string): Observable<void>;
     expenses_UnlinkReceipt(id: string): Observable<void>;
+    expenses_LinkReceipt(id: string, request: LinkReceiptRequest): Observable<void>;
     health_Health(): Observable<HealthResponse>;
     health_Ready(): Observable<ReadyResponse>;
     income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult>;
@@ -1142,6 +1143,70 @@ export class ApiClient implements IApiClient {
             let result404: any = null;
             result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    expenses_LinkReceipt(id: string, request: LinkReceiptRequest): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/expenses/{id}/link-receipt";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExpenses_LinkReceipt(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExpenses_LinkReceipt(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processExpenses_LinkReceipt(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 409) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result409: any = null;
+            result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result409);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -5361,6 +5426,8 @@ export interface ExpenseDto {
     description?: string | undefined;
     receiptId?: string | undefined;
     workOrderId?: string | undefined;
+    workOrderDescription?: string | undefined;
+    workOrderStatus?: string | undefined;
     createdAt?: Date;
 }
 
@@ -5371,6 +5438,10 @@ export interface UpdateExpenseRequest {
     description?: string | undefined;
     workOrderId?: string | undefined;
     propertyId?: string | undefined;
+}
+
+export interface LinkReceiptRequest {
+    receiptId?: string;
 }
 
 export interface HealthResponse {
@@ -5430,6 +5501,7 @@ export interface UpdateIncomeRequest {
     date?: Date;
     source?: string | undefined;
     description?: string | undefined;
+    propertyId?: string | undefined;
 }
 
 export interface CreateInvitationResponse {

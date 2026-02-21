@@ -60,6 +60,16 @@ export class ExpenseDetailPage extends BasePage {
   readonly saveButton: Locator;
   readonly cancelButton: Locator;
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Edit Mode — Receipt Linking (Story 16.4, AC3-AC4)
+  // ─────────────────────────────────────────────────────────────────────────
+  readonly receiptLinkSection: Locator;
+  readonly receiptOptions: Locator;
+  readonly linkReceiptButton: Locator;
+  readonly receiptSectionEdit: Locator;
+  readonly browseReceiptsButton: Locator;
+  readonly noUnprocessedReceiptsMessage: Locator;
+
   constructor(page: Page) {
     super(page);
 
@@ -102,6 +112,14 @@ export class ExpenseDetailPage extends BasePage {
     this.workOrderSelect = page.locator('mat-select[formControlName="workOrderId"]');
     this.saveButton = page.locator('button[type="submit"]');
     this.cancelButton = page.locator('button', { hasText: 'Cancel' });
+
+    // Receipt linking (Story 16.4)
+    this.receiptLinkSection = page.locator('[data-testid="receipt-link-section"]');
+    this.receiptOptions = page.locator('[data-testid="receipt-option"]');
+    this.linkReceiptButton = page.locator('[data-testid="link-receipt-btn"]');
+    this.receiptSectionEdit = page.locator('[data-testid="receipt-section-edit"]');
+    this.browseReceiptsButton = page.locator('[data-testid="browse-receipts-btn"]');
+    this.noUnprocessedReceiptsMessage = page.getByText(/No unprocessed receipts/i);
   }
 
   async goto(): Promise<void> {
@@ -186,6 +204,43 @@ export class ExpenseDetailPage extends BasePage {
 
   async clickBack(): Promise<void> {
     await this.backLink.click();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Receipt Linking Actions (Story 16.4, AC3-AC4)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async expectReceiptLinkSection(): Promise<void> {
+    await expect(this.receiptSectionEdit).toBeVisible();
+  }
+
+  async expectNoUnprocessedReceipts(): Promise<void> {
+    await expect(this.noUnprocessedReceiptsMessage).toBeVisible();
+  }
+
+  async clickBrowseReceipts(): Promise<void> {
+    await this.browseReceiptsButton.click();
+  }
+
+  async selectReceipt(index: number): Promise<void> {
+    await this.receiptOptions.nth(index).click();
+  }
+
+  async clickLinkReceipt(): Promise<void> {
+    await this.linkReceiptButton.click();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Work Order Actions (Story 16.4, AC1-AC2)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async expectWorkOrderDropdown(): Promise<void> {
+    await expect(this.workOrderSelect).toBeVisible();
+  }
+
+  async selectWorkOrder(description: string): Promise<void> {
+    await this.workOrderSelect.click();
+    await this.page.locator('mat-option', { hasText: description }).click();
   }
 
   /**
