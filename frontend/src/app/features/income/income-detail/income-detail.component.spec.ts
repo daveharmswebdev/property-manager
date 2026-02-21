@@ -8,6 +8,7 @@ import { provideRouter } from '@angular/router';
 import { signal, computed } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { IncomeDetailComponent } from './income-detail.component';
 import { IncomeDetailStore } from '../stores/income-detail.store';
 import { IncomeDto } from '../services/income.service';
@@ -145,6 +146,87 @@ describe('IncomeDetailComponent', () => {
       const cancelBtn = fixture.debugElement.queryAll(By.css('.form-actions button'))
         .find(b => b.nativeElement.textContent.includes('Cancel'));
       expect(cancelBtn).toBeTruthy();
+    });
+  });
+
+  describe('interactions', () => {
+    it('should call store.startEditing when Edit button is clicked', () => {
+      const editBtn = fixture.debugElement.query(By.css('.action-bar button'));
+      editBtn.nativeElement.click();
+      expect(mockStore.startEditing).toHaveBeenCalled();
+    });
+
+    it('should call store.cancelEditing when Cancel button is clicked', () => {
+      isEditingSignal.set(true);
+      fixture.detectChanges();
+
+      const cancelBtn = fixture.debugElement.queryAll(By.css('.form-actions button'))
+        .find(b => b.nativeElement.textContent.includes('Cancel'));
+      cancelBtn!.nativeElement.click();
+      expect(mockStore.cancelEditing).toHaveBeenCalled();
+    });
+
+    it('should open confirm dialog and call store.deleteIncome on confirm', () => {
+      const dialog = fixture.debugElement.injector.get(MatDialog);
+      vi.spyOn(dialog, 'open').mockReturnValue({
+        afterClosed: () => of(true),
+      } as any);
+
+      const deleteBtn = fixture.debugElement.queryAll(By.css('.action-bar button'))
+        .find(b => b.nativeElement.textContent.includes('Delete'));
+      deleteBtn!.nativeElement.click();
+
+      expect(dialog.open).toHaveBeenCalled();
+      expect(mockStore.deleteIncome).toHaveBeenCalled();
+    });
+
+    it('should not call store.deleteIncome when dialog is cancelled', () => {
+      const dialog = fixture.debugElement.injector.get(MatDialog);
+      vi.spyOn(dialog, 'open').mockReturnValue({
+        afterClosed: () => of(false),
+      } as any);
+
+      const deleteBtn = fixture.debugElement.queryAll(By.css('.action-bar button'))
+        .find(b => b.nativeElement.textContent.includes('Delete'));
+      deleteBtn!.nativeElement.click();
+
+      expect(dialog.open).toHaveBeenCalled();
+      expect(mockStore.deleteIncome).not.toHaveBeenCalled();
+    });
+
+    it('should call store.updateIncome with correct payload on submit', () => {
+      // Enter edit mode
+      isEditingSignal.set(true);
+      fixture.detectChanges();
+
+      // Populate form with valid data
+      const form = (component as any).editForm;
+      form.patchValue({
+        amount: 2000,
+        date: new Date(2026, 0, 20),
+        source: 'Updated Tenant',
+        description: 'Updated rent',
+        propertyId: 'prop-1',
+      });
+      fixture.detectChanges();
+
+      // Set incomeId so onSubmit can reference it
+      (component as any).incomeId = 'inc-1';
+
+      // Submit
+      const submitBtn = fixture.debugElement.query(By.css('button[type="submit"]'));
+      submitBtn.nativeElement.click();
+
+      expect(mockStore.updateIncome).toHaveBeenCalledWith({
+        incomeId: 'inc-1',
+        request: expect.objectContaining({
+          amount: 2000,
+          date: '2026-01-20',
+          source: 'Updated Tenant',
+          description: 'Updated rent',
+          propertyId: 'prop-1',
+        }),
+      });
     });
   });
 

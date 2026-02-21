@@ -491,6 +491,10 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
       .cell-description {
         order: 5;
       }
+
+      .cell-actions {
+        order: 6;
+      }
     }
   `],
 })
