@@ -220,7 +220,7 @@ test.describe('Desktop Receipt Upload (Story 16.3)', () => {
         .click();
 
       // THEN: success snackbar appears
-      const snackbar = page.locator('.mat-mdc-snack-bar-label');
+      const snackbar = page.locator('[matsnackbarlabel]');
       await expect(snackbar).toContainText('uploaded successfully');
     });
   });
@@ -301,7 +301,7 @@ test.describe('Desktop Receipt Upload (Story 16.3)', () => {
         .click();
 
       // THEN: snackbar confirms multiple receipts uploaded
-      const snackbar = page.locator('.mat-mdc-snack-bar-label');
+      const snackbar = page.locator('[matsnackbarlabel]');
       await expect(snackbar).toContainText('3 receipts uploaded successfully');
     });
   });
@@ -350,7 +350,7 @@ test.describe('Desktop Receipt Upload (Story 16.3)', () => {
         .click();
 
       // THEN: error snackbar shows with filename
-      const snackbar = page.locator('.mat-mdc-snack-bar-label');
+      const snackbar = page.locator('[matsnackbarlabel]');
       await expect(snackbar).toContainText('Failed to upload');
     });
   });
