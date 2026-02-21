@@ -10,6 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseListStore, FilterChip, DateRangePreset } from './stores/expense-list.store';
 import { ExpenseFiltersComponent } from './components/expense-filters/expense-filters.component';
+import { ListTotalDisplayComponent } from '../../shared/components/list-total-display/list-total-display.component';
 import { ExpenseListRowComponent } from './components/expense-list-row/expense-list-row.component';
 import { ExpenseListItemDto } from './services/expense.service';
 import {
@@ -43,6 +44,7 @@ import { PropertyService } from '../properties/services/property.service';
     MatPaginatorModule,
     ExpenseFiltersComponent,
     ExpenseListRowComponent,
+    ListTotalDisplayComponent,
   ],
   template: `
     <div class="expenses-container">
@@ -76,6 +78,14 @@ import { PropertyService } from '../properties/services/property.service';
         (chipRemove)="onChipRemove($event)"
         (clearAll)="onClearAllFilters()"
       />
+
+      <!-- Total Expenses Display (AC2) -->
+      @if (!store.isLoading() && store.totalCount() > 0) {
+        <app-list-total-display
+          label="Total Expenses"
+          [amount]="store.totalAmount()"
+        />
+      }
 
       <!-- Loading State -->
       @if (store.isLoading()) {

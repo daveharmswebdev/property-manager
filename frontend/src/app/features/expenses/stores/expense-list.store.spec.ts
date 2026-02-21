@@ -45,6 +45,7 @@ describe('ExpenseListStore', () => {
     page: 1,
     pageSize: 50,
     totalPages: 1,
+    totalAmount: 150.0,
   };
 
   const mockCategoriesResponse: ExpenseCategoriesResponse = {
@@ -103,6 +104,10 @@ describe('ExpenseListStore', () => {
 
     it('should have page size 50', () => {
       expect(store.pageSize()).toBe(50);
+    });
+
+    it('should have zero totalAmount', () => {
+      expect(store.totalAmount()).toBe(0);
     });
 
     it('should have no error', () => {
@@ -277,6 +282,23 @@ describe('ExpenseListStore', () => {
       store.initialize();
       expect(store.totalCount()).toBe(1);
       expect(store.totalPages()).toBe(1);
+    });
+
+    it('should set totalAmount from API response (AC2)', () => {
+      store.initialize();
+      expect(store.totalAmount()).toBe(150.0);
+    });
+
+    it('should reset totalAmount to 0 when response has no totalAmount', () => {
+      expenseServiceMock.getExpenses.mockReturnValue(of({
+        items: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 50,
+        totalPages: 0,
+      }));
+      store.initialize();
+      expect(store.totalAmount()).toBe(0);
     });
 
     it('should handle error', () => {
