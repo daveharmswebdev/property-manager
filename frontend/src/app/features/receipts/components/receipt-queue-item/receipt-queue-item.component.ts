@@ -142,7 +142,7 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
 
       .exact-date {
         font-size: 0.75rem;
-        color: rgba(0, 0, 0, 0.45);
+        color: var(--mat-sys-on-surface-variant);
       }
 
       .property {

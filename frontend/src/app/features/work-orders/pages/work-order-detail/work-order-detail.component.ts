@@ -769,7 +769,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
       data: {
         title: 'Delete this work order?',
         message: 'This will remove the work order. Linked expenses will be unlinked.',
-        secondaryMessage: description.length > 80 ? description.substring(0, 80) + '...' : description,
+        secondaryMessage: description ? (description.length > 80 ? description.substring(0, 80) + '...' : description) : undefined,
         confirmText: 'Delete',
         icon: 'warning',
         iconColor: 'warn',

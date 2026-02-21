@@ -353,6 +353,45 @@ describe('WorkOrderDetailComponent', () => {
       expect(deleteButton.nativeElement.textContent).toContain('Delete');
     });
 
+    it('should pass secondaryMessage with description to delete dialog (AC-16.5.1)', async () => {
+      const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(false) });
+      (component as any).dialog = { open: openSpy };
+
+      await component.onDeleteClick();
+
+      const dialogData = openSpy.mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBe('Fix the leaky faucet in the kitchen');
+    });
+
+    it('should pass undefined secondaryMessage when work order has no description (AC-16.5.1)', async () => {
+      const woNoDesc = { ...mockWorkOrder, description: '' };
+      mockWorkOrderStore.selectedWorkOrder.set(woNoDesc);
+      fixture.detectChanges();
+
+      const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(false) });
+      (component as any).dialog = { open: openSpy };
+
+      await component.onDeleteClick();
+
+      const dialogData = openSpy.mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBeUndefined();
+    });
+
+    it('should truncate long descriptions in delete dialog secondaryMessage (AC-16.5.1)', async () => {
+      const longDesc = 'A'.repeat(100);
+      const woLongDesc = { ...mockWorkOrder, description: longDesc };
+      mockWorkOrderStore.selectedWorkOrder.set(woLongDesc);
+      fixture.detectChanges();
+
+      const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(false) });
+      (component as any).dialog = { open: openSpy };
+
+      await component.onDeleteClick();
+
+      const dialogData = openSpy.mock.calls[0][1].data;
+      expect(dialogData.secondaryMessage).toBe('A'.repeat(80) + '...');
+    });
+
     it('should have edit, delete, preview PDF, and download PDF buttons', () => {
       const buttons = fixture.nativeElement.querySelectorAll('.action-buttons button');
       expect(buttons.length).toBe(4);
