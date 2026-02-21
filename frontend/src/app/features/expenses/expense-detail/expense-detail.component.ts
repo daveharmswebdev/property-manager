@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, OnDestroy, signal, DestroyRef } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, OnDestroy, signal, DestroyRef } from '@angular/core';
 import { CommonModule, CurrencyPipe, SlicePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
@@ -31,7 +31,7 @@ import {
   WorkOrderService,
   WorkOrderDto,
 } from '../../work-orders/services/work-order.service';
-import { ApiClient, UnprocessedReceiptDto } from '../../../core/api/api.service';
+import { ApiClient, ReceiptDto, UnprocessedReceiptDto } from '../../../core/api/api.service';
 import { CurrencyInputDirective } from '../../../shared/directives/currency-input.directive';
 import {
   ConfirmDialogComponent,
@@ -176,25 +176,37 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
               </mat-card-header>
               <mat-card-content>
                 @if (store.hasReceipt()) {
-                  <div class="receipt-actions">
-                    <span data-testid="receipt-thumbnail">Receipt attached</span>
-                    <button mat-stroked-button (click)="onViewReceipt()">
-                      <mat-icon>visibility</mat-icon>
-                      View Receipt
-                    </button>
-                    <button
-                      mat-stroked-button
-                      color="warn"
-                      (click)="onUnlinkReceipt()"
-                      [disabled]="store.isUnlinkingReceipt()"
-                    >
-                      @if (store.isUnlinkingReceipt()) {
-                        <mat-spinner diameter="18"></mat-spinner>
+                  <div class="receipt-display">
+                    <div class="receipt-thumbnail-wrapper" data-testid="receipt-thumbnail" (click)="onViewReceipt()">
+                      @if (receiptViewUrl()) {
+                        @if (receiptContentType() === 'application/pdf') {
+                          <mat-icon class="pdf-thumb-icon">description</mat-icon>
+                        } @else {
+                          <img [src]="receiptViewUrl()" alt="Receipt" class="receipt-thumbnail-img" />
+                        }
                       } @else {
-                        <mat-icon>link_off</mat-icon>
+                        <mat-icon class="receipt-placeholder-icon">receipt</mat-icon>
                       }
-                      Unlink Receipt
-                    </button>
+                    </div>
+                    <div class="receipt-actions">
+                      <button mat-stroked-button (click)="onViewReceipt()">
+                        <mat-icon>visibility</mat-icon>
+                        View Receipt
+                      </button>
+                      <button
+                        mat-stroked-button
+                        color="warn"
+                        (click)="onUnlinkReceipt()"
+                        [disabled]="store.isUnlinkingReceipt()"
+                      >
+                        @if (store.isUnlinkingReceipt()) {
+                          <mat-spinner diameter="18"></mat-spinner>
+                        } @else {
+                          <mat-icon>link_off</mat-icon>
+                        }
+                        Unlink Receipt
+                      </button>
+                    </div>
                   </div>
                 } @else {
                   <p class="empty-text">No receipt linked</p>
@@ -313,26 +325,38 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
               </mat-card-header>
               <mat-card-content>
                 @if (store.hasReceipt()) {
-                  <div class="receipt-actions">
-                    <span data-testid="receipt-thumbnail">Receipt attached</span>
-                    <button mat-stroked-button type="button" (click)="onViewReceipt()">
-                      <mat-icon>visibility</mat-icon>
-                      View Receipt
-                    </button>
-                    <button
-                      mat-stroked-button
-                      color="warn"
-                      type="button"
-                      (click)="onUnlinkReceipt()"
-                      [disabled]="store.isUnlinkingReceipt()"
-                    >
-                      @if (store.isUnlinkingReceipt()) {
-                        <mat-spinner diameter="18"></mat-spinner>
+                  <div class="receipt-display">
+                    <div class="receipt-thumbnail-wrapper" data-testid="receipt-thumbnail" (click)="onViewReceipt()">
+                      @if (receiptViewUrl()) {
+                        @if (receiptContentType() === 'application/pdf') {
+                          <mat-icon class="pdf-thumb-icon">description</mat-icon>
+                        } @else {
+                          <img [src]="receiptViewUrl()" alt="Receipt" class="receipt-thumbnail-img" />
+                        }
                       } @else {
-                        <mat-icon>link_off</mat-icon>
+                        <mat-icon class="receipt-placeholder-icon">receipt</mat-icon>
                       }
-                      Unlink Receipt
-                    </button>
+                    </div>
+                    <div class="receipt-actions">
+                      <button mat-stroked-button type="button" (click)="onViewReceipt()">
+                        <mat-icon>visibility</mat-icon>
+                        View Receipt
+                      </button>
+                      <button
+                        mat-stroked-button
+                        color="warn"
+                        type="button"
+                        (click)="onUnlinkReceipt()"
+                        [disabled]="store.isUnlinkingReceipt()"
+                      >
+                        @if (store.isUnlinkingReceipt()) {
+                          <mat-spinner diameter="18"></mat-spinner>
+                        } @else {
+                          <mat-icon>link_off</mat-icon>
+                        }
+                        Unlink Receipt
+                      </button>
+                    </div>
                   </div>
                 } @else {
                   <p class="empty-text">No receipt linked</p>
@@ -535,6 +559,50 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
     mat-card-title {
       font-size: 16px !important;
       font-weight: 500;
+    }
+
+    .receipt-display {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .receipt-thumbnail-wrapper {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--mat-sys-surface-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--mat-sys-outline-variant);
+
+      &:hover {
+        border-color: var(--mat-sys-primary);
+      }
+    }
+
+    .receipt-thumbnail-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .pdf-thumb-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .receipt-placeholder-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .receipt-actions {
@@ -751,6 +819,8 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   protected readonly isLinkingReceipt = signal(false);
   protected readonly selectedReceiptId = signal<string | null>(null);
   protected readonly showReceiptPicker = signal(false);
+  protected readonly receiptViewUrl = signal<string | null>(null);
+  protected readonly receiptContentType = signal<string | null>(null);
 
   private propertyChangeSubscription: Subscription | null = null;
 
@@ -764,6 +834,31 @@ export class ExpenseDetailComponent implements OnInit, OnDestroy {
   });
 
   private expenseId: string | null = null;
+
+  constructor() {
+    // Fetch receipt thumbnail whenever expense changes and has a receiptId
+    effect(() => {
+      const expense = this.store.expense();
+      const receiptId = expense?.receiptId;
+      if (receiptId) {
+        this.apiClient.receipts_GetReceipt(receiptId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (receipt) => {
+              this.receiptViewUrl.set(receipt.viewUrl ?? null);
+              this.receiptContentType.set(receipt.contentType ?? null);
+            },
+            error: () => {
+              this.receiptViewUrl.set(null);
+              this.receiptContentType.set(null);
+            },
+          });
+      } else {
+        this.receiptViewUrl.set(null);
+        this.receiptContentType.set(null);
+      }
+    });
+  }
 
   ngOnInit(): void {
     // Subscribe to route param changes so the component reloads on param-only navigation
