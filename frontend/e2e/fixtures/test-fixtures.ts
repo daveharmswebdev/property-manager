@@ -29,6 +29,7 @@ import { ExpenseWorkspacePage } from '../pages/expense-workspace.page';
 import { IncomeWorkspacePage } from '../pages/income-workspace.page';
 import { VendorPage } from '../pages/vendor.page';
 import { ExpenseDetailPage } from '../pages/expense-detail.page';
+import { IncomeDetailPage } from '../pages/income-detail.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 
@@ -60,6 +61,8 @@ type Fixtures = {
   vendorPage: VendorPage;
   /** Expense detail/edit page object */
   expenseDetailPage: ExpenseDetailPage;
+  /** Income detail/edit page object */
+  incomeDetailPage: IncomeDetailPage;
   /** Authentication helper for login flows */
   authHelper: AuthHelper;
   /** MailHog helper for email verification (invitation flow) */
@@ -109,6 +112,10 @@ export const test = base.extend<Fixtures>({
 
   expenseDetailPage: async ({ page }, use) => {
     await use(new ExpenseDetailPage(page));
+  },
+
+  incomeDetailPage: async ({ page }, use) => {
+    await use(new IncomeDetailPage(page));
   },
 
   authHelper: async ({ page }, use) => {

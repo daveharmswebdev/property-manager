@@ -167,4 +167,63 @@ public class UpdateIncomeValidatorTests
         // Assert
         result.IsValid.Should().BeTrue();
     }
+
+    // ─── PropertyId Validation Tests (AC-16.2.4) ────────────────────
+
+    [Fact]
+    public async Task Validate_NullPropertyId_PassesValidation()
+    {
+        // Arrange
+        var command = new UpdateIncomeCommand(
+            Id: Guid.NewGuid(),
+            Amount: 1500.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            Source: "Test",
+            Description: null);
+
+        // Act
+        var result = await _validator.ValidateAsync(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Validate_ValidPropertyId_PassesValidation()
+    {
+        // Arrange
+        var command = new UpdateIncomeCommand(
+            Id: Guid.NewGuid(),
+            Amount: 1500.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            Source: "Test",
+            Description: null,
+            PropertyId: Guid.NewGuid());
+
+        // Act
+        var result = await _validator.ValidateAsync(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Validate_EmptyPropertyId_FailsValidation()
+    {
+        // Arrange
+        var command = new UpdateIncomeCommand(
+            Id: Guid.NewGuid(),
+            Amount: 1500.00m,
+            Date: DateOnly.FromDateTime(DateTime.Today),
+            Source: "Test",
+            Description: null,
+            PropertyId: Guid.Empty);
+
+        // Act
+        var result = await _validator.ValidateAsync(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId");
+    }
 }

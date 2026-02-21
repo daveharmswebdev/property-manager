@@ -126,6 +126,14 @@ export const routes: Routes = [
             (m) => m.IncomeComponent
           ),
       },
+      // Income Detail (AC-16.2.3)
+      {
+        path: 'income/:id',
+        loadComponent: () =>
+          import('./features/income/income-detail/income-detail.component').then(
+            (m) => m.IncomeDetailComponent
+          ),
+      },
       // Receipts (AC7.7)
       {
         path: 'receipts',

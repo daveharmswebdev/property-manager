@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, effect } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,11 +12,23 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { IncomeListStore } from './stores/income-list.store';
+import { IncomeService, IncomeDto } from './services/income.service';
 import { PropertyStore } from '../properties/stores/property.store';
+import { PropertyService } from '../properties/services/property.service';
+import {
+  PropertyPickerDialogComponent,
+  PropertyPickerDialogData,
+} from '../expenses/components/property-picker-dialog/property-picker-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { YearSelectorService } from '../../core/services/year-selector.service';
 import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils';
-import { IncomeDto } from './services/income.service';
 
 /**
  * IncomeComponent (AC-4.3.1, AC-4.3.2, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)
@@ -42,14 +56,24 @@ import { IncomeDto } from './services/income.service';
     MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    MatDialogModule,
+    MatTooltipModule,
     CurrencyPipe,
   ],
   template: `
     <div class="income-container">
-      <!-- Page Header -->
+      <!-- Page Header (AC-16.2.1) -->
       <div class="page-header">
-        <h1>Income</h1>
-        <p class="subtitle">View all income across your properties</p>
+        <div class="page-header-content">
+          <div>
+            <h1>Income</h1>
+            <p class="subtitle">View all income across your properties</p>
+          </div>
+          <button mat-stroked-button color="primary" (click)="onAddIncome()">
+            <mat-icon>add</mat-icon>
+            <span class="button-text">Add Income</span>
+          </button>
+        </div>
       </div>
 
       <!-- Filters Section (AC-4.3.3, AC-4.3.4) -->
@@ -173,16 +197,25 @@ import { IncomeDto } from './services/income.service';
               <div class="header-source">Source</div>
               <div class="header-description">Description</div>
               <div class="header-amount">Amount</div>
+              <div class="header-actions">Actions</div>
             </div>
 
-            <!-- Income Rows -->
+            <!-- Income Rows (AC-16.2.2) -->
             @for (income of incomeStore.incomeEntries(); track income.id) {
-              <div class="income-row">
+              <div class="income-row" (click)="navigateToDetail(income)">
                 <div class="cell-date">{{ formatDate(income.date) }}</div>
                 <div class="cell-property">{{ income.propertyName }}</div>
                 <div class="cell-source">{{ income.source || '—' }}</div>
                 <div class="cell-description">{{ income.description || '—' }}</div>
                 <div class="cell-amount">{{ income.amount | currency }}</div>
+                <div class="cell-actions" (click)="$event.stopPropagation()">
+                  <button mat-icon-button matTooltip="Edit" (click)="navigateToDetail(income)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="onDeleteIncome(income)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
               </div>
             }
           </mat-card>
@@ -209,6 +242,13 @@ import { IncomeDto } from './services/income.service';
         margin: 0;
         color: var(--mat-sys-on-surface-variant);
       }
+    }
+
+    .page-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
     }
 
     .filters-card {
@@ -335,7 +375,7 @@ import { IncomeDto } from './services/income.service';
 
     .list-header {
       display: grid;
-      grid-template-columns: 100px 180px 1fr 1fr 120px;
+      grid-template-columns: 100px 180px 1fr 1fr 120px 80px;
       gap: 16px;
       padding: 12px 16px;
       background: var(--mat-sys-surface-container);
@@ -349,13 +389,19 @@ import { IncomeDto } from './services/income.service';
       text-align: right;
     }
 
+    .header-actions {
+      text-align: center;
+    }
+
     .income-row {
       display: grid;
-      grid-template-columns: 100px 180px 1fr 1fr 120px;
+      grid-template-columns: 100px 180px 1fr 1fr 120px 80px;
       gap: 16px;
       padding: 12px 16px;
       border-bottom: 1px solid var(--mat-sys-outline-variant);
       transition: background-color 0.2s ease;
+      cursor: pointer;
+      align-items: center;
 
       &:hover {
         background-color: var(--mat-sys-surface-container-low);
@@ -364,6 +410,12 @@ import { IncomeDto } from './services/income.service';
       &:last-child {
         border-bottom: none;
       }
+    }
+
+    .cell-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0;
     }
 
     .cell-date {
@@ -439,6 +491,10 @@ import { IncomeDto } from './services/income.service';
       .cell-description {
         order: 5;
       }
+
+      .cell-actions {
+        order: 6;
+      }
     }
   `],
 })
@@ -446,6 +502,11 @@ export class IncomeComponent implements OnInit, OnDestroy {
   readonly incomeStore = inject(IncomeListStore);
   readonly propertyStore = inject(PropertyStore);
   private readonly yearService = inject(YearSelectorService);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly propertyService = inject(PropertyService);
+  private readonly incomeService = inject(IncomeService);
 
   // Date values for the datepickers
   dateFromValue: Date | null = null;
@@ -530,5 +591,92 @@ export class IncomeComponent implements OnInit, OnDestroy {
    */
   formatDate(dateString: string): string {
     return formatDateShort(dateString);
+  }
+
+  /**
+   * Add Income button handler (AC-16.2.1)
+   * 0 properties → snackbar
+   * 1 property → navigate directly
+   * Multiple → property picker dialog
+   */
+  async onAddIncome(): Promise<void> {
+    let properties = this.propertyStore.properties();
+    if (properties.length === 0) {
+      try {
+        const response = await firstValueFrom(this.propertyService.getProperties());
+        properties = response.items;
+      } catch {
+        this.snackBar.open('Failed to load properties. Please try again.', 'Dismiss', { duration: 5000 });
+        return;
+      }
+    }
+
+    if (properties.length === 0) {
+      this.snackBar.open('Create a property first before adding income.', 'Dismiss', { duration: 5000 });
+      return;
+    }
+
+    if (properties.length === 1) {
+      this.router.navigate(['/properties', properties[0].id, 'income']);
+    } else {
+      const dialogRef = this.dialog.open(PropertyPickerDialogComponent, {
+        width: '400px',
+        data: {
+          properties: properties.map((p) => ({ id: p.id, name: p.name })),
+        } as PropertyPickerDialogData,
+      });
+
+      dialogRef.afterClosed().subscribe((propertyId: string | undefined) => {
+        if (propertyId) {
+          this.router.navigate(['/properties', propertyId, 'income']);
+        }
+      });
+    }
+  }
+
+  /**
+   * Navigate to income detail page (AC-16.2.2)
+   */
+  navigateToDetail(income: IncomeDto): void {
+    this.router.navigate(['/income', income.id]);
+  }
+
+  /**
+   * Delete income from list row (AC-16.2.2)
+   */
+  onDeleteIncome(income: IncomeDto): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Delete Income?',
+      message: `Delete income of ${income.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} from ${this.formatDate(income.date)}?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+    };
+
+    this.dialog
+      .open(ConfirmDialogComponent, { data: dialogData, width: '400px', disableClose: true })
+      .afterClosed()
+      .subscribe((confirmed: boolean) => {
+        if (confirmed) {
+          this.incomeService.deleteIncome(income.id).subscribe({
+            next: () => {
+              this.snackBar.open('Income deleted', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+              this.incomeStore.initialize();
+            },
+            error: () => {
+              this.snackBar.open('Failed to delete income. Please try again.', 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+            },
+          });
+        }
+      });
   }
 }

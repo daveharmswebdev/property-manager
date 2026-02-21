@@ -2,21 +2,23 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Entities;
 using PropertyManager.Domain.Exceptions;
 using IncomeEntity = PropertyManager.Domain.Entities.Income;
 
 namespace PropertyManager.Application.Income;
 
 /// <summary>
-/// Command for updating an existing income entry (AC-4.2.2, AC-4.2.3, AC-4.2.4).
-/// PropertyId is NOT editable - delete and recreate to change property.
+/// Command for updating an existing income entry (AC-4.2.2, AC-4.2.3, AC-4.2.4, AC-16.2.4).
+/// PropertyId is optional — when provided, reassigns the income to the new property.
 /// </summary>
 public record UpdateIncomeCommand(
     Guid Id,
     decimal Amount,
     DateOnly Date,
     string? Source,
-    string? Description
+    string? Description,
+    Guid? PropertyId = null
 ) : IRequest;
 
 /// <summary>
@@ -38,6 +40,10 @@ public class UpdateIncomeValidator : AbstractValidator<UpdateIncomeCommand>
         RuleFor(x => x.Date)
             .NotEmpty()
             .WithMessage("Date is required.");
+
+        RuleFor(x => x.PropertyId)
+            .Must(id => id == null || id != Guid.Empty)
+            .WithMessage("Property ID must be a valid GUID when provided.");
     }
 }
 
@@ -72,6 +78,20 @@ public class UpdateIncomeCommandHandler : IRequestHandler<UpdateIncomeCommand>
             throw new NotFoundException(nameof(IncomeEntity), request.Id);
         }
 
+        // Handle property reassignment (AC-16.2.4)
+        if (request.PropertyId.HasValue && request.PropertyId.Value != income.PropertyId)
+        {
+            var newProperty = await _dbContext.Properties
+                .Where(p => p.Id == request.PropertyId.Value && p.DeletedAt == null)
+                .Select(p => new { p.Id, p.AccountId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (newProperty == null || newProperty.AccountId != _currentUser.AccountId)
+                throw new NotFoundException(nameof(Property), request.PropertyId.Value);
+
+            income.PropertyId = request.PropertyId.Value;
+        }
+
         // Update editable fields only (AC-4.2.2)
         income.Amount = request.Amount;
         income.Date = request.Date;
@@ -80,8 +100,6 @@ public class UpdateIncomeCommandHandler : IRequestHandler<UpdateIncomeCommand>
 
         // Set UpdatedAt timestamp (AC-4.2.3)
         income.UpdatedAt = DateTime.UtcNow;
-
-        // Preserve: CreatedAt, CreatedByUserId, PropertyId, AccountId (not modified)
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
