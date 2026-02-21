@@ -1,5 +1,4 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -23,7 +22,7 @@ import {
  * Receipts Page Component (AC-5.3.2, AC-5.3.3)
  *
  * Displays the unprocessed receipt queue with:
- * - Page title "Receipts to Process"
+ * - Page title "Receipts"
  * - Loading spinner while fetching
  * - Empty state with checkmark and message when no receipts
  * - List of receipt queue items when receipts exist
@@ -32,7 +31,6 @@ import {
   selector: 'app-receipts',
   standalone: true,
   imports: [
-    CommonModule,
     MatProgressSpinnerModule,
     MatIconModule,
     MatButtonModule,
@@ -204,17 +202,26 @@ export class ReceiptsComponent implements OnInit {
         successCount++;
       } catch {
         failCount++;
-        this.snackBar.open(`Failed to upload ${file.name}`, 'Dismiss', { duration: 5000 });
       }
     }
 
     this.isUploading.set(false);
 
-    if (successCount > 0) {
+    if (successCount > 0 && failCount > 0) {
+      this.snackBar.open(
+        `${successCount} uploaded, ${failCount} failed`,
+        'Dismiss', { duration: 5000 }
+      );
+    } else if (successCount > 0) {
       const msg = successCount === 1
         ? 'Receipt uploaded successfully'
         : `${successCount} receipts uploaded successfully`;
       this.snackBar.open(msg, 'Dismiss', { duration: 3000 });
+    } else if (failCount > 0) {
+      this.snackBar.open(
+        `Failed to upload ${failCount === 1 ? '1 receipt' : `${failCount} receipts`}`,
+        'Dismiss', { duration: 5000 }
+      );
     }
   }
 

@@ -463,7 +463,7 @@ describe('ReceiptsComponent', () => {
       );
     });
 
-    it('should show error snackbar with filename on failed upload (AC6)', async () => {
+    it('should show error snackbar when all uploads fail (AC6)', async () => {
       const files = [new File(['data'], 'bad.jpg', { type: 'image/jpeg' })];
       mockReceiptCaptureService.uploadReceipt.mockRejectedValue(new Error('Upload failed'));
       let callCount = 0;
@@ -479,7 +479,34 @@ describe('ReceiptsComponent', () => {
       await component.onUploadReceipt();
 
       expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Failed to upload bad.jpg',
+        'Failed to upload 1 receipt',
+        'Dismiss',
+        { duration: 5000 }
+      );
+    });
+
+    it('should show combined summary snackbar on mixed success/failure (AC6)', async () => {
+      const files = [
+        new File(['a'], 'good.jpg', { type: 'image/jpeg' }),
+        new File(['b'], 'bad.png', { type: 'image/png' }),
+      ];
+      mockReceiptCaptureService.uploadReceipt
+        .mockResolvedValueOnce('receipt-id')
+        .mockRejectedValueOnce(new Error('Upload failed'));
+      let callCount = 0;
+      mockDialog.open.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return { afterClosed: () => of(files) };
+        }
+        return { afterClosed: () => of({ propertyId: null }) };
+      });
+      fixture.detectChanges();
+
+      await component.onUploadReceipt();
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        '1 uploaded, 1 failed',
         'Dismiss',
         { duration: 5000 }
       );
