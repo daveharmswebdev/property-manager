@@ -155,13 +155,12 @@ test.describe('Story 16.4: Expense-WorkOrder & Receipt Linking', () => {
       });
     });
 
-    // Intercept the PUT to verify workOrderId is included
+    // Intercept the PUT to verify workOrderId is included (mock response — fake WO ID doesn't exist in DB)
     let capturedUpdateBody: any = null;
     await page.route(`*/**/api/v1/expenses/${expenseId}`, async (route) => {
       if (route.request().method() === 'PUT') {
         capturedUpdateBody = route.request().postDataJSON();
-        const response = await route.fetch();
-        await route.fulfill({ response });
+        await route.fulfill({ status: 204 });
       } else {
         await route.continue();
       }
@@ -304,11 +303,12 @@ test.describe('Story 16.4: Expense-WorkOrder & Receipt Linking', () => {
       });
     });
 
-    // WHEN: Navigate to detail and enter edit mode
+    // WHEN: Navigate to detail, enter edit mode, and open receipt picker
     await expenseDetailPage.gotoExpense(expenseId);
     await expenseDetailPage.clickEdit();
+    await expenseDetailPage.clickBrowseReceipts();
 
-    // THEN: Receipt link section is visible with thumbnails
+    // THEN: Receipt section is visible with thumbnails
     await expenseDetailPage.expectReceiptLinkSection();
     await expect(expenseDetailPage.receiptOptions).toHaveCount(2);
   });
@@ -381,9 +381,10 @@ test.describe('Story 16.4: Expense-WorkOrder & Receipt Linking', () => {
       }
     });
 
-    // WHEN: Navigate, enter edit, select receipt, click link
+    // WHEN: Navigate, enter edit, open picker, select receipt, click link
     await expenseDetailPage.gotoExpense(expenseId);
     await expenseDetailPage.clickEdit();
+    await expenseDetailPage.clickBrowseReceipts();
     await expenseDetailPage.selectReceipt(0);
     await expenseDetailPage.clickLinkReceipt();
     linkDone = true;
@@ -477,9 +478,9 @@ test.describe('Story 16.4: Expense-WorkOrder & Receipt Linking', () => {
       }
     });
 
-    // Mock unlink receipt endpoint
-    await page.route(`*/**/api/v1/expenses/${expenseId}/unlink-receipt`, async (route) => {
-      if (route.request().method() === 'POST') {
+    // Mock unlink receipt endpoint (implementation uses DELETE /expenses/:id/receipt)
+    await page.route(`*/**/api/v1/expenses/${expenseId}/receipt`, async (route) => {
+      if (route.request().method() === 'DELETE') {
         receiptUnlinked = true;
         await route.fulfill({ status: 204 });
       } else {
@@ -505,7 +506,7 @@ test.describe('Story 16.4: Expense-WorkOrder & Receipt Linking', () => {
     await expenseDetailPage.waitForConfirmDialog();
     await expenseDetailPage.confirmDialogAction('Receipt unlinked');
 
-    // THEN: Receipt picker section appears (receipt is gone)
-    await expenseDetailPage.expectReceiptLinkSection();
+    // THEN: Browse receipts button appears (receipt is gone, picker not yet opened)
+    await expect(expenseDetailPage.browseReceiptsButton).toBeVisible();
   });
 });

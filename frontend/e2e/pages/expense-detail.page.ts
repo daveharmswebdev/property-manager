@@ -67,6 +67,7 @@ export class ExpenseDetailPage extends BasePage {
   readonly receiptOptions: Locator;
   readonly linkReceiptButton: Locator;
   readonly receiptSectionEdit: Locator;
+  readonly browseReceiptsButton: Locator;
   readonly noUnprocessedReceiptsMessage: Locator;
 
   constructor(page: Page) {
@@ -117,6 +118,7 @@ export class ExpenseDetailPage extends BasePage {
     this.receiptOptions = page.locator('[data-testid="receipt-option"]');
     this.linkReceiptButton = page.locator('[data-testid="link-receipt-btn"]');
     this.receiptSectionEdit = page.locator('[data-testid="receipt-section-edit"]');
+    this.browseReceiptsButton = page.locator('[data-testid="browse-receipts-btn"]');
     this.noUnprocessedReceiptsMessage = page.getByText(/No unprocessed receipts/i);
   }
 
@@ -209,11 +211,15 @@ export class ExpenseDetailPage extends BasePage {
   // ─────────────────────────────────────────────────────────────────────────
 
   async expectReceiptLinkSection(): Promise<void> {
-    await expect(this.receiptLinkSection).toBeVisible();
+    await expect(this.receiptSectionEdit).toBeVisible();
   }
 
   async expectNoUnprocessedReceipts(): Promise<void> {
     await expect(this.noUnprocessedReceiptsMessage).toBeVisible();
+  }
+
+  async clickBrowseReceipts(): Promise<void> {
+    await this.browseReceiptsButton.click();
   }
 
   async selectReceipt(index: number): Promise<void> {
