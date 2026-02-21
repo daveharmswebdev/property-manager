@@ -254,6 +254,16 @@ export class ExpenseService {
   }
 
   /**
+   * Link an unprocessed receipt to an existing expense (AC-16.4.3)
+   * @param expenseId Expense GUID
+   * @param receiptId Receipt GUID
+   * @returns Observable that completes on success (204)
+   */
+  linkReceipt(expenseId: string, receiptId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/expenses/${expenseId}/link-receipt`, { receiptId });
+  }
+
+  /**
    * Get all expenses across all properties with filtering and pagination (AC-3.4.1, AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.8)
    * @param filters Filter and pagination parameters
    * @returns Observable with paginated expense list
