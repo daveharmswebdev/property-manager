@@ -1,6 +1,6 @@
 # Story 16.2: Income Feature Parity
 
-Status: review
+Status: done
 
 ## Story
 

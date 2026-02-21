@@ -1,6 +1,6 @@
 # Story 15.3: Expense List UX Improvements
 
-Status: dev-complete
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

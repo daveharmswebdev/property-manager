@@ -1,6 +1,6 @@
 # Story 16.1: Fix Date UTC Offset Bug
 
-Status: review-ready
+Status: done
 
 ## Story
 
