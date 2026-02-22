@@ -26,6 +26,16 @@ describe('ReceiptQueueItemComponent', () => {
     viewUrl: 'https://s3.amazonaws.com/test-doc.pdf',
   };
 
+  const mockPdfReceiptWithThumbnail: UnprocessedReceiptDto = {
+    id: 'receipt-4',
+    createdAt: new Date(),
+    propertyId: 'property-2',
+    propertyName: 'Maple Ave Condo',
+    contentType: 'application/pdf',
+    viewUrl: 'https://s3.amazonaws.com/test-doc.pdf',
+    thumbnailUrl: 'https://s3.amazonaws.com/test-doc_thumb.jpg',
+  };
+
   const mockUnassignedReceipt: UnprocessedReceiptDto = {
     id: 'receipt-3',
     createdAt: new Date(),
@@ -95,7 +105,7 @@ describe('ReceiptQueueItemComponent', () => {
     });
   });
 
-  describe('with PDF receipt', () => {
+  describe('with PDF receipt (no thumbnail)', () => {
     beforeEach(() => {
       fixture = TestBed.createComponent(ReceiptQueueItemComponent);
       component = fixture.componentInstance;
@@ -103,18 +113,48 @@ describe('ReceiptQueueItemComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should display PDF icon instead of image', () => {
+    it('should display PDF icon when no thumbnail available', () => {
       const pdfIcon = fixture.debugElement.query(By.css('.pdf-icon'));
       expect(pdfIcon).toBeTruthy();
     });
 
-    it('should not display thumbnail image for PDF', () => {
+    it('should not display thumbnail image for PDF without thumbnail', () => {
       const img = fixture.debugElement.query(By.css('.receipt-thumb'));
       expect(img).toBeNull();
     });
 
     it('should correctly identify as PDF', () => {
       expect(component.isPdf()).toBe(true);
+    });
+  });
+
+  describe('with PDF receipt (with thumbnail)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ReceiptQueueItemComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('receipt', mockPdfReceiptWithThumbnail);
+      fixture.detectChanges();
+    });
+
+    it('should display thumbnail image instead of PDF icon', () => {
+      const img = fixture.debugElement.query(By.css('.receipt-thumb'));
+      expect(img).toBeTruthy();
+      expect(img.nativeElement.src).toBe(
+        'https://s3.amazonaws.com/test-doc_thumb.jpg'
+      );
+    });
+
+    it('should not display PDF icon when thumbnail is available', () => {
+      const pdfIcon = fixture.debugElement.query(By.css('.pdf-icon'));
+      expect(pdfIcon).toBeNull();
+    });
+
+    it('should still identify as PDF content type', () => {
+      expect(component.isPdf()).toBe(true);
+    });
+
+    it('should have hasThumbnail computed as true', () => {
+      expect(component.hasThumbnail()).toBe(true);
     });
   });
 
@@ -157,6 +197,10 @@ describe('ReceiptQueueItemComponent', () => {
       expect(component.formattedDate()).toBeTruthy();
       // Should be a relative time string
       expect(typeof component.formattedDate()).toBe('string');
+    });
+
+    it('should compute hasThumbnail as false when no thumbnailUrl', () => {
+      expect(component.hasThumbnail()).toBe(false);
     });
   });
 

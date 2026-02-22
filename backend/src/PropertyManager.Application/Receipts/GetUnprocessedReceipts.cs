@@ -28,7 +28,8 @@ public record UnprocessedReceiptDto(
     Guid? PropertyId,
     string? PropertyName,
     string ContentType,
-    string ViewUrl
+    string ViewUrl,
+    string? ThumbnailUrl
 );
 
 /// <summary>
@@ -65,6 +66,13 @@ public class GetUnprocessedReceiptsHandler : IRequestHandler<GetUnprocessedRecei
             _storageService.GeneratePresignedDownloadUrlAsync(r.StorageKey, cancellationToken));
         var urls = await Task.WhenAll(urlTasks);
 
+        // Generate thumbnail presigned URLs for receipts that have thumbnails
+        var thumbnailUrlTasks = receipts.Select(r =>
+            r.ThumbnailStorageKey != null
+                ? _storageService.GeneratePresignedDownloadUrlAsync(r.ThumbnailStorageKey, cancellationToken)
+                : Task.FromResult<string>(null!));
+        var thumbnailUrls = await Task.WhenAll(thumbnailUrlTasks);
+
         // Map to DTOs with presigned URLs
         var items = receipts.Select((receipt, index) => new UnprocessedReceiptDto(
             Id: receipt.Id,
@@ -72,7 +80,8 @@ public class GetUnprocessedReceiptsHandler : IRequestHandler<GetUnprocessedRecei
             PropertyId: receipt.PropertyId,
             PropertyName: receipt.Property?.Name,
             ContentType: receipt.ContentType ?? "application/octet-stream",
-            ViewUrl: urls[index]
+            ViewUrl: urls[index],
+            ThumbnailUrl: thumbnailUrls[index]
         )).ToList();
 
         return new UnprocessedReceiptsResponse(items, items.Count);
