@@ -14,6 +14,7 @@ import {
   IncomeDto,
   IncomeFilterParams,
 } from '../services/income.service';
+import { DateRangePreset, getDateRangeFromPreset } from '../../../shared/utils/date-range.utils';
 
 /**
  * Property option for filter dropdown (AC-4.3.4)
@@ -36,6 +37,7 @@ interface IncomeListState {
   properties: PropertyOption[];
 
   // Filters (AC-4.3.3, AC-4.3.4)
+  dateRangePreset: DateRangePreset;
   dateFrom: string | null;
   dateTo: string | null;
   selectedPropertyId: string | null;
@@ -62,6 +64,7 @@ const initialState: IncomeListState = {
   properties: [],
 
   // Filters - default to no filters
+  dateRangePreset: 'all',
   dateFrom: null,
   dateTo: null,
   selectedPropertyId: null,
@@ -72,6 +75,23 @@ const initialState: IncomeListState = {
   error: null,
   hasEverLoaded: false,
 };
+
+const INCOME_DATE_FILTER_STORAGE_KEY = 'propertyManager.incomeList.dateFilter';
+
+function persistIncomeDateFilter(preset: DateRangePreset, dateFrom: string | null, dateTo: string | null): void {
+  sessionStorage.setItem(INCOME_DATE_FILTER_STORAGE_KEY, JSON.stringify({ dateRangePreset: preset, dateFrom, dateTo }));
+}
+
+function restoreIncomeDateFilter(): Partial<IncomeListState> | null {
+  const stored = sessionStorage.getItem(INCOME_DATE_FILTER_STORAGE_KEY);
+  if (!stored) return null;
+  try {
+    const { dateRangePreset, dateFrom, dateTo } = JSON.parse(stored);
+    return { dateRangePreset, dateFrom, dateTo };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * IncomeListStore (AC-4.3.1, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)
@@ -92,8 +112,7 @@ export const IncomeListStore = signalStore(
      * Whether any filter is active (AC-4.3.6)
      */
     hasActiveFilters: computed(() =>
-      store.dateFrom() !== null ||
-      store.dateTo() !== null ||
+      store.dateRangePreset() !== 'all' ||
       store.selectedPropertyId() !== null
     ),
 
@@ -109,8 +128,7 @@ export const IncomeListStore = signalStore(
       !store.isLoading() &&
       store.hasEverLoaded() &&
       store.incomeEntries().length === 0 &&
-      (store.dateFrom() !== null ||
-        store.dateTo() !== null ||
+      (store.dateRangePreset() !== 'all' ||
         store.selectedPropertyId() !== null)
     ),
 
@@ -122,31 +140,26 @@ export const IncomeListStore = signalStore(
       store.hasEverLoaded() &&
       store.incomeEntries().length === 0 &&
       store.totalCount() === 0 &&
-      store.dateFrom() === null &&
-      store.dateTo() === null &&
+      store.dateRangePreset() === 'all' &&
       store.selectedPropertyId() === null
     ),
 
     /**
      * Build current filters object for API call
      */
-    currentFilters: computed((): IncomeFilterParams => ({
-      dateFrom: store.dateFrom() ?? undefined,
-      dateTo: store.dateTo() ?? undefined,
-      propertyId: store.selectedPropertyId() ?? undefined,
-      year: store.year() ?? undefined,
-    })),
+    currentFilters: computed((): IncomeFilterParams => {
+      const { dateFrom, dateTo } = store.dateRangePreset() === 'custom'
+        ? { dateFrom: store.dateFrom(), dateTo: store.dateTo() }
+        : getDateRangeFromPreset(store.dateRangePreset(), store.year());
 
-    /**
-     * Formatted total amount for display (AC-4.3.6)
-     */
-    formattedTotalAmount: computed(() => {
-      const amount = store.totalAmount();
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(amount);
+      return {
+        dateFrom: dateFrom ?? undefined,
+        dateTo: dateTo ?? undefined,
+        propertyId: store.selectedPropertyId() ?? undefined,
+        year: store.year() ?? undefined,
+      };
     }),
+
   })),
   withMethods((store, incomeService = inject(IncomeService), snackBar = inject(MatSnackBar)) => ({
     /**
@@ -188,10 +201,21 @@ export const IncomeListStore = signalStore(
     },
 
     /**
-     * Set date range filter and reload (AC-4.3.3)
+     * Set date range preset and reload (AC-4.3.3)
      */
-    setDateRange(dateFrom: string | null, dateTo: string | null): void {
-      patchState(store, { dateFrom, dateTo });
+    setDateRangePreset(preset: DateRangePreset): void {
+      const { dateFrom, dateTo } = getDateRangeFromPreset(preset, store.year());
+      patchState(store, { dateRangePreset: preset, dateFrom, dateTo });
+      persistIncomeDateFilter(preset, dateFrom, dateTo);
+      this.loadIncome(store.currentFilters());
+    },
+
+    /**
+     * Set custom date range and reload (AC-4.3.3)
+     */
+    setCustomDateRange(dateFrom: string, dateTo: string): void {
+      patchState(store, { dateRangePreset: 'custom', dateFrom, dateTo });
+      persistIncomeDateFilter('custom', dateFrom, dateTo);
       this.loadIncome(store.currentFilters());
     },
 
@@ -216,10 +240,12 @@ export const IncomeListStore = signalStore(
      */
     clearFilters(): void {
       patchState(store, {
+        dateRangePreset: 'all',
         dateFrom: null,
         dateTo: null,
         selectedPropertyId: null,
       });
+      sessionStorage.removeItem(INCOME_DATE_FILTER_STORAGE_KEY);
       this.loadIncome(store.currentFilters());
     },
 
@@ -234,6 +260,10 @@ export const IncomeListStore = signalStore(
      * Initialize store - load income with current filters
      */
     initialize(): void {
+      const restored = restoreIncomeDateFilter();
+      if (restored) {
+        patchState(store, restored);
+      }
       this.loadIncome(store.currentFilters());
     },
 

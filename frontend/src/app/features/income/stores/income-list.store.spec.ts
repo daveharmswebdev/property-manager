@@ -120,26 +120,38 @@ describe('IncomeListStore (AC-4.3.1, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)', (
     });
   });
 
-  describe('setDateRange (AC-4.3.3)', () => {
-    it('should update date range filters', () => {
+  describe('setDateRangePreset (AC-4.3.3)', () => {
+    it('should update date range preset and reload', () => {
       // Act
-      store.setDateRange('2025-01-01', '2025-01-31');
+      store.setDateRangePreset('this-month');
 
       // Assert
+      expect(store.dateRangePreset()).toBe('this-month');
+      expect(incomeServiceMock.getAllIncome).toHaveBeenCalled();
+    });
+
+    it('should mark hasActiveFilters when preset is not all', () => {
+      // Act
+      store.setDateRangePreset('this-year');
+
+      // Assert
+      expect(store.hasActiveFilters()).toBe(true);
+    });
+  });
+
+  describe('setCustomDateRange (AC-4.3.3)', () => {
+    it('should set preset to custom and reload with dates', () => {
+      // Act
+      store.setCustomDateRange('2025-01-01', '2025-01-31');
+
+      // Assert
+      expect(store.dateRangePreset()).toBe('custom');
       expect(incomeServiceMock.getAllIncome).toHaveBeenCalledWith(
         expect.objectContaining({
           dateFrom: '2025-01-01',
           dateTo: '2025-01-31',
         })
       );
-    });
-
-    it('should mark hasActiveFilters when date range set', () => {
-      // Act
-      store.setDateRange('2025-01-01', null);
-
-      // Assert
-      expect(store.hasActiveFilters()).toBe(true);
     });
   });
 
@@ -182,7 +194,7 @@ describe('IncomeListStore (AC-4.3.1, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)', (
   describe('clearFilters (AC-4.3.5)', () => {
     it('should clear all filters', () => {
       // Arrange
-      store.setDateRange('2025-01-01', '2025-01-31');
+      store.setDateRangePreset('this-month');
       store.setPropertyFilter('prop-1');
 
       // Act
@@ -202,12 +214,12 @@ describe('IncomeListStore (AC-4.3.1, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)', (
   });
 
   describe('computed signals', () => {
-    it('formattedTotalAmount should format as currency (AC-4.3.6)', () => {
+    it('totalAmount should contain raw amount (AC-4.3.6)', () => {
       // Arrange
       store.initialize();
 
       // Assert
-      expect(store.formattedTotalAmount()).toMatch(/\$3,100\.00/);
+      expect(store.totalAmount()).toBe(3100.00);
     });
 
     it('isTrulyEmpty should be true when no income exists', () => {

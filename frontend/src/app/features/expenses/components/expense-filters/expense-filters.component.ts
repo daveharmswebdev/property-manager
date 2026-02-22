@@ -1,18 +1,17 @@
-import { Component, input, output, computed, signal, effect } from '@angular/core';
+import { Component, input, output, effect } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ExpenseCategoryDto } from '../../services/expense.service';
 import { DateRangePreset, FilterChip } from '../../stores/expense-list.store';
-import { formatLocalDate } from '../../../../shared/utils/date.utils';
+import { DateRangeFilterComponent } from '../../../../shared/components/date-range-filter/date-range-filter.component';
 
 /**
  * ExpenseFiltersComponent (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6)
@@ -35,48 +34,23 @@ import { formatLocalDate } from '../../../../shared/utils/date.utils';
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
     MatChipsModule,
     MatIconModule,
     MatButtonModule,
+    DateRangeFilterComponent,
   ],
   template: `
     <div class="filters-container">
       <!-- Filter Controls Row -->
       <div class="filter-controls">
-        <!-- Date Range Preset (AC-3.4.3) -->
-        <mat-form-field appearance="outline" class="filter-field date-range-field">
-          <mat-label>Date Range</mat-label>
-          <mat-select [value]="dateRangePreset()" (selectionChange)="onDateRangePresetChange($event.value)">
-            <mat-option value="all">All Time</mat-option>
-            <mat-option value="this-month">This Month</mat-option>
-            <mat-option value="this-quarter">This Quarter</mat-option>
-            <mat-option value="this-year">This Year</mat-option>
-            <mat-option value="custom">Custom Range</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Custom Date Range (AC-3.4.3) -->
-        @if (dateRangePreset() === 'custom') {
-          <mat-form-field appearance="outline" class="filter-field date-field">
-            <mat-label>From</mat-label>
-            <input matInput [matDatepicker]="fromPicker" [formControl]="customDateFrom">
-            <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
-            <mat-datepicker #fromPicker></mat-datepicker>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="filter-field date-field">
-            <mat-label>To</mat-label>
-            <input matInput [matDatepicker]="toPicker" [formControl]="customDateTo">
-            <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
-            <mat-datepicker #toPicker></mat-datepicker>
-          </mat-form-field>
-
-          <button mat-stroked-button color="primary" (click)="applyCustomDateRange()" class="apply-btn">
-            Apply
-          </button>
-        }
+        <!-- Date Range Filter (AC-3.4.3) -->
+        <app-date-range-filter
+          [dateRangePreset]="dateRangePreset()"
+          [dateFrom]="dateFrom()"
+          [dateTo]="dateTo()"
+          (dateRangePresetChange)="onDateRangePresetChange($event)"
+          (customDateRangeChange)="onCustomDateRangeChange($event)"
+        />
 
         <!-- Category Multi-Select (AC-3.4.4) -->
         <mat-form-field appearance="outline" class="filter-field category-field">
@@ -157,14 +131,6 @@ import { formatLocalDate } from '../../../../shared/utils/date.utils';
       }
     }
 
-    .date-range-field {
-      min-width: 150px;
-    }
-
-    .date-field {
-      width: 140px;
-    }
-
     .category-field {
       min-width: 200px;
     }
@@ -172,10 +138,6 @@ import { formatLocalDate } from '../../../../shared/utils/date.utils';
     .search-field {
       min-width: 250px;
       flex: 1;
-    }
-
-    .apply-btn {
-      margin-top: 4px;
     }
 
     .filter-chips {
@@ -206,10 +168,6 @@ import { formatLocalDate } from '../../../../shared/utils/date.utils';
         min-width: unset;
       }
 
-      .date-field {
-        width: 100%;
-      }
-
       .search-field {
         min-width: unset;
       }
@@ -236,8 +194,6 @@ export class ExpenseFiltersComponent {
 
   // Form controls
   searchControl = new FormControl('');
-  customDateFrom = new FormControl<Date | null>(null);
-  customDateTo = new FormControl<Date | null>(null);
 
   private destroy$ = new Subject<void>();
 
@@ -258,33 +214,6 @@ export class ExpenseFiltersComponent {
         this.searchControl.setValue(search, { emitEvent: false });
       }
     });
-
-    // Sync dateFrom/dateTo inputs with custom date picker FormControls
-    effect(() => {
-      const from = this.dateFrom();
-      const currentFrom = this.customDateFrom.value;
-      if (from) {
-        const fromDate = new Date(from + 'T00:00:00');
-        if (!currentFrom || currentFrom.getTime() !== fromDate.getTime()) {
-          this.customDateFrom.setValue(fromDate, { emitEvent: false });
-        }
-      } else if (currentFrom) {
-        this.customDateFrom.setValue(null, { emitEvent: false });
-      }
-    });
-
-    effect(() => {
-      const to = this.dateTo();
-      const currentTo = this.customDateTo.value;
-      if (to) {
-        const toDate = new Date(to + 'T00:00:00');
-        if (!currentTo || currentTo.getTime() !== toDate.getTime()) {
-          this.customDateTo.setValue(toDate, { emitEvent: false });
-        }
-      } else if (currentTo) {
-        this.customDateTo.setValue(null, { emitEvent: false });
-      }
-    });
   }
 
   ngOnDestroy(): void {
@@ -296,16 +225,8 @@ export class ExpenseFiltersComponent {
     this.dateRangePresetChange.emit(preset);
   }
 
-  applyCustomDateRange(): void {
-    const fromDate = this.customDateFrom.value;
-    const toDate = this.customDateTo.value;
-
-    if (fromDate && toDate) {
-      this.customDateRangeChange.emit({
-        dateFrom: formatLocalDate(fromDate),
-        dateTo: formatLocalDate(toDate),
-      });
-    }
+  onCustomDateRangeChange(range: { dateFrom: string; dateTo: string }): void {
+    this.customDateRangeChange.emit(range);
   }
 
   onCategoryChange(categoryIds: string[]): void {
@@ -323,8 +244,6 @@ export class ExpenseFiltersComponent {
 
   onClearAll(): void {
     this.searchControl.setValue('', { emitEvent: false });
-    this.customDateFrom.setValue(null);
-    this.customDateTo.setValue(null);
     this.clearAll.emit();
   }
 }

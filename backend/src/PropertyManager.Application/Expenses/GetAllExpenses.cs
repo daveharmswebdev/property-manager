@@ -27,7 +27,8 @@ public record PagedResult<T>(
     int TotalCount,
     int Page,
     int PageSize,
-    int TotalPages
+    int TotalPages,
+    decimal TotalAmount = 0
 );
 
 /// <summary>
@@ -105,8 +106,11 @@ public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedR
                                      e.Description.ToLower().Contains(searchTerm));
         }
 
-        // Get total count before pagination
+        // Get total count and total amount before pagination
         var totalCount = await query.CountAsync(cancellationToken);
+        var totalAmount = totalCount > 0
+            ? await query.SumAsync(e => e.Amount, cancellationToken)
+            : 0m;
 
         // Calculate pagination
         var pageSize = Math.Clamp(request.PageSize, 1, 100); // Max 100 per page
@@ -153,7 +157,8 @@ public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedR
             TotalCount: totalCount,
             Page: page,
             PageSize: pageSize,
-            TotalPages: totalPages
+            TotalPages: totalPages,
+            TotalAmount: totalAmount
         );
     }
 }

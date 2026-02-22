@@ -237,6 +237,6 @@ development_status:
   16-3-desktop-receipt-upload: done                  # Issue #234
   16-4-expense-workorder-and-receipt-linking: done  # Issue #235
   16-5-ux-polish-bundle: done                      # Issues #220, #222, #223
-  16-6-shared-component-extraction: backlog      # Issues #215, #216 - depends on 16.2
+  16-6-shared-component-extraction: done  # Issues #215, #216 - depends on 16.2
   16-7-test-infrastructure-high-priority-gaps: backlog  # Issue #212
   epic-16-retrospective: optional

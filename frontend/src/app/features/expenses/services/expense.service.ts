@@ -96,6 +96,7 @@ export interface PagedResult<T> {
   page: number;
   pageSize: number;
   totalPages: number;
+  totalAmount: number;
 }
 
 /**

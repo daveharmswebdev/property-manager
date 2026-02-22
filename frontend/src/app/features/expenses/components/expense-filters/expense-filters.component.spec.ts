@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { ExpenseFiltersComponent } from './expense-filters.component';
-import { formatLocalDate } from '../../../../shared/utils/date.utils';
 
 /**
  * Unit tests for ExpenseFiltersComponent (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6)
@@ -53,11 +52,11 @@ describe('ExpenseFiltersComponent', () => {
     expect(container).toBeTruthy();
   });
 
-  it('should render date range dropdown (AC-3.4.3)', () => {
-    const dateRangeField = fixture.debugElement.query(
-      By.css('.date-range-field')
+  it('should render shared date range filter component (AC-3.4.3)', () => {
+    const dateRangeFilter = fixture.debugElement.query(
+      By.css('app-date-range-filter')
     );
-    expect(dateRangeField).toBeTruthy();
+    expect(dateRangeFilter).toBeTruthy();
   });
 
   it('should render category dropdown (AC-3.4.4)', () => {
@@ -186,43 +185,29 @@ describe('ExpenseFiltersComponent custom date range (AC-3.4.3)', () => {
     fixture.detectChanges();
   });
 
-  it('should show date pickers when preset is custom', () => {
-    const dateFields = fixture.debugElement.queryAll(By.css('.date-field'));
+  it('should render nested date range filter with custom date pickers', () => {
+    const dateRangeFilter = fixture.debugElement.query(By.css('app-date-range-filter'));
+    expect(dateRangeFilter).toBeTruthy();
+    const dateFields = dateRangeFilter.queryAll(By.css('.date-field'));
     expect(dateFields.length).toBe(2);
   });
 
-  it('should show apply button when preset is custom', () => {
-    const applyBtn = fixture.debugElement.query(By.css('.apply-btn'));
+  it('should render apply button in nested date range filter when custom', () => {
+    const dateRangeFilter = fixture.debugElement.query(By.css('app-date-range-filter'));
+    const applyBtn = dateRangeFilter.query(By.css('.apply-btn'));
     expect(applyBtn).toBeTruthy();
   });
 
-  it('should emit customDateRangeChange when dates are applied', () => {
+  it('should emit customDateRangeChange when nested component emits', () => {
     const emitSpy = vi.fn();
     component.customDateRangeChange.subscribe(emitSpy);
 
-    const fromDate = new Date(2026, 0, 1); // Jan 1 local
-    const toDate = new Date(2026, 0, 31); // Jan 31 local
-    component.customDateFrom.setValue(fromDate);
-    component.customDateTo.setValue(toDate);
-
-    component.applyCustomDateRange();
+    component.onCustomDateRangeChange({ dateFrom: '2026-01-01', dateTo: '2026-01-31' });
 
     expect(emitSpy).toHaveBeenCalledWith({
       dateFrom: '2026-01-01',
       dateTo: '2026-01-31',
     });
-  });
-
-  it('should not emit when dates are not both set', () => {
-    const emitSpy = vi.fn();
-    component.customDateRangeChange.subscribe(emitSpy);
-
-    component.customDateFrom.setValue(new Date('2026-01-01'));
-    // toDate not set
-
-    component.applyCustomDateRange();
-
-    expect(emitSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -294,8 +279,7 @@ describe('ExpenseFiltersComponent no filter chips', () => {
   });
 });
 
-describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
-  let component: ExpenseFiltersComponent;
+describe('ExpenseFiltersComponent date input pass-through', () => {
   let fixture: ComponentFixture<ExpenseFiltersComponent>;
 
   beforeEach(async () => {
@@ -305,7 +289,6 @@ describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExpenseFiltersComponent);
-    component = fixture.componentInstance;
 
     fixture.componentRef.setInput('categories', []);
     fixture.componentRef.setInput('dateRangePreset', 'custom');
@@ -318,34 +301,16 @@ describe('ExpenseFiltersComponent date sync (AC2 Story 15.3)', () => {
     fixture.detectChanges();
   });
 
-  it('should sync dateFrom input to customDateFrom FormControl', () => {
-    expect(component.customDateFrom.value).toBeInstanceOf(Date);
-    expect(formatLocalDate(component.customDateFrom.value!)).toBe('2026-03-01');
+  it('should pass dateFrom and dateTo to nested date range filter', () => {
+    const dateRangeFilter = fixture.debugElement.query(By.css('app-date-range-filter'));
+    expect(dateRangeFilter).toBeTruthy();
+    // The nested component receives the date inputs via [dateFrom] and [dateTo] bindings
+    expect(dateRangeFilter.componentInstance.dateFrom()).toBe('2026-03-01');
+    expect(dateRangeFilter.componentInstance.dateTo()).toBe('2026-03-31');
   });
 
-  it('should sync dateTo input to customDateTo FormControl', () => {
-    expect(component.customDateTo.value).toBeInstanceOf(Date);
-    expect(formatLocalDate(component.customDateTo.value!)).toBe('2026-03-31');
-  });
-
-  it('should update FormControl when dateFrom input changes', () => {
-    fixture.componentRef.setInput('dateFrom', '2026-06-15');
-    fixture.detectChanges();
-
-    expect(formatLocalDate(component.customDateFrom.value!)).toBe('2026-06-15');
-  });
-
-  it('should clear FormControls when date inputs become null', () => {
-    // Verify dates are set first
-    expect(component.customDateFrom.value).toBeInstanceOf(Date);
-    expect(component.customDateTo.value).toBeInstanceOf(Date);
-
-    // Set inputs to null (simulates chip removal / clear filters)
-    fixture.componentRef.setInput('dateFrom', null);
-    fixture.componentRef.setInput('dateTo', null);
-    fixture.detectChanges();
-
-    expect(component.customDateFrom.value).toBeNull();
-    expect(component.customDateTo.value).toBeNull();
+  it('should pass dateRangePreset to nested date range filter', () => {
+    const dateRangeFilter = fixture.debugElement.query(By.css('app-date-range-filter'));
+    expect(dateRangeFilter.componentInstance.dateRangePreset()).toBe('custom');
   });
 });

@@ -44,9 +44,14 @@ describe('IncomeComponent', () => {
     incomeEntries: signal(mockIncomeEntries),
     selectedPropertyId: signal<string | null>(null),
     hasActiveFilters: signal(false),
-    formattedTotalAmount: signal('$2,000.00'),
+    totalAmount: signal(2000),
+    totalCount: signal(2),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
-    setDateRange: vi.fn(),
+    setDateRangePreset: vi.fn(),
+    setCustomDateRange: vi.fn(),
     setPropertyFilter: vi.fn(),
     clearFilters: vi.fn(),
     setYear: vi.fn(),
@@ -113,9 +118,9 @@ describe('IncomeComponent', () => {
     expect(filters).toBeTruthy();
   });
 
-  it('should render date from picker (AC-4.3.3)', () => {
-    const dateFields = fixture.debugElement.queryAll(By.css('.date-field'));
-    expect(dateFields.length).toBeGreaterThanOrEqual(2);
+  it('should render shared date range filter (AC-4.3.3)', () => {
+    const dateRangeFilter = fixture.debugElement.query(By.css('app-date-range-filter'));
+    expect(dateRangeFilter).toBeTruthy();
   });
 
   it('should render property filter dropdown (AC-4.3.4)', () => {
@@ -123,10 +128,9 @@ describe('IncomeComponent', () => {
     expect(propertyField).toBeTruthy();
   });
 
-  it('should display total income (AC-4.3.6)', () => {
-    const totalAmount = fixture.debugElement.query(By.css('.total-amount'));
-    expect(totalAmount).toBeTruthy();
-    expect(totalAmount.nativeElement.textContent).toContain('$2,000.00');
+  it('should render shared list total display (AC-4.3.6)', () => {
+    const totalDisplay = fixture.debugElement.query(By.css('app-list-total-display'));
+    expect(totalDisplay).toBeTruthy();
   });
 
   it('should initialize store on init', () => {
@@ -156,10 +160,14 @@ describe('IncomeComponent', () => {
     expect(rows.length).toBe(2);
   });
 
-  it('should call setDateRange when dates change', () => {
-    component.onDateFromChange({ value: new Date('2026-01-01') });
-    component.onDateToChange({ value: new Date('2026-01-31') });
-    expect(mockIncomeListStore.setDateRange).toHaveBeenCalled();
+  it('should call setDateRangePreset when preset changes (AC-4.3.3)', () => {
+    component.onDateRangePresetChange('this-month');
+    expect(mockIncomeListStore.setDateRangePreset).toHaveBeenCalledWith('this-month');
+  });
+
+  it('should call setCustomDateRange when custom dates applied (AC-4.3.3)', () => {
+    component.onCustomDateRangeChange({ dateFrom: '2026-01-01', dateTo: '2026-01-31' });
+    expect(mockIncomeListStore.setCustomDateRange).toHaveBeenCalledWith('2026-01-01', '2026-01-31');
   });
 
   it('should call setPropertyFilter when property changes', () => {
@@ -190,7 +198,11 @@ describe('IncomeComponent loading state', () => {
     incomeEntries: signal([]),
     selectedPropertyId: signal<string | null>(null),
     hasActiveFilters: signal(false),
-    formattedTotalAmount: signal('$0.00'),
+    totalAmount: signal(0),
+    totalCount: signal(0),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
     setYear: vi.fn(),
     reset: vi.fn(),
@@ -247,7 +259,11 @@ describe('IncomeComponent error state', () => {
     incomeEntries: signal([]),
     selectedPropertyId: signal<string | null>(null),
     hasActiveFilters: signal(false),
-    formattedTotalAmount: signal('$0.00'),
+    totalAmount: signal(0),
+    totalCount: signal(0),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
     setYear: vi.fn(),
     reset: vi.fn(),
@@ -310,7 +326,11 @@ describe('IncomeComponent truly empty state (AC-4.3.5)', () => {
     incomeEntries: signal([]),
     selectedPropertyId: signal<string | null>(null),
     hasActiveFilters: signal(false),
-    formattedTotalAmount: signal('$0.00'),
+    totalAmount: signal(0),
+    totalCount: signal(0),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
     setYear: vi.fn(),
     reset: vi.fn(),
@@ -374,7 +394,11 @@ describe('IncomeComponent filtered empty state (AC-4.3.5)', () => {
     incomeEntries: signal([]),
     selectedPropertyId: signal<string | null>('prop-1'),
     hasActiveFilters: signal(true),
-    formattedTotalAmount: signal('$0.00'),
+    totalAmount: signal(0),
+    totalCount: signal(0),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
     clearFilters: vi.fn(),
     setYear: vi.fn(),
@@ -454,7 +478,11 @@ describe('IncomeComponent property filter (AC-4.3.4)', () => {
     incomeEntries: signal([{ id: 'inc-1', amount: 1000 }]),
     selectedPropertyId: signal<string | null>(null),
     hasActiveFilters: signal(false),
-    formattedTotalAmount: signal('$1,000.00'),
+    totalAmount: signal(1000),
+    totalCount: signal(1),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
     initialize: vi.fn(),
     setPropertyFilter: vi.fn(),
     setYear: vi.fn(),

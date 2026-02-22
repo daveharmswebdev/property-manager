@@ -286,7 +286,8 @@ describe('ExpenseService', () => {
         totalCount: 1,
         page: 1,
         pageSize: 25,
-        totalPages: 1
+        totalPages: 1,
+        totalAmount: 150,
       };
 
       service.getExpenses(filters).subscribe(response => {
@@ -313,7 +314,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();
@@ -335,7 +337,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();
@@ -356,7 +359,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();
@@ -377,7 +381,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();
@@ -398,7 +403,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();
@@ -419,7 +425,8 @@ describe('ExpenseService', () => {
         totalCount: 0,
         page: 1,
         pageSize: 25,
-        totalPages: 0
+        totalPages: 0,
+        totalAmount: 0,
       };
 
       service.getExpenses(filters).subscribe();

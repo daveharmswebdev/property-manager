@@ -9,18 +9,15 @@ import {
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { formatLocalDate } from '../../../shared/utils/date.utils';
 import {
   ExpenseService,
   ExpenseFilters,
   ExpenseListItemDto,
   ExpenseCategoryDto,
 } from '../services/expense.service';
+import { DateRangePreset, getDateRangeFromPreset } from '../../../shared/utils/date-range.utils';
 
-/**
- * Date range preset options for filtering (AC-3.4.3)
- */
-export type DateRangePreset = 'this-month' | 'this-quarter' | 'this-year' | 'custom' | 'all';
+export type { DateRangePreset } from '../../../shared/utils/date-range.utils';
 
 /**
  * Filter chip for display (AC-3.4.6)
@@ -56,6 +53,7 @@ interface ExpenseListState {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  totalAmount: number;
 
   // Loading states
   isLoading: boolean;
@@ -89,6 +87,7 @@ const initialState: ExpenseListState = {
   pageSize: 50,
   totalCount: 0,
   totalPages: 0,
+  totalAmount: 0,
 
   // Loading states
   isLoading: false,
@@ -96,42 +95,6 @@ const initialState: ExpenseListState = {
   error: null,
   categoriesLoaded: false,
 };
-
-/**
- * Calculate date range from preset
- */
-function getDateRangeFromPreset(preset: DateRangePreset, year?: number | null): { dateFrom: string | null; dateTo: string | null } {
-  const today = new Date();
-  const currentYear = year || today.getFullYear();
-
-  switch (preset) {
-    case 'this-month': {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      return {
-        dateFrom: formatLocalDate(firstDay),
-        dateTo: formatLocalDate(today),
-      };
-    }
-    case 'this-quarter': {
-      const quarter = Math.floor(today.getMonth() / 3);
-      const firstDay = new Date(today.getFullYear(), quarter * 3, 1);
-      return {
-        dateFrom: formatLocalDate(firstDay),
-        dateTo: formatLocalDate(today),
-      };
-    }
-    case 'this-year': {
-      return {
-        dateFrom: `${currentYear}-01-01`,
-        dateTo: `${currentYear}-12-31`,
-      };
-    }
-    case 'all':
-    case 'custom':
-    default:
-      return { dateFrom: null, dateTo: null };
-  }
-}
 
 const DATE_FILTER_STORAGE_KEY = 'propertyManager.expenseList.dateFilter';
 
@@ -334,6 +297,7 @@ export const ExpenseListStore = signalStore(
                 expenses: response.items,
                 totalCount: response.totalCount,
                 totalPages: response.totalPages,
+                totalAmount: response.totalAmount,
                 page: response.page,
                 pageSize: response.pageSize,
                 isLoading: false,

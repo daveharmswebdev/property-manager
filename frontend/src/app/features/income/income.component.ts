@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, effect, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,8 +10,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -28,7 +26,10 @@ import {
   ConfirmDialogData,
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { YearSelectorService } from '../../core/services/year-selector.service';
-import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils';
+import { formatDateShort } from '../../shared/utils/date.utils';
+import { DateRangePreset } from '../../shared/utils/date-range.utils';
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import { ListTotalDisplayComponent } from '../../shared/components/list-total-display/list-total-display.component';
 
 /**
  * IncomeComponent (AC-4.3.1, AC-4.3.2, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)
@@ -54,11 +55,11 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
     MatDialogModule,
     MatTooltipModule,
     CurrencyPipe,
+    DateRangeFilterComponent,
+    ListTotalDisplayComponent,
   ],
   template: `
     <div class="income-container">
@@ -80,33 +81,13 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
       <mat-card class="filters-card">
         <div class="filters-row">
           <!-- Date Range Filter (AC-4.3.3) -->
-          <div class="filter-group date-range-group">
-            <mat-form-field class="date-field">
-              <mat-label>From</mat-label>
-              <input
-                matInput
-                [matDatepicker]="fromPicker"
-                [value]="dateFromValue"
-                (dateChange)="onDateFromChange($event)"
-                placeholder="Start date"
-              >
-              <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
-              <mat-datepicker #fromPicker></mat-datepicker>
-            </mat-form-field>
-
-            <mat-form-field class="date-field">
-              <mat-label>To</mat-label>
-              <input
-                matInput
-                [matDatepicker]="toPicker"
-                [value]="dateToValue"
-                (dateChange)="onDateToChange($event)"
-                placeholder="End date"
-              >
-              <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
-              <mat-datepicker #toPicker></mat-datepicker>
-            </mat-form-field>
-          </div>
+          <app-date-range-filter
+            [dateRangePreset]="dateRangePreset()"
+            [dateFrom]="incomeStore.dateFrom()"
+            [dateTo]="incomeStore.dateTo()"
+            (dateRangePresetChange)="onDateRangePresetChange($event)"
+            (customDateRangeChange)="onCustomDateRangeChange($event)"
+          />
 
           <!-- Property Filter (AC-4.3.4) -->
           <mat-form-field class="property-field">
@@ -136,11 +117,12 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
         </div>
 
         <!-- Total Income Display (AC-4.3.6) -->
-        @if (!incomeStore.isLoading()) {
-          <div class="total-section">
-            <span class="total-label">Total Income:</span>
-            <span class="total-amount">{{ incomeStore.formattedTotalAmount() }}</span>
-          </div>
+        @if (!incomeStore.isLoading() && incomeStore.totalCount() > 0) {
+          <app-list-total-display
+            label="Total Income"
+            [amount]="incomeStore.totalAmount()"
+            [showBorder]="true"
+          />
         }
       </mat-card>
 
@@ -263,41 +245,12 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
       gap: 16px;
     }
 
-    .date-range-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .date-field {
-      width: 150px;
-    }
-
     .property-field {
       min-width: 200px;
     }
 
     .clear-filters-btn {
       margin-top: 4px;
-    }
-
-    .total-section {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--mat-sys-outline-variant);
-    }
-
-    .total-label {
-      font-weight: 500;
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .total-amount {
-      font-size: 1.25em;
-      font-weight: 600;
-      color: var(--mat-sys-primary);
     }
 
     .loading-container {
@@ -450,11 +403,7 @@ import { formatLocalDate, formatDateShort } from '../../shared/utils/date.utils'
         align-items: stretch;
       }
 
-      .date-range-group {
-        flex-direction: column;
-      }
-
-      .date-field, .property-field {
+      .property-field {
         width: 100%;
       }
 
@@ -508,9 +457,8 @@ export class IncomeComponent implements OnInit, OnDestroy {
   private readonly propertyService = inject(PropertyService);
   private readonly incomeService = inject(IncomeService);
 
-  // Date values for the datepickers
-  dateFromValue: Date | null = null;
-  dateToValue: Date | null = null;
+  // Computed signal for date range preset
+  dateRangePreset = computed(() => this.incomeStore.dateRangePreset());
 
   // Effect to react to year changes (AC-4.3.2 - respects global tax year selector)
   private yearEffect = effect(() => {
@@ -532,40 +480,17 @@ export class IncomeComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle date from change (AC-4.3.3)
+   * Handle date range preset change (AC-4.3.3)
    */
-  onDateFromChange(event: { value: Date | null }): void {
-    this.dateFromValue = event.value;
-    this.updateDateRange();
+  onDateRangePresetChange(preset: DateRangePreset): void {
+    this.incomeStore.setDateRangePreset(preset);
   }
 
   /**
-   * Handle date to change (AC-4.3.3)
+   * Handle custom date range change (AC-4.3.3)
    */
-  onDateToChange(event: { value: Date | null }): void {
-    this.dateToValue = event.value;
-    this.updateDateRange();
-  }
-
-  /**
-   * Update date range filter in store
-   */
-  private updateDateRange(): void {
-    const dateFrom = this.dateFromValue
-      ? this.formatDateForApi(this.dateFromValue)
-      : null;
-    const dateTo = this.dateToValue
-      ? this.formatDateForApi(this.dateToValue)
-      : null;
-
-    this.incomeStore.setDateRange(dateFrom, dateTo);
-  }
-
-  /**
-   * Format date for API (YYYY-MM-DD)
-   */
-  private formatDateForApi(date: Date): string {
-    return formatLocalDate(date);
+  onCustomDateRangeChange(range: { dateFrom: string; dateTo: string }): void {
+    this.incomeStore.setCustomDateRange(range.dateFrom, range.dateTo);
   }
 
   /**
@@ -580,8 +505,6 @@ export class IncomeComponent implements OnInit, OnDestroy {
    * Clear all filters (AC-4.3.5)
    */
   onClearFilters(): void {
-    this.dateFromValue = null;
-    this.dateToValue = null;
     this.incomeStore.clearFilters();
   }
 
