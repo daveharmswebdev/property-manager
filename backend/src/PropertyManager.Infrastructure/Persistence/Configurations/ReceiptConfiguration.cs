@@ -24,6 +24,9 @@ public class ReceiptConfiguration : IEntityTypeConfiguration<Receipt>
             .HasMaxLength(500)
             .IsRequired();
 
+        builder.Property(e => e.ThumbnailStorageKey)
+            .HasMaxLength(500);
+
         builder.Property(e => e.OriginalFileName)
             .HasMaxLength(255);
 

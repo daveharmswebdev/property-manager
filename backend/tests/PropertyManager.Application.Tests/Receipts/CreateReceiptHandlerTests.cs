@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using Moq;
 using PropertyManager.Application.Common.Interfaces;
@@ -59,7 +60,8 @@ public class CreateReceiptHandlerTests
             _dbContextMock.Object,
             _currentUserMock.Object,
             _notificationServiceMock.Object,
-            _thumbnailServiceMock.Object);
+            _thumbnailServiceMock.Object,
+            Mock.Of<ILogger<CreateReceiptHandler>>());
     }
 
     [Fact]

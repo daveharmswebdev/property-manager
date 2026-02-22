@@ -70,7 +70,7 @@ public class GetUnprocessedReceiptsHandler : IRequestHandler<GetUnprocessedRecei
         var thumbnailUrlTasks = receipts.Select(r =>
             r.ThumbnailStorageKey != null
                 ? _storageService.GeneratePresignedDownloadUrlAsync(r.ThumbnailStorageKey, cancellationToken)
-                : Task.FromResult<string>(null!));
+                : Task.FromResult<string?>(null));
         var thumbnailUrls = await Task.WhenAll(thumbnailUrlTasks);
 
         // Map to DTOs with presigned URLs

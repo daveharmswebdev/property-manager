@@ -30,17 +30,20 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
     private readonly ICurrentUser _currentUser;
     private readonly IReceiptNotificationService _notificationService;
     private readonly IReceiptThumbnailService _receiptThumbnailService;
+    private readonly ILogger<CreateReceiptHandler> _logger;
 
     public CreateReceiptHandler(
         IAppDbContext dbContext,
         ICurrentUser currentUser,
         IReceiptNotificationService notificationService,
-        IReceiptThumbnailService receiptThumbnailService)
+        IReceiptThumbnailService receiptThumbnailService,
+        ILogger<CreateReceiptHandler> logger)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _notificationService = notificationService;
         _receiptThumbnailService = receiptThumbnailService;
+        _logger = logger;
     }
 
     public async Task<Guid> Handle(
@@ -77,7 +80,7 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
         _dbContext.Receipts.Add(receipt);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Generate thumbnail (non-blocking — failure does not affect receipt creation)
+        // Generate thumbnail — failure does not affect receipt creation, but adds latency
         try
         {
             var thumbnailKey = await _receiptThumbnailService.GenerateThumbnailAsync(
@@ -93,7 +96,7 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Thumbnail generation failure should NOT block receipt creation
+            _logger.LogWarning(ex, "Thumbnail generation failed for receipt {ReceiptId}", receipt.Id);
         }
 
         // Broadcast real-time notification (AC-5.6.1)

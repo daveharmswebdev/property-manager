@@ -19,20 +19,30 @@ public class PdfRendererService : IPdfRendererService
     }
 
     /// <inheritdoc />
-    public Task<byte[]> RenderFirstPageToImageAsync(
+    public async Task<byte[]> RenderFirstPageToImageAsync(
         Stream pdfStream,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            using var bitmap = Conversion.ToImage(pdfStream, page: 0);
-            using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+            // Copy stream to byte array so Task.Run closure doesn't capture the stream
+            using var ms = new MemoryStream();
+            await pdfStream.CopyToAsync(ms, cancellationToken);
+            var pdfBytes = ms.ToArray();
+
+            var result = await Task.Run(() =>
+            {
+                using var pdfMemStream = new MemoryStream(pdfBytes);
+                using var bitmap = Conversion.ToImage(pdfMemStream, page: 0);
+                using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+                return data.ToArray();
+            }, cancellationToken);
 
             _logger.LogInformation(
                 "Rendered PDF first page to PNG: {Size} bytes",
-                data.Size);
+                result.Length);
 
-            return Task.FromResult(data.ToArray());
+            return result;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
