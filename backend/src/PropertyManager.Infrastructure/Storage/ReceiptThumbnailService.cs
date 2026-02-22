@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 
 namespace PropertyManager.Infrastructure.Storage;
@@ -42,8 +41,7 @@ public class ReceiptThumbnailService : IReceiptThumbnailService
         try
         {
             _logger.LogInformation(
-                "Generating thumbnail for receipt {StorageKey} (type: {ContentType})",
-                LogSanitizer.MaskStorageKey(storageKey),
+                "Generating thumbnail for receipt (type: {ContentType})",
                 contentType);
 
             // Download original file from S3
@@ -86,17 +84,14 @@ public class ReceiptThumbnailService : IReceiptThumbnailService
                 uploadResult.Url, thumbnailContent, cancellationToken);
             uploadResponse.EnsureSuccessStatusCode();
 
-            _logger.LogInformation(
-                "Thumbnail generated and uploaded: {ThumbnailKey}",
-                LogSanitizer.MaskStorageKey(thumbnailKey));
+            _logger.LogInformation("Thumbnail generated and uploaded successfully");
 
             return thumbnailKey;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex,
-                "Failed to generate thumbnail for {StorageKey}, continuing without thumbnail",
-                LogSanitizer.MaskStorageKey(storageKey));
+                "Failed to generate thumbnail for receipt, continuing without thumbnail");
             return null;
         }
     }

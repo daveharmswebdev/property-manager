@@ -22,7 +22,8 @@ public class NoOpReceiptThumbnailService : IReceiptThumbnailService
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug(
-            "NoOp: Skipping thumbnail generation for {StorageKey}", storageKey);
+            "NoOp: Skipping thumbnail generation for receipt (type: {ContentType})",
+            contentType);
         return Task.FromResult<string?>(null);
     }
 }
