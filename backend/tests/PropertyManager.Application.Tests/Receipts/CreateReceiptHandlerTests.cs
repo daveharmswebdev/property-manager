@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using Moq;
 using PropertyManager.Application.Common.Interfaces;
@@ -16,38 +17,51 @@ public class CreateReceiptHandlerTests
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly Mock<IReceiptNotificationService> _notificationServiceMock;
+    private readonly Mock<IReceiptThumbnailService> _thumbnailServiceMock;
     private readonly CreateReceiptHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _testPropertyId = Guid.NewGuid();
+    private readonly List<Receipt> _receipts = new();
 
     public CreateReceiptHandlerTests()
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
         _notificationServiceMock = new Mock<IReceiptNotificationService>();
+        _thumbnailServiceMock = new Mock<IReceiptThumbnailService>();
 
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
 
         // Setup receipts DbSet for Add operations
-        var receipts = new List<Receipt>();
-        var mockReceiptsDbSet = receipts.AsQueryable().BuildMockDbSet();
+        var mockReceiptsDbSet = _receipts.AsQueryable().BuildMockDbSet();
         mockReceiptsDbSet.Setup(x => x.Add(It.IsAny<Receipt>()))
             .Callback<Receipt>(r =>
             {
                 // Simulate EF Core generating an ID on Add
                 r.Id = Guid.NewGuid();
-                receipts.Add(r);
+                _receipts.Add(r);
             });
         _dbContextMock.Setup(x => x.Receipts).Returns(mockReceiptsDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
+        // Default: thumbnail generation succeeds
+        _thumbnailServiceMock.Setup(x => x.GenerateThumbnailAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string storageKey, string _, CancellationToken _) =>
+            {
+                var thumbKey = StorageKeyToThumbnailKey(storageKey);
+                return thumbKey;
+            });
+
         _handler = new CreateReceiptHandler(
             _dbContextMock.Object,
             _currentUserMock.Object,
-            _notificationServiceMock.Object);
+            _notificationServiceMock.Object,
+            _thumbnailServiceMock.Object,
+            Mock.Of<ILogger<CreateReceiptHandler>>());
     }
 
     [Fact]
@@ -74,7 +88,7 @@ public class CreateReceiptHandlerTests
             r.AccountId == _testAccountId &&
             r.CreatedByUserId == _testUserId &&
             r.PropertyId == null)), Times.Once);
-        _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
         // Verify SignalR notification was sent (AC-5.6.1)
         _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
@@ -195,9 +209,138 @@ public class CreateReceiptHandlerTests
         addedReceipt!.CreatedByUserId.Should().Be(_testUserId);
     }
 
+    [Fact]
+    public async Task Handle_ImageReceipt_GeneratesThumbnailAndSetsThumbnailStorageKey()
+    {
+        // Arrange
+        var storageKey = $"{_testAccountId}/2025/test-guid.jpg";
+        var expectedThumbKey = StorageKeyToThumbnailKey(storageKey);
+
+        var command = new CreateReceiptCommand(
+            StorageKey: storageKey,
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _thumbnailServiceMock.Verify(x => x.GenerateThumbnailAsync(
+            storageKey, "image/jpeg", It.IsAny<CancellationToken>()), Times.Once);
+
+        var addedReceipt = _receipts.Single();
+        addedReceipt.ThumbnailStorageKey.Should().Be(expectedThumbKey);
+    }
+
+    [Fact]
+    public async Task Handle_PdfReceipt_GeneratesThumbnailAndSetsThumbnailStorageKey()
+    {
+        // Arrange
+        var storageKey = $"{_testAccountId}/2025/test-guid.pdf";
+        var expectedThumbKey = StorageKeyToThumbnailKey(storageKey);
+
+        var command = new CreateReceiptCommand(
+            StorageKey: storageKey,
+            OriginalFileName: "receipt.pdf",
+            ContentType: "application/pdf",
+            FileSizeBytes: 2 * 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _thumbnailServiceMock.Verify(x => x.GenerateThumbnailAsync(
+            storageKey, "application/pdf", It.IsAny<CancellationToken>()), Times.Once);
+
+        var addedReceipt = _receipts.Single();
+        addedReceipt.ThumbnailStorageKey.Should().Be(expectedThumbKey);
+    }
+
+    [Fact]
+    public async Task Handle_ThumbnailGenerationFails_StillCreatesReceipt()
+    {
+        // Arrange - thumbnail service returns null (failure)
+        _thumbnailServiceMock.Setup(x => x.GenerateThumbnailAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var command = new CreateReceiptCommand(
+            StorageKey: $"{_testAccountId}/2025/test-guid.jpg",
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - receipt should still be created
+        result.Should().NotBeEmpty();
+        _dbContextMock.Verify(x => x.Receipts.Add(It.IsAny<Receipt>()), Times.Once);
+        _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+
+        var addedReceipt = _receipts.Single();
+        addedReceipt.ThumbnailStorageKey.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_ThumbnailGenerationThrows_StillCreatesReceipt()
+    {
+        // Arrange - thumbnail service throws
+        _thumbnailServiceMock.Setup(x => x.GenerateThumbnailAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("PDF rendering failed"));
+
+        var command = new CreateReceiptCommand(
+            StorageKey: $"{_testAccountId}/2025/test-guid.pdf",
+            OriginalFileName: "receipt.pdf",
+            ContentType: "application/pdf",
+            FileSizeBytes: 2 * 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - receipt should still be created without thumbnail
+        result.Should().NotBeEmpty();
+        _dbContextMock.Verify(x => x.Receipts.Add(It.IsAny<Receipt>()), Times.Once);
+
+        var addedReceipt = _receipts.Single();
+        addedReceipt.ThumbnailStorageKey.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WithThumbnail_SavesChangesAgainToUpdateThumbnailKey()
+    {
+        // Arrange
+        var command = new CreateReceiptCommand(
+            StorageKey: $"{_testAccountId}/2025/test-guid.jpg",
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - SaveChangesAsync called at least twice: once for receipt creation, once for thumbnail update
+        _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
     private void SetupPropertiesDbSet(List<Property> properties)
     {
         var mockDbSet = properties.AsQueryable().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
+    }
+
+    private static string StorageKeyToThumbnailKey(string storageKey)
+    {
+        var lastDot = storageKey.LastIndexOf('.');
+        return lastDot >= 0
+            ? $"{storageKey[..lastDot]}_thumb.jpg"
+            : $"{storageKey}_thumb.jpg";
     }
 }

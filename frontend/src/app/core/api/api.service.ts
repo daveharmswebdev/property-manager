@@ -5362,6 +5362,7 @@ export interface PagedResultOfExpenseListItemDto {
     page?: number;
     pageSize?: number;
     totalPages?: number;
+    totalAmount?: number;
 }
 
 export interface ExpenseListItemDto {
@@ -5758,6 +5759,7 @@ export interface UnprocessedReceiptDto {
     propertyName?: string | undefined;
     contentType?: string;
     viewUrl?: string;
+    thumbnailUrl?: string | undefined;
 }
 
 export interface ProcessReceiptResponse {
