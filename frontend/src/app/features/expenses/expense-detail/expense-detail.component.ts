@@ -405,8 +405,10 @@ import { formatDateShort, formatLocalDate } from '../../../shared/utils/date.uti
                         @if (isLinkingReceipt()) {
                           <mat-spinner diameter="18"></mat-spinner>
                         } @else {
-                          <mat-icon>link</mat-icon>
-                          Link Selected Receipt
+                          <ng-container>
+                            <mat-icon>link</mat-icon>
+                            Link Selected Receipt
+                          </ng-container>
                         }
                       </button>
                     }

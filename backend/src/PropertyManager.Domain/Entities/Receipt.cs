@@ -11,6 +11,7 @@ public class Receipt : AuditableEntity, ITenantEntity, ISoftDeletable
     public Guid AccountId { get; set; }
     public Guid? PropertyId { get; set; }
     public string StorageKey { get; set; } = string.Empty;
+    public string? ThumbnailStorageKey { get; set; }
     public string? OriginalFileName { get; set; }
     public string? ContentType { get; set; }
     public long? FileSizeBytes { get; set; }

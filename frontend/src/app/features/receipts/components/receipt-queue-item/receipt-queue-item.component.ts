@@ -38,13 +38,13 @@ import { UnprocessedReceiptDto } from '../../../../core/api/api.service';
     >
       <div class="receipt-content">
         <div class="thumbnail" data-testid="receipt-thumbnail">
-          @if (isPdf()) {
+          @if (isPdf() && !hasThumbnail()) {
             <mat-icon class="pdf-icon">description</mat-icon>
           } @else if (imageError()) {
             <mat-icon class="fallback-icon">image</mat-icon>
           } @else {
             <img
-              [src]="receipt().viewUrl"
+              [src]="hasThumbnail() ? receipt().thumbnailUrl : receipt().viewUrl"
               [alt]="'Receipt from ' + formattedDate()"
               (error)="onImageError()"
               class="receipt-thumb"
@@ -228,8 +228,11 @@ export class ReceiptQueueItemComponent {
   /** Whether the thumbnail image failed to load */
   imageError = signal(false);
 
-  /** Whether the receipt is a PDF (shows document icon instead of thumbnail) */
+  /** Whether the receipt is a PDF */
   isPdf = computed(() => this.receipt().contentType === 'application/pdf');
+
+  /** Whether a server-generated thumbnail is available */
+  hasThumbnail = computed(() => !!this.receipt().thumbnailUrl);
 
   /** Formatted date using relative time (e.g., "2 hours ago") */
   formattedDate = computed(() => {

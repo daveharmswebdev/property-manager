@@ -249,6 +249,100 @@ public class GetUnprocessedReceiptsHandlerTests
         result.Items[0].ContentType.Should().Be("application/octet-stream");
     }
 
+    [Fact]
+    public async Task Handle_ReceiptWithThumbnail_ReturnsThumbnailUrl()
+    {
+        // Arrange
+        var receipt = CreateTestReceipt();
+        receipt.ThumbnailStorageKey = "account/2025/receipt1_thumb.jpg";
+
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+
+        _storageServiceMock
+            .Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                receipt.StorageKey,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://bucket.s3.amazonaws.com/view-url");
+
+        _storageServiceMock
+            .Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                "account/2025/receipt1_thumb.jpg",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://bucket.s3.amazonaws.com/thumb-url");
+
+        var query = new GetUnprocessedReceiptsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].ThumbnailUrl.Should().Be("https://bucket.s3.amazonaws.com/thumb-url");
+        result.Items[0].ViewUrl.Should().Be("https://bucket.s3.amazonaws.com/view-url");
+    }
+
+    [Fact]
+    public async Task Handle_ReceiptWithoutThumbnail_ReturnsNullThumbnailUrl()
+    {
+        // Arrange
+        var receipt = CreateTestReceipt();
+        receipt.ThumbnailStorageKey = null;
+
+        SetupReceiptsDbSet(new List<Receipt> { receipt });
+        SetupStorageService();
+
+        var query = new GetUnprocessedReceiptsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        result.Items[0].ThumbnailUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_MixedReceipts_GeneratesThumbnailUrlsOnlyForThoseWithThumbnails()
+    {
+        // Arrange
+        var receiptWithThumb = CreateTestReceipt();
+        receiptWithThumb.StorageKey = "account/2025/with-thumb.jpg";
+        receiptWithThumb.ThumbnailStorageKey = "account/2025/with-thumb_thumb.jpg";
+
+        var receiptWithoutThumb = CreateTestReceipt();
+        receiptWithoutThumb.StorageKey = "account/2025/no-thumb.pdf";
+        receiptWithoutThumb.ThumbnailStorageKey = null;
+
+        SetupReceiptsDbSet(new List<Receipt> { receiptWithThumb, receiptWithoutThumb });
+
+        _storageServiceMock
+            .Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                It.Is<string>(k => !k.Contains("_thumb")),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://bucket.s3.amazonaws.com/view");
+
+        _storageServiceMock
+            .Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                "account/2025/with-thumb_thumb.jpg",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://bucket.s3.amazonaws.com/thumb");
+
+        var query = new GetUnprocessedReceiptsQuery();
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        var withThumb = result.Items.First(x => x.ViewUrl.Contains("view"));
+        var withoutThumb = result.Items.Last();
+
+        // Only generate presigned URL for the receipt that has a thumbnail key
+        _storageServiceMock.Verify(x => x.GeneratePresignedDownloadUrlAsync(
+            "account/2025/with-thumb_thumb.jpg",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private Receipt CreateTestReceipt(DateTime? processedAt = null, DateTime? createdAt = null)
     {
         return new Receipt

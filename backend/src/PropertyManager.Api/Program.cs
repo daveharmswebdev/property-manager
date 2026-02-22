@@ -83,6 +83,7 @@ if (s3Configured)
     builder.Services.AddScoped<IStorageService, S3StorageService>();
     builder.Services.AddScoped<IReportStorageService, ReportStorageService>();
     builder.Services.AddHttpClient<IPhotoService, PhotoService>();
+    builder.Services.AddHttpClient<IReceiptThumbnailService, ReceiptThumbnailService>();
 }
 else
 {
@@ -90,10 +91,12 @@ else
     builder.Services.AddScoped<IStorageService, NoOpStorageService>();
     builder.Services.AddScoped<IReportStorageService, NoOpReportStorageService>();
     builder.Services.AddScoped<IPhotoService, NoOpPhotoService>();
+    builder.Services.AddScoped<IReceiptThumbnailService, NoOpReceiptThumbnailService>();
 }
 
-// Register thumbnail service (always available - no external dependencies)
+// Register thumbnail and PDF renderer services (always available - no external dependencies)
 builder.Services.AddScoped<IThumbnailService, ImageSharpThumbnailService>();
+builder.Services.AddScoped<IPdfRendererService, PdfRendererService>();
 
 // Register PDF report generators (AC-6.1.4, AC-12.1)
 builder.Services.AddScoped<IScheduleEPdfGenerator, ScheduleEPdfGenerator>();
