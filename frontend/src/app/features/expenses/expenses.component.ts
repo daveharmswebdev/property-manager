@@ -84,6 +84,7 @@ import { PropertyService } from '../properties/services/property.service';
         <app-list-total-display
           label="Total Expenses"
           [amount]="store.totalAmount()"
+          [showBorder]="true"
         />
       }
 

@@ -297,7 +297,7 @@ export const ExpenseListStore = signalStore(
                 expenses: response.items,
                 totalCount: response.totalCount,
                 totalPages: response.totalPages,
-                totalAmount: response.totalAmount ?? 0,
+                totalAmount: response.totalAmount,
                 page: response.page,
                 pageSize: response.pageSize,
                 isLoading: false,

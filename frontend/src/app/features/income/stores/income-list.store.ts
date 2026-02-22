@@ -64,7 +64,7 @@ const initialState: IncomeListState = {
   properties: [],
 
   // Filters - default to no filters
-  dateRangePreset: 'all' as DateRangePreset,
+  dateRangePreset: 'all',
   dateFrom: null,
   dateTo: null,
   selectedPropertyId: null,
@@ -214,7 +214,7 @@ export const IncomeListStore = signalStore(
      * Set custom date range and reload (AC-4.3.3)
      */
     setCustomDateRange(dateFrom: string, dateTo: string): void {
-      patchState(store, { dateRangePreset: 'custom' as DateRangePreset, dateFrom, dateTo });
+      patchState(store, { dateRangePreset: 'custom', dateFrom, dateTo });
       persistIncomeDateFilter('custom', dateFrom, dateTo);
       this.loadIncome(store.currentFilters());
     },
@@ -240,7 +240,7 @@ export const IncomeListStore = signalStore(
      */
     clearFilters(): void {
       patchState(store, {
-        dateRangePreset: 'all' as DateRangePreset,
+        dateRangePreset: 'all',
         dateFrom: null,
         dateTo: null,
         selectedPropertyId: null,

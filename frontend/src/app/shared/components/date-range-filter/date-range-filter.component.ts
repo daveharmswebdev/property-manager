@@ -31,7 +31,7 @@ import { formatLocalDate } from '../../utils/date.utils';
   template: `
     <div class="date-range-container">
       <!-- Preset Dropdown -->
-      <mat-form-field appearance="outline" class="date-range-field">
+      <mat-form-field appearance="outline" class="date-range-field" subscriptSizing="dynamic">
         <mat-label>Date Range</mat-label>
         <mat-select [value]="dateRangePreset()" (selectionChange)="onPresetChange($event.value)">
           <mat-option value="all">All Time</mat-option>
@@ -45,14 +45,14 @@ import { formatLocalDate } from '../../utils/date.utils';
       <!-- Custom Date Range -->
       @if (dateRangePreset() === 'custom') {
         <div class="date-fields">
-          <mat-form-field appearance="outline" class="date-field">
+          <mat-form-field appearance="outline" class="date-field" subscriptSizing="dynamic">
             <mat-label>From</mat-label>
             <input matInput [matDatepicker]="fromPicker" [formControl]="customDateFrom">
             <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
             <mat-datepicker #fromPicker></mat-datepicker>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="date-field">
+          <mat-form-field appearance="outline" class="date-field" subscriptSizing="dynamic">
             <mat-label>To</mat-label>
             <input matInput [matDatepicker]="toPicker" [formControl]="customDateTo">
             <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
@@ -76,10 +76,6 @@ import { formatLocalDate } from '../../utils/date.utils';
 
     .date-range-field {
       min-width: 150px;
-
-      ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-        display: none;
-      }
     }
 
     .date-fields {
@@ -90,10 +86,6 @@ import { formatLocalDate } from '../../utils/date.utils';
 
     .date-field {
       width: 140px;
-
-      ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-        display: none;
-      }
     }
 
     .apply-btn {

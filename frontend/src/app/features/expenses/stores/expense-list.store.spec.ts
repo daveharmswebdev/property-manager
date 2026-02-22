@@ -289,18 +289,6 @@ describe('ExpenseListStore', () => {
       expect(store.totalAmount()).toBe(150.0);
     });
 
-    it('should reset totalAmount to 0 when response has no totalAmount', () => {
-      expenseServiceMock.getExpenses.mockReturnValue(of({
-        items: [],
-        totalCount: 0,
-        page: 1,
-        pageSize: 50,
-        totalPages: 0,
-      }));
-      store.initialize();
-      expect(store.totalAmount()).toBe(0);
-    });
-
     it('should handle error', () => {
       expenseServiceMock.getExpenses.mockReturnValue(throwError(() => new Error('Network')));
       store.initialize();
