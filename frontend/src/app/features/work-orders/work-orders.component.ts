@@ -1,21 +1,27 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule, MatChipListboxChange } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { WorkOrderStore } from './stores/work-order.store';
 import { PropertyStore } from '../properties/stores/property.store';
+import {
+  ConfirmDialogComponent,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { WorkOrderDto } from './services/work-order.service';
 
 /**
  * WorkOrdersComponent
  *
  * Main work orders list page.
- * Displays all work orders with status filtering.
+ * Displays all work orders as enriched two-line rows with status filtering.
+ * Story 16-8: Refactored from card grid to row-based list.
  */
 @Component({
   selector: 'app-work-orders',
@@ -24,13 +30,14 @@ import { PropertyStore } from '../properties/stores/property.store';
     CommonModule,
     DatePipe,
     RouterLink,
-    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
     MatChipsModule,
     MatSelectModule,
     MatFormFieldModule,
+    MatCardModule,
+    ConfirmDialogComponent,
   ],
   template: `
     <div class="work-orders-page">
@@ -114,47 +121,76 @@ import { PropertyStore } from '../properties/stores/property.store';
       } @else {
         <div class="work-orders-list">
           @for (workOrder of store.workOrders(); track workOrder.id) {
-            <mat-card class="work-order-card" [routerLink]="['/work-orders', workOrder.id]">
-              <div class="card-layout">
-                <!-- Thumbnail (if available) -->
-                @if (workOrder.primaryPhotoThumbnailUrl) {
-                  <div class="card-thumbnail">
-                    <img [src]="workOrder.primaryPhotoThumbnailUrl" alt="" loading="lazy" />
-                  </div>
-                }
-                <div class="card-content" [class.has-thumbnail]="workOrder.primaryPhotoThumbnailUrl">
-                  <mat-card-header>
-                    <mat-card-title>{{ workOrder.propertyName }}</mat-card-title>
-                    <mat-card-subtitle>
-                      <span class="status-badge" [ngClass]="'status-' + workOrder.status.toLowerCase()">
-                        {{ workOrder.status }}
-                      </span>
-                    </mat-card-subtitle>
-                  </mat-card-header>
-                  <mat-card-content>
-                    <p class="description">{{ workOrder.description }}</p>
-                    <p class="assignee">
-                      <mat-icon class="assignee-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
-                      {{ workOrder.isDiy ? 'Self (DIY)' : (workOrder.vendorName || 'Unknown Vendor') }}
-                    </p>
-                    @if (workOrder.categoryName) {
-                      <p class="category">Category: {{ workOrder.categoryName }}</p>
-                    }
-                    @if (workOrder.tags && workOrder.tags.length > 0) {
-                      <mat-chip-set class="work-order-tags">
-                        @for (tag of workOrder.tags; track tag.id) {
-                          <mat-chip>{{ tag.name }}</mat-chip>
-                        }
-                      </mat-chip-set>
-                    }
-                    <span class="created-date">
-                      <mat-icon class="date-icon">calendar_today</mat-icon>
-                      {{ workOrder.createdAt | date:'mediumDate' }}
+            <div class="work-order-row" [class.expanded]="isExpanded(workOrder.id)">
+              <!-- Expand chevron -->
+              <button class="expand-btn" mat-icon-button
+                (click)="toggleExpand(workOrder.id, $event)"
+                aria-label="Toggle details">
+                <mat-icon>{{ isExpanded(workOrder.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+
+              <!-- Row content (clickable → navigates to detail) -->
+              <div class="row-content" [routerLink]="['/work-orders', workOrder.id]">
+                <!-- Line 1: Scan line -->
+                <div class="line-1">
+                  <span class="status-chip" [class]="'status-' + workOrder.status.toLowerCase()">
+                    {{ workOrder.status }}
+                  </span>
+                  <span class="wo-title">{{ workOrder.description }}</span>
+                  <span class="wo-assignee">
+                    <mat-icon class="inline-icon">{{ workOrder.isDiy ? 'person' : 'engineering' }}</mat-icon>
+                    {{ workOrder.isDiy ? 'DIY' : (workOrder.vendorName || 'Unassigned') }}
+                  </span>
+                  @if (workOrder.categoryName) {
+                    <span class="wo-category">{{ workOrder.categoryName }}</span>
+                  }
+                  <span class="wo-date">{{ workOrder.createdAt | date:'MMM d' }}</span>
+                </div>
+
+                <!-- Line 2: Context line -->
+                <div class="line-2">
+                  <span class="wo-property">
+                    <mat-icon class="inline-icon">home</mat-icon>
+                    {{ workOrder.propertyName }}
+                  </span>
+                  @if (!workOrder.isDiy && workOrder.vendorName) {
+                    <span class="wo-vendor">{{ workOrder.vendorName }}</span>
+                  }
+                  @if (workOrder.tags && workOrder.tags.length > 0) {
+                    <span class="wo-tags">
+                      @for (tag of workOrder.tags; track tag.id) {
+                        <mat-chip>{{ tag.name }}</mat-chip>
+                      }
                     </span>
-                  </mat-card-content>
+                  }
                 </div>
               </div>
-            </mat-card>
+
+              <!-- Action icons (stop propagation to prevent navigation) -->
+              <div class="row-actions">
+                <a mat-icon-button [routerLink]="['/work-orders', workOrder.id, 'edit']"
+                  (click)="$event.stopPropagation()" aria-label="Edit work order">
+                  <mat-icon>edit</mat-icon>
+                </a>
+                <button mat-icon-button (click)="confirmDelete(workOrder, $event)"
+                  aria-label="Delete work order">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Expand panel (AC5) -->
+            @if (isExpanded(workOrder.id)) {
+              <div class="expand-panel">
+                <div class="expand-content">
+                  <p class="full-description">{{ workOrder.description }}</p>
+                  @if (workOrder.primaryPhotoThumbnailUrl) {
+                    <img [src]="workOrder.primaryPhotoThumbnailUrl" alt="Work order photo"
+                      class="expand-thumbnail" loading="lazy" />
+                  }
+                </div>
+              </div>
+            }
           }
         </div>
       }
@@ -163,9 +199,7 @@ import { PropertyStore } from '../properties/stores/property.store';
   styles: [
     `
       .work-orders-page {
-        padding: 24px;
-        max-width: 1200px;
-        margin: 0 auto;
+        padding: 24px 16px;
       }
 
       .page-header {
@@ -260,100 +294,119 @@ import { PropertyStore } from '../properties/stores/property.store';
         color: var(--mat-sys-primary);
       }
 
+      /* Enriched Row List (Story 16-8) */
       .work-orders-list {
-        display: grid;
-        gap: 16px;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      }
-
-      .work-order-card {
-        cursor: pointer;
-        transition: box-shadow 0.2s;
-        padding: 0;
-        overflow: hidden;
-      }
-
-      .work-order-card:hover {
-        box-shadow: var(--mat-sys-level3);
-      }
-
-      .card-layout {
         display: flex;
-        align-items: flex-start;
+        flex-direction: column;
+        gap: 0;
       }
 
-      .card-thumbnail {
-        flex: 0 0 auto;
-        padding: 12px;
+      .work-order-row {
         display: flex;
         align-items: center;
-        justify-content: center;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background-color 0.15s;
       }
 
-      .card-thumbnail img {
-        max-width: 80px;
-        max-height: 100px;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-        border-radius: 6px;
-        border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
-        background-color: var(--mat-sys-surface-variant, #f5f5f5);
+      .work-order-row:hover {
+        background-color: var(--mat-sys-surface-container);
       }
 
-      .card-content {
+      /* Alternating row backgrounds (AC4) */
+      .work-order-row:nth-child(odd) {
+        background-color: var(--mat-sys-surface);
+      }
+
+      .work-order-row:nth-child(even) {
+        background-color: var(--mat-sys-surface-container-low);
+      }
+
+      .row-content {
         flex: 1;
-        padding: 16px;
-        padding-left: 4px;
-        min-width: 0; /* Allow text truncation */
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
       }
 
-      .card-content.has-thumbnail {
+      .line-1,
+      .line-2 {
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+
+      .line-1 {
+        font-weight: 500;
+      }
+
+      .line-2 {
+        font-size: 0.875rem;
+        color: var(--mat-sys-on-surface-variant);
+        gap: 12px;
         padding-left: 4px;
       }
 
-      .description {
+      .wo-title {
+        flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: 100%;
+        min-width: 0;
+        padding: 0 16px;
       }
 
-      .category {
-        color: var(--mat-sys-outline);
-        font-size: 0.9em;
-      }
-
-      .assignee {
-        display: flex;
+      .wo-assignee {
+        min-width: 140px;
+        padding: 0 12px;
+        border-left: 1px solid var(--mat-sys-outline-variant);
+        display: inline-flex;
         align-items: center;
         gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .wo-category {
+        min-width: 90px;
+        padding: 0 12px;
+        border-left: 1px solid var(--mat-sys-outline-variant);
+        flex-shrink: 0;
         color: var(--mat-sys-on-surface-variant);
-        font-size: 0.9em;
-        margin: 8px 0;
+        font-size: 0.875rem;
       }
 
-      .assignee-icon {
-        font-size: 18px;
-        height: 18px;
-        width: 18px;
+      .wo-date {
+        min-width: 56px;
+        padding: 0 4px 0 12px;
+        border-left: 1px solid var(--mat-sys-outline-variant);
+        flex-shrink: 0;
+        text-align: right;
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.875rem;
+        font-weight: 400;
       }
 
-      .work-order-tags {
-        margin-top: 8px;
+      .inline-icon {
+        font-size: 16px;
+        height: 16px;
+        width: 16px;
+        vertical-align: middle;
       }
 
-      .work-order-tags mat-chip {
-        font-size: 0.8em;
-      }
-
-      .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 16px;
+      /* Status chip (AC3) */
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 12px;
         font-size: 0.75rem;
-        font-weight: 500;
+        font-weight: 600;
         text-transform: uppercase;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .status-reported {
@@ -371,19 +424,128 @@ import { PropertyStore } from '../properties/stores/property.store';
         color: var(--mat-sys-on-tertiary-container, #065f46);
       }
 
-      .created-date {
+      /* Row actions */
+      .row-actions {
         display: flex;
-        align-items: center;
         gap: 4px;
-        font-size: 0.85em;
-        color: var(--mat-sys-outline);
-        margin-top: 8px;
+        opacity: 0;
+        transition: opacity 0.15s;
       }
 
-      .date-icon {
-        font-size: 16px;
-        height: 16px;
-        width: 16px;
+      .work-order-row:hover .row-actions {
+        opacity: 1;
+      }
+
+      /* Expand button */
+      .expand-btn {
+        flex-shrink: 0;
+        margin-right: 8px;
+      }
+
+      /* Expand panel (AC5) */
+      .expand-panel {
+        padding: 16px 16px 16px 56px;
+        background-color: var(--mat-sys-surface-container-lowest);
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+      }
+
+      .expand-content {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .full-description {
+        flex: 1;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      .expand-thumbnail {
+        max-width: 120px;
+        max-height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid var(--mat-sys-outline-variant);
+      }
+
+      /* Medium breakpoint — drop category (AC6) */
+      @media (max-width: 1200px) {
+        .wo-category {
+          display: none;
+        }
+      }
+
+      /* Mobile breakpoint — stack into card layout (AC6) */
+      @media (max-width: 768px) {
+        .work-order-row {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 16px;
+          gap: 8px;
+        }
+
+        .row-content {
+          width: 100%;
+        }
+
+        .line-1 {
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        .line-1 .status-chip {
+          order: 0;
+        }
+
+        .line-1 .wo-date {
+          order: 0;
+          margin-left: auto;
+          border-left: none;
+          padding: 0;
+          min-width: unset;
+        }
+
+        .line-1 .wo-title {
+          width: 100%;
+          white-space: normal;
+          order: 1;
+          flex-basis: 100%;
+          padding: 4px 0 0;
+        }
+
+        .line-1 .wo-assignee {
+          order: 2;
+          flex-basis: 100%;
+          border-left: none;
+          padding: 0;
+          min-width: unset;
+        }
+
+        .line-1 .wo-category {
+          display: none;
+        }
+
+        .line-2 {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          padding-left: 0;
+        }
+
+        .row-actions {
+          opacity: 1;
+          align-self: flex-end;
+        }
+
+        .expand-btn {
+          display: none;
+        }
+
+        .expand-panel {
+          display: none;
+        }
       }
     `,
   ],
@@ -391,31 +553,55 @@ import { PropertyStore } from '../properties/stores/property.store';
 export class WorkOrdersComponent implements OnInit {
   protected readonly store = inject(WorkOrderStore);
   protected readonly propertyStore = inject(PropertyStore);
+  private readonly dialog = inject(MatDialog);
+
+  private expandedIds = new Set<string>();
 
   ngOnInit(): void {
     this.store.loadWorkOrders();
-    // Load properties for filter dropdown (rxMethod requires argument, undefined = no page limit)
     this.propertyStore.loadProperties(undefined);
   }
 
-  /**
-   * Handle status filter chip selection change (AC #2)
-   */
+  isExpanded(id: string): boolean {
+    return this.expandedIds.has(id);
+  }
+
+  toggleExpand(id: string, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    if (this.expandedIds.has(id)) {
+      this.expandedIds.delete(id);
+    } else {
+      this.expandedIds.add(id);
+    }
+  }
+
+  confirmDelete(workOrder: WorkOrderDto, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: `Delete "${workOrder.description}"?`,
+        message: 'This work order will be permanently removed.',
+        confirmText: 'Delete',
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.store.deleteWorkOrder(workOrder.id);
+      }
+    });
+  }
+
   onStatusFilterChange(event: MatChipListboxChange): void {
     const selectedStatuses = (event.value as string[]) ?? [];
     this.store.setStatusFilter(selectedStatuses);
   }
 
-  /**
-   * Handle property filter dropdown change (AC #3)
-   */
   onPropertyFilterChange(propertyId: string | null): void {
     this.store.setPropertyFilter(propertyId);
   }
 
-  /**
-   * Clear all filters (AC #6)
-   */
   clearFilters(): void {
     this.store.clearFilters();
   }
