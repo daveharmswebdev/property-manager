@@ -134,7 +134,7 @@
     <action if="incomplete task or subtask requirements ambiguous">ASK user to clarify or HALT</action>
   </step>
 
-  <step n="2" goal="Load project context and story information">
+  <step n="2" goal="Load project context, story information, and research technologies">
     <critical>Load all available context to inform implementation</critical>
 
     <action>Load {project_context} for coding standards and project-wide patterns (if exists)</action>
@@ -142,8 +142,17 @@
     <action>Load comprehensive context from story file's Dev Notes section</action>
     <action>Extract developer guidance from Dev Notes: architecture requirements, previous learnings, technical specifications</action>
     <action>Use enhanced story context to inform implementation decisions and approaches</action>
-    <output>✅ **Context Loaded**
-      Story and project context available for implementation
+
+    <!-- MANDATORY: Research phase before implementation -->
+    <critical>BEFORE any implementation, research the key technologies, APIs, and patterns involved in this story</critical>
+    <action>Identify the primary frameworks, libraries, and APIs referenced in the story tasks (e.g., Angular Material components, EF Core features, MediatR patterns, ngrx/signals APIs)</action>
+    <action>Use mcp__Ref__ref_search_documentation to look up current documentation for each identified technology — verify API signatures, configuration patterns, and best practices</action>
+    <action>Use WebSearch for any technology questions that Ref MCP cannot answer (e.g., recent breaking changes, migration guides, community patterns)</action>
+    <action>Record key findings in Dev Agent Record → Implementation Plan so research is not lost mid-session</action>
+    <action>This research step is NOT optional — documentation lookups are cheaper than debugging hallucinated APIs</action>
+
+    <output>✅ **Context Loaded + Research Complete**
+      Story context, project standards, and technology documentation reviewed.
     </output>
   </step>
 
