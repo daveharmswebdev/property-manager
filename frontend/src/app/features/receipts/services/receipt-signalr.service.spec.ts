@@ -103,10 +103,12 @@ describe('ReceiptSignalRService', () => {
       await service.initialize();
     });
 
-    it('should add receipt to store when ReceiptAdded event received', () => {
+    it('should add receipt to store with all fields when ReceiptAdded event received (AC-16.9.3)', () => {
       const event: ReceiptAddedEvent = {
         id: 'receipt-123',
         thumbnailUrl: 'https://example.com/thumb.jpg',
+        viewUrl: 'https://example.com/view.jpg',
+        contentType: 'image/jpeg',
         propertyId: 'property-456',
         propertyName: 'Test Property',
         createdAt: '2025-12-31T10:30:00Z',
@@ -121,8 +123,9 @@ describe('ReceiptSignalRService', () => {
         propertyId: 'property-456',
         propertyName: 'Test Property',
         createdAt: expect.any(Date),
-        viewUrl: undefined,
-        contentType: undefined,
+        viewUrl: 'https://example.com/view.jpg',
+        thumbnailUrl: 'https://example.com/thumb.jpg',
+        contentType: 'image/jpeg',
       });
     });
 
@@ -141,6 +144,7 @@ describe('ReceiptSignalRService', () => {
         propertyName: undefined,
         createdAt: expect.any(Date),
         viewUrl: undefined,
+        thumbnailUrl: undefined,
         contentType: undefined,
       });
     });

@@ -540,6 +540,47 @@ describe('ReceiptsComponent', () => {
       );
     });
 
+    it('should call loadUnprocessedReceipts after successful upload (AC-16.9.1)', async () => {
+      const files = [new File(['data'], 'test.jpg', { type: 'image/jpeg' })];
+      let callCount = 0;
+      mockDialog.open.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return { afterClosed: () => of(files) };
+        }
+        return { afterClosed: () => of({ propertyId: null }) };
+      });
+      fixture.detectChanges();
+
+      // Reset to track calls after ngOnInit
+      mockStore.loadUnprocessedReceipts.mockClear();
+
+      await component.onUploadReceipt();
+
+      expect(mockStore.loadUnprocessedReceipts).toHaveBeenCalled();
+    });
+
+    it('should not call loadUnprocessedReceipts when all uploads fail (AC-16.9.1)', async () => {
+      const files = [new File(['data'], 'bad.jpg', { type: 'image/jpeg' })];
+      mockReceiptCaptureService.uploadReceipt.mockRejectedValue(new Error('Upload failed'));
+      let callCount = 0;
+      mockDialog.open.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return { afterClosed: () => of(files) };
+        }
+        return { afterClosed: () => of({ propertyId: null }) };
+      });
+      fixture.detectChanges();
+
+      // Reset to track calls after ngOnInit
+      mockStore.loadUnprocessedReceipts.mockClear();
+
+      await component.onUploadReceipt();
+
+      expect(mockStore.loadUnprocessedReceipts).not.toHaveBeenCalled();
+    });
+
     it('should disable upload button while isUploading is true (AC6)', () => {
       fixture.detectChanges();
 

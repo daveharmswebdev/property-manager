@@ -44,6 +44,8 @@ public class ReceiptNotificationServiceTests
         var receiptEvent = new ReceiptAddedEvent(
             Id: Guid.NewGuid(),
             ThumbnailUrl: null,
+            ViewUrl: "https://s3.example.com/view-url",
+            ContentType: "image/jpeg",
             PropertyId: Guid.NewGuid(),
             PropertyName: "Test Property",
             CreatedAt: DateTime.UtcNow);
@@ -111,6 +113,8 @@ public class ReceiptNotificationServiceTests
         var receiptEvent = new ReceiptAddedEvent(
             Id: Guid.NewGuid(),
             ThumbnailUrl: null,
+            ViewUrl: null,
+            ContentType: null,
             PropertyId: null,
             PropertyName: null,
             CreatedAt: DateTime.UtcNow);
@@ -134,6 +138,8 @@ public class ReceiptNotificationServiceTests
         var receiptEvent = new ReceiptAddedEvent(
             Id: Guid.NewGuid(),
             ThumbnailUrl: null,
+            ViewUrl: null,
+            ContentType: null,
             PropertyId: null,
             PropertyName: null,
             CreatedAt: DateTime.UtcNow);

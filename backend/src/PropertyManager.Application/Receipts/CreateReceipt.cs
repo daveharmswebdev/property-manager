@@ -30,6 +30,7 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
     private readonly ICurrentUser _currentUser;
     private readonly IReceiptNotificationService _notificationService;
     private readonly IReceiptThumbnailService _receiptThumbnailService;
+    private readonly IStorageService _storageService;
     private readonly ILogger<CreateReceiptHandler> _logger;
 
     public CreateReceiptHandler(
@@ -37,12 +38,14 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
         ICurrentUser currentUser,
         IReceiptNotificationService notificationService,
         IReceiptThumbnailService receiptThumbnailService,
+        IStorageService storageService,
         ILogger<CreateReceiptHandler> logger)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _notificationService = notificationService;
         _receiptThumbnailService = receiptThumbnailService;
+        _storageService = storageService;
         _logger = logger;
     }
 
@@ -99,12 +102,32 @@ public class CreateReceiptHandler : IRequestHandler<CreateReceiptCommand, Guid>
             _logger.LogWarning(ex, "Thumbnail generation failed for receipt {ReceiptId}", receipt.Id);
         }
 
+        // Generate presigned URLs for SignalR notification (AC-16.9.1, AC-16.9.3)
+        string? viewUrl = null;
+        string? thumbnailUrl = null;
+        try
+        {
+            viewUrl = await _storageService.GeneratePresignedDownloadUrlAsync(
+                receipt.StorageKey, cancellationToken);
+            if (receipt.ThumbnailStorageKey != null)
+            {
+                thumbnailUrl = await _storageService.GeneratePresignedDownloadUrlAsync(
+                    receipt.ThumbnailStorageKey, cancellationToken);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Failed to generate presigned URLs for notification, receipt {ReceiptId}", receipt.Id);
+        }
+
         // Broadcast real-time notification (AC-5.6.1)
         await _notificationService.NotifyReceiptAddedAsync(
             _currentUser.AccountId,
             new ReceiptAddedEvent(
                 receipt.Id,
-                null, // ThumbnailUrl - presigned URLs are generated on query, not stored
+                thumbnailUrl,
+                viewUrl,
+                request.ContentType,
                 receipt.PropertyId,
                 propertyName,
                 receipt.CreatedAt

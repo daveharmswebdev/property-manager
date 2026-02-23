@@ -18,6 +18,7 @@ public class CreateReceiptHandlerTests
     private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly Mock<IReceiptNotificationService> _notificationServiceMock;
     private readonly Mock<IReceiptThumbnailService> _thumbnailServiceMock;
+    private readonly Mock<IStorageService> _storageServiceMock;
     private readonly CreateReceiptHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _testUserId = Guid.NewGuid();
@@ -30,6 +31,7 @@ public class CreateReceiptHandlerTests
         _currentUserMock = new Mock<ICurrentUser>();
         _notificationServiceMock = new Mock<IReceiptNotificationService>();
         _thumbnailServiceMock = new Mock<IReceiptThumbnailService>();
+        _storageServiceMock = new Mock<IStorageService>();
 
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
@@ -56,11 +58,17 @@ public class CreateReceiptHandlerTests
                 return thumbKey;
             });
 
+        // Default: presigned URL generation succeeds
+        _storageServiceMock.Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string key, CancellationToken _) => $"https://s3.example.com/{key}");
+
         _handler = new CreateReceiptHandler(
             _dbContextMock.Object,
             _currentUserMock.Object,
             _notificationServiceMock.Object,
             _thumbnailServiceMock.Object,
+            _storageServiceMock.Object,
             Mock.Of<ILogger<CreateReceiptHandler>>());
     }
 
@@ -90,12 +98,15 @@ public class CreateReceiptHandlerTests
             r.PropertyId == null)), Times.Once);
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
-        // Verify SignalR notification was sent (AC-5.6.1)
+        // Verify SignalR notification was sent with presigned URLs (AC-5.6.1, AC-16.9.1)
         _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
             _testAccountId,
             It.Is<ReceiptAddedEvent>(e =>
                 e.PropertyId == null &&
-                e.PropertyName == null),
+                e.PropertyName == null &&
+                e.ViewUrl != null &&
+                e.ThumbnailUrl != null &&
+                e.ContentType == "image/jpeg"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -132,12 +143,15 @@ public class CreateReceiptHandlerTests
         _dbContextMock.Verify(x => x.Receipts.Add(It.Is<Receipt>(r =>
             r.PropertyId == _testPropertyId)), Times.Once);
 
-        // Verify SignalR notification was sent with property info (AC-5.6.1)
+        // Verify SignalR notification was sent with property info and presigned URLs (AC-5.6.1, AC-16.9.1)
         _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
             _testAccountId,
             It.Is<ReceiptAddedEvent>(e =>
                 e.PropertyId == _testPropertyId &&
-                e.PropertyName == "Test Property"),
+                e.PropertyName == "Test Property" &&
+                e.ViewUrl != null &&
+                e.ThumbnailUrl != null &&
+                e.ContentType == "image/jpeg"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -328,6 +342,67 @@ public class CreateReceiptHandlerTests
 
         // Assert - SaveChangesAsync called at least twice: once for receipt creation, once for thumbnail update
         _dbContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Handle_WithThumbnail_IncludesPresignedUrlsInNotification()
+    {
+        // Arrange (AC-16.9.1, AC-16.9.3)
+        var storageKey = $"{_testAccountId}/2025/test-guid.jpg";
+        var expectedThumbKey = StorageKeyToThumbnailKey(storageKey);
+
+        var command = new CreateReceiptCommand(
+            StorageKey: storageKey,
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - both presigned URLs should be generated and passed to notification
+        _storageServiceMock.Verify(x => x.GeneratePresignedDownloadUrlAsync(
+            storageKey, It.IsAny<CancellationToken>()), Times.Once);
+        _storageServiceMock.Verify(x => x.GeneratePresignedDownloadUrlAsync(
+            expectedThumbKey, It.IsAny<CancellationToken>()), Times.Once);
+
+        _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
+            _testAccountId,
+            It.Is<ReceiptAddedEvent>(e =>
+                e.ViewUrl == $"https://s3.example.com/{storageKey}" &&
+                e.ThumbnailUrl == $"https://s3.example.com/{expectedThumbKey}" &&
+                e.ContentType == "image/jpeg"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ThumbnailGenerationFails_IncludesViewUrlOnly()
+    {
+        // Arrange (AC-16.9.1) - thumbnail generation returns null
+        var storageKey = $"{_testAccountId}/2025/test-guid.jpg";
+        _thumbnailServiceMock.Setup(x => x.GenerateThumbnailAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var command = new CreateReceiptCommand(
+            StorageKey: storageKey,
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - ViewUrl present, ThumbnailUrl null (no thumbnail key to generate URL for)
+        _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
+            _testAccountId,
+            It.Is<ReceiptAddedEvent>(e =>
+                e.ViewUrl == $"https://s3.example.com/{storageKey}" &&
+                e.ThumbnailUrl == null &&
+                e.ContentType == "image/jpeg"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private void SetupPropertiesDbSet(List<Property> properties)
