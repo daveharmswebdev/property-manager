@@ -1,3 +1,4 @@
+import { type Page, type Route } from '@playwright/test';
 import { test, expect } from '../../fixtures/test-fixtures';
 
 /**
@@ -70,9 +71,9 @@ const mockProperties = [
 /**
  * Helper to set up API route interception with mock data
  */
-async function setupMockApi(page: any) {
+async function setupMockApi(page: Page) {
   // Intercept work orders list API
-  await page.route('*/**/api/v1/work-orders', async (route: any) => {
+  await page.route('*/**/api/v1/work-orders', async (route: Route) => {
     if (route.request().method() === 'GET') {
       // Check query params for filter simulation
       const url = new URL(route.request().url());
@@ -95,7 +96,7 @@ async function setupMockApi(page: any) {
   });
 
   // Intercept properties list API
-  await page.route('*/**/api/v1/properties*', async (route: any) => {
+  await page.route('*/**/api/v1/properties*', async (route: Route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,

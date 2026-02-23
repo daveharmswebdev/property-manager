@@ -1,5 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,9 +11,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { WorkOrderStore } from './stores/work-order.store';
 import { PropertyStore } from '../properties/stores/property.store';
-import {
-  ConfirmDialogComponent,
-} from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { WorkOrderDto } from './services/work-order.service';
 
 /**
@@ -28,7 +26,6 @@ import { WorkOrderDto } from './services/work-order.service';
   standalone: true,
   imports: [
     CommonModule,
-    DatePipe,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -37,7 +34,6 @@ import { WorkOrderDto } from './services/work-order.service';
     MatSelectModule,
     MatFormFieldModule,
     MatCardModule,
-    ConfirmDialogComponent,
   ],
   template: `
     <div class="work-orders-page">
@@ -120,8 +116,8 @@ import { WorkOrderDto } from './services/work-order.service';
         </mat-card>
       } @else {
         <div class="work-orders-list">
-          @for (workOrder of store.workOrders(); track workOrder.id) {
-            <div class="work-order-row" [class.expanded]="isExpanded(workOrder.id)">
+          @for (workOrder of store.workOrders(); track workOrder.id; let idx = $index) {
+            <div class="work-order-row" [class.expanded]="isExpanded(workOrder.id)" [class.row-odd]="idx % 2 === 0" [class.row-even]="idx % 2 === 1">
               <!-- Expand chevron -->
               <button class="expand-btn" mat-icon-button
                 (click)="toggleExpand(workOrder.id, $event)"
@@ -298,7 +294,6 @@ import { WorkOrderDto } from './services/work-order.service';
       .work-orders-list {
         display: flex;
         flex-direction: column;
-        gap: 0;
       }
 
       .work-order-row {
@@ -306,7 +301,6 @@ import { WorkOrderDto } from './services/work-order.service';
         align-items: center;
         border-bottom: 1px solid var(--mat-sys-outline-variant);
         padding: 12px 16px;
-        cursor: pointer;
         transition: background-color 0.15s;
       }
 
@@ -314,12 +308,13 @@ import { WorkOrderDto } from './services/work-order.service';
         background-color: var(--mat-sys-surface-container);
       }
 
-      /* Alternating row backgrounds (AC4) */
-      .work-order-row:nth-child(odd) {
+      /* Alternating row backgrounds (AC4) — class-driven, not nth-child,
+         because expand panels are siblings that break nth-child counting */
+      .work-order-row.row-odd {
         background-color: var(--mat-sys-surface);
       }
 
-      .work-order-row:nth-child(even) {
+      .work-order-row.row-even {
         background-color: var(--mat-sys-surface-container-low);
       }
 
@@ -432,7 +427,8 @@ import { WorkOrderDto } from './services/work-order.service';
         transition: opacity 0.15s;
       }
 
-      .work-order-row:hover .row-actions {
+      .work-order-row:hover .row-actions,
+      .work-order-row:focus-within .row-actions {
         opacity: 1;
       }
 
@@ -555,7 +551,7 @@ export class WorkOrdersComponent implements OnInit {
   protected readonly propertyStore = inject(PropertyStore);
   private readonly dialog = inject(MatDialog);
 
-  private expandedIds = new Set<string>();
+  private readonly expandedIds = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     this.store.loadWorkOrders();
@@ -563,17 +559,21 @@ export class WorkOrdersComponent implements OnInit {
   }
 
   isExpanded(id: string): boolean {
-    return this.expandedIds.has(id);
+    return this.expandedIds().has(id);
   }
 
   toggleExpand(id: string, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
-    if (this.expandedIds.has(id)) {
-      this.expandedIds.delete(id);
-    } else {
-      this.expandedIds.add(id);
-    }
+    this.expandedIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   }
 
   confirmDelete(workOrder: WorkOrderDto, event: Event): void {
