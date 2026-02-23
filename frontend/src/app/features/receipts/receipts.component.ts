@@ -209,7 +209,7 @@ export class ReceiptsComponent implements OnInit {
 
     // Refresh receipt list to get full presigned URLs (AC-16.9.1)
     if (successCount > 0) {
-      this.store.loadUnprocessedReceipts();
+      await this.store.loadUnprocessedReceipts();
     }
 
     if (successCount > 0 && failCount > 0) {

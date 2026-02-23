@@ -405,6 +405,35 @@ public class CreateReceiptHandlerTests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Handle_PresignedUrlGenerationThrows_StillSendsNotificationWithNullUrls()
+    {
+        // Arrange - storage service throws on URL generation
+        _storageServiceMock.Setup(x => x.GeneratePresignedDownloadUrlAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("S3 unavailable"));
+
+        var command = new CreateReceiptCommand(
+            StorageKey: $"{_testAccountId}/2025/test-guid.jpg",
+            OriginalFileName: "receipt.jpg",
+            ContentType: "image/jpeg",
+            FileSizeBytes: 1024 * 1024,
+            PropertyId: null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - receipt created, notification sent with null URLs
+        result.Should().NotBeEmpty();
+        _notificationServiceMock.Verify(x => x.NotifyReceiptAddedAsync(
+            _testAccountId,
+            It.Is<ReceiptAddedEvent>(e =>
+                e.ViewUrl == null &&
+                e.ThumbnailUrl == null &&
+                e.ContentType == "image/jpeg"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private void SetupPropertiesDbSet(List<Property> properties)
     {
         var mockDbSet = properties.AsQueryable().BuildMockDbSet();
