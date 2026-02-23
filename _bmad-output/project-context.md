@@ -1,7 +1,7 @@
 ---
 project_name: 'property-manager'
 user_name: 'Dave'
-date: '2026-02-15'
+date: '2026-02-23'
 sections_completed: ['technology_stack', 'language_specific_rules', 'framework_specific_rules', 'testing_rules', 'code_quality_style', 'development_workflow', 'critical_dont_miss']
 status: 'complete'
 rule_count: 65
@@ -22,23 +22,26 @@ _This file contains critical rules and patterns that AI agents must follow when 
 |---|---|---|
 | .NET | 10 | LTS, `net10.0` TFM |
 | ASP.NET Core | 10 | Web API with JWT Bearer auth |
-| EF Core | 10.0.2 | PostgreSQL via Npgsql 10.0.0 |
-| Angular | 21.x | ^21.1.3 in package.json |
+| EF Core | 10.0.3 | PostgreSQL via Npgsql 10.0.0 |
+| Angular | 21.x | ^21.1.5 in package.json |
 | @ngrx/signals | 21.0.1 | Signal-based state management |
-| Angular Material | 21.1.3 | UI component library |
+| Angular Material | 21.1.5 | UI component library |
 | TypeScript | 5.9.2 | Strict mode enabled |
 
 ### Key Dependencies
 
 | Dependency | Version | Purpose |
 |---|---|---|
-| MediatR | via FluentValidation.AspNetCore 11.3.1 | CQRS command/query handling |
-| FluentValidation | 11.3.1 | Request validation |
+| MediatR | 14.0.0 | CQRS command/query handling |
+| FluentValidation | 12.1.1 (Application), 11.3.1 AspNetCore (Api) | Request validation |
 | Serilog | 10.0 | Structured JSON logging |
 | NSwag | 14.6.3 | TypeScript API client generation |
-| QuestPDF | 2025.12.4 | PDF report generation |
+| QuestPDF | 2026.2.1 | PDF report generation |
 | SixLabors.ImageSharp | 3.1.12 | Image/thumbnail processing |
-| AWSSDK.S3 | 4.0.18.3 | Receipt/photo storage |
+| AWSSDK.S3 | 4.0.18.6 | Receipt/photo storage |
+| PDFtoImage | 5.2.0 | PDF-to-image conversion for thumbnails |
+| Microsoft.IdentityModel.Tokens | 8.16.0 | JWT token handling |
+| System.IdentityModel.Tokens.Jwt | 8.16.0 | JWT token parsing |
 | @microsoft/signalr | 10.0 | Real-time notifications |
 | Vitest | 4.0.18 | Frontend unit tests (max 3 threads) |
 | Playwright | 1.58.2 | E2E tests |
@@ -174,7 +177,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **Git/Repository:**
 - Monorepo: `backend/` and `frontend/` in single repo
-- Main branch: `main`
+- Main branch: `main` — **protected, no direct pushes**. All changes require a feature branch + PR.
 - Feature branches: `feature/{issue-number}-{description}`
 - PRs merge to `main`
 
@@ -216,6 +219,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Do NOT add `using System;` or other implicit usings in C# files
 
 **Critical Patterns to Follow:**
+- MANDATORY: Documentation-first development. Do upfront research via `mcp__Ref__ref_search_documentation` at story start for key technologies involved, then during implementation use Ref MCP and WebSearch when encountering unfamiliar APIs, errors, or unexpected behavior — research docs BEFORE retrying. Do NOT re-fetch docs already in context. Applies to Angular, .NET, EF Core, ngrx/signals, Angular Material, Playwright, and all project dependencies.
 - Always check `DeletedAt == null` when querying soft-deletable entities (in addition to global filters)
 - Always throw `NotFoundException(nameof(Entity), id)` when entity not found — middleware maps to 404
 - Always use `_dbContext.SaveChangesAsync(cancellationToken)` — pass the token through
@@ -250,4 +254,4 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-02-15
+Last Updated: 2026-02-23
