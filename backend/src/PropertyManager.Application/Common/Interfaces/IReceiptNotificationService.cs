@@ -27,6 +27,8 @@ public interface IReceiptNotificationService
 public record ReceiptAddedEvent(
     Guid Id,
     string? ThumbnailUrl,
+    string? ViewUrl,
+    string? ContentType,
     Guid? PropertyId,
     string? PropertyName,
     DateTime CreatedAt

@@ -9,6 +9,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export interface ReceiptAddedEvent {
   id: string;
   thumbnailUrl?: string;
+  viewUrl?: string;
+  contentType?: string;
   propertyId?: string;
   propertyName?: string;
   createdAt: string;
@@ -61,16 +63,15 @@ export class ReceiptSignalRService implements OnDestroy {
     this.signalR.on<ReceiptAddedEvent>('ReceiptAdded', (event) => {
       console.log('SignalR: ReceiptAdded', event);
 
-      // Add to store with real-time update (handles duplicates)
-      // Note: viewUrl will be undefined since SignalR doesn't send the full URL
-      // The receipt will be visible but without thumbnail until page refresh
+      // Add to store with real-time update (handles duplicates) (AC-16.9.3)
       this.receiptStore.addReceiptRealTime({
         id: event.id,
         propertyId: event.propertyId ?? undefined,
         propertyName: event.propertyName ?? undefined,
         createdAt: new Date(event.createdAt),
-        viewUrl: undefined,
-        contentType: undefined,
+        viewUrl: event.viewUrl ?? undefined,
+        thumbnailUrl: event.thumbnailUrl ?? undefined,
+        contentType: event.contentType ?? undefined,
       });
     });
 

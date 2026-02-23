@@ -207,6 +207,11 @@ export class ReceiptsComponent implements OnInit {
 
     this.isUploading.set(false);
 
+    // Refresh receipt list to get full presigned URLs (AC-16.9.1)
+    if (successCount > 0) {
+      await this.store.loadUnprocessedReceipts();
+    }
+
     if (successCount > 0 && failCount > 0) {
       this.snackBar.open(
         `${successCount} uploaded, ${failCount} failed`,
