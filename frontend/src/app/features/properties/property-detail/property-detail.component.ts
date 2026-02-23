@@ -16,6 +16,7 @@ import { YearSelectorService } from '../../../core/services/year-selector.servic
 import { PropertyPhotoGalleryComponent, PropertyPhoto } from '../components/property-photo-gallery/property-photo-gallery.component';
 import { PropertyPhotoUploadComponent } from '../components/property-photo-upload/property-photo-upload.component';
 import { PropertyWorkOrdersComponent } from '../components/property-work-orders/property-work-orders.component';
+import { PropertyIncomeComponent } from '../components/property-income/property-income.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -58,6 +59,7 @@ import {
     PropertyPhotoGalleryComponent,
     PropertyPhotoUploadComponent,
     PropertyWorkOrdersComponent,
+    PropertyIncomeComponent,
   ],
   template: `
     <div class="property-detail-container">
@@ -287,31 +289,11 @@ import {
             </mat-card-content>
           </mat-card>
 
-          <!-- Recent Income -->
-          <mat-card class="activity-card">
-            <mat-card-header>
-              <mat-card-title>Recent Income</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              @if (propertyStore.selectedProperty()!.recentIncome.length === 0) {
-                <div class="empty-state">
-                  <mat-icon>payments</mat-icon>
-                  <p>No income recorded yet</p>
-                </div>
-              } @else {
-                <!-- Future: List of recent income -->
-                <div class="activity-list">
-                  @for (income of propertyStore.selectedProperty()!.recentIncome; track income.id) {
-                    <div class="activity-item">
-                      <span class="activity-date">{{ income.date | date:'mediumDate' }}</span>
-                      <span class="activity-description">{{ income.description || 'No description' }}</span>
-                      <span class="activity-amount income">{{ income.amount | currency }}</span>
-                    </div>
-                  }
-                </div>
-              }
-            </mat-card-content>
-          </mat-card>
+          <!-- Income Section (Story 16-10) -->
+          <app-property-income
+            [propertyId]="propertyStore.selectedProperty()!.id"
+            (addClick)="onAddIncome()"
+          />
         </div>
       }
     </div>
@@ -934,6 +916,16 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
       this.router.navigate(['/work-orders'], {
         queryParams: { propertyId: property.id },
       });
+    }
+  }
+
+  /**
+   * Navigate to property income workspace (Story 16-10 AC #2)
+   */
+  onAddIncome(): void {
+    const property = this.propertyStore.selectedProperty();
+    if (property) {
+      this.router.navigate(['/properties', property.id, 'income']);
     }
   }
 }
