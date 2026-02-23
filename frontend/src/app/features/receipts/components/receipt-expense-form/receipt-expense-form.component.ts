@@ -407,6 +407,7 @@ export class ReceiptExpenseFormComponent implements OnInit {
     this.isCheckingDuplicate.set(true);
 
     this.expenseService.checkDuplicateExpense(propertyId, amount, formattedDate)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
           this.isCheckingDuplicate.set(false);
@@ -418,7 +419,7 @@ export class ReceiptExpenseFormComponent implements OnInit {
               amount,
               date: formattedDate,
               categoryId,
-              description: description?.trim(),
+              description,
               workOrderId: workOrderId || undefined,
             });
           } else {
@@ -456,7 +457,7 @@ export class ReceiptExpenseFormComponent implements OnInit {
       width: '450px',
     });
 
-    dialogRef.afterClosed().subscribe((saveAnyway: boolean) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((saveAnyway: boolean) => {
       if (saveAnyway) {
         // AC-16.8.2: User clicked "Save Anyway" — proceed
         this.processReceipt(

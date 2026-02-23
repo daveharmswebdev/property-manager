@@ -610,6 +610,29 @@ describe('ReceiptExpenseFormComponent', () => {
       consoleSpy.mockRestore();
     });
 
+    // AC-16.8.5: isCheckingDuplicate resets to false after successful check
+    it('should reset isCheckingDuplicate to false after duplicate check completes', () => {
+      component['isCheckingDuplicate'].set(true);
+
+      component['onSubmit']();
+
+      expect(component['isCheckingDuplicate']()).toBe(false);
+    });
+
+    // AC-16.8.4/5: isCheckingDuplicate resets to false after check error
+    it('should reset isCheckingDuplicate to false after duplicate check errors', () => {
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      component['isCheckingDuplicate'].set(true);
+
+      component['onSubmit']();
+
+      expect(component['isCheckingDuplicate']()).toBe(false);
+    });
+
     // AC-16.8.5: submit button is disabled while isCheckingDuplicate is true
     it('should disable submit button while isCheckingDuplicate is true', () => {
       component['isCheckingDuplicate'].set(true);
