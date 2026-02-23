@@ -224,9 +224,10 @@ development_status:
   # ============================================================
   # FEATURE COMPLETENESS & UX POLISH
   # Source: epic-16-feature-completeness-ux-polish.md
-  # GitHub Issues: #215, #216, #217, #218, #219, #220, #222, #223, #234, #235
-  # Added: 2026-02-19
-  # Dependencies: 16.1 → 16.2 → 16.6; 16.3, 16.4, 16.5, 16.7 independent
+  # GitHub Issues: #215, #216, #217, #218, #219, #220, #222, #223, #234, #235, #240, #241, #244, #250
+  # Deferred: #243 (vendor-to-receipt relationship)
+  # Added: 2026-02-19 (updated 2026-02-22: added 16.8-16.11)
+  # Dependencies: 16.1 → 16.2 → 16.6/16.10; 16.3, 16.4, 16.5, 16.7, 16.8, 16.9, 16.11 independent
   # ============================================================
 
   # Epic 16: Feature Completeness & UX Polish
@@ -239,5 +240,8 @@ development_status:
   16-5-ux-polish-bundle: done                      # Issues #220, #222, #223
   16-6-shared-component-extraction: done  # Issues #215, #216 - depends on 16.2
   16-7-test-infrastructure-high-priority-gaps: backlog  # Issue #212
-  16-8-work-order-list-view-refactor: done               # UX redesign: card grid → enriched two-line rows — 2484 tests green
+  16-8-wire-duplicate-detection-receipt-flow: done  # Issue #244 - bug: wiring gap, all plumbing exists
+  16-9-receipt-thumbnail-reactivity: pending             # Issue #241 - thumbnail shows placeholder after upload
+  16-10-unify-income-list-property-detail: pending       # Issue #240 - depends on 16.2 (DONE)
+  16-11-align-expense-income-filter-cards: pending       # Issue #250 - search, property filter, total display alignment
   epic-16-retrospective: optional

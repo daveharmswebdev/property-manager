@@ -35,7 +35,7 @@ describe('WorkOrdersComponent', () => {
     isLoading: ReturnType<typeof signal<boolean>>;
     loadProperties: ReturnType<typeof vi.fn>;
   };
-  let dialogSpy: ReturnType<typeof vi.fn>;
+  let dialogSpy: any;
 
   const mockWorkOrders = [
     {

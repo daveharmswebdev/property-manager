@@ -146,11 +146,15 @@ ng serve
 | 3 | Navigate directly to /properties | Redirected to login |
 | 4 | Navigate directly to /expenses | Redirected to login |
 
+https://www.upkeep-io.dev/login?returnUrl=%2Fproperties
+
 #### TC-AUTH-010: Guest Route Redirect
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Login successfully | On dashboard |
 | 2 | Navigate directly to /login | Redirected to dashboard (already logged in) |
+
+this all checks out
 
 ---
 
@@ -213,6 +217,8 @@ ng serve
 | 2 | Navigate to Expenses | "Expenses" link highlighted |
 | 3 | Navigate to Dashboard | "Dashboard" link highlighted |
 
+this all checks out
+
 ---
 
 ## 3. Property Management
@@ -249,6 +255,9 @@ ng serve
 | 8 | Wait for response | Success message, property created |
 | 9 | Verify property in list | New property appears |
 
+this works
+
+
 #### TC-PROP-004: Create Property - Validation
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -258,6 +267,8 @@ ng serve
 | 4 | Enter only property name | May require other fields |
 | 5 | Verify all required field indicators | Required fields marked |
 
+this works
+
 #### TC-PROP-005: Create Property - Cancel
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -265,6 +276,8 @@ ng serve
 | 2 | Enter some data | Fields populated |
 | 3 | Click "Cancel" or close dialog | Form closes |
 | 4 | Verify no property created | List unchanged |
+
+this works
 
 ### 3.3 View Property Details
 
@@ -300,12 +313,16 @@ ng serve
 | 6 | Wait for response | Success message |
 | 7 | Verify changes persisted | Updated values displayed |
 
+checked out
+
 #### TC-PROP-009: Edit Property - Validation
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Open edit form | Form with current values |
 | 2 | Clear property name | Validation error |
 | 3 | Try to save | Submission prevented |
+
+checked out
 
 ### 3.5 Delete Property
 
@@ -319,12 +336,17 @@ ng serve
 | 5 | Verify redirected to list | Property list displayed |
 | 6 | Verify property removed | Property no longer in list |
 
+checks out
+
 #### TC-PROP-011: Delete Property - Cancel
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Click "Delete" button | Confirmation dialog |
 | 2 | Click "Cancel" | Dialog closes |
 | 3 | Verify property still exists | Property unchanged |
+
+checks out
+
 
 ### 3.6 Property Photos
 
@@ -347,6 +369,8 @@ ng serve
 | 3 | Upload third photo | Third photo added |
 | 4 | Verify all photos in gallery | All three visible |
 
+checks out
+
 #### TC-PROP-014: Set Primary Photo
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -356,6 +380,8 @@ ng serve
 | 4 | Navigate to property list | List view displayed |
 | 5 | Verify thumbnail updated | Shows new primary photo |
 
+checks out
+
 #### TC-PROP-015: Delete Photo
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -364,12 +390,16 @@ ng serve
 | 3 | Confirm delete | Photo removed |
 | 4 | Verify photo gone from gallery | Photo no longer displayed |
 
+checks out
+
 #### TC-PROP-016: Delete Primary Photo
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Property has multiple photos | Primary photo identified |
 | 2 | Delete the primary photo | Photo removed |
 | 3 | Verify next photo becomes primary | New primary auto-assigned |
+
+checks out
 
 #### TC-PROP-017: Photo Reorder (if drag-drop implemented)
 | Step | Action | Expected Result |
@@ -378,6 +408,8 @@ ng serve
 | 2 | Drag photo to new position | Visual feedback during drag |
 | 3 | Drop photo | Order updated |
 | 4 | Refresh page | Order persisted |
+
+checls out
 
 ---
 
@@ -437,6 +469,8 @@ ng serve
 | 4 | Click "Previous Page" | Returns to page 1 |
 | 5 | Change page size (if option exists) | List length changes |
 
+checks out
+
 ### 4.2 Create Expense
 
 #### TC-EXP-007: Create Expense - Happy Path
@@ -470,6 +504,8 @@ ng serve
 | 6 | Enter negative amount | Validation error |
 | 7 | Enter non-numeric amount | Input prevented or error |
 
+checks out
+
 #### TC-EXP-010: Create Expense - With Work Order
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -481,6 +517,8 @@ ng serve
 | 6 | Save expense | Expense created |
 | 7 | View expense details | Work order association shown |
 
+checks out
+
 #### TC-EXP-011: Duplicate Expense Warning
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -490,6 +528,8 @@ ng serve
 | 4 | View existing expense details in warning | Shows original expense |
 | 5 | Choose to proceed anyway | Expense created |
 | 6 | OR choose to cancel | No duplicate created |
+
+
 
 ### 4.3 View Expense Details
 
@@ -518,6 +558,8 @@ ng serve
 | 6 | Save changes | Loading indicator |
 | 7 | Verify changes saved | Updated values displayed |
 
+there is not expense detail page.
+
 #### TC-EXP-014: Edit Expense - Property Immutable
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -544,6 +586,8 @@ ng serve
 | 4 | Verify receipt returns to queue | Receipt in unprocessed list |
 | 5 | Verify expense still exists | Expense unchanged except receipt link |
 
+https://github.com/daveharmswebdev/property-manager/issues/210. requires retest
+
 ### 4.6 Property Expense Workspace
 
 #### TC-EXP-017: Property-Specific Expenses
@@ -554,6 +598,8 @@ ng serve
 | 3 | Click to view all property expenses | Property expense workspace |
 | 4 | Verify only this property's expenses | All expenses for one property |
 | 5 | Verify YTD total | Sum of visible expenses |
+
+checks out
 
 ---
 
@@ -575,12 +621,16 @@ ng serve
 | 1 | Change year selector | List updates |
 | 2 | Verify income matches year | Only selected year shown |
 
+checks out
+
 #### TC-INC-003: Income List - Property Filter
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Find property filter | Filter available |
 | 2 | Select specific property | List filters |
 | 3 | Verify only property income shown | Single property income |
+
+checks out
 
 ### 5.2 Create Income
 
@@ -596,6 +646,10 @@ ng serve
 | 7 | Click "Save" | Income created |
 | 8 | Verify in list | New income appears |
 
+checks out but there is a date issue
+
+https://github.com/daveharmswebdev/property-manager/issues/217
+
 #### TC-INC-005: Create Income - Validation
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -605,6 +659,8 @@ ng serve
 | 4 | Try to save without date | Validation error |
 | 5 | Enter negative amount | Validation error or prevented |
 
+checks out
+
 #### TC-INC-006: Create Income - Optional Fields
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -612,6 +668,8 @@ ng serve
 | 2 | Leave source empty | No error |
 | 3 | Leave notes empty | No error |
 | 4 | Save | Income created successfully |
+
+checks out
 
 ### 5.3 Edit Income
 
@@ -624,6 +682,8 @@ ng serve
 | 4 | Change date | Date updated |
 | 5 | Save | Changes persisted |
 
+checks out
+
 ### 5.4 Delete Income
 
 #### TC-INC-008: Delete Income
@@ -634,6 +694,8 @@ ng serve
 | 3 | Confirm | Income deleted |
 | 4 | Verify removed from list | No longer visible |
 
+checks out
+
 ### 5.5 Property Income Workspace
 
 #### TC-INC-009: Property-Specific Income
@@ -643,6 +705,8 @@ ng serve
 | 2 | Navigate to income section | Property income workspace |
 | 3 | Verify only property's income | Filtered to one property |
 | 4 | Verify YTD income total | Sum displayed |
+
+
 
 ---
 
@@ -660,6 +724,8 @@ ng serve
 | 5 | Verify receipt created | Success message |
 | 6 | Navigate to Receipts | Receipt in queue |
 
+checks out
+
 #### TC-REC-002: Upload Receipt from Receipts Page
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -669,6 +735,8 @@ ng serve
 | 4 | Wait for upload | Progress shown |
 | 5 | Verify in unprocessed queue | New receipt appears |
 
+checks out
+
 #### TC-REC-003: Upload Multiple Receipts
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -676,6 +744,8 @@ ng serve
 | 2 | Upload second receipt | Second receipt added |
 | 3 | Upload third receipt | Third receipt added |
 | 4 | Verify all in queue | Three unprocessed receipts |
+
+checks out
 
 ### 6.2 Receipt Queue
 
@@ -687,12 +757,16 @@ ng serve
 | 3 | Verify thumbnails | Thumbnail images visible |
 | 4 | Verify sorted by date | Newest first |
 
+checks out, but raised time stamp issue
+
 #### TC-REC-005: Empty Receipt Queue
 | Step | Action | Expected Result |
 |------|--------|-----------------|
 | 1 | Process all receipts | Queue empty |
 | 2 | Verify empty state | Checkmark or "All processed" message |
 | 3 | No receipts in list | Empty list display |
+
+checks out
 
 ### 6.3 Receipt Processing
 
@@ -720,6 +794,8 @@ ng serve
 | 4 | Select work order | Work order linked |
 | 5 | Complete expense creation | Expense with work order link |
 
+checks out
+
 #### TC-REC-008: Process Receipt - Inline Vendor Creation
 | Step | Action | Expected Result |
 |------|--------|-----------------|
@@ -730,6 +806,10 @@ ng serve
 | 5 | Save vendor | Vendor created |
 | 6 | Vendor auto-selected | New vendor in field |
 | 7 | Complete expense | Expense linked to vendor |
+
+this feature is not available.
+that is a good question.  should there be vendor assignment to a vendor?
+sort of makes sense.
 
 #### TC-REC-009: Receipt Processing - Duplicate Warning
 | Step | Action | Expected Result |
@@ -756,6 +836,8 @@ ng serve
 | 1 | View expense created from receipt | Expense detail |
 | 2 | Click receipt link/thumbnail | Receipt image displays |
 | 3 | Verify full image viewable | Lightbox or new tab |
+
+checks out
 
 ---
 

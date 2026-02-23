@@ -5,9 +5,11 @@ import { of, throwError } from 'rxjs';
 import { ReceiptExpenseFormComponent } from './receipt-expense-form.component';
 import { ApiClient } from '../../../../core/api/api.service';
 import { ExpenseStore } from '../../../expenses/stores/expense.store';
+import { ExpenseService } from '../../../expenses/services/expense.service';
 import { PropertyStore } from '../../../properties/stores/property.store';
 import { WorkOrderService } from '../../../work-orders/services/work-order.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { signal, WritableSignal } from '@angular/core';
 
 describe('ReceiptExpenseFormComponent', () => {
@@ -15,6 +17,8 @@ describe('ReceiptExpenseFormComponent', () => {
   let fixture: ComponentFixture<ReceiptExpenseFormComponent>;
   let apiClientMock: { receipts_ProcessReceipt: ReturnType<typeof vi.fn> };
   let snackBarMock: { open: ReturnType<typeof vi.fn> };
+  let mockExpenseService: { checkDuplicateExpense: ReturnType<typeof vi.fn> };
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
   let mockWorkOrderService: { getWorkOrdersByProperty: ReturnType<typeof vi.fn> };
   let mockCategories: WritableSignal<any[]>;
   let mockIsLoadingCategories: WritableSignal<boolean>;
@@ -53,6 +57,15 @@ describe('ReceiptExpenseFormComponent', () => {
       open: vi.fn(),
     };
 
+    // Default: no duplicate found (AC-16.8.3)
+    mockExpenseService = {
+      checkDuplicateExpense: vi.fn().mockReturnValue(of({ isDuplicate: false, existingExpense: null })),
+    };
+
+    mockDialog = {
+      open: vi.fn().mockReturnValue({ afterClosed: () => of(true) }),
+    };
+
     mockWorkOrderService = {
       getWorkOrdersByProperty: vi.fn().mockReturnValue(of({
         items: mockWorkOrders,
@@ -66,6 +79,8 @@ describe('ReceiptExpenseFormComponent', () => {
         provideNoopAnimations(),
         { provide: ApiClient, useValue: apiClientMock },
         { provide: MatSnackBar, useValue: snackBarMock },
+        { provide: ExpenseService, useValue: mockExpenseService },
+        { provide: MatDialog, useValue: mockDialog },
         { provide: WorkOrderService, useValue: mockWorkOrderService },
         {
           provide: ExpenseStore,
@@ -473,6 +488,135 @@ describe('ReceiptExpenseFormComponent', () => {
 
       expect(component['workOrders']()).toEqual([]);
       expect(component['isLoadingWorkOrders']()).toBe(false);
+    });
+  });
+
+  describe('duplicate detection (AC-16.8)', () => {
+    beforeEach(() => {
+      // Set up valid form values for all duplicate detection tests
+      component['form'].patchValue({
+        propertyId: testPropertyId,
+        amount: 99.99,
+        date: new Date(),
+        categoryId: testCategoryId,
+        description: 'Test description',
+      });
+      fixture.detectChanges();
+    });
+
+    // AC-16.8.1: onSubmit() calls checkDuplicateExpense with correct params before processing
+    it('should call checkDuplicateExpense with correct params before processing', () => {
+      component['onSubmit']();
+
+      expect(mockExpenseService.checkDuplicateExpense).toHaveBeenCalledWith(
+        testPropertyId,
+        99.99,
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD format
+      );
+    });
+
+    // AC-16.8.3: when no duplicate found, receipts_ProcessReceipt is called directly
+    it('should call receipts_ProcessReceipt directly when no duplicate found', () => {
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        of({ isDuplicate: false, existingExpense: null })
+      );
+
+      component['onSubmit']();
+
+      expect(mockDialog.open).not.toHaveBeenCalled();
+      expect(apiClientMock.receipts_ProcessReceipt).toHaveBeenCalledWith(
+        testReceiptId,
+        expect.objectContaining({
+          propertyId: testPropertyId,
+          amount: 99.99,
+        })
+      );
+    });
+
+    // AC-16.8.1: when duplicate found, DuplicateWarningDialogComponent opens with correct data
+    it('should open DuplicateWarningDialogComponent when duplicate found', () => {
+      const existingExpense = { id: 'exp-1', date: '2026-02-23', amount: 99.99, description: 'Existing' };
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        of({ isDuplicate: true, existingExpense })
+      );
+
+      component['onSubmit']();
+
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        expect.anything(), // DuplicateWarningDialogComponent
+        expect.objectContaining({
+          data: {
+            existingExpense: {
+              id: 'exp-1',
+              date: '2026-02-23',
+              amount: 99.99,
+              description: 'Existing',
+            },
+          },
+          width: '450px',
+        })
+      );
+    });
+
+    // AC-16.8.2: when dialog returns true, receipts_ProcessReceipt is called
+    it('should call receipts_ProcessReceipt when dialog returns true (Save Anyway)', () => {
+      const existingExpense = { id: 'exp-1', date: '2026-02-23', amount: 99.99 };
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        of({ isDuplicate: true, existingExpense })
+      );
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(true) });
+
+      component['onSubmit']();
+
+      expect(apiClientMock.receipts_ProcessReceipt).toHaveBeenCalledWith(
+        testReceiptId,
+        expect.objectContaining({
+          propertyId: testPropertyId,
+          amount: 99.99,
+        })
+      );
+    });
+
+    // AC-16.8.2: when dialog returns false, receipts_ProcessReceipt is NOT called
+    it('should NOT call receipts_ProcessReceipt when dialog returns false (Cancel)', () => {
+      const existingExpense = { id: 'exp-1', date: '2026-02-23', amount: 99.99 };
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        of({ isDuplicate: true, existingExpense })
+      );
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(false) });
+
+      component['onSubmit']();
+
+      expect(apiClientMock.receipts_ProcessReceipt).not.toHaveBeenCalled();
+    });
+
+    // AC-16.8.4: when duplicate check errors, receipts_ProcessReceipt is called anyway
+    it('should call receipts_ProcessReceipt when duplicate check errors (graceful degradation)', () => {
+      mockExpenseService.checkDuplicateExpense.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      component['onSubmit']();
+
+      expect(apiClientMock.receipts_ProcessReceipt).toHaveBeenCalledWith(
+        testReceiptId,
+        expect.objectContaining({
+          propertyId: testPropertyId,
+          amount: 99.99,
+        })
+      );
+      expect(consoleSpy).toHaveBeenCalledWith('Error checking for duplicate:', expect.any(Error));
+      consoleSpy.mockRestore();
+    });
+
+    // AC-16.8.5: submit button is disabled while isCheckingDuplicate is true
+    it('should disable submit button while isCheckingDuplicate is true', () => {
+      component['isCheckingDuplicate'].set(true);
+      fixture.detectChanges();
+
+      const saveBtn = fixture.debugElement.query(By.css('[data-testid="save-btn"]'));
+      expect(saveBtn.nativeElement.disabled).toBe(true);
     });
   });
 });
