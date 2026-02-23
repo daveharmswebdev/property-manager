@@ -27,6 +27,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 
 import { ApiClient } from '../../../../core/api/api.service';
 import { CategorySelectComponent } from '../../../expenses/components/category-select/category-select.component';
@@ -34,6 +35,11 @@ import { ExpenseStore } from '../../../expenses/stores/expense.store';
 import { CurrencyInputDirective } from '../../../../shared/directives/currency-input.directive';
 import { formatLocalDate } from '../../../../shared/utils/date.utils';
 import { PropertyStore } from '../../../properties/stores/property.store';
+import { ExpenseService } from '../../../expenses/services/expense.service';
+import {
+  DuplicateWarningDialogComponent,
+  DuplicateWarningDialogData,
+} from '../../../expenses/components/duplicate-warning-dialog/duplicate-warning-dialog.component';
 import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/work-order.service';
 
 /**
@@ -186,10 +192,10 @@ import { WorkOrderService, WorkOrderDto } from '../../../work-orders/services/wo
             mat-raised-button
             color="primary"
             type="submit"
-            [disabled]="!form.valid || isSaving()"
+            [disabled]="!form.valid || isSaving() || isCheckingDuplicate()"
             data-testid="save-btn"
           >
-            @if (isSaving()) {
+            @if (isSaving() || isCheckingDuplicate()) {
               <mat-spinner diameter="20"></mat-spinner>
             } @else {
               <ng-container>
@@ -273,6 +279,8 @@ export class ReceiptExpenseFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ApiClient);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly expenseService = inject(ExpenseService);
   private readonly workOrderService = inject(WorkOrderService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -293,6 +301,8 @@ export class ReceiptExpenseFormComponent implements OnInit {
 
   protected readonly today = new Date();
   protected readonly isSaving = signal(false);
+  // Duplicate check loading state (AC-16.8.5)
+  protected readonly isCheckingDuplicate = signal(false);
 
   // Work order dropdown state (AC-11.8.1, AC-11.8.2)
   protected readonly workOrders = signal<WorkOrderDto[]>([]);
@@ -393,14 +403,94 @@ export class ReceiptExpenseFormComponent implements OnInit {
     const { propertyId, amount, date, categoryId, description, workOrderId } = this.form.value;
     const formattedDate = this.formatDate(date);
 
+    // AC-16.8.1, AC-16.8.5: Check for duplicate before processing
+    this.isCheckingDuplicate.set(true);
+
+    this.expenseService.checkDuplicateExpense(propertyId, amount, formattedDate)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.isCheckingDuplicate.set(false);
+
+          if (result.isDuplicate && result.existingExpense) {
+            // AC-16.8.1: Duplicate found — show warning dialog
+            this.showDuplicateWarning(result.existingExpense, {
+              propertyId,
+              amount,
+              date: formattedDate,
+              categoryId,
+              description,
+              workOrderId: workOrderId || undefined,
+            });
+          } else {
+            // AC-16.8.3: No duplicate — proceed directly
+            this.processReceipt(propertyId, amount, formattedDate, categoryId, description, workOrderId);
+          }
+        },
+        error: (error) => {
+          // AC-16.8.4: Graceful degradation — log and proceed
+          this.isCheckingDuplicate.set(false);
+          console.error('Error checking for duplicate:', error);
+          this.processReceipt(propertyId, amount, formattedDate, categoryId, description, workOrderId);
+        },
+      });
+  }
+
+  /**
+   * Show duplicate warning dialog (AC-16.8.2)
+   */
+  private showDuplicateWarning(
+    existingExpense: { id: string; date: string; amount: number; description?: string },
+    pendingData: { propertyId: string; amount: number; date: string; categoryId: string; description?: string; workOrderId?: string }
+  ): void {
+    const dialogData: DuplicateWarningDialogData = {
+      existingExpense: {
+        id: existingExpense.id,
+        date: existingExpense.date,
+        amount: existingExpense.amount,
+        description: existingExpense.description,
+      },
+    };
+
+    const dialogRef = this.dialog.open(DuplicateWarningDialogComponent, {
+      data: dialogData,
+      width: '450px',
+    });
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((saveAnyway: boolean) => {
+      if (saveAnyway) {
+        // AC-16.8.2: User clicked "Save Anyway" — proceed
+        this.processReceipt(
+          pendingData.propertyId,
+          pendingData.amount,
+          pendingData.date,
+          pendingData.categoryId,
+          pendingData.description,
+          pendingData.workOrderId,
+        );
+      }
+      // AC-16.8.2: User clicked "Cancel" — do nothing, receipt stays unprocessed
+    });
+  }
+
+  /**
+   * Process the receipt into an expense via API
+   */
+  private processReceipt(
+    propertyId: string,
+    amount: number,
+    date: string,
+    categoryId: string,
+    description?: string,
+    workOrderId?: string,
+  ): void {
     this.isSaving.set(true);
 
-    // Call the process receipt endpoint using the generated API client
     this.api
       .receipts_ProcessReceipt(this.receiptId(), {
         propertyId,
         amount,
-        date: formattedDate,
+        date,
         categoryId,
         description: description?.trim(),
         workOrderId: workOrderId || undefined, // AC-11.8.4, AC-11.8.5

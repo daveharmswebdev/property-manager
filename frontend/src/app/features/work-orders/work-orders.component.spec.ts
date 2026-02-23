@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type MockInstance } from 'vitest';
 import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
@@ -35,7 +35,7 @@ describe('WorkOrdersComponent', () => {
     isLoading: ReturnType<typeof signal<boolean>>;
     loadProperties: ReturnType<typeof vi.fn>;
   };
-  let dialogSpy: ReturnType<typeof vi.fn>;
+  let dialogSpy: MockInstance;
 
   const mockWorkOrders = [
     {
