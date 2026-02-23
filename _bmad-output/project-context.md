@@ -219,7 +219,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Do NOT add `using System;` or other implicit usings in C# files
 
 **Critical Patterns to Follow:**
-- MANDATORY: Documentation-first development. Do upfront research via `mcp__Ref__ref_search_documentation` at story start for key technologies involved, then during implementation use Ref MCP and WebSearch when encountering unfamiliar APIs, errors, or unexpected behavior — research docs BEFORE retrying. Do NOT re-fetch docs already in context. Applies to Angular, .NET, EF Core, ngrx/signals, Angular Material, Playwright, and all project dependencies.
+- MANDATORY: Documentation-first development at BOTH story authoring and implementation. **SM agent (story creation):** Use `mcp__Ref__ref_search_documentation` to verify API signatures, framework patterns, and library usage BEFORE writing Dev Notes and technical requirements — the dev agent trusts stories as authoritative. **Dev agent (implementation):** Do upfront research via Ref MCP at story start for key technologies involved, then during implementation use Ref MCP and WebSearch when encountering unfamiliar APIs, errors, or unexpected behavior — research docs BEFORE retrying. Do NOT re-fetch docs already verified in the story's Dev Notes. Applies to Angular, .NET, EF Core, ngrx/signals, Angular Material, Playwright, and all project dependencies.
 - Always check `DeletedAt == null` when querying soft-deletable entities (in addition to global filters)
 - Always throw `NotFoundException(nameof(Entity), id)` when entity not found — middleware maps to 404
 - Always use `_dbContext.SaveChangesAsync(cancellationToken)` — pass the token through

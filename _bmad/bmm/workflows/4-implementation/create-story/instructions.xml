@@ -234,25 +234,33 @@
     <action>Identify any architectural decisions that override previous patterns</action>
   </step>
 
-  <step n="4" goal="Web research for latest technical specifics">
-    <critical>🌐 ENSURE LATEST TECH KNOWLEDGE - Prevent outdated implementations!</critical> **WEB INTELLIGENCE:** <action>Identify specific
-    technical areas that require latest version knowledge:</action>
+  <step n="4" goal="Research technologies via Ref MCP and web sources">
+    <critical>🌐 MANDATORY RESEARCH PHASE - Use mcp__Ref__ref_search_documentation BEFORE writing technical details!</critical>
+    <critical>The dev agent TRUSTS your stories as authoritative. If you hallucinate an API or use outdated patterns, the dev agent will implement them without question. Documentation lookups are cheaper than debugging hallucinated APIs.</critical>
 
-    <!-- Check for libraries/frameworks mentioned in architecture -->
-    <action>From architecture analysis, identify specific libraries, APIs, or
-    frameworks</action>
-    <action>For each critical technology, research latest stable version and key changes:
-      - Latest API documentation and breaking changes
-      - Security vulnerabilities or updates
-      - Performance improvements or deprecations
-      - Best practices for current version
+    <!-- Identify what needs research -->
+    <action>From architecture and epic analysis, identify specific libraries, APIs, frameworks, and patterns involved in this story</action>
+
+    <!-- MANDATORY: Ref MCP research for each technology -->
+    <action>For each identified technology, use mcp__Ref__ref_search_documentation to look up:
+      - Current API signatures and method parameters
+      - Configuration patterns and options
+      - Component/service usage examples
+      - Breaking changes or deprecations in current versions
     </action>
-    **EXTERNAL CONTEXT INCLUSION:** <action>Include in story any critical latest information the developer needs:
-      - Specific library versions and why chosen
-      - API endpoints with parameters and authentication
-      - Recent security patches or considerations
-      - Performance optimization techniques
-      - Migration considerations if upgrading
+    <action>Use WebSearch for any questions that Ref MCP cannot answer (e.g., recent breaking changes, migration guides, community patterns, niche integrations)</action>
+
+    <!-- Record findings for story inclusion -->
+    <action>Record verified API signatures, patterns, and configuration details — these go directly into the story's Dev Notes and technical requirements</action>
+    <action>Flag any discrepancies between architecture doc assumptions and current documentation (e.g., API changed, pattern deprecated)</action>
+
+    **DOC-VERIFIED CONTEXT FOR STORY:**
+    <action>Include in story ONLY documentation-verified technical details:
+      - Verified API signatures with correct parameter names and types
+      - Documented configuration patterns (not guessed)
+      - Framework-specific patterns confirmed against current docs
+      - Library versions with verified compatibility
+      - Security and performance patterns from official documentation
     </action>
   </step>
 
