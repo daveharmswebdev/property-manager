@@ -239,4 +239,5 @@ development_status:
   16-5-ux-polish-bundle: done                      # Issues #220, #222, #223
   16-6-shared-component-extraction: done  # Issues #215, #216 - depends on 16.2
   16-7-test-infrastructure-high-priority-gaps: backlog  # Issue #212
+  16-8-work-order-list-view-refactor: done               # UX redesign: card grid → enriched two-line rows — 2484 tests green
   epic-16-retrospective: optional
