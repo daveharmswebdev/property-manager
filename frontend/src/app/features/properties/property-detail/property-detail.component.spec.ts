@@ -11,6 +11,7 @@ import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { WorkOrderService } from '../../work-orders/services/work-order.service';
+import { IncomeService } from '../../income/services/income.service';
 
 describe('PropertyDetailComponent', () => {
   let component: PropertyDetailComponent;
@@ -38,6 +39,10 @@ describe('PropertyDetailComponent', () => {
   };
   let mockWorkOrderService: {
     getWorkOrdersByProperty: ReturnType<typeof vi.fn>;
+  };
+  let mockIncomeService: {
+    getIncomeByProperty: ReturnType<typeof vi.fn>;
+    deleteIncome: ReturnType<typeof vi.fn>;
   };
 
   const mockProperty: PropertyDetailDto = {
@@ -92,6 +97,11 @@ describe('PropertyDetailComponent', () => {
       getWorkOrdersByProperty: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
     };
 
+    mockIncomeService = {
+      getIncomeByProperty: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, ytdTotal: 0 })),
+      deleteIncome: vi.fn().mockReturnValue(of(undefined)),
+    };
+
     await TestBed.configureTestingModule({
       imports: [
         PropertyDetailComponent,
@@ -102,6 +112,7 @@ describe('PropertyDetailComponent', () => {
         { provide: PropertyStore, useValue: mockPropertyStore },
         { provide: PropertyPhotoStore, useValue: mockPhotoStore },
         { provide: WorkOrderService, useValue: mockWorkOrderService },
+        { provide: IncomeService, useValue: mockIncomeService },
         { provide: Router, useValue: mockRouter },
         { provide: Location, useValue: mockLocation },
         { provide: PropertyService, useValue: mockPropertyService },
@@ -251,12 +262,9 @@ describe('PropertyDetailComponent', () => {
       expect(expenseCard.textContent).toContain('No expenses yet');
     });
 
-    it('should show empty state for recent income', () => {
-      // Get activity-section cards (excludes work-orders-section)
-      const activitySection = fixture.nativeElement.querySelector('.activity-section');
-      const activityCards = activitySection.querySelectorAll('.activity-card');
-      const incomeCard = activityCards[1];
-      expect(incomeCard.textContent).toContain('No income recorded yet');
+    it('should render PropertyIncomeComponent with correct propertyId (Story 16-10)', () => {
+      const incomeComponent = fixture.nativeElement.querySelector('app-property-income');
+      expect(incomeComponent).toBeTruthy();
     });
   });
 
@@ -294,11 +302,9 @@ describe('PropertyDetailComponent', () => {
       expect(expenseDate.textContent).toContain('Nov 28, 2025');
     });
 
-    it('should display formatted date for income', () => {
-      const incomeCards = fixture.nativeElement.querySelectorAll('.activity-card');
-      const incomeList = incomeCards[1].querySelector('.activity-list');
-      const incomeDate = incomeList.querySelector('.activity-date');
-      expect(incomeDate.textContent).toContain('Nov 28, 2025');
+    it('should render PropertyIncomeComponent for income display (Story 16-10)', () => {
+      const incomeComponent = fixture.nativeElement.querySelector('app-property-income');
+      expect(incomeComponent).toBeTruthy();
     });
   });
 

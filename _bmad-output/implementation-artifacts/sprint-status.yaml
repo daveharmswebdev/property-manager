@@ -241,7 +241,7 @@ development_status:
   16-6-shared-component-extraction: done  # Issues #215, #216 - depends on 16.2
   16-7-test-infrastructure-high-priority-gaps: backlog  # Issue #212
   16-8-wire-duplicate-detection-receipt-flow: done  # Issue #244 - bug: wiring gap, all plumbing exists
-  16-9-receipt-thumbnail-reactivity: review        # Issue #241 - thumbnail shows placeholder after upload
-  16-10-unify-income-list-property-detail: pending       # Issue #240 - depends on 16.2 (DONE)
+  16-9-receipt-thumbnail-reactivity: done           # Issue #241 - thumbnail shows placeholder after upload
+  16-10-unify-income-list-property-detail: review  # Issue #240 - depends on 16.2 (DONE)
   16-11-align-expense-income-filter-cards: pending       # Issue #250 - search, property filter, total display alignment
   epic-16-retrospective: optional
