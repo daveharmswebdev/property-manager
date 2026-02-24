@@ -49,7 +49,7 @@ public class GetAllExpensesHandlerTests
 
         // NOTE: SortBy/SortDirection don't exist on GetAllExpensesQuery yet — RED PHASE
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: "amount", SortDirection: "asc",
             Page: 1, PageSize: 50);
 
@@ -76,7 +76,7 @@ public class GetAllExpensesHandlerTests
         SetupDbSet(expenses);
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: "date", SortDirection: "asc",
             Page: 1, PageSize: 50);
 
@@ -102,7 +102,7 @@ public class GetAllExpensesHandlerTests
         SetupDbSet(expenses);
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: "property", SortDirection: "asc",
             Page: 1, PageSize: 50);
 
@@ -126,7 +126,7 @@ public class GetAllExpensesHandlerTests
         SetupDbSet(expenses);
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 50);
 
@@ -136,6 +136,63 @@ public class GetAllExpensesHandlerTests
         // Assert — newest first (default behavior preserved)
         result.Items[0].Date.Should().Be(new DateOnly(2026, 6, 15));
         result.Items[1].Date.Should().Be(new DateOnly(2026, 1, 1));
+    }
+
+    #endregion
+
+    #region PropertyId Filter Tests (AC-16.11.3, Task 3.1)
+
+    [Fact]
+    public async Task Handle_WithPropertyId_FiltersExpensesByProperty()
+    {
+        // Arrange
+        var secondPropertyId = Guid.NewGuid();
+        var expenses = new List<Expense>
+        {
+            CreateExpense(100m, new DateOnly(2026, 1, 1), _categoryRepairsId, "Repairs", "Plumbing fix", _propertyId, "Test Property"),
+            CreateExpense(200m, new DateOnly(2026, 1, 2), _categoryUtilitiesId, "Utilities", "Electric", secondPropertyId, "Beach House"),
+            CreateExpense(300m, new DateOnly(2026, 1, 3), _categoryRepairsId, "Repairs", "Roof repair", _propertyId, "Test Property"),
+        };
+        SetupDbSet(expenses);
+
+        var query = new GetAllExpensesQuery(
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: _propertyId,
+            Search: null, Year: null,
+            SortBy: null, SortDirection: null,
+            Page: 1, PageSize: 50);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().OnlyContain(e => e.PropertyId == _propertyId);
+        result.TotalAmount.Should().Be(400m);
+    }
+
+    [Fact]
+    public async Task Handle_WithNullPropertyId_ReturnsAllExpenses()
+    {
+        // Arrange
+        var secondPropertyId = Guid.NewGuid();
+        var expenses = new List<Expense>
+        {
+            CreateExpense(100m, new DateOnly(2026, 1, 1), _categoryRepairsId, "Repairs", "Fix", _propertyId, "Test Property"),
+            CreateExpense(200m, new DateOnly(2026, 1, 2), _categoryUtilitiesId, "Utilities", "Bill", secondPropertyId, "Beach House"),
+        };
+        SetupDbSet(expenses);
+
+        var query = new GetAllExpensesQuery(
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null,
+            Search: null, Year: null,
+            SortBy: null, SortDirection: null,
+            Page: 1, PageSize: 50);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
     }
 
     #endregion

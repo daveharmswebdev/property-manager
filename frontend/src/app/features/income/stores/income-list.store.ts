@@ -36,11 +36,12 @@ interface IncomeListState {
   // Properties for filter dropdown
   properties: PropertyOption[];
 
-  // Filters (AC-4.3.3, AC-4.3.4)
+  // Filters (AC-4.3.3, AC-4.3.4, AC-16.11.1)
   dateRangePreset: DateRangePreset;
   dateFrom: string | null;
   dateTo: string | null;
   selectedPropertyId: string | null;
+  searchText: string;
   year: number | null;
 
   // Loading states
@@ -68,6 +69,7 @@ const initialState: IncomeListState = {
   dateFrom: null,
   dateTo: null,
   selectedPropertyId: null,
+  searchText: '',
   year: null,
 
   // Loading states
@@ -113,7 +115,8 @@ export const IncomeListStore = signalStore(
      */
     hasActiveFilters: computed(() =>
       store.dateRangePreset() !== 'all' ||
-      store.selectedPropertyId() !== null
+      store.selectedPropertyId() !== null ||
+      store.searchText().trim() !== ''
     ),
 
     /**
@@ -129,7 +132,8 @@ export const IncomeListStore = signalStore(
       store.hasEverLoaded() &&
       store.incomeEntries().length === 0 &&
       (store.dateRangePreset() !== 'all' ||
-        store.selectedPropertyId() !== null)
+        store.selectedPropertyId() !== null ||
+        store.searchText().trim() !== '')
     ),
 
     /**
@@ -141,7 +145,8 @@ export const IncomeListStore = signalStore(
       store.incomeEntries().length === 0 &&
       store.totalCount() === 0 &&
       store.dateRangePreset() === 'all' &&
-      store.selectedPropertyId() === null
+      store.selectedPropertyId() === null &&
+      store.searchText().trim() === ''
     ),
 
     /**
@@ -156,6 +161,7 @@ export const IncomeListStore = signalStore(
         dateFrom: dateFrom ?? undefined,
         dateTo: dateTo ?? undefined,
         propertyId: store.selectedPropertyId() ?? undefined,
+        search: store.searchText().trim() || undefined,
         year: store.year() ?? undefined,
       };
     }),
@@ -228,6 +234,15 @@ export const IncomeListStore = signalStore(
     },
 
     /**
+     * Set search text and reload (AC-16.11.1)
+     * Called after debounce in component
+     */
+    setSearch(searchText: string): void {
+      patchState(store, { searchText });
+      this.loadIncome(store.currentFilters());
+    },
+
+    /**
      * Set tax year filter and reload (AC-4.3.2)
      */
     setYear(year: number | null): void {
@@ -244,6 +259,7 @@ export const IncomeListStore = signalStore(
         dateFrom: null,
         dateTo: null,
         selectedPropertyId: null,
+        searchText: '',
       });
       sessionStorage.removeItem(INCOME_DATE_FILTER_STORAGE_KEY);
       this.loadIncome(store.currentFilters());

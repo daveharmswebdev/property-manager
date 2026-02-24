@@ -1,6 +1,6 @@
 # Story 16.10: Unify Income List in Property Detail
 
-Status: review
+Status: done
 
 ## Story
 

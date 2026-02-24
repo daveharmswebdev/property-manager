@@ -23,9 +23,14 @@ export type { DateRangePreset } from '../../../shared/utils/date-range.utils';
  * Filter chip for display (AC-3.4.6)
  */
 export interface FilterChip {
-  type: 'date-range' | 'category' | 'search';
+  type: 'date-range' | 'category' | 'search' | 'property';
   label: string;
   value: string;
+}
+
+export interface PropertyOption {
+  id: string;
+  name: string;
 }
 
 /**
@@ -35,12 +40,14 @@ interface ExpenseListState {
   // Data
   expenses: ExpenseListItemDto[];
   categories: ExpenseCategoryDto[];
+  properties: PropertyOption[];
 
-  // Filters (AC-3.4.3, AC-3.4.4, AC-3.4.5)
+  // Filters (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-16.11.3)
   dateRangePreset: DateRangePreset;
   dateFrom: string | null;
   dateTo: string | null;
   selectedCategoryIds: string[];
+  selectedPropertyId: string | null;
   searchText: string;
   year: number | null;
 
@@ -69,12 +76,14 @@ const initialState: ExpenseListState = {
   // Data
   expenses: [],
   categories: [],
+  properties: [],
 
   // Filters - default to no filters (AC-3.4.4 "All Categories" when none selected)
   dateRangePreset: 'all',
   dateFrom: null,
   dateTo: null,
   selectedCategoryIds: [],
+  selectedPropertyId: null,
   searchText: '',
   year: null,
 
@@ -134,6 +143,7 @@ export const ExpenseListStore = signalStore(
     hasActiveFilters: computed(() =>
       store.dateRangePreset() !== 'all' ||
       store.selectedCategoryIds().length > 0 ||
+      store.selectedPropertyId() !== null ||
       store.searchText().trim() !== ''
     ),
 
@@ -157,6 +167,18 @@ export const ExpenseListStore = signalStore(
           label: 'Date',
           value: presetLabels[store.dateRangePreset()],
         });
+      }
+
+      // Property chip
+      if (store.selectedPropertyId()) {
+        const property = store.properties().find((p) => p.id === store.selectedPropertyId());
+        if (property) {
+          chips.push({
+            type: 'property',
+            label: 'Property',
+            value: property.name,
+          });
+        }
       }
 
       // Category chips
@@ -214,6 +236,7 @@ export const ExpenseListStore = signalStore(
       store.expenses().length === 0 &&
       (store.dateRangePreset() !== 'all' ||
         store.selectedCategoryIds().length > 0 ||
+        store.selectedPropertyId() !== null ||
         store.searchText().trim() !== '')
     ),
 
@@ -226,6 +249,7 @@ export const ExpenseListStore = signalStore(
       store.totalCount() === 0 &&
       store.dateRangePreset() === 'all' &&
       store.selectedCategoryIds().length === 0 &&
+      store.selectedPropertyId() === null &&
       store.searchText().trim() === ''
     ),
 
@@ -241,6 +265,7 @@ export const ExpenseListStore = signalStore(
         dateFrom: dateFrom ?? undefined,
         dateTo: dateTo ?? undefined,
         categoryIds: store.selectedCategoryIds().length > 0 ? store.selectedCategoryIds() : undefined,
+        propertyId: store.selectedPropertyId() ?? undefined,
         search: store.searchText().trim() || undefined,
         year: store.year() ?? undefined,
         sortBy: store.sortBy() ?? undefined,
@@ -357,6 +382,21 @@ export const ExpenseListStore = signalStore(
     },
 
     /**
+     * Set properties for filter dropdown (AC-16.11.3)
+     */
+    setProperties(properties: PropertyOption[]): void {
+      patchState(store, { properties });
+    },
+
+    /**
+     * Set property filter and reload (AC-16.11.3)
+     */
+    setPropertyFilter(propertyId: string | null): void {
+      patchState(store, { selectedPropertyId: propertyId, page: 1 });
+      this.loadExpenses(store.currentFilters());
+    },
+
+    /**
      * Set search text and reload (AC-3.4.5)
      * Called after debounce in component
      */
@@ -438,6 +478,12 @@ export const ExpenseListStore = signalStore(
             });
           }
           break;
+        case 'property':
+          patchState(store, {
+            selectedPropertyId: null,
+            page: 1,
+          });
+          break;
         case 'search':
           patchState(store, {
             searchText: '',
@@ -457,6 +503,7 @@ export const ExpenseListStore = signalStore(
         dateFrom: null,
         dateTo: null,
         selectedCategoryIds: [],
+        selectedPropertyId: null,
         searchText: '',
         page: 1,
       });

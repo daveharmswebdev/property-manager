@@ -38,7 +38,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, null, null, null);
+        var query = new GetAllIncomeQuery(null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -62,7 +62,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(dateFrom, null, null, null);
+        var query = new GetAllIncomeQuery(dateFrom, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -85,7 +85,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, dateTo, null, null);
+        var query = new GetAllIncomeQuery(null, dateTo, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -109,7 +109,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(dateFrom, dateTo, null, null);
+        var query = new GetAllIncomeQuery(dateFrom, dateTo, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -131,7 +131,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, null, _testPropertyId1, null);
+        var query = new GetAllIncomeQuery(null, null, _testPropertyId1, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -154,7 +154,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, null, null, currentYear);
+        var query = new GetAllIncomeQuery(null, null, null, null, currentYear);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -180,7 +180,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(dateFrom, dateTo, _testPropertyId1, currentYear);
+        var query = new GetAllIncomeQuery(dateFrom, dateTo, _testPropertyId1, null, currentYear);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -202,7 +202,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, null, null, null);
+        var query = new GetAllIncomeQuery(null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -223,7 +223,7 @@ public class GetAllIncomeHandlerTests
         };
         SetupIncomeDbSet(incomeEntries);
 
-        var query = new GetAllIncomeQuery(null, null, null, null);
+        var query = new GetAllIncomeQuery(null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -240,7 +240,7 @@ public class GetAllIncomeHandlerTests
         // Arrange
         SetupIncomeDbSet(new List<IncomeEntity>());
 
-        var query = new GetAllIncomeQuery(null, null, null, null);
+        var query = new GetAllIncomeQuery(null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -250,6 +250,94 @@ public class GetAllIncomeHandlerTests
         result.TotalCount.Should().Be(0);
         result.TotalAmount.Should().Be(0);
     }
+
+    #region Search Filter Tests (AC-16.11.1, Task 3.2, 3.3)
+
+    [Fact]
+    public async Task Handle_WithSearch_FiltersIncomeBySourceAndDescription()
+    {
+        // Arrange
+        var incomeEntries = new List<IncomeEntity>
+        {
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1500.00m, new DateOnly(2026, 1, 15), "Rent", "January rent payment"),
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1800.00m, new DateOnly(2026, 1, 20), "Airbnb", "Weekend booking"),
+            CreateIncomeWithRelations(_testPropertyId2, "Property 2", 500.00m, new DateOnly(2026, 1, 25), "Parking", "Monthly parking fee"),
+        };
+        SetupIncomeDbSet(incomeEntries);
+
+        var query = new GetAllIncomeQuery(null, null, null, "rent", null);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert — matches source "Rent" and description "January rent payment"
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Amount.Should().Be(1500.00m);
+    }
+
+    [Fact]
+    public async Task Handle_WithSearch_MatchesDescription()
+    {
+        // Arrange
+        var incomeEntries = new List<IncomeEntity>
+        {
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1500.00m, new DateOnly(2026, 1, 15), "Rent", "January payment"),
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1800.00m, new DateOnly(2026, 1, 20), "Airbnb", "Weekend booking"),
+        };
+        SetupIncomeDbSet(incomeEntries);
+
+        var query = new GetAllIncomeQuery(null, null, null, "booking", null);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert — matches description "Weekend booking"
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Amount.Should().Be(1800.00m);
+    }
+
+    [Fact]
+    public async Task Handle_WithSearch_CaseInsensitive()
+    {
+        // Arrange
+        var incomeEntries = new List<IncomeEntity>
+        {
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1500.00m, new DateOnly(2026, 1, 15), "Rent", "January rent"),
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1800.00m, new DateOnly(2026, 1, 20), "Airbnb", "Booking"),
+        };
+        SetupIncomeDbSet(incomeEntries);
+
+        var query = new GetAllIncomeQuery(null, null, null, "AIRBNB", null);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert — case-insensitive match on source "Airbnb"
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Amount.Should().Be(1800.00m);
+    }
+
+    [Fact]
+    public async Task Handle_WithNullSearch_ReturnsAllIncome()
+    {
+        // Arrange
+        var incomeEntries = new List<IncomeEntity>
+        {
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1500.00m, new DateOnly(2026, 1, 15), "Rent", "Payment"),
+            CreateIncomeWithRelations(_testPropertyId1, "Property 1", 1800.00m, new DateOnly(2026, 1, 20), "Airbnb", "Booking"),
+        };
+        SetupIncomeDbSet(incomeEntries);
+
+        var query = new GetAllIncomeQuery(null, null, null, null, null);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+    }
+
+    #endregion
 
     private IncomeEntity CreateIncomeWithRelations(Guid propertyId, string propertyName, decimal amount, DateOnly date, string? source = null, string? description = null)
     {

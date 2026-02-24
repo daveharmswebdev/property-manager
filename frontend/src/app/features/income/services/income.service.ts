@@ -58,6 +58,7 @@ export interface IncomeFilterParams {
   dateFrom?: string;
   dateTo?: string;
   propertyId?: string;
+  search?: string;
   year?: number;
 }
 
@@ -107,6 +108,9 @@ export class IncomeService {
     }
     if (params?.propertyId) {
       queryParams['propertyId'] = params.propertyId;
+    }
+    if (params?.search && params.search.trim()) {
+      queryParams['search'] = params.search.trim();
     }
     if (params?.year) {
       queryParams['year'] = params.year.toString();

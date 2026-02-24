@@ -10,8 +10,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ExpenseCategoryDto } from '../../services/expense.service';
-import { DateRangePreset, FilterChip } from '../../stores/expense-list.store';
+import { DateRangePreset, FilterChip, PropertyOption } from '../../stores/expense-list.store';
 import { DateRangeFilterComponent } from '../../../../shared/components/date-range-filter/date-range-filter.component';
+import { ListTotalDisplayComponent } from '../../../../shared/components/list-total-display/list-total-display.component';
 
 /**
  * ExpenseFiltersComponent (AC-3.4.3, AC-3.4.4, AC-3.4.5, AC-3.4.6)
@@ -38,6 +39,7 @@ import { DateRangeFilterComponent } from '../../../../shared/components/date-ran
     MatIconModule,
     MatButtonModule,
     DateRangeFilterComponent,
+    ListTotalDisplayComponent,
   ],
   template: `
     <div class="filters-container">
@@ -58,6 +60,20 @@ import { DateRangeFilterComponent } from '../../../../shared/components/date-ran
           <mat-select multiple [value]="selectedCategoryIds()" (selectionChange)="onCategoryChange($event.value)">
             @for (category of categories(); track category.id) {
               <mat-option [value]="category.id">{{ category.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Property Filter (AC-16.11.3) -->
+        <mat-form-field appearance="outline" class="filter-field property-field">
+          <mat-label>Property</mat-label>
+          <mat-select
+            [value]="selectedPropertyId() || 'all'"
+            (selectionChange)="onPropertyChange($event.value)"
+          >
+            <mat-option value="all">All Properties</mat-option>
+            @for (property of properties(); track property.id) {
+              <mat-option [value]="property.id">{{ property.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -103,6 +119,15 @@ import { DateRangeFilterComponent } from '../../../../shared/components/date-ran
           </button>
         </div>
       }
+
+      <!-- Total Expenses Display (AC-16.11.2) -->
+      @if (showTotal()) {
+        <app-list-total-display
+          label="Total Expenses"
+          [amount]="totalAmount()"
+          [showBorder]="true"
+        />
+      }
     </div>
   `,
   styles: [`
@@ -132,6 +157,10 @@ import { DateRangeFilterComponent } from '../../../../shared/components/date-ran
     }
 
     .category-field {
+      min-width: 200px;
+    }
+
+    .property-field {
       min-width: 200px;
     }
 
@@ -183,11 +212,16 @@ export class ExpenseFiltersComponent {
   filterChips = input.required<FilterChip[]>();
   dateFrom = input<string | null>(null);
   dateTo = input<string | null>(null);
+  properties = input<PropertyOption[]>([]);
+  selectedPropertyId = input<string | null>(null);
+  totalAmount = input<number>(0);
+  showTotal = input<boolean>(false);
 
   // Outputs
   dateRangePresetChange = output<DateRangePreset>();
   customDateRangeChange = output<{ dateFrom: string; dateTo: string }>();
   categoryChange = output<string[]>();
+  propertyChange = output<string | null>();
   searchChange = output<string>();
   chipRemove = output<FilterChip>();
   clearAll = output<void>();
@@ -231,6 +265,11 @@ export class ExpenseFiltersComponent {
 
   onCategoryChange(categoryIds: string[]): void {
     this.categoryChange.emit(categoryIds);
+  }
+
+  onPropertyChange(value: string): void {
+    const propertyId = value === 'all' ? null : value;
+    this.propertyChange.emit(propertyId);
   }
 
   clearSearch(): void {

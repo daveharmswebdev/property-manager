@@ -50,7 +50,7 @@ public class GetAllExpensesTotalAmountTests
         SetupDbSet(expenses);
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 50);
 
@@ -77,7 +77,7 @@ public class GetAllExpensesTotalAmountTests
         SetupDbSet(expenses);
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 2);
 
@@ -105,7 +105,7 @@ public class GetAllExpensesTotalAmountTests
         var query = new GetAllExpensesQuery(
             DateFrom: new DateOnly(2025, 1, 1),
             DateTo: new DateOnly(2025, 2, 28),
-            CategoryIds: null, Search: null, Year: null,
+            CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 50);
 
@@ -134,7 +134,7 @@ public class GetAllExpensesTotalAmountTests
         var query = new GetAllExpensesQuery(
             DateFrom: null, DateTo: null,
             CategoryIds: new List<Guid> { repairsId },
-            Search: null, Year: null,
+            PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 50);
 
@@ -153,7 +153,7 @@ public class GetAllExpensesTotalAmountTests
         SetupDbSet(new List<Expense>());
 
         var query = new GetAllExpensesQuery(
-            DateFrom: null, DateTo: null, CategoryIds: null, Search: null, Year: null,
+            DateFrom: null, DateTo: null, CategoryIds: null, PropertyId: null, Search: null, Year: null,
             SortBy: null, SortDirection: null,
             Page: 1, PageSize: 50);
 

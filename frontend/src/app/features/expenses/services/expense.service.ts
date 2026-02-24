@@ -79,6 +79,7 @@ export interface ExpenseFilters {
   dateFrom?: string; // ISO date string (YYYY-MM-DD)
   dateTo?: string; // ISO date string (YYYY-MM-DD)
   categoryIds?: string[];
+  propertyId?: string;
   search?: string;
   year?: number;
   sortBy?: string;
@@ -285,6 +286,9 @@ export class ExpenseService {
     }
     if (filters.categoryIds && filters.categoryIds.length > 0) {
       params['categoryIds'] = filters.categoryIds;
+    }
+    if (filters.propertyId) {
+      params['propertyId'] = filters.propertyId;
     }
     if (filters.search && filters.search.trim()) {
       params['search'] = filters.search.trim();
