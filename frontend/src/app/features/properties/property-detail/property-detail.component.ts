@@ -107,7 +107,8 @@ import {
             </button>
             <button mat-stroked-button
                     color="primary"
-                    [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'income']">
+                    [routerLink]="['/properties', propertyStore.selectedProperty()!.id, 'income']"
+                    data-testid="property-detail-add-income-btn">
               <mat-icon>add</mat-icon>
               <span class="button-text">Add Income</span>
             </button>

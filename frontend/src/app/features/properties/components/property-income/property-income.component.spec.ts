@@ -17,6 +17,7 @@ describe('PropertyIncomeComponent', () => {
   };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let snackBar: { open: ReturnType<typeof vi.fn> };
+  let dialog: MatDialog;
 
   const mockIncome: IncomeDto[] = [
     {
@@ -64,6 +65,7 @@ describe('PropertyIncomeComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(PropertyIncomeComponent);
+    dialog = fixture.debugElement.injector.get(MatDialog);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('propertyId', 'prop-1');
     fixture.detectChanges();
@@ -85,10 +87,6 @@ describe('PropertyIncomeComponent', () => {
 
     it('should set totalCount from response', () => {
       expect(component.totalCount()).toBe(2);
-    });
-
-    it('should set ytdTotal from response', () => {
-      expect(component.ytdTotal()).toBe(1700);
     });
   });
 
@@ -246,9 +244,7 @@ describe('PropertyIncomeComponent', () => {
     });
 
     it('should call deleteIncome service and refresh on confirm', () => {
-      // Access component's private dialog instance
-      const dialogInstance = (component as any)['dialog'] as MatDialog;
-      vi.spyOn(dialogInstance, 'open').mockReturnValue({
+      vi.spyOn(dialog, 'open').mockReturnValue({
         afterClosed: () => of(true),
       } as any);
 
@@ -260,8 +256,7 @@ describe('PropertyIncomeComponent', () => {
     });
 
     it('should NOT call deleteIncome when dialog is cancelled', () => {
-      const dialogInstance = (component as any)['dialog'] as MatDialog;
-      vi.spyOn(dialogInstance, 'open').mockReturnValue({
+      vi.spyOn(dialog, 'open').mockReturnValue({
         afterClosed: () => of(false),
       } as any);
 

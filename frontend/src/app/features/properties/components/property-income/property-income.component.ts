@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, SlicePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -32,6 +32,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
   imports: [
     CommonModule,
     CurrencyPipe,
+    SlicePipe,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -53,7 +54,8 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           mat-stroked-button
           color="primary"
           (click)="addClick.emit()"
-          class="add-income-btn">
+          class="add-income-btn"
+          data-testid="property-income-add-btn">
           <mat-icon>add</mat-icon>
           Add Income
         </button>
@@ -97,7 +99,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
             <div class="header-actions">Actions</div>
           </div>
 
-          @for (income of incomeEntries(); track income.id) {
+          @for (income of incomeEntries() | slice:0:displayLimit; track income.id) {
             <div class="income-row" (click)="navigateToDetail(income)">
               <div class="cell-date">{{ formatDate(income.date) }}</div>
               <div class="cell-source">{{ income.source || '\u2014' }}</div>
@@ -115,7 +117,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
           }
 
           <!-- View all income link -->
-          @if (totalCount() > 5) {
+          @if (totalCount() > displayLimit) {
             <div class="view-all">
               <a mat-button color="primary" (click)="navigateToAllIncome()">
                 View all {{ totalCount() }} income entries
@@ -335,11 +337,11 @@ export class PropertyIncomeComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly displayLimit = 5;
   readonly isLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly incomeEntries = signal<IncomeDto[]>([]);
   readonly totalCount = signal(0);
-  readonly ytdTotal = signal(0);
 
   ngOnInit(): void {
     this.loadIncome();
@@ -355,12 +357,12 @@ export class PropertyIncomeComponent implements OnInit {
         next: (response) => {
           this.incomeEntries.set(response.items);
           this.totalCount.set(response.totalCount);
-          this.ytdTotal.set(response.ytdTotal);
           this.isLoading.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.error.set('Failed to load income');
           this.isLoading.set(false);
+          console.error('Error loading property income:', err);
         },
       });
   }
@@ -410,6 +412,6 @@ export class PropertyIncomeComponent implements OnInit {
   }
 
   navigateToAllIncome(): void {
-    this.router.navigate(['/income']);
+    this.router.navigate(['/income'], { queryParams: { propertyId: this.propertyId() } });
   }
 }

@@ -57,7 +57,7 @@ export class PropertyDetailPage extends BasePage {
 
     // Action buttons
     this.addExpenseButton = page.locator('button', { hasText: 'Add Expense' });
-    this.addIncomeButton = page.locator('.action-buttons button', { hasText: 'Add Income' });
+    this.addIncomeButton = page.getByTestId('property-detail-add-income-btn');
     this.generateReportButton = page.getByTestId('generate-report-button');
     this.editButton = page.locator('button', { hasText: 'Edit' });
     this.deleteButton = page.locator('button', { hasText: 'Delete' });
