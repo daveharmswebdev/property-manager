@@ -279,6 +279,104 @@ describe('ExpenseFiltersComponent no filter chips', () => {
   });
 });
 
+describe('ExpenseFiltersComponent property filter (AC-16.11.3)', () => {
+  let component: ExpenseFiltersComponent;
+  let fixture: ComponentFixture<ExpenseFiltersComponent>;
+
+  const mockProperties = [
+    { id: 'prop-1', name: 'Test Property' },
+    { id: 'prop-2', name: 'Beach House' },
+  ];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ExpenseFiltersComponent],
+      providers: [provideNoopAnimations()],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpenseFiltersComponent);
+    component = fixture.componentInstance;
+
+    fixture.componentRef.setInput('categories', []);
+    fixture.componentRef.setInput('dateRangePreset', 'all');
+    fixture.componentRef.setInput('selectedCategoryIds', []);
+    fixture.componentRef.setInput('searchText', '');
+    fixture.componentRef.setInput('filterChips', []);
+    fixture.componentRef.setInput('properties', mockProperties);
+    fixture.componentRef.setInput('selectedPropertyId', null);
+
+    fixture.detectChanges();
+  });
+
+  it('should render property dropdown', () => {
+    const propertyField = fixture.debugElement.query(By.css('.property-field'));
+    expect(propertyField).toBeTruthy();
+  });
+
+  it('should emit propertyChange with property id when property selected', () => {
+    const emitSpy = vi.fn();
+    component.propertyChange.subscribe(emitSpy);
+
+    component.onPropertyChange('prop-1');
+
+    expect(emitSpy).toHaveBeenCalledWith('prop-1');
+  });
+
+  it('should emit propertyChange with null when "All Properties" selected', () => {
+    const emitSpy = vi.fn();
+    component.propertyChange.subscribe(emitSpy);
+
+    component.onPropertyChange('all');
+
+    expect(emitSpy).toHaveBeenCalledWith(null);
+  });
+});
+
+describe('ExpenseFiltersComponent total display (AC-16.11.2)', () => {
+  let fixture: ComponentFixture<ExpenseFiltersComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ExpenseFiltersComponent],
+      providers: [provideNoopAnimations()],
+    }).compileComponents();
+  });
+
+  it('should render total display when showTotal is true', async () => {
+    fixture = TestBed.createComponent(ExpenseFiltersComponent);
+
+    fixture.componentRef.setInput('categories', []);
+    fixture.componentRef.setInput('dateRangePreset', 'all');
+    fixture.componentRef.setInput('selectedCategoryIds', []);
+    fixture.componentRef.setInput('searchText', '');
+    fixture.componentRef.setInput('filterChips', []);
+    fixture.componentRef.setInput('showTotal', true);
+    fixture.componentRef.setInput('totalAmount', 225.5);
+
+    fixture.detectChanges();
+
+    const totalDisplay = fixture.debugElement.query(By.css('app-list-total-display'));
+    expect(totalDisplay).toBeTruthy();
+  });
+
+  it('should not render total display when showTotal is false', async () => {
+    fixture = TestBed.createComponent(ExpenseFiltersComponent);
+
+    fixture.componentRef.setInput('categories', []);
+    fixture.componentRef.setInput('dateRangePreset', 'all');
+    fixture.componentRef.setInput('selectedCategoryIds', []);
+    fixture.componentRef.setInput('searchText', '');
+    fixture.componentRef.setInput('filterChips', []);
+    fixture.componentRef.setInput('showTotal', false);
+    fixture.componentRef.setInput('totalAmount', 0);
+
+    fixture.detectChanges();
+
+    const totalDisplay = fixture.debugElement.query(By.css('app-list-total-display'));
+    expect(totalDisplay).toBeFalsy();
+  });
+});
+
 describe('ExpenseFiltersComponent date input pass-through', () => {
   let fixture: ComponentFixture<ExpenseFiltersComponent>;
 

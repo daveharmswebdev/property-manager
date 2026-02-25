@@ -1,6 +1,6 @@
 # Story 16.9: Receipt Thumbnail Reactivity After Upload
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, effect, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +48,7 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -90,7 +91,7 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
           />
 
           <!-- Property Filter (AC-4.3.4) -->
-          <mat-form-field class="property-field">
+          <mat-form-field appearance="outline" class="property-field">
             <mat-label>Property</mat-label>
             <mat-select
               [value]="incomeStore.selectedPropertyId() || 'all'"
@@ -101,6 +102,27 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
                 <mat-option [value]="property.id">{{ property.name }}</mat-option>
               }
             </mat-select>
+          </mat-form-field>
+
+          <!-- Search Input (AC-16.11.1) -->
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search source/description</mat-label>
+            <input
+              matInput
+              [formControl]="searchControl"
+              placeholder="Search income..."
+            >
+            <mat-icon matPrefix>search</mat-icon>
+            @if (searchControl.value) {
+              <button
+                matSuffix
+                mat-icon-button
+                aria-label="Clear search"
+                (click)="clearSearch()"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            }
           </mat-form-field>
 
           <!-- Clear Filters Button -->
@@ -247,6 +269,11 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
 
     .property-field {
       min-width: 200px;
+    }
+
+    .search-field {
+      min-width: 250px;
+      flex: 1;
     }
 
     .clear-filters-btn {
@@ -403,7 +430,8 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
         align-items: stretch;
       }
 
-      .property-field {
+      .property-field,
+      .search-field {
         width: 100%;
       }
 
@@ -457,6 +485,10 @@ export class IncomeComponent implements OnInit, OnDestroy {
   private readonly propertyService = inject(PropertyService);
   private readonly incomeService = inject(IncomeService);
 
+  // Search control with debounce (AC-16.11.1)
+  searchControl = new FormControl('');
+  private destroy$ = new Subject<void>();
+
   // Computed signal for date range preset
   dateRangePreset = computed(() => this.incomeStore.dateRangePreset());
 
@@ -466,7 +498,24 @@ export class IncomeComponent implements OnInit, OnDestroy {
     this.incomeStore.setYear(year);
   });
 
+  // Sync search input with store state
+  private searchEffect = effect(() => {
+    const search = this.incomeStore.searchText();
+    if (this.searchControl.value !== search) {
+      this.searchControl.setValue(search, { emitEvent: false });
+    }
+  });
+
   ngOnInit(): void {
+    // Set up search debounce (AC-16.11.1 - 300ms debounce)
+    this.searchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe((value) => {
+      this.incomeStore.setSearch(value || '');
+    });
+
     // Load properties for filter dropdown (AC-4.3.4)
     this.propertyStore.loadProperties(undefined);
 
@@ -475,6 +524,8 @@ export class IncomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     // Reset store on component destroy
     this.incomeStore.reset();
   }
@@ -501,10 +552,16 @@ export class IncomeComponent implements OnInit, OnDestroy {
     this.incomeStore.setPropertyFilter(propertyId);
   }
 
+  clearSearch(): void {
+    this.searchControl.setValue('', { emitEvent: false });
+    this.incomeStore.setSearch('');
+  }
+
   /**
    * Clear all filters (AC-4.3.5)
    */
   onClearFilters(): void {
+    this.searchControl.setValue('', { emitEvent: false });
     this.incomeStore.clearFilters();
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -10,7 +10,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseListStore, FilterChip, DateRangePreset } from './stores/expense-list.store';
 import { ExpenseFiltersComponent } from './components/expense-filters/expense-filters.component';
-import { ListTotalDisplayComponent } from '../../shared/components/list-total-display/list-total-display.component';
 import { ExpenseListRowComponent } from './components/expense-list-row/expense-list-row.component';
 import { ExpenseListItemDto } from './services/expense.service';
 import {
@@ -44,7 +43,6 @@ import { PropertyService } from '../properties/services/property.service';
     MatPaginatorModule,
     ExpenseFiltersComponent,
     ExpenseListRowComponent,
-    ListTotalDisplayComponent,
   ],
   template: `
     <div class="expenses-container">
@@ -71,22 +69,18 @@ import { PropertyService } from '../properties/services/property.service';
         [selectedCategoryIds]="store.selectedCategoryIds()"
         [searchText]="store.searchText()"
         [filterChips]="store.filterChips()"
+        [properties]="store.properties()"
+        [selectedPropertyId]="store.selectedPropertyId()"
         (dateRangePresetChange)="onDateRangePresetChange($event)"
         (customDateRangeChange)="onCustomDateRangeChange($event)"
         (categoryChange)="onCategoryChange($event)"
+        (propertyChange)="onPropertyChange($event)"
         (searchChange)="onSearchChange($event)"
         (chipRemove)="onChipRemove($event)"
         (clearAll)="onClearAllFilters()"
+        [totalAmount]="store.totalAmount()"
+        [showTotal]="!store.isLoading() && store.totalCount() > 0"
       />
-
-      <!-- Total Expenses Display (AC2) -->
-      @if (!store.isLoading() && store.totalCount() > 0) {
-        <app-list-total-display
-          label="Total Expenses"
-          [amount]="store.totalAmount()"
-          [showBorder]="true"
-        />
-      }
 
       <!-- Loading State -->
       @if (store.isLoading()) {
@@ -370,10 +364,16 @@ export class ExpensesComponent implements OnInit {
     { key: 'category', label: 'Category' },
   ];
 
+  /** Sync propertyStore.properties → expense list store properties (AC-16.11.3) */
+  private propertyEffect = effect(() => {
+    const props = this.propertyStore.properties();
+    this.store.setProperties(props.map(p => ({ id: p.id, name: p.name })));
+  });
+
   ngOnInit(): void {
     // Initialize store - load categories and expenses
     this.store.initialize();
-    // Load properties for "Add Expense" button routing (single vs multi-property)
+    // Load properties for filter dropdown and "Add Expense" button routing
     this.propertyStore.loadProperties(undefined);
   }
 
@@ -387,6 +387,10 @@ export class ExpensesComponent implements OnInit {
 
   onCategoryChange(categoryIds: string[]): void {
     this.store.setCategories(categoryIds);
+  }
+
+  onPropertyChange(propertyId: string | null): void {
+    this.store.setPropertyFilter(propertyId);
   }
 
   onSearchChange(search: string): void {

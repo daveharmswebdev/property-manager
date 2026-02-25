@@ -12,6 +12,7 @@ public record GetAllIncomeQuery(
     DateOnly? DateFrom,
     DateOnly? DateTo,
     Guid? PropertyId,
+    string? Search,
     int? Year
 ) : IRequest<IncomeListResult>;
 
@@ -70,6 +71,15 @@ public class GetAllIncomeHandler : IRequestHandler<GetAllIncomeQuery, IncomeList
         if (request.PropertyId.HasValue)
         {
             query = query.Where(i => i.PropertyId == request.PropertyId.Value);
+        }
+
+        // Apply search filter - case-insensitive partial match on source and description (AC-16.11.1)
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var searchTerm = request.Search.Trim().ToLower();
+            query = query.Where(i =>
+                (i.Source != null && i.Source.ToLower().Contains(searchTerm)) ||
+                (i.Description != null && i.Description.ToLower().Contains(searchTerm)));
         }
 
         // Execute query with projection and sorting (AC-4.3.2 - sorted by date descending)

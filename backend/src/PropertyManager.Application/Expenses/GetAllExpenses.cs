@@ -11,6 +11,7 @@ public record GetAllExpensesQuery(
     DateOnly? DateFrom,
     DateOnly? DateTo,
     List<Guid>? CategoryIds,
+    Guid? PropertyId,
     string? Search,
     int? Year,
     string? SortBy = null,
@@ -96,6 +97,12 @@ public class GetAllExpensesHandler : IRequestHandler<GetAllExpensesQuery, PagedR
         if (request.CategoryIds != null && request.CategoryIds.Count > 0)
         {
             query = query.Where(e => request.CategoryIds.Contains(e.CategoryId));
+        }
+
+        // Apply property filter (AC-16.11.3)
+        if (request.PropertyId.HasValue)
+        {
+            query = query.Where(e => e.PropertyId == request.PropertyId.Value);
         }
 
         // Apply search filter - case-insensitive, partial match (AC-3.4.5)

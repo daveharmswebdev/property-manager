@@ -134,6 +134,7 @@ public class ExpensesController : ControllerBase
     /// <param name="dateFrom">Optional: Filter start date</param>
     /// <param name="dateTo">Optional: Filter end date</param>
     /// <param name="categoryIds">Optional: Filter by one or more category IDs (multi-select)</param>
+    /// <param name="propertyId">Optional: Filter by property ID (AC-16.11.3)</param>
     /// <param name="search">Optional: Search description text (case-insensitive, partial match)</param>
     /// <param name="year">Optional: Filter by tax year</param>
     /// <param name="page">Page number (default: 1)</param>
@@ -148,6 +149,7 @@ public class ExpensesController : ControllerBase
         [FromQuery] DateOnly? dateFrom = null,
         [FromQuery] DateOnly? dateTo = null,
         [FromQuery] List<Guid>? categoryIds = null,
+        [FromQuery] Guid? propertyId = null,
         [FromQuery] string? search = null,
         [FromQuery] int? year = null,
         [FromQuery] string? sortBy = null,
@@ -159,6 +161,7 @@ public class ExpensesController : ControllerBase
             dateFrom,
             dateTo,
             categoryIds,
+            propertyId,
             search,
             year,
             sortBy,

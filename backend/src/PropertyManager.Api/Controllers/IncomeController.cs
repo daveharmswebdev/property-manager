@@ -39,6 +39,7 @@ public class IncomeController : ControllerBase
     /// <param name="dateFrom">Filter income from this date (inclusive)</param>
     /// <param name="dateTo">Filter income to this date (inclusive)</param>
     /// <param name="propertyId">Filter to specific property</param>
+    /// <param name="search">Optional: Search source and description text (case-insensitive, partial match) (AC-16.11.1)</param>
     /// <param name="year">Filter to specific tax year</param>
     /// <returns>List of income entries with total count and amount</returns>
     /// <response code="200">Returns the list of income entries with totals</response>
@@ -50,9 +51,10 @@ public class IncomeController : ControllerBase
         [FromQuery] DateOnly? dateFrom = null,
         [FromQuery] DateOnly? dateTo = null,
         [FromQuery] Guid? propertyId = null,
+        [FromQuery] string? search = null,
         [FromQuery] int? year = null)
     {
-        var query = new GetAllIncomeQuery(dateFrom, dateTo, propertyId, year);
+        var query = new GetAllIncomeQuery(dateFrom, dateTo, propertyId, search, year);
         var response = await _mediator.Send(query);
 
         _logger.LogInformation(
