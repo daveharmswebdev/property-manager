@@ -91,7 +91,7 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
           />
 
           <!-- Property Filter (AC-4.3.4) -->
-          <mat-form-field class="property-field">
+          <mat-form-field appearance="outline" class="property-field">
             <mat-label>Property</mat-label>
             <mat-select
               [value]="incomeStore.selectedPropertyId() || 'all'"
@@ -105,7 +105,7 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
           </mat-form-field>
 
           <!-- Search Input (AC-16.11.1) -->
-          <mat-form-field class="search-field">
+          <mat-form-field appearance="outline" class="search-field">
             <mat-label>Search source/description</mat-label>
             <input
               matInput
@@ -553,7 +553,7 @@ export class IncomeComponent implements OnInit, OnDestroy {
   }
 
   clearSearch(): void {
-    this.searchControl.setValue('');
+    this.searchControl.setValue('', { emitEvent: false });
     this.incomeStore.setSearch('');
   }
 

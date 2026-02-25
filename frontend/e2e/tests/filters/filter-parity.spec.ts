@@ -12,6 +12,7 @@
  * Import test/expect from fixtures — NOT @playwright/test (project rule).
  */
 import { test, expect } from '../../fixtures/test-fixtures';
+import type { Page } from '@playwright/test';
 
 // ─── Shared Mock Data ───────────────────────────────────────────────────────
 
@@ -101,26 +102,55 @@ const MOCK_INCOME = {
   totalAmount: 4300.0,
 };
 
+// ─── Route Interception Helpers ─────────────────────────────────────────────
+
+async function interceptIncomeApi(page: Page): Promise<void> {
+  await page.route('*/**/api/v1/income*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_INCOME),
+    });
+  });
+}
+
+async function interceptExpenseApis(page: Page): Promise<void> {
+  await page.route('*/**/api/v1/expenses*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_EXPENSES),
+    });
+  });
+  await page.route('*/**/api/v1/expense-categories', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_CATEGORIES),
+    });
+  });
+  await page.route('*/**/api/v1/properties', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_PROPERTIES),
+    });
+  });
+}
+
 test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
   // ─── AC1 — Income list: add search field ──────────────────────────────────
 
   test.describe('AC1 — Income search field', () => {
+    test.beforeEach(async ({ page }) => {
+      await interceptIncomeApi(page);
+      await page.goto('/income');
+    });
+
     test('should display a search field in the income filter card', async ({
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation (network-first)
-      await page.route('*/**/api/v1/income*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_INCOME),
-        });
-      });
-
-      // WHEN: Navigating to income page
-      await page.goto('/income');
-
       // THEN: Search field is visible inside the filter card
       const filterCard = page.locator('.filters-card');
       const searchField = filterCard.locator('mat-form-field').filter({
@@ -133,17 +163,6 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/income*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_INCOME),
-        });
-      });
-
-      await page.goto('/income');
-
       // THEN: Search field has search icon prefix (mat-icon with "search")
       const filterCard = page.locator('.filters-card');
       const searchField = filterCard.locator('mat-form-field').filter({
@@ -156,17 +175,6 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/income*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_INCOME),
-        });
-      });
-
-      await page.goto('/income');
-
       // WHEN: Text is entered in search field
       const filterCard = page.locator('.filters-card');
       const searchInput = filterCard
@@ -185,16 +193,6 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept income API
-      await page.route('*/**/api/v1/income*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_INCOME),
-        });
-      });
-
-      await page.goto('/income');
       await page.waitForLoadState('networkidle');
 
       // WHEN: User types "Airbnb" in search field
@@ -226,20 +224,7 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       authenticatedUser,
     }) => {
       // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/expenses*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_EXPENSES),
-        });
-      });
-      await page.route('*/**/api/v1/expense-categories', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_CATEGORIES),
-        });
-      });
+      await interceptExpenseApis(page);
 
       // WHEN: Navigating to expenses page
       await page.goto('/expenses');
@@ -256,36 +241,15 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
   // ─── AC3 — Expenses: add property filter ──────────────────────────────────
 
   test.describe('AC3 — Expense property filter', () => {
+    test.beforeEach(async ({ page }) => {
+      await interceptExpenseApis(page);
+      await page.goto('/expenses');
+    });
+
     test('should display property dropdown in expense filters', async ({
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/expenses*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_EXPENSES),
-        });
-      });
-      await page.route('*/**/api/v1/expense-categories', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_CATEGORIES),
-        });
-      });
-      await page.route('*/**/api/v1/properties', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_PROPERTIES),
-        });
-      });
-
-      // WHEN: Navigating to expenses page
-      await page.goto('/expenses');
-
       // THEN: Property dropdown is visible in expense filters
       const filtersComponent = page.locator('app-expense-filters');
       const propertyField = filtersComponent.locator('mat-form-field').filter({
@@ -298,31 +262,6 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/expenses*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_EXPENSES),
-        });
-      });
-      await page.route('*/**/api/v1/expense-categories', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_CATEGORIES),
-        });
-      });
-      await page.route('*/**/api/v1/properties', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_PROPERTIES),
-        });
-      });
-
-      await page.goto('/expenses');
-
       // THEN: Property dropdown shows "All Properties" by default
       const filtersComponent = page.locator('app-expense-filters');
       const propertySelect = filtersComponent
@@ -338,30 +277,6 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       page,
       authenticatedUser,
     }) => {
-      // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/expenses*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_EXPENSES),
-        });
-      });
-      await page.route('*/**/api/v1/expense-categories', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_CATEGORIES),
-        });
-      });
-      await page.route('*/**/api/v1/properties', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_PROPERTIES),
-        });
-      });
-
-      await page.goto('/expenses');
       await page.waitForLoadState('networkidle');
 
       // Set up response listener BEFORE clicking (network-first)
@@ -394,28 +309,7 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       authenticatedUser,
     }) => {
       // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/expenses*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_EXPENSES),
-        });
-      });
-      await page.route('*/**/api/v1/expense-categories', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_CATEGORIES),
-        });
-      });
-      await page.route('*/**/api/v1/properties', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_PROPERTIES),
-        });
-      });
-
+      await interceptExpenseApis(page);
       await page.goto('/expenses');
 
       const filters = page.locator('app-expense-filters');
@@ -447,14 +341,7 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
       authenticatedUser,
     }) => {
       // GIVEN: Intercept APIs before navigation
-      await page.route('*/**/api/v1/income*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MOCK_INCOME),
-        });
-      });
-
+      await interceptIncomeApi(page);
       await page.goto('/income');
 
       const filterCard = page.locator('.filters-card');
