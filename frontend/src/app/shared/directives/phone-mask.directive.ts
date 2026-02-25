@@ -1,5 +1,6 @@
 import { Directive, ElementRef, forwardRef, HostListener, inject, Renderer2 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { extractDigits, formatPhoneInput } from '../utils/phone-format.utils';
 
 /**
  * PhoneMaskDirective
@@ -30,12 +31,22 @@ export class PhoneMaskDirective implements ControlValueAccessor {
 
   @HostListener('input', ['$event'])
   onInput(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value;
-    const digits = raw.replace(/\D/g, '').slice(0, 10);
-    const formatted = this.formatPhone(digits);
+    const input = event.target as HTMLInputElement;
+    const cursorPos = input.selectionStart ?? 0;
+    const raw = input.value;
+
+    // Count digits before cursor in the old value
+    const digitsBefore = raw.slice(0, cursorPos).replace(/\D/g, '').length;
+
+    const digits = extractDigits(raw);
+    const formatted = formatPhoneInput(digits);
 
     this.setDisplayValue(formatted);
     this.onChange(digits);
+
+    // Restore cursor: find position after the same number of digits in formatted string
+    const newCursorPos = this.findCursorPosition(formatted, digitsBefore);
+    input.setSelectionRange(newCursorPos, newCursorPos);
   }
 
   @HostListener('blur')
@@ -48,8 +59,8 @@ export class PhoneMaskDirective implements ControlValueAccessor {
       this.setDisplayValue('');
       return;
     }
-    const digits = value.replace(/\D/g, '').slice(0, 10);
-    this.setDisplayValue(this.formatPhone(digits));
+    const digits = extractDigits(value);
+    this.setDisplayValue(formatPhoneInput(digits));
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -64,11 +75,22 @@ export class PhoneMaskDirective implements ControlValueAccessor {
     this.renderer.setProperty(this.el.nativeElement, 'disabled', isDisabled);
   }
 
-  private formatPhone(digits: string): string {
-    if (digits.length === 0) return '';
-    if (digits.length <= 3) return `(${digits}) `;
-    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}-`;
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  /**
+   * Find the cursor position in the formatted string that corresponds
+   * to being after `digitCount` digits.
+   */
+  private findCursorPosition(formatted: string, digitCount: number): number {
+    let seen = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted[i])) {
+        seen++;
+        if (seen === digitCount) {
+          return i + 1;
+        }
+      }
+    }
+    // If digitCount is 0 or we ran out, place at end
+    return formatted.length;
   }
 
   private setDisplayValue(value: string): void {

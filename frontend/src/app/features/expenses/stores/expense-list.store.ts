@@ -7,7 +7,7 @@ import {
   withState,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { pipe, switchMap, concatMap, tap, catchError, of, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   ExpenseService,
@@ -523,7 +523,7 @@ export const ExpenseListStore = signalStore(
      */
     deleteExpense: rxMethod<string>(
       pipe(
-        switchMap((expenseId) => {
+        concatMap((expenseId) => {
           const expenseToDelete = store.expenses().find((e) => e.id === expenseId);
           return expenseService.deleteExpense(expenseId).pipe(
             tap(() => {

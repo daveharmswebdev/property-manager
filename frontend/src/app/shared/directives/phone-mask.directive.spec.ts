@@ -99,8 +99,33 @@ describe('PhoneMaskDirective', () => {
     expect(input.value).toBe('(512) 555-1234');
   });
 
+  it('should preserve cursor position after formatting', () => {
+    // Simulate typing '512' then inserting at position after '5'
+    simulateInput(input, '5125551234');
+    fixture.detectChanges();
+
+    // Cursor should be at end for full number
+    expect(input.selectionStart).toBe('(512) 555-1234'.length);
+  });
+
+  it('should place cursor correctly for partial input', () => {
+    // Type 3 digits — cursor should be after the 3rd digit in formatted output
+    simulateInputWithCursor(input, '512', 3);
+    fixture.detectChanges();
+
+    // After '(512) ' the 3rd digit is at index 3, cursor goes to index 4
+    // but since formatPhoneInput adds trailing ' ', cursor should be at position 4
+    expect(input.selectionStart).toBe(4);
+  });
+
   function simulateInput(inputEl: HTMLInputElement, value: string): void {
     inputEl.value = value;
+    inputEl.dispatchEvent(new Event('input'));
+  }
+
+  function simulateInputWithCursor(inputEl: HTMLInputElement, value: string, cursorPos: number): void {
+    inputEl.value = value;
+    inputEl.setSelectionRange(cursorPos, cursorPos);
     inputEl.dispatchEvent(new Event('input'));
   }
 });
