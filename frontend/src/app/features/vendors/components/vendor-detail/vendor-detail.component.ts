@@ -12,6 +12,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
 
 /**
  * Vendor Detail Component (AC #1-#8)
@@ -36,6 +37,7 @@ import {
     MatProgressSpinnerModule,
     MatChipsModule,
     MatDialogModule,
+    PhoneFormatPipe,
   ],
   template: `
     <div class="vendor-detail-container">
@@ -108,7 +110,7 @@ import {
                         @if (phone.label) {
                           <span class="contact-label">{{ phone.label }}:</span>
                         }
-                        {{ phone.number }}
+                        {{ phone.number | phoneFormat }}
                       </span>
                     </div>
                   }
