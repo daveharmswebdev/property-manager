@@ -142,7 +142,7 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
   // ─── AC1 — Income list: add search field ──────────────────────────────────
 
   test.describe('AC1 — Income search field', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, authenticatedUser }) => {
       await interceptIncomeApi(page);
       await page.goto('/income');
     });
@@ -241,7 +241,7 @@ test.describe('Story 16.11: Align Expense & Income Filter Cards', () => {
   // ─── AC3 — Expenses: add property filter ──────────────────────────────────
 
   test.describe('AC3 — Expense property filter', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, authenticatedUser }) => {
       await interceptExpenseApis(page);
       await page.goto('/expenses');
     });
