@@ -23,6 +23,10 @@ import {
 } from './components/property-picker-dialog/property-picker-dialog.component';
 import { PropertyStore } from '../properties/stores/property.store';
 import { PropertyService } from '../properties/services/property.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -146,6 +150,7 @@ import { PropertyService } from '../properties/services/property.service';
                   <mat-icon class="sort-icon">{{ store.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
                 }
               </button>
+              <div class="header-actions">Actions</div>
             </div>
 
             <!-- Expense Rows -->
@@ -153,6 +158,7 @@ import { PropertyService } from '../properties/services/property.service';
               <app-expense-list-row
                 [expense]="expense"
                 (createWorkOrder)="onCreateWorkOrder($event)"
+                (delete)="onDeleteExpense($event)"
               />
             }
 
@@ -276,7 +282,7 @@ import { PropertyService } from '../properties/services/property.service';
 
     .list-header {
       display: grid;
-      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px;
+      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px 80px;
       gap: 16px;
       padding: 12px 16px;
       background: var(--mat-sys-surface-container);
@@ -444,6 +450,27 @@ export class ExpensesComponent implements OnInit {
       // PageEvent uses 0-based index, our API uses 1-based
       this.store.goToPage(event.pageIndex + 1);
     }
+  }
+
+  /**
+   * Handle delete expense from list (AC-D3)
+   */
+  protected onDeleteExpense(expenseId: string): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Expense',
+        message: 'Are you sure you want to delete this expense?',
+        confirmText: 'Delete',
+        icon: 'delete',
+        iconColor: 'warn',
+      } as ConfirmDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.store.deleteExpense(expenseId);
+      }
+    });
   }
 
   /**

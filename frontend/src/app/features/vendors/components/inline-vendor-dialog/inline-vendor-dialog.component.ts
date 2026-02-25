@@ -103,6 +103,7 @@ export interface InlineVendorDialogResult {
       }
 
       mat-dialog-content {
+        overflow: visible;
         padding-top: 8px;
       }
     `,

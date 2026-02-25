@@ -519,6 +519,44 @@ export const ExpenseListStore = signalStore(
     },
 
     /**
+     * Delete an expense and remove from list (AC-D3)
+     */
+    deleteExpense: rxMethod<string>(
+      pipe(
+        switchMap((expenseId) => {
+          const expenseToDelete = store.expenses().find((e) => e.id === expenseId);
+          return expenseService.deleteExpense(expenseId).pipe(
+            tap(() => {
+              const updatedExpenses = store.expenses().filter((e) => e.id !== expenseId);
+              const deletedAmount = expenseToDelete?.amount || 0;
+              const newTotalCount = Math.max(0, store.totalCount() - 1);
+              patchState(store, {
+                expenses: updatedExpenses,
+                totalAmount: store.totalAmount() - deletedAmount,
+                totalCount: newTotalCount,
+                totalPages: Math.max(1, Math.ceil(newTotalCount / store.pageSize())),
+              });
+              snackBar.open('Expense deleted', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+            }),
+            catchError((error) => {
+              snackBar.open('Failed to delete expense. Please try again.', 'Close', {
+                duration: 5000,
+                horizontalPosition: 'center',
+                verticalPosition: 'bottom',
+              });
+              console.error('Error deleting expense:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+    ),
+
+    /**
      * Initialize store - load categories and expenses
      */
     initialize(): void {

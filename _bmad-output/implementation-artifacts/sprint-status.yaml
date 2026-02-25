@@ -243,5 +243,31 @@ development_status:
   16-8-wire-duplicate-detection-receipt-flow: done  # Issue #244 - bug: wiring gap, all plumbing exists
   16-9-receipt-thumbnail-reactivity: done           # Issue #241 - thumbnail shows placeholder after upload
   16-10-unify-income-list-property-detail: done    # Issue #240 - depends on 16.2 (DONE)
-  16-11-align-expense-income-filter-cards: dev-complete  # Issue #250 - search, property filter, total display alignment
+  16-11-align-expense-income-filter-cards: done  # Issue #250 - search, property filter, total display alignment
   epic-16-retrospective: optional
+
+  # ============================================================
+  # TECH DEBT, BUG FIXES & UX CONSISTENCY
+  # Source: epic-17-tech-debt-bugs-ux-consistency.md
+  # GitHub Issues: #244, #265, #266, #267, #268, #269, #270, #271, #272, #273, #274, #275, #276, #277, #278, #279
+  # Added: 2026-02-25
+  # All stories independent — no inter-story dependencies
+  # ============================================================
+
+  # Epic 17: Tech Debt, Bug Fixes & UX Consistency
+  # User Outcome: "Every form works correctly, every list behaves consistently, and I don't hit visual glitches"
+  epic-17: in-progress
+  17-1-css-dialog-label-fixes: review          # Issues #273, #275, #278 - XS — Combined into 17-1-quick-wins-bugs-ux-consistency.md
+  17-2-form-behavior-fixes-vendor-edit: review  # Issues #272, #265 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
+  17-3-work-order-list-refresh-after-delete: review  # Issue #269 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
+  17-4-expenses-list-actions-column: review     # Issue #267 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
+  17-5-wo-linked-expenses-click-actions: review  # Issue #266 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
+  17-6-wire-duplicate-detection-receipt-flow: pending  # Issue #244 - S (carried from Epic 16)
+  17-7-vendor-detail-work-order-history: pending      # Issue #268 - M
+  17-8-full-size-add-vendor-form: pending             # Issue #274 - M
+  17-9-photo-upload-multi-file-support: pending       # Issue #276 - M
+  17-10-inline-status-dropdown-wo-detail: pending     # Issue #277 - M
+  17-11-wo-list-primary-photo-thumbnail: pending      # Issue #270 - M
+  17-12-replace-year-selector-date-range: pending     # Issue #279 - L
+  17-13-vendor-photo-support: pending                 # Issue #271 - L
+  epic-17-retrospective: optional

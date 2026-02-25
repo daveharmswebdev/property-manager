@@ -236,6 +236,44 @@ describe('ExpenseListRowComponent', () => {
     });
   });
 
+  describe('delete action (AC-D1, AC-D3)', () => {
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ExpenseListRowComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('expense', mockExpense);
+      fixture.detectChanges();
+    });
+
+    it('should emit delete event with expense ID when delete button clicked', () => {
+      const deleteSpy = vi.fn();
+      component.delete.subscribe(deleteSpy);
+
+      const deleteButton = fixture.nativeElement.querySelector(
+        '.cell-actions button[mattooltip="Delete"]'
+      );
+      expect(deleteButton).toBeTruthy();
+      deleteButton.click();
+
+      expect(deleteSpy).toHaveBeenCalledWith('expense-123');
+    });
+
+    it('should show edit and delete action buttons', () => {
+      const actionButtons = fixture.nativeElement.querySelectorAll('.cell-actions button');
+      expect(actionButtons.length).toBe(2);
+    });
+
+    it('should not navigate when action buttons clicked (stopPropagation)', () => {
+      mockRouter.navigate.mockClear();
+
+      const actionsDiv = fixture.nativeElement.querySelector('.cell-actions');
+      const event = new MouseEvent('click', { bubbles: true });
+      vi.spyOn(event, 'stopPropagation');
+      actionsDiv.dispatchEvent(event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+    });
+  });
+
   describe('work order indicator (AC-11.4.4)', () => {
     beforeEach(() => {
       fixture = TestBed.createComponent(ExpenseListRowComponent);

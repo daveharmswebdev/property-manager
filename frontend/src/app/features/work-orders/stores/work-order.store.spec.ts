@@ -273,9 +273,33 @@ describe('WorkOrderStore', () => {
       expect(snackBarMock.open).toHaveBeenCalledWith('Work order deleted', 'Close', expect.any(Object));
     });
 
-    it('should navigate to work orders list', () => {
+    it('should navigate to work orders list when on detail page (AC-C1)', () => {
+      // Load detail first to simulate being on detail page
+      store.loadWorkOrderById('wo-1');
+      expect(store.selectedWorkOrder()).not.toBeNull();
+
       store.deleteWorkOrder('wo-1');
       expect(routerMock.navigate).toHaveBeenCalledWith(['/work-orders']);
+    });
+
+    it('should NOT navigate when delete is triggered from list page (AC-C2)', () => {
+      // Load work orders into list (no selectedWorkOrder)
+      store.loadWorkOrders();
+      expect(store.selectedWorkOrder()).toBeNull();
+
+      store.deleteWorkOrder('wo-1');
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should remove deleted work order from workOrders array (AC-C1)', () => {
+      // Load list first
+      store.loadWorkOrders();
+      expect(store.workOrders().length).toBe(1);
+
+      // Delete the work order
+      store.deleteWorkOrder('wo-1');
+      expect(store.workOrders().length).toBe(0);
+      expect(store.workOrders().find(wo => wo.id === 'wo-1')).toBeUndefined();
     });
 
     it('should clear selected work order', () => {

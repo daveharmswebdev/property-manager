@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, computed, signal, effect } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed, signal, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -18,6 +18,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
+import { PhoneMaskDirective } from '../../../../shared/directives/phone-mask.directive';
 import { VendorStore } from '../../stores/vendor.store';
 import { VendorTradeTagDto, VendorDetailDto, PhoneNumberDto, UpdateVendorRequest } from '../../../../core/api/api.service';
 import { MatChipInputEvent } from '@angular/material/chips';
@@ -43,6 +44,7 @@ import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard
     MatChipsModule,
     MatAutocompleteModule,
     MatSelectModule,
+    PhoneMaskDirective,
   ],
   template: `
     <div class="vendor-edit-container">
@@ -97,7 +99,7 @@ import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard
                     <div [formGroupName]="i" class="phone-row">
                       <mat-form-field appearance="outline" class="phone-number">
                         <mat-label>Phone Number</mat-label>
-                        <input matInput formControlName="number" placeholder="512-555-1234" />
+                        <input matInput appPhoneMask formControlName="number" placeholder="(512) 555-1234" />
                         @if (phone.get('number')?.hasError('required') && phone.get('number')?.touched) {
                           <mat-error>Phone number is required</mat-error>
                         }
@@ -208,7 +210,7 @@ import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard
                   mat-raised-button
                   color="primary"
                   type="submit"
-                  [disabled]="form.invalid || store.isSaving()"
+                  [disabled]="(form.invalid || (!form.dirty && !hasTagChanges())) || store.isSaving()"
                 >
                   @if (store.isSaving()) {
                     <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
@@ -369,6 +371,7 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
 
   protected readonly separatorKeyCodes = [ENTER, COMMA] as const;
   protected readonly tagInputControl = this.fb.control('');
+  @ViewChild('tagInput') tagInput!: ElementRef<HTMLInputElement>;
 
   // Form with nested arrays for phones and emails
   protected form: FormGroup = this.fb.group({
@@ -471,12 +474,10 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
       return false;
     }
 
-    // Check reactive form dirty state
-    if (this.form.dirty) {
-      return true;
-    }
+    return this.form.dirty || this.hasTagChanges();
+  }
 
-    // Check trade tag changes (added or removed)
+  protected hasTagChanges(): boolean {
     const currentIds = this.selectedTags()
       .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
       .map(t => t.id)
@@ -513,6 +514,7 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
       this.selectedTags.update(tags => [...tags, tag]);
     }
     this.tagInputControl.setValue('');
+    this.tagInput.nativeElement.value = '';
   }
 
   protected addTagFromInput(event: MatChipInputEvent): void {

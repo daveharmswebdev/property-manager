@@ -155,6 +155,10 @@ import {
                 <mat-option [value]="null">
                   <mat-icon>person</mat-icon> Self (DIY)
                 </mat-option>
+                <mat-option [value]="'add-new'" class="add-vendor-option">
+                  <mat-icon>add</mat-icon> Add New Vendor
+                </mat-option>
+                <mat-divider></mat-divider>
                 @for (vendor of vendorStore.vendors(); track vendor.id) {
                   <mat-option [value]="vendor.id">
                     {{ vendor.fullName }}
@@ -163,10 +167,6 @@ import {
                     }
                   </mat-option>
                 }
-                <mat-divider></mat-divider>
-                <mat-option [value]="'add-new'" class="add-vendor-option">
-                  <mat-icon>add</mat-icon> Add New Vendor
-                </mat-option>
               </mat-select>
             }
             <mat-hint>Select a vendor or leave as DIY</mat-hint>
