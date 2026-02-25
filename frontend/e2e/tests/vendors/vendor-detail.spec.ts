@@ -148,8 +148,9 @@ test.describe('Vendor Detail Page E2E Tests (Story 8.9)', () => {
     // Verify contact section is visible
     await vendorPage.expectDetailContactSectionVisible();
 
-    // Verify phone and email are displayed
-    await vendorPage.expectDetailHasPhone(phone);
+
+    // Verify phone and email are displayed (phone mask stores digits, pipe formats to (XXX) XXX-XXXX)
+    await vendorPage.expectDetailHasPhone('(512) 555-9876');
     await vendorPage.expectDetailHasEmail(email);
   });
 
@@ -349,7 +350,7 @@ test.describe('Vendor Detail Page E2E Tests (Story 8.9)', () => {
     await expect(page).toHaveURL(`/vendors/${vendorId}`);
     await vendorPage.expectDetailPageVisible();
 
-    // Verify the change is shown on detail page
-    await vendorPage.expectDetailHasPhone('512-555-4321');
+    // Verify the change is shown on detail page (phone mask stores digits, pipe formats to (XXX) XXX-XXXX)
+    await vendorPage.expectDetailHasPhone('(512) 555-4321');
   });
 });

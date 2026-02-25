@@ -79,6 +79,8 @@ export interface LinkExpenseDialogData {
     mat-dialog-content {
       min-height: 200px;
       max-height: 400px;
+      padding-top: 20px;
+      overflow: visible;
     }
 
     .loading-container {
@@ -110,6 +112,7 @@ export interface LinkExpenseDialogData {
     .search-field {
       width: 100%;
       margin-bottom: 8px;
+      margin-top: 4px;
     }
 
     .expense-list {
@@ -119,6 +122,8 @@ export interface LinkExpenseDialogData {
 
     .expense-option {
       cursor: pointer;
+      height: auto !important;
+      padding: 8px 16px !important;
     }
 
     .expense-row {
@@ -138,7 +143,7 @@ export interface LinkExpenseDialogData {
 
     .expense-date {
       font-size: 12px;
-      color: var(--mat-sys-outline);
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .expense-description {
@@ -150,7 +155,7 @@ export interface LinkExpenseDialogData {
 
     .expense-category {
       font-size: 12px;
-      color: var(--mat-sys-outline);
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .expense-amount {

@@ -461,7 +461,11 @@ export const WorkOrderStore = signalStore(
           switchMap((id) =>
             workOrderService.deleteWorkOrder(id).pipe(
               tap(() => {
+                const wasOnDetailPage = store.selectedWorkOrder() !== null;
+
+                // Remove from local list (AC-C1) and clear selection
                 patchState(store, {
+                  workOrders: store.workOrders().filter(wo => wo.id !== id),
                   isDeleting: false,
                   selectedWorkOrder: null,
                 });
@@ -473,8 +477,10 @@ export const WorkOrderStore = signalStore(
                   verticalPosition: 'bottom',
                 });
 
-                // Navigate to work orders dashboard (AC #6)
-                router.navigate(['/work-orders']);
+                // Only navigate if delete was triggered from detail page (AC-C2)
+                if (wasOnDetailPage) {
+                  router.navigate(['/work-orders']);
+                }
               }),
               catchError((error) => {
                 let errorMessage = 'Failed to delete work order. Please try again.';

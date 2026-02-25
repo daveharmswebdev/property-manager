@@ -318,7 +318,7 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
             } @else {
               <div class="expenses-list">
                 @for (expense of linkedExpenses(); track expense.id) {
-                  <div class="expense-row">
+                  <div class="expense-row" (click)="navigateToExpense(expense.id)">
                     <div class="expense-info">
                       <span class="expense-date">{{ expense.date | date:'mediumDate' }}</span>
                       <span class="expense-description">{{ expense.description || 'No description' }}</span>
@@ -328,7 +328,22 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
                       <span class="expense-amount">{{ expense.amount | currency:'USD' }}</span>
                       <button
                         mat-icon-button
-                        (click)="unlinkExpense(expense.id)"
+                        (click)="onEditExpense($event, expense.id)"
+                        matTooltip="Edit expense"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        (click)="onDeleteLinkedExpense($event, expense.id)"
+                        matTooltip="Delete expense"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        (click)="onUnlinkExpense($event, expense.id)"
                         [disabled]="isLinkingExpense()"
                         matTooltip="Unlink expense"
                       >
@@ -584,6 +599,12 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
         align-items: center;
         padding: 12px 0;
         border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .expense-row:hover {
+        background-color: var(--mat-sys-surface-container-low);
       }
 
       .expense-row:last-of-type {
@@ -913,6 +934,59 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
         this.isLinkingExpense.set(false);
       },
     });
+  }
+
+  /**
+   * Navigate to expense detail page (AC-E1)
+   */
+  navigateToExpense(expenseId: string): void {
+    this.router.navigate(['/expenses', expenseId]);
+  }
+
+  /**
+   * Edit expense — navigates to expense detail, stops row click (AC-E2)
+   */
+  onEditExpense(event: Event, expenseId: string): void {
+    event.stopPropagation();
+    this.router.navigate(['/expenses', expenseId]);
+  }
+
+  /**
+   * Delete a linked expense with confirmation (AC-E3)
+   */
+  onDeleteLinkedExpense(event: Event, expenseId: string): void {
+    event.stopPropagation();
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Expense',
+        message: 'Are you sure you want to delete this expense?',
+        confirmText: 'Delete',
+        icon: 'delete',
+        iconColor: 'warn',
+      } as ConfirmDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.expenseService.deleteExpense(expenseId).subscribe({
+          next: () => {
+            this.snackBar.open('Expense deleted', 'Close', { duration: 3000 });
+            this.loadLinkedExpenses(this.workOrderId!);
+          },
+          error: () => {
+            this.snackBar.open('Failed to delete expense. Please try again.', 'Close', { duration: 5000 });
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Unlink expense — wraps existing unlinkExpense with stopPropagation (AC-E2)
+   */
+  onUnlinkExpense(event: Event, expenseId: string): void {
+    event.stopPropagation();
+    this.unlinkExpense(expenseId);
   }
 
   unlinkExpense(expenseId: string): void {

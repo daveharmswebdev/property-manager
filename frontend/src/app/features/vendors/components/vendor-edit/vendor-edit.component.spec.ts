@@ -360,6 +360,34 @@ describe('VendorEditComponent', () => {
     });
   });
 
+  describe('save button disabled state (AC-B1)', () => {
+    beforeEach(() => {
+      setupWithVendor();
+    });
+
+    it('should disable Save button when form is pristine and tags unchanged', () => {
+      fixture.detectChanges();
+      const saveButton = fixture.debugElement.query(By.css('button[type="submit"]'));
+      expect(saveButton.nativeElement.disabled).toBe(true);
+    });
+
+    it('should enable Save button when form field is modified', () => {
+      component['form'].get('firstName')?.setValue('Jane');
+      component['form'].markAsDirty();
+      fixture.detectChanges();
+      const saveButton = fixture.debugElement.query(By.css('button[type="submit"]'));
+      expect(saveButton.nativeElement.disabled).toBe(false);
+    });
+
+    it('should enable Save button when only trade tags change', () => {
+      const newTag = { id: 'tag-3', name: 'HVAC' };
+      component['selectedTags'].update(tags => [...tags, newTag]);
+      fixture.detectChanges();
+      const saveButton = fixture.debugElement.query(By.css('button[type="submit"]'));
+      expect(saveButton.nativeElement.disabled).toBe(false);
+    });
+  });
+
   describe('unsaved changes detection (AC #4, #5)', () => {
     beforeEach(() => {
       setupWithVendor();

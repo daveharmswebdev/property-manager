@@ -13,6 +13,7 @@ import { PropertyStore } from '../properties/stores/property.store';
 import { CreateWoFromExpenseDialogComponent } from '../work-orders/components/create-wo-from-expense-dialog/create-wo-from-expense-dialog.component';
 import { PropertyPickerDialogComponent } from './components/property-picker-dialog/property-picker-dialog.component';
 import { PropertyService } from '../properties/services/property.service';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Unit tests for ExpensesComponent (AC-3.4.1, AC-3.4.7, AC-3.4.8)
@@ -845,5 +846,101 @@ describe('ExpensesComponent sort headers (AC3 Story 15.3)', () => {
     const amountHeader = fixture.debugElement.query(By.css('.header-amount'));
     amountHeader.nativeElement.click();
     expect(mockExpenseListStore.setSort).toHaveBeenCalledWith('amount');
+  });
+});
+
+describe('ExpensesComponent delete expense (AC-D3)', () => {
+  let component: ExpensesComponent;
+  let fixture: ComponentFixture<ExpensesComponent>;
+  let mockDialog: { open: ReturnType<typeof vi.fn> };
+
+  const mockExpenseListStore = {
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isTrulyEmpty: signal(false),
+    isFilteredEmpty: signal(false),
+    hasExpenses: signal(true),
+    expenses: signal([
+      { id: 'exp-1', date: '2026-01-15', propertyId: 'prop-1', propertyName: 'Test Property', description: 'Test expense', categoryId: 'cat-1', categoryName: 'Repairs', amount: 100 },
+    ]),
+    categories: signal([]),
+    dateRangePreset: signal('all'),
+    dateFrom: signal<string | null>(null),
+    dateTo: signal<string | null>(null),
+    selectedCategoryIds: signal([]),
+    searchText: signal(''),
+    filterChips: signal([]),
+    properties: signal([]),
+    selectedPropertyId: signal<string | null>(null),
+    totalCount: signal(1),
+    totalAmount: signal(100),
+    totalDisplay: signal('Showing 1 of 1 expense'),
+    pageSize: signal(25),
+    page: signal(1),
+    initialize: vi.fn(),
+    setProperties: vi.fn(),
+    deleteExpense: vi.fn(),
+    sortBy: signal<string | null>(null),
+    sortDirection: signal<'asc' | 'desc'>('desc'),
+    setSort: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    mockDialog = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of(true),
+      }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ExpensesComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: ExpenseListStore, useValue: mockExpenseListStore },
+        { provide: PropertyStore, useValue: defaultMockPropertyStore },
+        { provide: PropertyService, useValue: defaultMockPropertyService },
+        { provide: Router, useValue: defaultMockRouter },
+        { provide: MatDialog, useValue: mockDialog },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ExpensesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should open confirm dialog with correct data when onDeleteExpense called', () => {
+    component['onDeleteExpense']('exp-1');
+
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      ConfirmDialogComponent,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: 'Delete Expense',
+          message: 'Are you sure you want to delete this expense?',
+          confirmText: 'Delete',
+          icon: 'delete',
+          iconColor: 'warn',
+        }),
+      })
+    );
+  });
+
+  it('should call store.deleteExpense when user confirms', () => {
+    component['onDeleteExpense']('exp-1');
+
+    expect(mockExpenseListStore.deleteExpense).toHaveBeenCalledWith('exp-1');
+  });
+
+  it('should NOT call store.deleteExpense when user cancels', () => {
+    mockDialog.open.mockReturnValue({
+      afterClosed: () => of(false),
+    });
+
+    component['onDeleteExpense']('exp-1');
+
+    expect(mockExpenseListStore.deleteExpense).not.toHaveBeenCalled();
   });
 });
