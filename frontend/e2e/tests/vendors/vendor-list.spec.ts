@@ -117,8 +117,8 @@ test.describe('Vendor List E2E Tests', () => {
     // Go to vendor list
     await vendorPage.goto();
 
-    // Verify phone is displayed
-    await vendorPage.expectVendorHasPhone(`PhoneTest${timestamp} Vendor`, phoneNumber);
+    // Verify phone is displayed (phone mask stores digits, pipe formats to (XXX) XXX-XXXX)
+    await vendorPage.expectVendorHasPhone(`PhoneTest${timestamp} Vendor`, '(512) 555-1234');
   });
 
   test('should display vendor list with email (AC #1)', async ({
@@ -212,9 +212,9 @@ test.describe('Vendor List E2E Tests', () => {
 
     const fullName = `${firstName} ${lastName}`;
 
-    // Verify all details are displayed
+    // Verify all details are displayed (phone mask stores digits, pipe formats to (XXX) XXX-XXXX)
     await vendorPage.expectVendorInList(fullName);
-    await vendorPage.expectVendorHasPhone(fullName, phone);
+    await vendorPage.expectVendorHasPhone(fullName, '(512) 999-8888');
     await vendorPage.expectVendorHasEmail(fullName, email);
     await vendorPage.expectVendorHasTradeTags(fullName, [tagName]);
   });

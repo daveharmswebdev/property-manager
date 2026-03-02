@@ -18,6 +18,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PhoneFormatPipe } from '../../shared/pipes/phone-format.pipe';
 
 /**
  * Vendors Component (AC #1, #2, #4)
@@ -40,6 +41,7 @@ import {
     MatSelectModule,
     MatDialogModule,
     MatTooltipModule,
+    PhoneFormatPipe,
   ],
   template: `
     <div class="vendors-container">
@@ -166,7 +168,7 @@ import {
                       @if (vendor.phones && vendor.phones.length > 0) {
                         <span class="vendor-phone">
                           <mat-icon class="detail-icon">phone</mat-icon>
-                          {{ vendor.phones![0].number }}
+                          {{ vendor.phones![0].number | phoneFormat }}
                         </span>
                       }
                       @if (vendor.emails && vendor.emails.length > 0) {

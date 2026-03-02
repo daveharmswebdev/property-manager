@@ -349,7 +349,7 @@ describe('VendorsComponent', () => {
       const phoneSpans = fixture.debugElement.queryAll(By.css('.vendor-phone'));
       // Only John Doe has phones
       expect(phoneSpans.length).toBe(1);
-      expect(phoneSpans[0].nativeElement.textContent).toContain('512-555-1234');
+      expect(phoneSpans[0].nativeElement.textContent).toContain('(512) 555-1234');
     });
 
     it('should display primary email (AC #1)', () => {
@@ -416,7 +416,7 @@ describe('VendorsComponent', () => {
       expect(vendorName.nativeElement.textContent).toContain('Bob Builder');
 
       const phone = fixture.debugElement.query(By.css('.vendor-phone'));
-      expect(phone.nativeElement.textContent).toContain('555-123-4567');
+      expect(phone.nativeElement.textContent).toContain('(555) 123-4567');
 
       const email = fixture.debugElement.query(By.css('.vendor-email'));
       expect(email.nativeElement.textContent).toContain('bob@builder.com');

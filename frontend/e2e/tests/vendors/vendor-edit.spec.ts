@@ -105,7 +105,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Add first phone
     await vendorPage.addPhone('512-555-1234', 'Mobile');
     await vendorPage.expectPhoneCount(1);
-    await vendorPage.expectPhoneValue(0, '512-555-1234');
+    await vendorPage.expectPhoneValue(0, '(512) 555-1234');
 
     // Add second phone
     await vendorPage.addPhone('512-555-5678', 'Work');
@@ -119,8 +119,8 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Navigate back and verify phones persisted
     await vendorPage.gotoEdit(vendorId);
     await vendorPage.expectPhoneCount(2);
-    await vendorPage.expectPhoneValue(0, '512-555-1234');
-    await vendorPage.expectPhoneValue(1, '512-555-5678');
+    await vendorPage.expectPhoneValue(0, '(512) 555-1234');
+    await vendorPage.expectPhoneValue(1, '(512) 555-5678');
   });
 
   test('should remove phone numbers', async ({
@@ -140,7 +140,7 @@ test.describe('Vendor Edit E2E Tests', () => {
     // Remove first phone
     await vendorPage.removePhone(0);
     await vendorPage.expectPhoneCount(1);
-    await vendorPage.expectPhoneValue(0, '512-555-2222');
+    await vendorPage.expectPhoneValue(0, '(512) 555-2222');
 
     // Save and verify
     await vendorPage.submitForm();

@@ -155,6 +155,7 @@ interface PropertySelection {
 
     .year-field {
       width: 100%;
+      padding-top: 4px;
       margin-bottom: 16px;
     }
 

@@ -192,9 +192,9 @@ describe('VendorDetailComponent', () => {
       expect(contactItems.length).toBeGreaterThanOrEqual(2);
 
       const phoneSection = fixture.nativeElement.textContent;
-      expect(phoneSection).toContain('512-555-1234');
+      expect(phoneSection).toContain('(512) 555-1234');
       expect(phoneSection).toContain('Mobile:');
-      expect(phoneSection).toContain('512-555-5678');
+      expect(phoneSection).toContain('(512) 555-5678');
       expect(phoneSection).toContain('Office:');
     });
 

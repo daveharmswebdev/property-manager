@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { ExpenseListItemDto } from '../../services/expense.service';
@@ -31,6 +32,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
     CommonModule,
     MatChipsModule,
     MatIconModule,
+    MatButtonModule,
     MatTooltipModule,
     CurrencyPipe,
   ],
@@ -98,12 +100,22 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       <div class="expense-amount">
         {{ expense().amount | currency }}
       </div>
+
+      <!-- Actions (AC-D1) -->
+      <div class="cell-actions" (click)="$event.stopPropagation()">
+        <button mat-icon-button matTooltip="Edit" (click)="navigateToExpense()">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Delete" color="warn" (click)="onDelete()">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
     </div>
   `,
   styles: [`
     .expense-list-row {
       display: grid;
-      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px;
+      grid-template-columns: 100px 150px 1fr auto 40px 40px 100px 80px;
       align-items: center;
       padding: 12px 16px;
       border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -213,6 +225,24 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       color: var(--mat-sys-on-surface);
     }
 
+    .cell-actions {
+      display: flex;
+      align-items: center;
+      gap: 0;
+
+      button {
+        width: 36px;
+        height: 36px;
+        line-height: 36px;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
     @media (max-width: 768px) {
       .expense-list-row {
         grid-template-columns: 1fr auto;
@@ -267,6 +297,9 @@ export class ExpenseListRowComponent {
   // Output: Create work order from this expense (AC-11.6.7)
   createWorkOrder = output<ExpenseListItemDto>();
 
+  // Output: Delete this expense (AC-D3)
+  delete = output<string>();
+
   /**
    * Format date as "Dec 08, 2025" (AC-3.4.2)
    * Uses formatDateShort utility for correct timezone handling
@@ -291,6 +324,13 @@ export class ExpenseListRowComponent {
    */
   navigateToExpense(): void {
     this.router.navigate(['/expenses', this.expense().id]);
+  }
+
+  /**
+   * Emit delete event for parent to handle with confirmation (AC-D3)
+   */
+  onDelete(): void {
+    this.delete.emit(this.expense().id);
   }
 
   /**
