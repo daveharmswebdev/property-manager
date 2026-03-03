@@ -187,7 +187,10 @@ public class VendorsController : ControllerBase
         var command = new CreateVendorCommand(
             request.FirstName,
             request.MiddleName,
-            request.LastName);
+            request.LastName,
+            request.Phones.Select(p => new PhoneNumberDto(p.Number, p.Label)).ToList(),
+            request.Emails.ToList(),
+            request.TradeTagIds.ToList());
 
         // Validate command
         var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
@@ -278,6 +281,9 @@ public record CreateVendorRequest
     public string FirstName { get; init; } = string.Empty;
     public string? MiddleName { get; init; }
     public string LastName { get; init; } = string.Empty;
+    public List<PhoneNumberRequest> Phones { get; init; } = new();
+    public List<string> Emails { get; init; } = new();
+    public List<Guid> TradeTagIds { get; init; } = new();
 }
 
 /// <summary>

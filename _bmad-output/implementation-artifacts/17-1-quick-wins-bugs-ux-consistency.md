@@ -1,6 +1,6 @@
 # Story 17.1: Quick Wins — CSS, Form & List Fixes
 
-Status: review
+Status: done
 
 **Combined Story:** Bundles original stories 17.1 through 17.5 into a single dev effort.
 **GitHub Issues:** #273, #275, #278, #272, #265, #269, #267, #266
