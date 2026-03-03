@@ -279,6 +279,10 @@ export class VendorFormComponent extends VendorFormBase implements OnInit, HasUn
       tradeTagIds: this.getSelectedTradeTagIds(),
     };
 
+    // Mark form as pristine and clear tags before save to allow navigation after success.
+    this.form.markAsPristine();
+    this.selectedTags.set([]);
+
     this.store.createVendor(request);
   }
 
