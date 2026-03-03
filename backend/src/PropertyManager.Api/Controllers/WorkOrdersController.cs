@@ -308,6 +308,34 @@ public class WorkOrdersController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Get work orders for a specific vendor (Story 17.7 AC #1).
+    /// Used on vendor detail page to show work order history.
+    /// </summary>
+    /// <param name="vendorId">Vendor GUID</param>
+    /// <param name="limit">Optional limit for number of results</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of work orders for the vendor with total count</returns>
+    /// <response code="200">Returns the list of work orders for the vendor</response>
+    /// <response code="401">If user is not authenticated</response>
+    [HttpGet("/api/v1/vendors/{vendorId:guid}/work-orders")]
+    [ProducesResponseType(typeof(GetWorkOrdersByVendorResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetWorkOrdersByVendor(
+        Guid vendorId,
+        [FromQuery] int? limit,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetWorkOrdersByVendorQuery(vendorId, limit);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation(
+            "Retrieved {Count} work orders (total: {Total}) for vendor {VendorId}",
+            result.Items.Count, result.TotalCount, vendorId);
+
+        return Ok(result);
+    }
 }
 
 /// <summary>

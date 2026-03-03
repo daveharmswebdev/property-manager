@@ -16,6 +16,7 @@ describe('VendorStore', () => {
     vendors_GetAllVendors: ReturnType<typeof vi.fn>;
     vendors_CreateVendor: ReturnType<typeof vi.fn>;
     vendors_DeleteVendor: ReturnType<typeof vi.fn>;
+    workOrders_GetWorkOrdersByVendor: ReturnType<typeof vi.fn>;
   };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockSnackBar: { open: ReturnType<typeof vi.fn> };
@@ -40,6 +41,7 @@ describe('VendorStore', () => {
       vendors_GetAllVendors: vi.fn(),
       vendors_CreateVendor: vi.fn(),
       vendors_DeleteVendor: vi.fn(),
+      workOrders_GetWorkOrdersByVendor: vi.fn(),
     };
     mockRouter = { navigate: vi.fn() };
     mockSnackBar = { open: vi.fn() };
@@ -662,6 +664,82 @@ describe('VendorStore', () => {
     });
   });
 
+  // Story 17.7: Load Vendor Work Orders Tests
+  describe('loadVendorWorkOrders (Story 17.7)', () => {
+    const mockWorkOrders = [
+      {
+        id: 'wo-1',
+        description: 'Fix sink',
+        propertyName: 'Test Property',
+        status: 'Assigned',
+        createdAt: '2026-01-15T10:00:00Z',
+      },
+      {
+        id: 'wo-2',
+        description: 'Replace faucet',
+        propertyName: 'Other Property',
+        status: 'Completed',
+        createdAt: '2026-01-10T10:00:00Z',
+      },
+    ];
+
+    it('should load work orders for vendor (AC #1)', () => {
+      mockApiClient.workOrders_GetWorkOrdersByVendor.mockReturnValue(
+        of({ items: mockWorkOrders, totalCount: 2 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(mockApiClient.workOrders_GetWorkOrdersByVendor).toHaveBeenCalledWith('vendor-123');
+      expect(store.vendorWorkOrders()).toEqual(mockWorkOrders);
+      expect(store.vendorWorkOrderCount()).toBe(2);
+      expect(store.isLoadingWorkOrders()).toBe(false);
+    });
+
+    it('should set isLoadingWorkOrders false after completion', () => {
+      mockApiClient.workOrders_GetWorkOrdersByVendor.mockReturnValue(
+        of({ items: [], totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.isLoadingWorkOrders()).toBe(false);
+    });
+
+    it('should handle empty work orders', () => {
+      mockApiClient.workOrders_GetWorkOrdersByVendor.mockReturnValue(
+        of({ items: [], totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.vendorWorkOrders()).toEqual([]);
+      expect(store.vendorWorkOrderCount()).toBe(0);
+    });
+
+    it('should handle null items in response', () => {
+      mockApiClient.workOrders_GetWorkOrdersByVendor.mockReturnValue(
+        of({ items: null, totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.vendorWorkOrders()).toEqual([]);
+    });
+
+    it('should handle API error gracefully', () => {
+      mockApiClient.workOrders_GetWorkOrdersByVendor.mockReturnValue(
+        throwError(() => new Error('API Error'))
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.isLoadingWorkOrders()).toBe(false);
+      expect(store.vendorWorkOrders()).toEqual([]);
+      expect(store.vendorWorkOrderCount()).toBe(0);
+    });
+  });
+
   // Story 8-8: Delete Vendor Tests
   describe('deleteVendor (Story 8-8)', () => {
     beforeEach(() => {
@@ -773,6 +851,33 @@ describe('VendorStore', () => {
       store.deleteVendor('1');
 
       expect(store.vendors().length).toBe(2);
+    });
+
+    it('should navigate when navigateTo is provided on success', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor({ id: '1', navigateTo: ['/vendors'] });
+
+      expect(mockApiClient.vendors_DeleteVendor).toHaveBeenCalledWith('1');
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/vendors']);
+    });
+
+    it('should not navigate when navigateTo is not provided', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(of(undefined));
+
+      store.deleteVendor('1');
+
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should not navigate on error even when navigateTo is provided', () => {
+      mockApiClient.vendors_DeleteVendor.mockReturnValue(
+        throwError(() => new Error('Network error'))
+      );
+
+      store.deleteVendor({ id: '1', navigateTo: ['/vendors'] });
+
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
     });
   });
 });

@@ -17,6 +17,7 @@ import {
   VendorTradeTagDto,
   CreateVendorRequest,
   UpdateVendorRequest,
+  WorkOrderDto,
 } from '../../../core/api/api.service';
 
 /**
@@ -36,6 +37,10 @@ interface VendorState {
   // Filter state (Story 8-6)
   searchTerm: string;
   selectedTradeTagIds: string[];
+  // Work order history state (Story 17.7)
+  vendorWorkOrders: WorkOrderDto[];
+  vendorWorkOrderCount: number;
+  isLoadingWorkOrders: boolean;
 }
 
 /**
@@ -53,6 +58,10 @@ const initialState: VendorState = {
   // Filter state (Story 8-6)
   searchTerm: '',
   selectedTradeTagIds: [],
+  // Work order history state (Story 17.7)
+  vendorWorkOrders: [],
+  vendorWorkOrderCount: 0,
+  isLoadingWorkOrders: false,
 };
 
 /**
@@ -318,18 +327,21 @@ export const VendorStore = signalStore(
 
       /**
        * Delete a vendor (soft delete) (FR12)
-       * @param id Vendor ID to delete
+       * @param params Vendor ID or { id, navigateTo } for post-delete navigation
        */
-      deleteVendor: rxMethod<string>(
+      deleteVendor: rxMethod<string | { id: string; navigateTo?: string[] }>(
         pipe(
-          tap((id) =>
+          map((params) =>
+            typeof params === 'string' ? { id: params, navigateTo: undefined } : params
+          ),
+          tap(({ id }) =>
             patchState(store, {
               isDeleting: true,
               deletingVendorId: id,
               error: null,
             })
           ),
-          switchMap((id) =>
+          switchMap(({ id, navigateTo }) =>
             apiService.vendors_DeleteVendor(id).pipe(
               tap(() => {
                 // Remove from local vendors array
@@ -343,6 +355,9 @@ export const VendorStore = signalStore(
                   horizontalPosition: 'center',
                   verticalPosition: 'bottom',
                 });
+                if (navigateTo) {
+                  router.navigate(navigateTo);
+                }
               }),
               catchError((error) => {
                 let errorMessage = 'Failed to delete vendor. Please try again.';
@@ -462,10 +477,51 @@ export const VendorStore = signalStore(
       },
 
       /**
-       * Clear selected vendor
+       * Load work orders for a specific vendor (Story 17.7 AC #1, #4)
+       * @param vendorId Vendor ID to load work orders for
+       */
+      loadVendorWorkOrders: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isLoadingWorkOrders: true,
+              vendorWorkOrders: [],
+              vendorWorkOrderCount: 0,
+            })
+          ),
+          switchMap((vendorId) =>
+            apiService.workOrders_GetWorkOrdersByVendor(vendorId).pipe(
+              tap((response) =>
+                patchState(store, {
+                  vendorWorkOrders: response.items ?? [],
+                  vendorWorkOrderCount: response.totalCount ?? 0,
+                  isLoadingWorkOrders: false,
+                })
+              ),
+              catchError((error) => {
+                patchState(store, {
+                  isLoadingWorkOrders: false,
+                  vendorWorkOrders: [],
+                  vendorWorkOrderCount: 0,
+                });
+                console.error('Error loading vendor work orders:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
+
+      /**
+       * Clear selected vendor and associated work order state
        */
       clearSelectedVendor(): void {
-        patchState(store, { selectedVendor: null });
+        patchState(store, {
+          selectedVendor: null,
+          vendorWorkOrders: [],
+          vendorWorkOrderCount: 0,
+          isLoadingWorkOrders: false,
+        });
       },
 
       /**

@@ -25,7 +25,7 @@ export interface IApiClient {
     dashboard_GetTotals(year?: number | undefined): Observable<DashboardTotalsDto>;
     expenses_CheckDuplicateExpense(propertyId?: string | null | undefined, amount?: number | null | undefined, date?: Date | null | undefined): Observable<DuplicateCheckResult>;
     expenses_GetExpenseTotals(year?: number | null | undefined): Observable<ExpenseTotalsDto>;
-    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, propertyId?: string | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto>;
     expenses_CreateExpense(request: CreateExpenseRequest): Observable<CreateExpenseResponse>;
     expenses_GetExpenseCategories(): Observable<ExpenseCategoriesResponse>;
     expenses_GetExpensesByProperty(id: string, year?: number | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedExpenseListDto>;
@@ -36,7 +36,7 @@ export interface IApiClient {
     expenses_LinkReceipt(id: string, request: LinkReceiptRequest): Observable<void>;
     health_Health(): Observable<HealthResponse>;
     health_Ready(): Observable<ReadyResponse>;
-    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult>;
+    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, search?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult>;
     income_CreateIncome(request: CreateIncomeRequest): Observable<CreateIncomeResponse>;
     income_GetIncomeByProperty(id: string, year?: number | null | undefined): Observable<IncomeListDto>;
     income_GetIncomeTotalByProperty(id: string, year?: number | null | undefined): Observable<IncomeTotalResponse>;
@@ -95,6 +95,7 @@ export interface IApiClient {
     workOrders_GetWorkOrderExpenses(id: string): Observable<WorkOrderExpensesResponse>;
     workOrders_GenerateWorkOrderPdf(id: string): Observable<FileResponse>;
     workOrders_GetWorkOrdersByProperty(propertyId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByPropertyResult>;
+    workOrders_GetWorkOrdersByVendor(vendorId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByVendorResult>;
     workOrderTags_GetAllWorkOrderTags(): Observable<GetAllWorkOrderTagsResponse>;
     workOrderTags_CreateWorkOrderTag(request?: CreateWorkOrderTagRequest | undefined): Observable<CreateWorkOrderTagResponse>;
 }
@@ -626,7 +627,7 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
-    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto> {
+    expenses_GetAllExpenses(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, categoryIds?: string[] | null | undefined, propertyId?: string | null | undefined, search?: string | null | undefined, year?: number | null | undefined, sortBy?: string | null | undefined, sortDirection?: string | null | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfExpenseListItemDto> {
         let url_ = this.baseUrl + "/api/v1/expenses?";
         if (dateFrom !== undefined && dateFrom !== null)
             url_ += "dateFrom=" + encodeURIComponent(dateFrom ? "" + dateFrom.toISOString() : "") + "&";
@@ -634,6 +635,8 @@ export class ApiClient implements IApiClient {
             url_ += "dateTo=" + encodeURIComponent(dateTo ? "" + dateTo.toISOString() : "") + "&";
         if (categoryIds !== undefined && categoryIds !== null)
             categoryIds && categoryIds.forEach(item => { url_ += "categoryIds=" + encodeURIComponent("" + item) + "&"; });
+        if (propertyId !== undefined && propertyId !== null)
+            url_ += "propertyId=" + encodeURIComponent("" + propertyId) + "&";
         if (search !== undefined && search !== null)
             url_ += "search=" + encodeURIComponent("" + search) + "&";
         if (year !== undefined && year !== null)
@@ -1318,7 +1321,7 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
-    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult> {
+    income_GetAllIncome(dateFrom?: Date | null | undefined, dateTo?: Date | null | undefined, propertyId?: string | null | undefined, search?: string | null | undefined, year?: number | null | undefined): Observable<IncomeListResult> {
         let url_ = this.baseUrl + "/api/v1/income?";
         if (dateFrom !== undefined && dateFrom !== null)
             url_ += "dateFrom=" + encodeURIComponent(dateFrom ? "" + dateFrom.toISOString() : "") + "&";
@@ -1326,6 +1329,8 @@ export class ApiClient implements IApiClient {
             url_ += "dateTo=" + encodeURIComponent(dateTo ? "" + dateTo.toISOString() : "") + "&";
         if (propertyId !== undefined && propertyId !== null)
             url_ += "propertyId=" + encodeURIComponent("" + propertyId) + "&";
+        if (search !== undefined && search !== null)
+            url_ += "search=" + encodeURIComponent("" + search) + "&";
         if (year !== undefined && year !== null)
             url_ += "year=" + encodeURIComponent("" + year) + "&";
         url_ = url_.replace(/[?&]$/, "");
@@ -5150,6 +5155,65 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    workOrders_GetWorkOrdersByVendor(vendorId: string, limit?: number | null | undefined): Observable<GetWorkOrdersByVendorResult> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/work-orders?";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        if (limit !== undefined && limit !== null)
+            url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processWorkOrders_GetWorkOrdersByVendor(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processWorkOrders_GetWorkOrdersByVendor(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetWorkOrdersByVendorResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetWorkOrdersByVendorResult>;
+        }));
+    }
+
+    protected processWorkOrders_GetWorkOrdersByVendor(response: HttpResponseBase): Observable<GetWorkOrdersByVendorResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetWorkOrdersByVendorResult;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     workOrderTags_GetAllWorkOrderTags(): Observable<GetAllWorkOrderTagsResponse> {
         let url_ = this.baseUrl + "/api/v1/work-order-tags";
         url_ = url_.replace(/[?&]$/, "");
@@ -5979,6 +6043,11 @@ export interface WorkOrderExpenseItemDto {
 }
 
 export interface GetWorkOrdersByPropertyResult {
+    items?: WorkOrderDto[];
+    totalCount?: number;
+}
+
+export interface GetWorkOrdersByVendorResult {
     items?: WorkOrderDto[];
     totalCount?: number;
 }

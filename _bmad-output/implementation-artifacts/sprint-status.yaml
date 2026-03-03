@@ -257,13 +257,13 @@ development_status:
   # Epic 17: Tech Debt, Bug Fixes & UX Consistency
   # User Outcome: "Every form works correctly, every list behaves consistently, and I don't hit visual glitches"
   epic-17: in-progress
-  17-1-css-dialog-label-fixes: review          # Issues #273, #275, #278 - XS — Combined into 17-1-quick-wins-bugs-ux-consistency.md
-  17-2-form-behavior-fixes-vendor-edit: review  # Issues #272, #265 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
-  17-3-work-order-list-refresh-after-delete: review  # Issue #269 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
-  17-4-expenses-list-actions-column: review     # Issue #267 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
-  17-5-wo-linked-expenses-click-actions: review  # Issue #266 - S — Combined into 17-1-quick-wins-bugs-ux-consistency.md
-  17-6-wire-duplicate-detection-receipt-flow: pending  # Issue #244 - S (carried from Epic 16)
-  17-7-vendor-detail-work-order-history: pending      # Issue #268 - M
+  17-1-css-dialog-label-fixes: done             # Issues #273, #275, #278 - XS — PR #281 merged
+  17-2-form-behavior-fixes-vendor-edit: done    # Issues #272, #265 - S — PR #281 merged
+  17-3-work-order-list-refresh-after-delete: done  # Issue #269 - S — PR #281 merged
+  17-4-expenses-list-actions-column: done       # Issue #267 - S — PR #281 merged
+  17-5-wo-linked-expenses-click-actions: done   # Issue #266 - S — PR #281 merged
+  17-6-wire-duplicate-detection-receipt-flow: done     # Issue #244 - S (completed in Epic 16 as 16-8)
+  17-7-vendor-detail-work-order-history: review  # Issue #268 - M
   17-8-full-size-add-vendor-form: pending             # Issue #274 - M
   17-9-photo-upload-multi-file-support: pending       # Issue #276 - M
   17-10-inline-status-dropdown-wo-detail: pending     # Issue #277 - M

@@ -31,9 +31,13 @@ describe('VendorDetailComponent', () => {
     isDeleting: WritableSignal<boolean>;
     error: WritableSignal<string | null>;
     selectedVendor: WritableSignal<VendorDetailDto | null>;
+    vendorWorkOrders: WritableSignal<any[]>;
+    vendorWorkOrderCount: WritableSignal<number>;
+    isLoadingWorkOrders: WritableSignal<boolean>;
     loadVendor: ReturnType<typeof vi.fn>;
     deleteVendor: ReturnType<typeof vi.fn>;
     clearSelectedVendor: ReturnType<typeof vi.fn>;
+    loadVendorWorkOrders: ReturnType<typeof vi.fn>;
   };
   let router: Router;
   let mockDialog: { open: ReturnType<typeof vi.fn> };
@@ -71,9 +75,13 @@ describe('VendorDetailComponent', () => {
       isDeleting: signal(false),
       error: signal<string | null>(null),
       selectedVendor: signal<VendorDetailDto | null>(null),
+      vendorWorkOrders: signal<any[]>([]),
+      vendorWorkOrderCount: signal(0),
+      isLoadingWorkOrders: signal(false),
       loadVendor: vi.fn(),
       deleteVendor: vi.fn(),
       clearSelectedVendor: vi.fn(),
+      loadVendorWorkOrders: vi.fn(),
     };
 
     mockDialog = {
@@ -241,27 +249,108 @@ describe('VendorDetailComponent', () => {
     });
   });
 
-  describe('work order history placeholder (AC #5 - 6.5)', () => {
-    it('should display work order history section', () => {
-      setupWithVendor();
+  describe('work order history (AC #1, #2, #3, #4, #5, #6)', () => {
+    const mockWorkOrders = [
+      {
+        id: 'wo-1',
+        description: 'Fix kitchen sink',
+        propertyName: 'Test Property',
+        status: 'Assigned',
+        createdAt: '2026-01-15T10:00:00Z',
+        propertyId: 'prop-1',
+      },
+      {
+        id: 'wo-2',
+        description: 'Replace faucet',
+        propertyName: 'Other Property',
+        status: 'Completed',
+        createdAt: '2026-01-10T10:00:00Z',
+        propertyId: 'prop-2',
+      },
+    ];
 
-      const compiled = fixture.nativeElement;
-      expect(compiled.textContent).toContain('Work Order History');
+    it('should call loadVendorWorkOrders on init', () => {
+      fixture.detectChanges();
+      expect(mockVendorStore.loadVendorWorkOrders).toHaveBeenCalledWith('vendor-123');
     });
 
-    it('should show placeholder message for work orders', () => {
+    it('should show loading spinner when loading work orders (AC #4)', () => {
+      mockVendorStore.isLoadingWorkOrders.set(true);
+      setupWithVendor();
+
+      const spinner = fixture.nativeElement.querySelector('.section-card:last-child .loading-container mat-spinner');
+      expect(spinner).toBeTruthy();
+    });
+
+    it('should display work order rows with description, property, status, date (AC #1, #5)', () => {
+      mockVendorStore.vendorWorkOrders.set(mockWorkOrders);
+      mockVendorStore.vendorWorkOrderCount.set(2);
+      setupWithVendor();
+
+      const rows = fixture.nativeElement.querySelectorAll('.work-order-row');
+      expect(rows.length).toBe(2);
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Fix kitchen sink');
+      expect(compiled.textContent).toContain('Test Property');
+      expect(compiled.textContent).toContain('Assigned');
+    });
+
+    it('should navigate to work order detail on row click (AC #2)', () => {
+      mockVendorStore.vendorWorkOrders.set(mockWorkOrders);
+      mockVendorStore.vendorWorkOrderCount.set(2);
+      setupWithVendor();
+
+      const row = fixture.nativeElement.querySelector('.work-order-row');
+      row.click();
+      expect(router.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-1']);
+    });
+
+    it('should show empty state when no work orders (AC #3)', () => {
+      mockVendorStore.vendorWorkOrders.set([]);
+      mockVendorStore.vendorWorkOrderCount.set(0);
       setupWithVendor();
 
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('No work orders yet for this vendor');
-    });
-
-    it('should display assignment icon in placeholder', () => {
-      setupWithVendor();
-
       const emptyIcon = fixture.nativeElement.querySelector('.empty-state .empty-icon');
       expect(emptyIcon).toBeTruthy();
       expect(emptyIcon.textContent).toContain('assignment');
+    });
+
+    it('should display count in section header (AC #6)', () => {
+      mockVendorStore.vendorWorkOrders.set(mockWorkOrders);
+      mockVendorStore.vendorWorkOrderCount.set(2);
+      setupWithVendor();
+
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('Work Order History');
+      expect(compiled.textContent).toContain('(2)');
+    });
+
+    it('should not display count when no work orders', () => {
+      mockVendorStore.vendorWorkOrders.set([]);
+      mockVendorStore.vendorWorkOrderCount.set(0);
+      setupWithVendor();
+
+      const cardTitles = fixture.nativeElement.querySelectorAll('mat-card-title');
+      const woTitle = Array.from(cardTitles).find((el: any) => el.textContent.includes('Work Order History'));
+      expect(woTitle).toBeTruthy();
+      expect((woTitle as HTMLElement).textContent).not.toContain('(0)');
+    });
+
+    it('should display status badges with correct classes (AC #5)', () => {
+      mockVendorStore.vendorWorkOrders.set(mockWorkOrders);
+      mockVendorStore.vendorWorkOrderCount.set(2);
+      setupWithVendor();
+
+      const assignedBadge = fixture.nativeElement.querySelector('.status-assigned');
+      expect(assignedBadge).toBeTruthy();
+      expect(assignedBadge.textContent).toContain('Assigned');
+
+      const completedBadge = fixture.nativeElement.querySelector('.status-completed');
+      expect(completedBadge).toBeTruthy();
+      expect(completedBadge.textContent).toContain('Completed');
     });
   });
 
@@ -308,7 +397,7 @@ describe('VendorDetailComponent', () => {
       expect(dialogConfig.data.title).toContain('Delete John Michael Doe?');
     });
 
-    it('should call deleteVendor and navigate when confirmed (6.8)', () => {
+    it('should call deleteVendor with navigateTo when confirmed (6.8)', () => {
       mockDialog.open.mockReturnValue({
         afterClosed: () => of(true),
       } as MatDialogRef<any>);
@@ -318,8 +407,10 @@ describe('VendorDetailComponent', () => {
       // Call onDeleteClick directly to test dialog behavior
       component.onDeleteClick();
 
-      expect(mockVendorStore.deleteVendor).toHaveBeenCalledWith('vendor-123');
-      expect(router.navigate).toHaveBeenCalledWith(['/vendors']);
+      expect(mockVendorStore.deleteVendor).toHaveBeenCalledWith({
+        id: 'vendor-123',
+        navigateTo: ['/vendors'],
+      });
     });
 
     it('should not call deleteVendor when dialog cancelled', () => {
