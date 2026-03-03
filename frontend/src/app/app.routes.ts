@@ -180,6 +180,7 @@ export const routes: Routes = [
           import('./features/vendors/components/vendor-form/vendor-form.component').then(
             (m) => m.VendorFormComponent
           ),
+        canDeactivate: [unsavedChangesGuard],
       },
       // Vendor Detail (Story 8.9 - AC #1)
       {

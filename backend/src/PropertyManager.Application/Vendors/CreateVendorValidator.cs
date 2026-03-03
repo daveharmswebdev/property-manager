@@ -3,7 +3,7 @@ using FluentValidation;
 namespace PropertyManager.Application.Vendors;
 
 /// <summary>
-/// Validator for CreateVendorCommand (AC #8).
+/// Validator for CreateVendorCommand (Story 17.8).
 /// </summary>
 public class CreateVendorValidator : AbstractValidator<CreateVendorCommand>
 {

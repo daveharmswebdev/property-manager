@@ -1,13 +1,7 @@
-import { Component, inject, OnInit, OnDestroy, computed, signal, effect, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  FormBuilder,
-  FormGroup,
-  FormArray,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,14 +9,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
-import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { PhoneMaskDirective } from '../../../../shared/directives/phone-mask.directive';
-import { VendorStore } from '../../stores/vendor.store';
 import { VendorTradeTagDto, VendorDetailDto, PhoneNumberDto, UpdateVendorRequest } from '../../../../core/api/api.service';
-import { MatChipInputEvent } from '@angular/material/chips';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
+import { VendorFormBase } from '../shared/vendor-form-base';
+import { VENDOR_FORM_SHARED_STYLES } from '../shared/vendor-form-styles';
 
 /**
  * Vendor Edit Component (AC #1-#14)
@@ -227,6 +220,7 @@ import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard
     </div>
   `,
   styles: [
+    VENDOR_FORM_SHARED_STYLES,
     `
       .vendor-edit-container {
         padding: 24px;
@@ -254,151 +248,21 @@ import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard
       mat-card-title {
         font-size: 24px !important;
       }
-
-      .form-section {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      .form-section h3 {
-        margin: 0 0 16px 0;
-        font-size: 16px;
-        font-weight: 500;
-        color: #666;
-      }
-
-      .section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .section-header h3 {
-        margin: 0;
-      }
-
-      .name-row {
-        display: flex;
-        gap: 16px;
-      }
-
-      .name-field {
-        flex: 1;
-      }
-
-      .phone-row, .email-row {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-        margin-bottom: 8px;
-      }
-
-      .phone-number {
-        flex: 2;
-      }
-
-      .phone-label {
-        flex: 1;
-      }
-
-      .email-field {
-        flex: 1;
-      }
-
-      .array-items {
-        margin-top: 8px;
-      }
-
-      .empty-message {
-        color: #999;
-        font-style: italic;
-        margin: 8px 0;
-      }
-
-      .full-width {
-        width: 100%;
-      }
-
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid #e0e0e0;
-      }
-
-      .button-spinner {
-        display: inline-block;
-        margin-right: 8px;
-      }
-
-      ::ng-deep .button-spinner circle {
-        stroke: white;
-      }
-
-      .create-option {
-        color: #1976d2;
-        font-weight: 500;
-      }
-
-      .create-option mat-icon {
-        margin-right: 8px;
-      }
-
-      @media (max-width: 600px) {
-        .name-row {
-          flex-direction: column;
-        }
-
-        .phone-row {
-          flex-wrap: wrap;
-        }
-
-        .phone-number, .phone-label {
-          flex: 1 1 100%;
-        }
-      }
     `,
   ],
 })
-export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges {
-  protected readonly store = inject(VendorStore);
-  private readonly fb = inject(FormBuilder);
+export class VendorEditComponent extends VendorFormBase implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly separatorKeyCodes = [ENTER, COMMA] as const;
-  protected readonly tagInputControl = this.fb.control('');
-  @ViewChild('tagInput') tagInput!: ElementRef<HTMLInputElement>;
-
-  // Form with nested arrays for phones and emails
-  protected form: FormGroup = this.fb.group({
-    firstName: ['', [Validators.required, Validators.maxLength(100)]],
-    middleName: ['', [Validators.maxLength(100)]],
-    lastName: ['', [Validators.required, Validators.maxLength(100)]],
-    phones: this.fb.array([]),
-    emails: this.fb.array([]),
-  });
-
-  // Selected trade tags (not in form, managed separately)
-  protected selectedTags = signal<VendorTradeTagDto[]>([]);
-
-  // Filtered tags for autocomplete
-  protected filteredTags = computed(() => {
-    const input = this.tagInputControl.value?.toLowerCase() || '';
-    const selectedIds = new Set(this.selectedTags().map(t => t.id));
-    return this.store.tradeTags()
-      .filter(tag => !selectedIds.has(tag.id))
-      .filter(tag => tag.name?.toLowerCase().includes(input));
-  });
+  @ViewChild('tagInput') private tagInput!: ElementRef<HTMLInputElement>;
 
   private vendorId: string | null = null;
   private formPopulated = false;
   private originalTradeTagIds: string[] = [];
 
   constructor() {
+    super();
     // Use effect to react to selectedVendor changes
     effect(() => {
       const vendor = this.store.selectedVendor();
@@ -409,12 +273,8 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
     });
   }
 
-  get phonesArray(): FormArray {
-    return this.form.get('phones') as FormArray;
-  }
-
-  get emailsArray(): FormArray {
-    return this.form.get('emails') as FormArray;
+  protected getTagInputElement(): HTMLInputElement {
+    return this.tagInput.nativeElement;
   }
 
   ngOnInit(): void {
@@ -463,17 +323,11 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
   /**
    * Check if form has unsaved changes (AC #4, #5)
    * Required by HasUnsavedChanges interface for CanDeactivate guard
-   *
-   * Returns false when:
-   * - Form is pristine AND no trade tag changes
-   * - Currently saving (allow navigation on successful save)
    */
   hasUnsavedChanges(): boolean {
-    // Allow navigation when save is in progress (store navigates on success)
     if (this.store.isSaving()) {
       return false;
     }
-
     return this.form.dirty || this.hasTagChanges();
   }
 
@@ -486,63 +340,6 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
     return JSON.stringify(currentIds) !== JSON.stringify(this.originalTradeTagIds);
   }
 
-  protected addPhone(): void {
-    this.phonesArray.push(this.fb.group({
-      number: ['', [Validators.required, Validators.maxLength(50)]],
-      label: [''],
-    }));
-  }
-
-  protected removePhone(index: number): void {
-    this.phonesArray.removeAt(index);
-  }
-
-  protected addEmail(): void {
-    this.emailsArray.push(this.fb.control('', [Validators.required, Validators.email, Validators.maxLength(255)]));
-  }
-
-  protected removeEmail(index: number): void {
-    this.emailsArray.removeAt(index);
-  }
-
-  protected selectTag(event: MatAutocompleteSelectedEvent): void {
-    const tag = event.option.value as VendorTradeTagDto;
-    if (tag.id === null) {
-      // Create new tag
-      this.createAndAddTag(tag.name || '');
-    } else {
-      this.selectedTags.update(tags => [...tags, tag]);
-    }
-    this.tagInputControl.setValue('');
-    this.tagInput.nativeElement.value = '';
-  }
-
-  protected addTagFromInput(event: MatChipInputEvent): void {
-    const value = (event.value || '').trim();
-    if (value && !this.tagExists(value)) {
-      this.createAndAddTag(value);
-    }
-    event.chipInput?.clear();
-    this.tagInputControl.setValue('');
-  }
-
-  private async createAndAddTag(name: string): Promise<void> {
-    const newTag = await this.store.createTradeTag(name);
-    if (newTag) {
-      this.selectedTags.update(tags => [...tags, newTag]);
-    }
-  }
-
-  protected removeTag(tag: VendorTradeTagDto): void {
-    this.selectedTags.update(tags => tags.filter(t => t.id !== tag.id));
-  }
-
-  protected tagExists(name: string): boolean {
-    const lowerName = name.toLowerCase();
-    return this.store.tradeTags().some(t => t.name?.toLowerCase() === lowerName) ||
-           this.selectedTags().some(t => t.name?.toLowerCase() === lowerName);
-  }
-
   protected onSubmit(): void {
     if (this.form.invalid || !this.vendorId) {
       this.form.markAllAsTouched();
@@ -550,9 +347,6 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
     }
 
     // Mark form as pristine before save to allow navigation after success.
-    // Combined with the isSaving check in hasUnsavedChanges(), this ensures:
-    // - Successful save: navigates without dialog (form pristine)
-    // - Failed save: user sees error snackbar, can retry or navigate with warning
     this.form.markAsPristine();
     this.originalTradeTagIds = this.selectedTags()
       .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
@@ -563,14 +357,9 @@ export class VendorEditComponent implements OnInit, OnDestroy, HasUnsavedChanges
       firstName: this.form.value.firstName?.trim(),
       middleName: this.form.value.middleName?.trim() || undefined,
       lastName: this.form.value.lastName?.trim(),
-      phones: this.form.value.phones.map((p: { number?: string; label?: string }) => ({
-        number: p.number?.trim(),
-        label: p.label || undefined,
-      })),
-      emails: this.form.value.emails.map((e: string) => e.trim()),
-      tradeTagIds: this.selectedTags()
-        .filter((t): t is VendorTradeTagDto & { id: string } => t.id != null)
-        .map(t => t.id),
+      phones: this.getPhonesPayload(),
+      emails: this.getEmailsPayload(),
+      tradeTagIds: this.getSelectedTradeTagIds(),
     };
 
     this.store.updateVendor({ id: this.vendorId, request });
