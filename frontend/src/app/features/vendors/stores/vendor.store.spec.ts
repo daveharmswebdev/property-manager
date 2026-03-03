@@ -9,6 +9,7 @@ import {
   VendorDto,
   VendorTradeTagDto,
 } from '../../../core/api/api.service';
+import { WorkOrderService } from '../../work-orders/services/work-order.service';
 
 describe('VendorStore', () => {
   let store: InstanceType<typeof VendorStore>;
@@ -16,6 +17,9 @@ describe('VendorStore', () => {
     vendors_GetAllVendors: ReturnType<typeof vi.fn>;
     vendors_CreateVendor: ReturnType<typeof vi.fn>;
     vendors_DeleteVendor: ReturnType<typeof vi.fn>;
+  };
+  let mockWorkOrderService: {
+    getWorkOrdersByVendor: ReturnType<typeof vi.fn>;
   };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
   let mockSnackBar: { open: ReturnType<typeof vi.fn> };
@@ -41,6 +45,9 @@ describe('VendorStore', () => {
       vendors_CreateVendor: vi.fn(),
       vendors_DeleteVendor: vi.fn(),
     };
+    mockWorkOrderService = {
+      getWorkOrdersByVendor: vi.fn(),
+    };
     mockRouter = { navigate: vi.fn() };
     mockSnackBar = { open: vi.fn() };
 
@@ -48,6 +55,7 @@ describe('VendorStore', () => {
       providers: [
         VendorStore,
         { provide: ApiClient, useValue: mockApiClient },
+        { provide: WorkOrderService, useValue: mockWorkOrderService },
         { provide: Router, useValue: mockRouter },
         { provide: MatSnackBar, useValue: mockSnackBar },
       ],
@@ -659,6 +667,82 @@ describe('VendorStore', () => {
       await store.createVendorInline(createRequest);
 
       expect(store.error()).toBe('Failed to create vendor. Please try again.');
+    });
+  });
+
+  // Story 17.7: Load Vendor Work Orders Tests
+  describe('loadVendorWorkOrders (Story 17.7)', () => {
+    const mockWorkOrders = [
+      {
+        id: 'wo-1',
+        description: 'Fix sink',
+        propertyName: 'Test Property',
+        status: 'Assigned',
+        createdAt: '2026-01-15T10:00:00Z',
+      },
+      {
+        id: 'wo-2',
+        description: 'Replace faucet',
+        propertyName: 'Other Property',
+        status: 'Completed',
+        createdAt: '2026-01-10T10:00:00Z',
+      },
+    ];
+
+    it('should load work orders for vendor (AC #1)', () => {
+      mockWorkOrderService.getWorkOrdersByVendor.mockReturnValue(
+        of({ items: mockWorkOrders, totalCount: 2 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(mockWorkOrderService.getWorkOrdersByVendor).toHaveBeenCalledWith('vendor-123');
+      expect(store.vendorWorkOrders()).toEqual(mockWorkOrders);
+      expect(store.vendorWorkOrderCount()).toBe(2);
+      expect(store.isLoadingWorkOrders()).toBe(false);
+    });
+
+    it('should set isLoadingWorkOrders false after completion', () => {
+      mockWorkOrderService.getWorkOrdersByVendor.mockReturnValue(
+        of({ items: [], totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.isLoadingWorkOrders()).toBe(false);
+    });
+
+    it('should handle empty work orders', () => {
+      mockWorkOrderService.getWorkOrdersByVendor.mockReturnValue(
+        of({ items: [], totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.vendorWorkOrders()).toEqual([]);
+      expect(store.vendorWorkOrderCount()).toBe(0);
+    });
+
+    it('should handle null items in response', () => {
+      mockWorkOrderService.getWorkOrdersByVendor.mockReturnValue(
+        of({ items: null, totalCount: 0 })
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.vendorWorkOrders()).toEqual([]);
+    });
+
+    it('should handle API error gracefully', () => {
+      mockWorkOrderService.getWorkOrdersByVendor.mockReturnValue(
+        throwError(() => new Error('API Error'))
+      );
+
+      store.loadVendorWorkOrders('vendor-123');
+
+      expect(store.isLoadingWorkOrders()).toBe(false);
+      expect(store.vendorWorkOrders()).toEqual([]);
+      expect(store.vendorWorkOrderCount()).toBe(0);
     });
   });
 

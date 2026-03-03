@@ -163,16 +163,42 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
           </mat-card-content>
         </mat-card>
 
-        <!-- Work Order History Section - Placeholder (AC #5) -->
+        <!-- Work Order History Section (AC #1, #2, #3, #4, #5, #6) -->
         <mat-card class="section-card">
           <mat-card-header>
-            <mat-card-title>Work Order History</mat-card-title>
+            <mat-card-title>
+              Work Order History
+              @if (store.vendorWorkOrderCount() > 0) {
+                ({{ store.vendorWorkOrderCount() }})
+              }
+            </mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">assignment</mat-icon>
-              <p>No work orders yet for this vendor</p>
-            </div>
+            @if (store.isLoadingWorkOrders()) {
+              <div class="loading-container">
+                <mat-spinner diameter="32"></mat-spinner>
+              </div>
+            } @else if (store.vendorWorkOrders().length > 0) {
+              <div class="work-order-list">
+                @for (wo of store.vendorWorkOrders(); track wo.id) {
+                  <div class="work-order-row" (click)="navigateToWorkOrder(wo.id)" (keydown.enter)="navigateToWorkOrder(wo.id)" tabindex="0" role="button">
+                    <div class="wo-main">
+                      <span class="wo-description">{{ wo.description }}</span>
+                      <span class="wo-property">{{ wo.propertyName }}</span>
+                    </div>
+                    <div class="wo-meta">
+                      <span class="wo-status-badge" [class]="'status-' + wo.status.toLowerCase()">{{ wo.status }}</span>
+                      <span class="wo-date">{{ wo.createdAt | date:'mediumDate' }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">assignment</mat-icon>
+                <p>No work orders yet for this vendor</p>
+              </div>
+            }
           </mat-card-content>
         </mat-card>
       }
@@ -339,6 +365,88 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
         font-size: 14px;
       }
 
+      .work-order-list {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .work-order-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+        transition: background-color 0.15s;
+        gap: 16px;
+      }
+
+      .work-order-row:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      .work-order-row:last-child {
+        border-bottom: none;
+      }
+
+      .wo-main {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .wo-description {
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .wo-property {
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.6);
+      }
+
+      .wo-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .wo-status-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .status-reported {
+        background-color: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .status-assigned {
+        background-color: #fff3e0;
+        color: #e65100;
+      }
+
+      .status-completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .wo-date {
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+      }
+
       /* Responsive */
       @media (max-width: 600px) {
         .vendor-detail-container {
@@ -376,6 +484,7 @@ export class VendorDetailComponent implements OnInit, OnDestroy {
     this.vendorId = this.route.snapshot.paramMap.get('id');
     if (this.vendorId) {
       this.store.loadVendor(this.vendorId);
+      this.store.loadVendorWorkOrders(this.vendorId);
     }
   }
 
@@ -388,6 +497,13 @@ export class VendorDetailComponent implements OnInit, OnDestroy {
    */
   goBack(): void {
     this.router.navigate(['/vendors']);
+  }
+
+  /**
+   * Navigate to work order detail page (AC #2)
+   */
+  navigateToWorkOrder(workOrderId: string): void {
+    this.router.navigate(['/work-orders', workOrderId]);
   }
 
   /**

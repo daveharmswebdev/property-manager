@@ -18,6 +18,7 @@ import {
   CreateVendorRequest,
   UpdateVendorRequest,
 } from '../../../core/api/api.service';
+import { WorkOrderService, WorkOrderDto } from '../../work-orders/services/work-order.service';
 
 /**
  * Vendor Store State Interface (AC #1-#14)
@@ -36,6 +37,10 @@ interface VendorState {
   // Filter state (Story 8-6)
   searchTerm: string;
   selectedTradeTagIds: string[];
+  // Work order history state (Story 17.7)
+  vendorWorkOrders: WorkOrderDto[];
+  vendorWorkOrderCount: number;
+  isLoadingWorkOrders: boolean;
 }
 
 /**
@@ -53,6 +58,10 @@ const initialState: VendorState = {
   // Filter state (Story 8-6)
   searchTerm: '',
   selectedTradeTagIds: [],
+  // Work order history state (Story 17.7)
+  vendorWorkOrders: [],
+  vendorWorkOrderCount: 0,
+  isLoadingWorkOrders: false,
 };
 
 /**
@@ -141,6 +150,7 @@ export const VendorStore = signalStore(
     (
       store,
       apiService = inject(ApiClient),
+      workOrderService = inject(WorkOrderService),
       router = inject(Router),
       snackBar = inject(MatSnackBar)
     ) => ({
@@ -460,6 +470,42 @@ export const VendorStore = signalStore(
           return null;
         }
       },
+
+      /**
+       * Load work orders for a specific vendor (Story 17.7 AC #1, #4)
+       * @param vendorId Vendor ID to load work orders for
+       */
+      loadVendorWorkOrders: rxMethod<string>(
+        pipe(
+          tap(() =>
+            patchState(store, {
+              isLoadingWorkOrders: true,
+              vendorWorkOrders: [],
+              vendorWorkOrderCount: 0,
+            })
+          ),
+          switchMap((vendorId) =>
+            workOrderService.getWorkOrdersByVendor(vendorId).pipe(
+              tap((response) =>
+                patchState(store, {
+                  vendorWorkOrders: response.items ?? [],
+                  vendorWorkOrderCount: response.totalCount,
+                  isLoadingWorkOrders: false,
+                })
+              ),
+              catchError((error) => {
+                patchState(store, {
+                  isLoadingWorkOrders: false,
+                  vendorWorkOrders: [],
+                  vendorWorkOrderCount: 0,
+                });
+                console.error('Error loading vendor work orders:', error);
+                return of(null);
+              })
+            )
+          )
+        )
+      ),
 
       /**
        * Clear selected vendor

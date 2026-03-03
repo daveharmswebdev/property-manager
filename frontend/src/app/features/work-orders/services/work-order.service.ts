@@ -92,6 +92,14 @@ export interface GetWorkOrdersByPropertyResponse {
 }
 
 /**
+ * Response model for get work orders by vendor (Story 17.7)
+ */
+export interface GetWorkOrdersByVendorResponse {
+  items: WorkOrderDto[];
+  totalCount: number;
+}
+
+/**
  * Work Order Status enum values
  */
 export const WorkOrderStatus = {
@@ -232,6 +240,24 @@ export class WorkOrderService {
     }
     return this.http.get<GetWorkOrdersByPropertyResponse>(
       `/api/v1/properties/${propertyId}/work-orders`,
+      { params }
+    );
+  }
+
+  /**
+   * Get work orders for a specific vendor (Story 17.7 AC #1)
+   * Used on vendor detail page to show work order history.
+   * @param vendorId Vendor GUID
+   * @param limit Optional limit for number of results
+   * @returns Observable with list of work orders for the vendor with total count
+   */
+  getWorkOrdersByVendor(vendorId: string, limit?: number): Observable<GetWorkOrdersByVendorResponse> {
+    const params: Record<string, string> = {};
+    if (limit !== undefined) {
+      params['limit'] = limit.toString();
+    }
+    return this.http.get<GetWorkOrdersByVendorResponse>(
+      `/api/v1/vendors/${vendorId}/work-orders`,
       { params }
     );
   }
