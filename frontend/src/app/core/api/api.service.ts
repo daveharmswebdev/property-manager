@@ -5917,6 +5917,9 @@ export interface CreateVendorRequest {
     firstName?: string;
     middleName?: string | undefined;
     lastName?: string;
+    phones?: PhoneNumberRequest[];
+    emails?: string[];
+    tradeTagIds?: string[];
 }
 
 export interface GetAllVendorTradeTagsResponse {

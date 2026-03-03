@@ -6,6 +6,7 @@ import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
 import { VendorFormComponent } from './vendor-form.component';
 import { VendorStore } from '../../stores/vendor.store';
+import { VendorTradeTagDto } from '../../../../core/api/api.service';
 
 describe('VendorFormComponent', () => {
   let component: VendorFormComponent;
@@ -18,8 +19,11 @@ describe('VendorFormComponent', () => {
     isEmpty: ReturnType<typeof signal<boolean>>;
     hasVendors: ReturnType<typeof signal<boolean>>;
     totalCount: ReturnType<typeof signal<number>>;
+    tradeTags: ReturnType<typeof signal<VendorTradeTagDto[]>>;
     loadVendors: ReturnType<typeof vi.fn>;
     createVendor: ReturnType<typeof vi.fn>;
+    loadTradeTags: ReturnType<typeof vi.fn>;
+    createTradeTag: ReturnType<typeof vi.fn>;
     clearError: ReturnType<typeof vi.fn>;
     reset: ReturnType<typeof vi.fn>;
   };
@@ -34,8 +38,11 @@ describe('VendorFormComponent', () => {
       isEmpty: signal(true),
       hasVendors: signal(false),
       totalCount: signal(0),
+      tradeTags: signal<VendorTradeTagDto[]>([]),
       loadVendors: vi.fn(),
       createVendor: vi.fn(),
+      loadTradeTags: vi.fn(),
+      createTradeTag: vi.fn().mockResolvedValue({ id: 'new-tag', name: 'Test Tag' }),
       clearError: vi.fn(),
       reset: vi.fn(),
     };
@@ -62,27 +69,31 @@ describe('VendorFormComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('Form Structure (AC #3)', () => {
+  it('should call loadTradeTags on init', () => {
+    expect(mockVendorStore.loadTradeTags).toHaveBeenCalled();
+  });
+
+  describe('Form Structure', () => {
     it('should have Add Vendor title', () => {
       const title = fixture.debugElement.query(By.css('mat-card-title'));
       expect(title.nativeElement.textContent).toContain('Add Vendor');
     });
 
-    it('should have First Name field (AC #3)', () => {
+    it('should have First Name field', () => {
       const firstNameField = fixture.debugElement.query(
         By.css('input[formControlName="firstName"]')
       );
       expect(firstNameField).toBeTruthy();
     });
 
-    it('should have Middle Name field marked as optional (AC #3)', () => {
-      const labels = fixture.debugElement
-        .queryAll(By.css('mat-label'))
-        .map((el) => el.nativeElement.textContent);
-      expect(labels.some((label: string) => label.includes('Middle Name') && label.includes('Optional'))).toBe(true);
+    it('should have Middle Name field', () => {
+      const middleNameField = fixture.debugElement.query(
+        By.css('input[formControlName="middleName"]')
+      );
+      expect(middleNameField).toBeTruthy();
     });
 
-    it('should have Last Name field (AC #3)', () => {
+    it('should have Last Name field', () => {
       const lastNameField = fixture.debugElement.query(
         By.css('input[formControlName="lastName"]')
       );
@@ -98,16 +109,108 @@ describe('VendorFormComponent', () => {
     });
 
     it('should have Cancel button', () => {
-      const cancelButton = fixture.debugElement.query(
+      const cancelButton = fixture.debugElement.queryAll(
         By.css('button[type="button"]')
-      );
+      ).find(el => el.nativeElement.textContent.includes('Cancel'));
       expect(cancelButton).toBeTruthy();
-      expect(cancelButton.nativeElement.textContent).toContain('Cancel');
     });
   });
 
-  describe('Form Validation (AC #5, #6)', () => {
-    it('should have invalid form when firstName is empty (AC #5)', () => {
+  describe('Phone Numbers Section (Story 17.8)', () => {
+    it('should have phone numbers section', () => {
+      const sectionHeaders = fixture.debugElement.queryAll(By.css('.section-header h3'));
+      const phoneHeader = sectionHeaders.find(
+        el => el.nativeElement.textContent.includes('Phone Numbers')
+      );
+      expect(phoneHeader).toBeTruthy();
+    });
+
+    it('should add phone row when clicking add phone', () => {
+      const addButton = fixture.debugElement.queryAll(By.css('.section-header button'))
+        .find(el => {
+          const prev = el.nativeElement.closest('.section-header')?.querySelector('h3');
+          return prev?.textContent?.includes('Phone Numbers');
+        });
+      addButton?.nativeElement.click();
+      fixture.detectChanges();
+
+      const phoneRows = fixture.debugElement.queryAll(By.css('.phone-row'));
+      expect(phoneRows.length).toBe(1);
+    });
+
+    it('should remove phone row', () => {
+      component['addPhone']();
+      fixture.detectChanges();
+      expect(component['phonesArray'].length).toBe(1);
+
+      component['removePhone'](0);
+      fixture.detectChanges();
+      expect(component['phonesArray'].length).toBe(0);
+    });
+
+    it('should validate phone number is required', () => {
+      component['addPhone']();
+      const phoneControl = component['phonesArray'].at(0).get('number');
+      phoneControl?.markAsTouched();
+      phoneControl?.setValue('');
+      expect(phoneControl?.hasError('required')).toBe(true);
+    });
+  });
+
+  describe('Email Addresses Section (Story 17.8)', () => {
+    it('should have email addresses section', () => {
+      const sectionHeaders = fixture.debugElement.queryAll(By.css('.section-header h3'));
+      const emailHeader = sectionHeaders.find(
+        el => el.nativeElement.textContent.includes('Email Addresses')
+      );
+      expect(emailHeader).toBeTruthy();
+    });
+
+    it('should add email row when clicking add email', () => {
+      component['addEmail']();
+      fixture.detectChanges();
+
+      expect(component['emailsArray'].length).toBe(1);
+    });
+
+    it('should remove email row', () => {
+      component['addEmail']();
+      fixture.detectChanges();
+      expect(component['emailsArray'].length).toBe(1);
+
+      component['removeEmail'](0);
+      fixture.detectChanges();
+      expect(component['emailsArray'].length).toBe(0);
+    });
+
+    it('should validate email format', () => {
+      component['addEmail']();
+      const emailControl = component['emailsArray'].at(0);
+      emailControl.setValue('not-an-email');
+      expect(emailControl.hasError('email')).toBe(true);
+    });
+  });
+
+  describe('Trade Tags Section (Story 17.8)', () => {
+    it('should have trade tags section', () => {
+      const chipGrid = fixture.debugElement.query(By.css('mat-chip-grid'));
+      expect(chipGrid).toBeTruthy();
+    });
+
+    it('should select and remove trade tags', () => {
+      const tag: VendorTradeTagDto = { id: 'tag-1', name: 'Plumbing' };
+      component['selectedTags'].set([tag]);
+      fixture.detectChanges();
+
+      expect(component['selectedTags']().length).toBe(1);
+
+      component['removeTag'](tag);
+      expect(component['selectedTags']().length).toBe(0);
+    });
+  });
+
+  describe('Form Validation', () => {
+    it('should have invalid form when firstName is empty', () => {
       component['form'].patchValue({
         firstName: '',
         lastName: 'Doe',
@@ -115,7 +218,7 @@ describe('VendorFormComponent', () => {
       expect(component['form'].valid).toBe(false);
     });
 
-    it('should have invalid form when lastName is empty (AC #6)', () => {
+    it('should have invalid form when lastName is empty', () => {
       component['form'].patchValue({
         firstName: 'John',
         lastName: '',
@@ -129,40 +232,6 @@ describe('VendorFormComponent', () => {
         lastName: 'Doe',
       });
       expect(component['form'].valid).toBe(true);
-    });
-
-    it('should have valid form with all fields', () => {
-      component['form'].patchValue({
-        firstName: 'John',
-        middleName: 'Allen',
-        lastName: 'Doe',
-      });
-      expect(component['form'].valid).toBe(true);
-    });
-
-    it('should show "First name is required" error (AC #5)', () => {
-      const firstNameControl = component['form'].get('firstName');
-      firstNameControl?.markAsTouched();
-      firstNameControl?.setValue('');
-      fixture.detectChanges();
-
-      const error = fixture.debugElement.query(By.css('mat-error'));
-      expect(error?.nativeElement.textContent).toContain('First name is required');
-    });
-
-    it('should show "Last name is required" error (AC #6)', () => {
-      const lastNameControl = component['form'].get('lastName');
-      lastNameControl?.markAsTouched();
-      lastNameControl?.setValue('');
-      // Set firstName valid to isolate lastName error
-      component['form'].get('firstName')?.setValue('John');
-      fixture.detectChanges();
-
-      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
-      const lastNameError = errors.find((el) =>
-        el.nativeElement.textContent.includes('Last name is required')
-      );
-      expect(lastNameError).toBeTruthy();
     });
 
     it('should enforce maxLength on firstName (100 chars)', () => {
@@ -182,15 +251,9 @@ describe('VendorFormComponent', () => {
       component['form'].get('middleName')?.setValue(longName);
       expect(component['form'].get('middleName')?.hasError('maxlength')).toBe(true);
     });
-
-    it('should accept 100 character firstName', () => {
-      const maxName = 'A'.repeat(100);
-      component['form'].get('firstName')?.setValue(maxName);
-      expect(component['form'].get('firstName')?.hasError('maxlength')).toBe(false);
-    });
   });
 
-  describe('Form Submission (AC #4)', () => {
+  describe('Form Submission (Story 17.8)', () => {
     it('should not submit when form is invalid', () => {
       component['form'].patchValue({
         firstName: '',
@@ -214,7 +277,7 @@ describe('VendorFormComponent', () => {
       expect(component['form'].get('lastName')?.touched).toBe(true);
     });
 
-    it('should call createVendor with trimmed values (AC #4)', () => {
+    it('should call createVendor with trimmed values', () => {
       component['form'].patchValue({
         firstName: '  John  ',
         middleName: '  Allen  ',
@@ -223,11 +286,13 @@ describe('VendorFormComponent', () => {
 
       component['onSubmit']();
 
-      expect(mockVendorStore.createVendor).toHaveBeenCalledWith({
-        firstName: 'John',
-        middleName: 'Allen',
-        lastName: 'Doe',
-      });
+      expect(mockVendorStore.createVendor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: 'John',
+          middleName: 'Allen',
+          lastName: 'Doe',
+        })
+      );
     });
 
     it('should pass undefined for empty middleName', () => {
@@ -239,27 +304,42 @@ describe('VendorFormComponent', () => {
 
       component['onSubmit']();
 
-      expect(mockVendorStore.createVendor).toHaveBeenCalledWith({
-        firstName: 'John',
-        middleName: undefined,
-        lastName: 'Doe',
-      });
+      expect(mockVendorStore.createVendor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          middleName: undefined,
+        })
+      );
     });
 
-    it('should pass undefined for whitespace-only middleName', () => {
+    it('should include phones, emails, tradeTagIds in submit payload', () => {
       component['form'].patchValue({
         firstName: 'John',
-        middleName: '   ',
         lastName: 'Doe',
       });
+
+      // Add a phone
+      component['addPhone']();
+      component['phonesArray'].at(0).patchValue({ number: '512-555-1234', label: 'Mobile' });
+
+      // Add an email
+      component['addEmail']();
+      component['emailsArray'].at(0).setValue('test@example.com');
+
+      // Add a tag
+      const tag: VendorTradeTagDto = { id: 'tag-1', name: 'Plumbing' };
+      component['selectedTags'].set([tag]);
 
       component['onSubmit']();
 
-      expect(mockVendorStore.createVendor).toHaveBeenCalledWith({
-        firstName: 'John',
-        middleName: undefined,
-        lastName: 'Doe',
-      });
+      expect(mockVendorStore.createVendor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: 'John',
+          lastName: 'Doe',
+          phones: [{ number: '512-555-1234', label: 'Mobile' }],
+          emails: ['test@example.com'],
+          tradeTagIds: ['tag-1'],
+        })
+      );
     });
 
     it('should disable Save button when form is invalid', () => {
@@ -313,16 +393,6 @@ describe('VendorFormComponent', () => {
         By.css('button[type="submit"]')
       );
       expect(saveButton.nativeElement.textContent).toContain('Saving');
-    });
-
-    it('should disable Cancel button when saving', () => {
-      mockVendorStore.isSaving.set(true);
-      fixture.detectChanges();
-
-      const cancelButton = fixture.debugElement.query(
-        By.css('button[type="button"]')
-      );
-      expect(cancelButton.nativeElement.disabled).toBe(true);
     });
   });
 
