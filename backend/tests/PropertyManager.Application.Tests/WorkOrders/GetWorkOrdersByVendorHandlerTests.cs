@@ -16,7 +16,6 @@ public class GetWorkOrdersByVendorHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
-    private readonly Mock<IPhotoService> _photoServiceMock;
     private readonly GetWorkOrdersByVendorQueryHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
@@ -25,11 +24,10 @@ public class GetWorkOrdersByVendorHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
-        _photoServiceMock = new Mock<IPhotoService>();
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
-        _handler = new GetWorkOrdersByVendorQueryHandler(_dbContextMock.Object, _currentUserMock.Object, _photoServiceMock.Object);
+        _handler = new GetWorkOrdersByVendorQueryHandler(_dbContextMock.Object, _currentUserMock.Object);
     }
 
     [Fact]

@@ -181,13 +181,13 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
             } @else if (store.vendorWorkOrders().length > 0) {
               <div class="work-order-list">
                 @for (wo of store.vendorWorkOrders(); track wo.id) {
-                  <div class="work-order-row" (click)="navigateToWorkOrder(wo.id)" (keydown.enter)="navigateToWorkOrder(wo.id)" tabindex="0" role="button">
+                  <div class="work-order-row" (click)="navigateToWorkOrder(wo.id!)" (keydown.enter)="navigateToWorkOrder(wo.id!)" tabindex="0" role="button" [attr.aria-label]="'Work order: ' + wo.description">
                     <div class="wo-main">
                       <span class="wo-description">{{ wo.description }}</span>
                       <span class="wo-property">{{ wo.propertyName }}</span>
                     </div>
                     <div class="wo-meta">
-                      <span class="wo-status-badge" [class]="'status-' + wo.status.toLowerCase()">{{ wo.status }}</span>
+                      <span class="wo-status-badge" [class]="'status-' + (wo.status ?? '').toLowerCase()">{{ wo.status }}</span>
                       <span class="wo-date">{{ wo.createdAt | date:'mediumDate' }}</span>
                     </div>
                   </div>
@@ -532,9 +532,8 @@ export class VendorDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed && vendor.id) {
-        this.store.deleteVendor(vendor.id);
-        // Navigate to vendor list after delete (AC #7)
-        this.router.navigate(['/vendors']);
+        // Navigate after successful delete (AC #7) — handled by store
+        this.store.deleteVendor({ id: vendor.id, navigateTo: ['/vendors'] });
       }
     });
   }

@@ -31,16 +31,13 @@ public class GetWorkOrdersByVendorQueryHandler : IRequestHandler<GetWorkOrdersBy
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
-    private readonly IPhotoService _photoService;
 
     public GetWorkOrdersByVendorQueryHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser,
-        IPhotoService photoService)
+        ICurrentUser currentUser)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
-        _photoService = photoService;
     }
 
     public async Task<GetWorkOrdersByVendorResult> Handle(GetWorkOrdersByVendorQuery request, CancellationToken cancellationToken)
@@ -49,54 +46,40 @@ public class GetWorkOrdersByVendorQueryHandler : IRequestHandler<GetWorkOrdersBy
             .Where(w => w.AccountId == _currentUser.AccountId && w.DeletedAt == null)
             .Where(w => w.VendorId == request.VendorId)
             .Include(w => w.Property)
-            .Include(w => w.Vendor)
-            .Include(w => w.Category)
-            .Include(w => w.TagAssignments)
-                .ThenInclude(a => a.Tag)
-            .Include(w => w.Photos)
             .OrderByDescending(w => w.CreatedAt)
             .AsNoTracking();
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        int totalCount;
+        List<Domain.Entities.WorkOrder> workOrders;
 
-        var workOrders = request.Limit.HasValue
-            ? await query.Take(request.Limit.Value).ToListAsync(cancellationToken)
-            : await query.ToListAsync(cancellationToken);
-
-        // Generate presigned URLs for primary photo thumbnails in parallel
-        var thumbnailTasks = workOrders.Select(async w =>
+        if (request.Limit.HasValue)
         {
-            var primaryPhoto = w.Photos.FirstOrDefault(p => p.IsPrimary)
-                ?? w.Photos.OrderBy(p => p.DisplayOrder).FirstOrDefault();
+            totalCount = await query.CountAsync(cancellationToken);
+            workOrders = await query.Take(request.Limit.Value).ToListAsync(cancellationToken);
+        }
+        else
+        {
+            workOrders = await query.ToListAsync(cancellationToken);
+            totalCount = workOrders.Count;
+        }
 
-            string? thumbnailUrl = null;
-            if (primaryPhoto?.ThumbnailStorageKey != null)
-            {
-                thumbnailUrl = await _photoService.GetThumbnailUrlAsync(primaryPhoto.ThumbnailStorageKey, cancellationToken);
-            }
+        var workOrderDtos = workOrders.Select(w => new WorkOrderDto(
+            w.Id,
+            w.PropertyId,
+            w.Property.Name,
+            w.VendorId,
+            null, // Vendor name omitted — caller already has vendor context
+            w.IsDiy,
+            null, // CategoryId not needed for list view
+            null, // CategoryName not needed for list view
+            w.Status.ToString(),
+            w.Description,
+            w.CreatedAt,
+            w.CreatedByUserId,
+            new List<WorkOrderTagDto>(), // Tags not displayed in vendor detail list
+            null // Thumbnail not displayed in vendor detail list
+        )).ToList();
 
-            return new WorkOrderDto(
-                w.Id,
-                w.PropertyId,
-                w.Property.Name,
-                w.VendorId,
-                w.Vendor?.FullName,
-                w.IsDiy,
-                w.CategoryId,
-                w.Category?.Name,
-                w.Status.ToString(),
-                w.Description,
-                w.CreatedAt,
-                w.CreatedByUserId,
-                w.TagAssignments
-                    .Select(a => new WorkOrderTagDto(a.Tag.Id, a.Tag.Name))
-                    .ToList(),
-                thumbnailUrl
-            );
-        }).ToList();
-
-        var workOrderDtos = await Task.WhenAll(thumbnailTasks);
-
-        return new GetWorkOrdersByVendorResult(workOrderDtos.ToList(), totalCount);
+        return new GetWorkOrdersByVendorResult(workOrderDtos, totalCount);
     }
 }

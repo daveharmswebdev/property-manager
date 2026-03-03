@@ -397,7 +397,7 @@ describe('VendorDetailComponent', () => {
       expect(dialogConfig.data.title).toContain('Delete John Michael Doe?');
     });
 
-    it('should call deleteVendor and navigate when confirmed (6.8)', () => {
+    it('should call deleteVendor with navigateTo when confirmed (6.8)', () => {
       mockDialog.open.mockReturnValue({
         afterClosed: () => of(true),
       } as MatDialogRef<any>);
@@ -407,8 +407,10 @@ describe('VendorDetailComponent', () => {
       // Call onDeleteClick directly to test dialog behavior
       component.onDeleteClick();
 
-      expect(mockVendorStore.deleteVendor).toHaveBeenCalledWith('vendor-123');
-      expect(router.navigate).toHaveBeenCalledWith(['/vendors']);
+      expect(mockVendorStore.deleteVendor).toHaveBeenCalledWith({
+        id: 'vendor-123',
+        navigateTo: ['/vendors'],
+      });
     });
 
     it('should not call deleteVendor when dialog cancelled', () => {

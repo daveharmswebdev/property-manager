@@ -17,8 +17,8 @@ import {
   VendorTradeTagDto,
   CreateVendorRequest,
   UpdateVendorRequest,
+  WorkOrderDto,
 } from '../../../core/api/api.service';
-import { WorkOrderService, WorkOrderDto } from '../../work-orders/services/work-order.service';
 
 /**
  * Vendor Store State Interface (AC #1-#14)
@@ -150,7 +150,6 @@ export const VendorStore = signalStore(
     (
       store,
       apiService = inject(ApiClient),
-      workOrderService = inject(WorkOrderService),
       router = inject(Router),
       snackBar = inject(MatSnackBar)
     ) => ({
@@ -328,18 +327,21 @@ export const VendorStore = signalStore(
 
       /**
        * Delete a vendor (soft delete) (FR12)
-       * @param id Vendor ID to delete
+       * @param params Vendor ID or { id, navigateTo } for post-delete navigation
        */
-      deleteVendor: rxMethod<string>(
+      deleteVendor: rxMethod<string | { id: string; navigateTo?: string[] }>(
         pipe(
-          tap((id) =>
+          map((params) =>
+            typeof params === 'string' ? { id: params, navigateTo: undefined } : params
+          ),
+          tap(({ id }) =>
             patchState(store, {
               isDeleting: true,
               deletingVendorId: id,
               error: null,
             })
           ),
-          switchMap((id) =>
+          switchMap(({ id, navigateTo }) =>
             apiService.vendors_DeleteVendor(id).pipe(
               tap(() => {
                 // Remove from local vendors array
@@ -353,6 +355,9 @@ export const VendorStore = signalStore(
                   horizontalPosition: 'center',
                   verticalPosition: 'bottom',
                 });
+                if (navigateTo) {
+                  router.navigate(navigateTo);
+                }
               }),
               catchError((error) => {
                 let errorMessage = 'Failed to delete vendor. Please try again.';
@@ -485,11 +490,11 @@ export const VendorStore = signalStore(
             })
           ),
           switchMap((vendorId) =>
-            workOrderService.getWorkOrdersByVendor(vendorId).pipe(
+            apiService.workOrders_GetWorkOrdersByVendor(vendorId).pipe(
               tap((response) =>
                 patchState(store, {
                   vendorWorkOrders: response.items ?? [],
-                  vendorWorkOrderCount: response.totalCount,
+                  vendorWorkOrderCount: response.totalCount ?? 0,
                   isLoadingWorkOrders: false,
                 })
               ),
@@ -508,10 +513,15 @@ export const VendorStore = signalStore(
       ),
 
       /**
-       * Clear selected vendor
+       * Clear selected vendor and associated work order state
        */
       clearSelectedVendor(): void {
-        patchState(store, { selectedVendor: null });
+        patchState(store, {
+          selectedVendor: null,
+          vendorWorkOrders: [],
+          vendorWorkOrderCount: 0,
+          isLoadingWorkOrders: false,
+        });
       },
 
       /**
