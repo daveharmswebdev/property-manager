@@ -36,9 +36,11 @@ describe('WorkOrderDetailComponent', () => {
     selectedWorkOrder: WritableSignal<WorkOrderDto | null>;
     isUpdating: WritableSignal<boolean>;
     isDeleting: WritableSignal<boolean>;
+    isUpdatingStatus: WritableSignal<boolean>;
     loadWorkOrderById: ReturnType<typeof vi.fn>;
     clearSelectedWorkOrder: ReturnType<typeof vi.fn>;
     deleteWorkOrder: ReturnType<typeof vi.fn>;
+    updateWorkOrderStatus: ReturnType<typeof vi.fn>;
   };
   let router: Router;
 
@@ -84,9 +86,11 @@ describe('WorkOrderDetailComponent', () => {
       selectedWorkOrder: signal<WorkOrderDto | null>(null),
       isUpdating: signal(false),
       isDeleting: signal(false),
+      isUpdatingStatus: signal(false),
       loadWorkOrderById: vi.fn(),
       clearSelectedWorkOrder: vi.fn(),
       deleteWorkOrder: vi.fn(),
+      updateWorkOrderStatus: vi.fn(),
     };
 
     const mockNotesService = {
@@ -259,11 +263,12 @@ describe('WorkOrderDetailComponent', () => {
       setupWithWorkOrder();
     });
 
-    it('should display status badge with correct class', () => {
-      const badge = fixture.nativeElement.querySelector('.status-badge');
-      expect(badge).toBeTruthy();
-      expect(badge.textContent).toContain('Assigned');
-      expect(badge.classList.contains('status-assigned')).toBe(true);
+    it('should display status section with mat-select (Story 17-10)', () => {
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
+      expect(statusSection.textContent).toContain('Status');
     });
 
     it('should display property name as link', () => {
@@ -330,9 +335,11 @@ describe('WorkOrderDetailComponent', () => {
       expect(compiled.textContent).toContain('No tags');
     });
 
-    it('should display status badge with reported class', () => {
-      const badge = fixture.nativeElement.querySelector('.status-badge');
-      expect(badge.classList.contains('status-reported')).toBe(true);
+    it('should display status section with mat-select (Story 17-10)', () => {
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
     });
   });
 
@@ -798,29 +805,79 @@ describe('WorkOrderDetailComponent', () => {
     });
   });
 
-  describe('status badge colors', () => {
-    it('should have status-reported class for Reported status', () => {
+  describe('inline status dropdown (Story 17-10)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('should render status dropdown when work order is loaded (6.1)', () => {
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
+    });
+
+    it('should NOT have status badge in header (6.2)', () => {
+      const badge = fixture.nativeElement.querySelector('.title-section .status-badge');
+      expect(badge).toBeFalsy();
+    });
+
+    it('should call store.updateWorkOrderStatus with correct id and status (6.3)', () => {
+      component.onStatusChange('Completed');
+      expect(mockWorkOrderStore.updateWorkOrderStatus).toHaveBeenCalledWith({
+        id: 'wo-123',
+        status: 'Completed',
+      });
+    });
+
+    it('should NOT call store when same status selected (no-op guard) (6.4)', () => {
+      component.onStatusChange('Assigned'); // same as current
+      expect(mockWorkOrderStore.updateWorkOrderStatus).not.toHaveBeenCalled();
+    });
+
+    it('should disable dropdown when isUpdatingStatus is true (6.5)', () => {
+      mockWorkOrderStore.isUpdatingStatus.set(true);
+      fixture.detectChanges();
+      const select = fixture.debugElement.query(By.css('.status-section mat-select'));
+      expect(select.componentInstance.disabled).toBe(true);
+    });
+
+    it('should show spinner when isUpdatingStatus is true (6.6)', () => {
+      mockWorkOrderStore.isUpdatingStatus.set(true);
+      fixture.detectChanges();
+      const spinner = fixture.nativeElement.querySelector('.status-content mat-spinner');
+      expect(spinner).toBeTruthy();
+    });
+  });
+
+  describe('status dropdown colors (Story 17-10, AC #4)', () => {
+    it('should render status section with mat-select for Reported status', () => {
       const reportedWorkOrder = { ...mockWorkOrder, status: 'Reported' };
       setupWithWorkOrder(reportedWorkOrder);
 
-      const badge = fixture.nativeElement.querySelector('.status-badge');
-      expect(badge.classList.contains('status-reported')).toBe(true);
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
     });
 
-    it('should have status-assigned class for Assigned status', () => {
-      const assignedWorkOrder = { ...mockWorkOrder, status: 'Assigned' };
-      setupWithWorkOrder(assignedWorkOrder);
+    it('should render status section with mat-select for Assigned status', () => {
+      setupWithWorkOrder();
 
-      const badge = fixture.nativeElement.querySelector('.status-badge');
-      expect(badge.classList.contains('status-assigned')).toBe(true);
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
     });
 
-    it('should have status-completed class for Completed status', () => {
+    it('should render status section with mat-select for Completed status', () => {
       const completedWorkOrder = { ...mockWorkOrder, status: 'Completed' };
       setupWithWorkOrder(completedWorkOrder);
 
-      const badge = fixture.nativeElement.querySelector('.status-badge');
-      expect(badge.classList.contains('status-completed')).toBe(true);
+      const statusSection = fixture.nativeElement.querySelector('.status-section');
+      expect(statusSection).toBeTruthy();
+      const select = statusSection.querySelector('mat-select');
+      expect(select).toBeTruthy();
     });
   });
 });

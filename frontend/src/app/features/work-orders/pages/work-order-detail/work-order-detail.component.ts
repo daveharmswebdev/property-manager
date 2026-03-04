@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -18,7 +20,7 @@ import { WorkOrderPhotoGalleryComponent } from '../../components/work-order-phot
 import { PhotoUploadComponent } from '../../../../shared/components/photo-upload/photo-upload.component';
 import { PhotoLightboxComponent, PhotoLightboxData, LightboxPhoto } from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
 import { WorkOrderPhotoDto } from '../../../../core/api/api.service';
-import { WorkOrderService, WorkOrderExpenseItemDto } from '../../services/work-order.service';
+import { WorkOrderService, WorkOrderExpenseItemDto, WorkOrderStatus } from '../../services/work-order.service';
 import { ExpenseService, UpdateExpenseRequest } from '../../../expenses/services/expense.service';
 import { LinkExpenseDialogComponent } from '../../components/link-expense-dialog/link-expense-dialog.component';
 import {
@@ -58,6 +60,8 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
     MatDialogModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatSelectModule,
+    MatFormFieldModule,
     WorkOrderNotesComponent,
     WorkOrderPhotoGalleryComponent,
     PhotoUploadComponent,
@@ -101,9 +105,6 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
               <mat-icon>arrow_back</mat-icon>
             </button>
             <div class="title-section">
-              <span class="status-badge" [ngClass]="'status-' + store.selectedWorkOrder()!.status.toLowerCase()">
-                {{ store.selectedWorkOrder()!.status }}
-              </span>
               <h1>Work Order</h1>
             </div>
           </div>
@@ -174,6 +175,37 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
           </mat-card-header>
           <mat-card-content>
             <p class="description-text">{{ store.selectedWorkOrder()!.description }}</p>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Status Section (Story 17-10) -->
+        <mat-card class="section-card status-section">
+          <mat-card-header>
+            <mat-card-title>Status</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="status-content">
+            <mat-form-field appearance="outline" class="status-select-field" subscriptSizing="dynamic">
+              <mat-select
+                [value]="store.selectedWorkOrder()!.status"
+                (selectionChange)="onStatusChange($event.value)"
+                [disabled]="store.isUpdatingStatus()"
+                panelClass="status-select-panel"
+              >
+                <mat-select-trigger>
+                  <span class="status-option" [ngClass]="'status-' + store.selectedWorkOrder()!.status.toLowerCase()">
+                    {{ store.selectedWorkOrder()!.status }}
+                  </span>
+                </mat-select-trigger>
+                @for (s of statuses; track s) {
+                  <mat-option [value]="s">
+                    <span class="status-option" [ngClass]="'status-' + s.toLowerCase()">{{ s }}</span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            @if (store.isUpdatingStatus()) {
+              <mat-spinner diameter="18"></mat-spinner>
+            }
           </mat-card-content>
         </mat-card>
 
@@ -433,14 +465,27 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
         font-weight: 500;
       }
 
-      .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 0.75rem;
+      .status-section {
+        margin-bottom: 16px;
+      }
+
+      .status-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .status-select-field {
+        width: 200px;
+      }
+
+      .status-option {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
         font-weight: 500;
         text-transform: uppercase;
-        width: fit-content;
       }
 
       .status-reported {
@@ -740,6 +785,9 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   private readonly workOrderService = inject(WorkOrderService);
   private readonly expenseService = inject(ExpenseService);
 
+  /** Available work order statuses for the inline dropdown (Story 17-10) */
+  protected readonly statuses = Object.values(WorkOrderStatus);
+
   protected workOrderId: string | null = null;
 
   /** Whether the upload zone is visible */
@@ -756,6 +804,17 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   protected readonly expensesTotal = computed(() =>
     this.linkedExpenses().reduce((sum, e) => sum + e.amount, 0)
   );
+
+  /**
+   * Handle inline status change from dropdown (Story 17-10, AC #2, #3)
+   * Guard: no-op if same status selected.
+   * On error, store does NOT patch selectedWorkOrder, so mat-select reverts.
+   */
+  onStatusChange(newStatus: string): void {
+    const currentStatus = this.store.selectedWorkOrder()?.status;
+    if (!currentStatus || newStatus === currentStatus) return;
+    this.store.updateWorkOrderStatus({ id: this.workOrderId!, status: newStatus });
+  }
 
   ngOnInit(): void {
     this.workOrderId = this.route.snapshot.paramMap.get('id');

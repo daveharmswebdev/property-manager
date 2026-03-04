@@ -1,6 +1,6 @@
 # Story 17.8: Full-Size Add Vendor Form
 
-Status: dev-complete
+Status: done
 
 ## Story
 

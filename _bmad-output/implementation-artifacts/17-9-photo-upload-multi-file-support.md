@@ -1,6 +1,6 @@
 # Story 17.9: PhotoUpload Multi-File Support
 
-Status: review
+Status: done
 
 ## Story
 
