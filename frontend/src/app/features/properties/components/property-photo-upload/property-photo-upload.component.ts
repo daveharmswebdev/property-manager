@@ -23,6 +23,7 @@ import { PropertyPhotoStore } from '../../stores/property-photo.store';
     <app-photo-upload
       [uploadFn]="uploadPhoto"
       (uploadComplete)="uploadComplete.emit()"
+      (batchComplete)="batchComplete.emit()"
     />
   `,
 })
@@ -35,9 +36,14 @@ export class PropertyPhotoUploadComponent {
   readonly propertyId = input.required<string>();
 
   /**
-   * Emitted when upload completes successfully
+   * Emitted when upload completes successfully (per file)
    */
   readonly uploadComplete = output<void>();
+
+  /**
+   * Emitted when all files in the batch reach a final state (Task 6.1)
+   */
+  readonly batchComplete = output<void>();
 
   /**
    * Upload function passed to the generic PhotoUploadComponent.

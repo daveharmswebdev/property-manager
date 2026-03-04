@@ -780,6 +780,36 @@ describe('WorkOrderDetailComponent', () => {
     });
   });
 
+  describe('photo upload zone behavior (Story 17.9, Task 8.2)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('onUploadComplete should NOT close the upload zone', () => {
+      // Open the upload zone
+      component.toggleUploadZone();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(true);
+
+      // Per-file upload complete should NOT close it
+      component.onUploadComplete();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(true);
+    });
+
+    it('onBatchComplete should close the upload zone', () => {
+      // Open the upload zone
+      component.toggleUploadZone();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(true);
+
+      // Batch complete should close it
+      component.onBatchComplete();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(false);
+    });
+  });
+
   describe('status badge colors', () => {
     it('should have status-reported class for Reported status', () => {
       const reportedWorkOrder = { ...mockWorkOrder, status: 'Reported' };

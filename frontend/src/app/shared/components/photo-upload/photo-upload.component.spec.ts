@@ -1,21 +1,29 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { PhotoUploadComponent } from './photo-upload.component';
 import { PhotoUploadService } from '../../services/photo-upload.service';
 
-// Mock DataTransfer for JSDom environment
+// Mock DataTransfer for JSDom environment — supports multiple files (Task 7.1)
 interface MockDataTransfer {
   files: FileList;
 }
 
-function createMockDataTransfer(file: File): MockDataTransfer {
+function createMockDataTransfer(...files: File[]): MockDataTransfer {
   const fileList = {
-    0: file,
-    length: 1,
-    item: (index: number) => (index === 0 ? file : null),
+    ...files.reduce(
+      (acc, file, index) => {
+        acc[index] = file;
+        return acc;
+      },
+      {} as Record<number, File>,
+    ),
+    length: files.length,
+    item: (index: number) => files[index] ?? null,
     [Symbol.iterator]: function* () {
-      yield file;
+      for (const file of files) {
+        yield file;
+      }
     },
   } as unknown as FileList;
   return { files: fileList };
@@ -26,6 +34,10 @@ function createMockDragEvent(type: string, dataTransfer?: MockDataTransfer): Eve
   const event = new Event(type, { bubbles: true, cancelable: true });
   (event as any).dataTransfer = dataTransfer;
   return event;
+}
+
+function createFile(name: string, type = 'image/jpeg'): File {
+  return new File(['test'], name, { type });
 }
 
 describe('PhotoUploadComponent', () => {
@@ -53,9 +65,12 @@ describe('PhotoUploadComponent', () => {
 
     fixture = TestBed.createComponent(PhotoUploadComponent);
     component = fixture.componentInstance;
-    // Set required input
     fixture.componentRef.setInput('uploadFn', mockUploadFn);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    component.ngOnDestroy();
   });
 
   describe('Rendering', () => {
@@ -75,9 +90,9 @@ describe('PhotoUploadComponent', () => {
       expect(fileInput).toBeTruthy();
     });
 
-    it('should show idle state by default', () => {
+    it('should show idle state by default with plural text', () => {
       const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.textContent).toContain('Drag & drop a photo here');
+      expect(compiled.textContent).toContain('Drag & drop photos here');
       expect(compiled.textContent).toContain('or click to browse');
     });
 
@@ -86,278 +101,389 @@ describe('PhotoUploadComponent', () => {
       expect(compiled.textContent).toContain('Accepts: JPEG, PNG, GIF, WebP');
       expect(compiled.textContent).toContain('max 10MB');
     });
+
+    // Task 7.13
+    it('should have multiple attribute on file input', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const fileInput = compiled.querySelector('[data-testid="file-input"]') as HTMLInputElement;
+      expect(fileInput.hasAttribute('multiple')).toBe(true);
+    });
+
+    // Task 7.14
+    it('should NOT have capture attribute on file input', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const fileInput = compiled.querySelector('[data-testid="file-input"]') as HTMLInputElement;
+      expect(fileInput.hasAttribute('capture')).toBe(false);
+    });
   });
 
-  describe('File Validation', () => {
-    it('should show validation error for invalid file type', () => {
-      (mockPhotoUploadService.isValidFileType as ReturnType<typeof vi.fn>).mockReturnValue(false);
+  describe('Multi-file drop (Task 7.2)', () => {
+    it('should add all valid files to the queue on drop', async () => {
+      let resolveFirst!: (v: boolean) => void;
+      let resolveSecond!: (v: boolean) => void;
+      let resolveThird!: (v: boolean) => void;
+      mockUploadFn
+        .mockReturnValueOnce(new Promise<boolean>((r) => (resolveFirst = r)))
+        .mockReturnValueOnce(new Promise<boolean>((r) => (resolveSecond = r)))
+        .mockReturnValueOnce(new Promise<boolean>((r) => (resolveThird = r)));
 
-      const file = new File([''], 'test.txt', { type: 'text/plain' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const validationError = compiled.querySelector('[data-testid="validation-error"]');
-      expect(validationError).toBeTruthy();
-      expect(validationError?.textContent).toContain('Invalid file type');
-    });
-
-    it('should show validation error for file too large', () => {
-      (mockPhotoUploadService.isValidFileSize as ReturnType<typeof vi.fn>).mockReturnValue(false);
-
-      const file = new File(['test'], 'large.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
+      const files = [createFile('a.jpg'), createFile('b.jpg'), createFile('c.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
 
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
       fixture.detectChanges();
 
-      const compiled = fixture.nativeElement as HTMLElement;
-      const validationError = compiled.querySelector('[data-testid="validation-error"]');
-      expect(validationError).toBeTruthy();
-      expect(validationError?.textContent).toContain('File too large');
-    });
+      // All 3 files should be in the queue
+      expect(component.totalCount()).toBe(3);
+      // First file should be uploading
+      expect(component.isProcessing()).toBe(true);
 
-    it('should not show validation error for valid file', async () => {
-      mockUploadFn.mockResolvedValue(true);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const validationError = compiled.querySelector('[data-testid="validation-error"]');
-      expect(validationError).toBeFalsy();
-
-      // Wait for upload to complete
+      // Complete uploads sequentially
+      resolveFirst(true);
       await vi.waitFor(() => {
         fixture.detectChanges();
-        expect(component.uploadState().status).toBe('success');
+        expect(component.completedCount()).toBe(1);
       });
-    });
-  });
 
-  describe('Upload Progress', () => {
-    it('should show uploading state during upload', async () => {
-      let resolveUpload: (value: boolean) => void;
-      const uploadPromise = new Promise<boolean>(resolve => {
-        resolveUpload = resolve;
-      });
-      mockUploadFn.mockReturnValue(uploadPromise);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.textContent).toContain('Uploading...');
-      expect(compiled.querySelector('[data-testid="progress-bar"]')).toBeTruthy();
-
-      // Complete the upload
-      resolveUpload!(true);
-      await uploadPromise;
-      fixture.detectChanges();
-    });
-
-    it('should show progress text during upload', async () => {
-      let resolveUpload: (value: boolean) => void;
-      const uploadPromise = new Promise<boolean>(resolve => {
-        resolveUpload = resolve;
-      });
-      mockUploadFn.mockReturnValue(uploadPromise);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      fixture.detectChanges();
-
-      const progressText = fixture.nativeElement.querySelector('[data-testid="progress-text"]');
-      expect(progressText).toBeTruthy();
-
-      // Complete the upload
-      resolveUpload!(true);
-      await uploadPromise;
-    });
-  });
-
-  describe('Upload Success', () => {
-    it('should show success state after successful upload', async () => {
-      mockUploadFn.mockResolvedValue(true);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      // Wait for upload to complete
+      resolveSecond(true);
       await vi.waitFor(() => {
         fixture.detectChanges();
-        const compiled = fixture.nativeElement as HTMLElement;
-        expect(compiled.textContent).toContain('Upload complete!');
+        expect(component.completedCount()).toBe(2);
       });
 
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.querySelector('[data-testid="upload-another-btn"]')).toBeTruthy();
-    });
+      resolveThird(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(3);
+      });
 
-    it('should emit uploadComplete on success', async () => {
+      expect(mockUploadFn).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Multi-file select (Task 7.3)', () => {
+    it('should add all files via file input selection', async () => {
+      mockUploadFn.mockResolvedValue(true);
+
+      const files = [createFile('a.jpg'), createFile('b.jpg'), createFile('c.jpg')];
+      const fileInput = fixture.nativeElement.querySelector(
+        '[data-testid="file-input"]',
+      ) as HTMLInputElement;
+
+      // Simulate file selection
+      Object.defineProperty(fileInput, 'files', {
+        value: {
+          0: files[0],
+          1: files[1],
+          2: files[2],
+          length: 3,
+          item: (i: number) => files[i] ?? null,
+          [Symbol.iterator]: function* () {
+            for (const f of files) yield f;
+          },
+        },
+        writable: true,
+      });
+
+      fileInput.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      expect(component.totalCount()).toBe(3);
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(3);
+      });
+    });
+  });
+
+  describe('Individual validation — invalid type (Task 7.4)', () => {
+    it('should upload valid files and show error for invalid type', async () => {
+      (mockPhotoUploadService.isValidFileType as ReturnType<typeof vi.fn>)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+      mockUploadFn.mockResolvedValue(true);
+
+      const files = [createFile('a.jpg'), createFile('b.txt', 'text/plain'), createFile('c.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(2);
+      });
+
+      expect(component.failedCount()).toBe(1);
+      expect(mockUploadFn).toHaveBeenCalledTimes(2);
+
+      const errorItem = component.uploadQueue().find((i) => i.status === 'error');
+      expect(errorItem).toBeTruthy();
+      expect(errorItem!.error).toContain('Invalid file type');
+    });
+  });
+
+  describe('Individual validation — oversized (Task 7.5)', () => {
+    it('should upload valid files and show error for oversized file', async () => {
+      (mockPhotoUploadService.isValidFileSize as ReturnType<typeof vi.fn>)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+      mockUploadFn.mockResolvedValue(true);
+
+      const files = [createFile('a.jpg'), createFile('big.jpg'), createFile('c.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(2);
+      });
+
+      expect(component.failedCount()).toBe(1);
+      const errorItem = component.uploadQueue().find((i) => i.status === 'error');
+      expect(errorItem!.error).toContain('File too large');
+    });
+  });
+
+  describe('Per-file progress (Task 7.6)', () => {
+    it('should show progress for the uploading item', async () => {
+      let resolveUpload!: (v: boolean) => void;
+      mockUploadFn.mockReturnValue(new Promise<boolean>((r) => (resolveUpload = r)));
+
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+      fixture.detectChanges();
+
+      // Allow progress interval to tick
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        const uploading = component.uploadQueue().find((i) => i.status === 'uploading');
+        expect(uploading).toBeTruthy();
+        expect(uploading!.progress).toBeGreaterThan(0);
+      });
+
+      resolveUpload(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
+    });
+  });
+
+  describe('uploadComplete per file (Task 7.7)', () => {
+    it('should emit uploadComplete for each successful file', async () => {
       mockUploadFn.mockResolvedValue(true);
       const uploadCompleteSpy = vi.fn();
       component.uploadComplete.subscribe(uploadCompleteSpy);
 
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
+      const files = [createFile('a.jpg'), createFile('b.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
 
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
 
-      // Wait for upload to complete
       await vi.waitFor(() => {
         fixture.detectChanges();
-        expect(uploadCompleteSpy).toHaveBeenCalled();
+        expect(uploadCompleteSpy).toHaveBeenCalledTimes(2);
       });
-    });
-
-    it('should allow uploading another photo after success', async () => {
-      mockUploadFn.mockResolvedValue(true);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      // Wait for upload to complete
-      await vi.waitFor(() => {
-        fixture.detectChanges();
-        expect(component.uploadState().status).toBe('success');
-      });
-
-      const uploadAnotherBtn = fixture.nativeElement.querySelector('[data-testid="upload-another-btn"]');
-      uploadAnotherBtn.click();
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.textContent).toContain('Drag & drop a photo here');
     });
   });
 
-  describe('Error Handling', () => {
-    it('should show error state when upload fails', async () => {
-      mockUploadFn.mockResolvedValue(false);
+  describe('batchComplete (Task 7.8)', () => {
+    it('should emit batchComplete once after all files processed', async () => {
+      mockUploadFn.mockResolvedValue(true);
+      const batchCompleteSpy = vi.fn();
+      component.batchComplete.subscribe(batchCompleteSpy);
 
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
-
-      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      // Wait for upload to fail
-      await vi.waitFor(() => {
-        fixture.detectChanges();
-        expect(component.uploadState().status).toBe('error');
-      });
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.textContent).toContain('Upload failed');
-      expect(compiled.querySelector('[data-testid="retry-btn"]')).toBeTruthy();
-      expect(compiled.querySelector('[data-testid="cancel-btn"]')).toBeTruthy();
-    });
-
-    it('should show error message when upload throws', async () => {
-      mockUploadFn.mockRejectedValue(new Error('Network error'));
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
+      const files = [createFile('a.jpg'), createFile('b.jpg'), createFile('c.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
 
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
 
-      // Wait for upload to fail
       await vi.waitFor(() => {
         fixture.detectChanges();
-        expect(component.uploadState().status).toBe('error');
+        expect(batchCompleteSpy).toHaveBeenCalledTimes(1);
       });
 
-      const errorMessage = fixture.nativeElement.querySelector('[data-testid="error-message"]');
-      expect(errorMessage?.textContent).toContain('Network error');
+      expect(component.completedCount()).toBe(3);
     });
+  });
 
-    it('should allow retry after error', async () => {
+  describe('Retry failed item (Task 7.9)', () => {
+    it('should retry a failed item and upload successfully', async () => {
       mockUploadFn.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
 
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
 
-      // Wait for first upload to fail
+      // Wait for first attempt to fail
       await vi.waitFor(() => {
         fixture.detectChanges();
-        expect(component.uploadState().status).toBe('error');
+        expect(component.failedCount()).toBe(1);
       });
 
-      const retryBtn = fixture.nativeElement.querySelector('[data-testid="retry-btn"]');
-      retryBtn.click();
+      // Retry the failed item
+      const failedItem = component.uploadQueue().find((i) => i.status === 'error');
+      component.retryItem(failedItem!.id);
 
       // Wait for retry to succeed
       await vi.waitFor(() => {
         fixture.detectChanges();
-        expect(component.uploadState().status).toBe('success');
+        expect(component.completedCount()).toBe(1);
       });
 
-      expect(fixture.nativeElement.textContent).toContain('Upload complete!');
+      expect(component.failedCount()).toBe(0);
     });
+  });
 
-    it('should allow cancel after error', async () => {
-      mockUploadFn.mockResolvedValue(false);
+  describe('Remove pending item (Task 7.10)', () => {
+    it('should remove an item from the queue', async () => {
+      let resolveUpload!: (v: boolean) => void;
+      mockUploadFn.mockReturnValue(new Promise<boolean>((r) => (resolveUpload = r)));
 
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const dataTransfer = createMockDataTransfer(file);
+      const files = [createFile('a.jpg'), createFile('b.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
 
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
-      const dropEvent = createMockDragEvent('drop', dataTransfer);
-      dropZone.dispatchEvent(dropEvent);
-
-      // Wait for upload to fail
-      await vi.waitFor(() => {
-        fixture.detectChanges();
-        expect(component.uploadState().status).toBe('error');
-      });
-
-      const cancelBtn = fixture.nativeElement.querySelector('[data-testid="cancel-btn"]');
-      cancelBtn.click();
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.textContent).toContain('Drag & drop a photo here');
+      // First is uploading, second is pending
+      expect(component.totalCount()).toBe(2);
+      const pendingItem = component.uploadQueue().find((i) => i.status === 'pending');
+      expect(pendingItem).toBeTruthy();
+
+      // Remove the pending item
+      component.removeItem(pendingItem!.id);
+      expect(component.totalCount()).toBe(1);
+
+      resolveUpload(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
+    });
+  });
+
+  describe('Clear queue (Task 7.11)', () => {
+    it('should reset to idle state when queue is cleared', async () => {
+      mockUploadFn.mockResolvedValue(true);
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
+
+      component.clearQueue();
+      fixture.detectChanges();
+
+      expect(component.hasQueue()).toBe(false);
+      expect(component.totalCount()).toBe(0);
+
+      // Should show idle state again
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('Drag & drop photos here');
+    });
+  });
+
+  describe('Single file backward compatibility (Task 7.12)', () => {
+    it('should handle single file drop normally', async () => {
+      mockUploadFn.mockResolvedValue(true);
+      const uploadCompleteSpy = vi.fn();
+      const batchCompleteSpy = vi.fn();
+      component.uploadComplete.subscribe(uploadCompleteSpy);
+      component.batchComplete.subscribe(batchCompleteSpy);
+
+      const dataTransfer = createMockDataTransfer(createFile('photo.jpg'));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
+
+      expect(uploadCompleteSpy).toHaveBeenCalledTimes(1);
+      expect(batchCompleteSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Add files during upload (Task 7.15)', () => {
+    it('should allow adding more files while upload in progress', async () => {
+      let resolveFirst!: (v: boolean) => void;
+      mockUploadFn
+        .mockReturnValueOnce(new Promise<boolean>((r) => (resolveFirst = r)))
+        .mockResolvedValue(true);
+
+      // Drop first file
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', createMockDataTransfer(createFile('a.jpg'))));
+      fixture.detectChanges();
+
+      expect(component.isProcessing()).toBe(true);
+      expect(component.totalCount()).toBe(1);
+
+      // Drop second file while first is uploading — queue grows
+      // After adding to queue, the compact drop zone is used
+      fixture.detectChanges();
+      const compactDropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      compactDropZone.dispatchEvent(
+        createMockDragEvent('drop', createMockDataTransfer(createFile('b.jpg'))),
+      );
+      fixture.detectChanges();
+
+      expect(component.totalCount()).toBe(2);
+
+      // Complete first upload
+      resolveFirst(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        // Both should eventually complete
+        expect(component.completedCount()).toBe(2);
+      });
+    });
+  });
+
+  describe('Drop zone interactive during uploads (Task 7.16)', () => {
+    it('should not block drop zone during active uploads', async () => {
+      let resolveUpload!: (v: boolean) => void;
+      mockUploadFn.mockReturnValue(new Promise<boolean>((r) => (resolveUpload = r)));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', createMockDataTransfer(createFile('a.jpg'))));
+      fixture.detectChanges();
+
+      // Upload is in progress
+      expect(component.isProcessing()).toBe(true);
+
+      // Dragover should still work (isDragging should update)
+      fixture.detectChanges();
+      const activeDropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      activeDropZone.dispatchEvent(createMockDragEvent('dragover'));
+      fixture.detectChanges();
+
+      expect(component.isDragging()).toBe(true);
+
+      resolveUpload(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
     });
   });
 
@@ -365,9 +491,7 @@ describe('PhotoUploadComponent', () => {
     it('should add dragging class on dragover', () => {
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
 
-      const dragOverEvent = createMockDragEvent('dragover');
-      dropZone.dispatchEvent(dragOverEvent);
-
+      dropZone.dispatchEvent(createMockDragEvent('dragover'));
       fixture.detectChanges();
 
       expect(dropZone.classList.contains('dragging')).toBe(true);
@@ -376,15 +500,87 @@ describe('PhotoUploadComponent', () => {
     it('should remove dragging class on dragleave', () => {
       const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
 
-      const dragOverEvent = createMockDragEvent('dragover');
-      dropZone.dispatchEvent(dragOverEvent);
+      dropZone.dispatchEvent(createMockDragEvent('dragover'));
       fixture.detectChanges();
 
-      const dragLeaveEvent = createMockDragEvent('dragleave');
-      dropZone.dispatchEvent(dragLeaveEvent);
+      dropZone.dispatchEvent(createMockDragEvent('dragleave'));
       fixture.detectChanges();
 
       expect(dropZone.classList.contains('dragging')).toBe(false);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should show error state when upload throws', async () => {
+      mockUploadFn.mockRejectedValue(new Error('Network error'));
+
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.failedCount()).toBe(1);
+      });
+
+      const errorItem = component.uploadQueue().find((i) => i.status === 'error');
+      expect(errorItem!.error).toContain('Network error');
+    });
+  });
+
+  describe('Queue UI', () => {
+    it('should show compact drop zone when queue has items', async () => {
+      let resolveUpload!: (v: boolean) => void;
+      mockUploadFn.mockReturnValue(new Promise<boolean>((r) => (resolveUpload = r)));
+
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('Drop more photos or click to add');
+      expect(compiled.querySelector('[data-testid="upload-queue"]')).toBeTruthy();
+      expect(compiled.querySelector('[data-testid="queue-summary"]')).toBeTruthy();
+
+      resolveUpload(true);
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(1);
+      });
+    });
+
+    it('should show clear button when all items in final state', async () => {
+      mockUploadFn.mockResolvedValue(true);
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.allInFinalState()).toBe(true);
+      });
+
+      const clearBtn = fixture.nativeElement.querySelector('[data-testid="clear-queue-btn"]');
+      expect(clearBtn).toBeTruthy();
+    });
+
+    it('should show summary text', async () => {
+      mockUploadFn.mockResolvedValue(true);
+      const files = [createFile('a.jpg'), createFile('b.jpg')];
+      const dataTransfer = createMockDataTransfer(...files);
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.completedCount()).toBe(2);
+      });
+
+      const summary = fixture.nativeElement.querySelector('[data-testid="queue-summary"]');
+      expect(summary?.textContent).toContain('All 2 uploaded successfully');
     });
   });
 });

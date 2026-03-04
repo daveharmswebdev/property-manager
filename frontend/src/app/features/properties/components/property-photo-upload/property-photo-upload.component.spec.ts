@@ -65,6 +65,15 @@ describe('PropertyPhotoUploadComponent', () => {
     expect(uploadCompleteSpy).toHaveBeenCalled();
   });
 
+  // Task 8.1: verify batchComplete output wired
+  it('should emit batchComplete output', () => {
+    const batchCompleteSpy = vi.fn();
+    component.batchComplete.subscribe(batchCompleteSpy);
+    component.batchComplete.emit();
+
+    expect(batchCompleteSpy).toHaveBeenCalled();
+  });
+
   it('should require propertyId input', () => {
     expect(component.propertyId()).toBe('property-123');
   });
