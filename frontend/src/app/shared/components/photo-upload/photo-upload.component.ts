@@ -44,7 +44,7 @@ export interface UploadItem {
         #fileInput
         type="file"
         [accept]="acceptedTypes"
-        [attr.multiple]="true"
+        multiple
         (change)="onFileSelected($event)"
         hidden
         data-testid="file-input"
@@ -398,7 +398,12 @@ export interface UploadItem {
 export class PhotoUploadComponent implements OnDestroy {
   private readonly photoUploadService = inject(PhotoUploadService);
   private readonly progressIntervals = new Map<string, ReturnType<typeof setInterval>>();
+  private readonly retryCooldowns = new Set<string>();
   private nextItemId = 0;
+  private hasProcessedUpload = false;
+
+  /** Max files per batch to prevent UI/memory issues */
+  static readonly MAX_FILES_PER_BATCH = 20;
 
   /** Required: upload function provided by parent (unchanged contract) */
   readonly uploadFn = input.required<(file: File) => Promise<boolean>>();
@@ -406,13 +411,13 @@ export class PhotoUploadComponent implements OnDestroy {
   /** Emitted after EACH successful file upload */
   readonly uploadComplete = output<void>();
 
-  /** Emitted ONCE when ALL files reach a final state (Task 1.6) */
+  /** Emitted ONCE when ALL files reach a final state (only after at least one upload attempt) */
   readonly batchComplete = output<void>();
 
   /** Drag state */
   readonly isDragging = signal(false);
 
-  /** Multi-file upload queue (Task 1.2) */
+  /** Multi-file upload queue */
   readonly uploadQueue = signal<UploadItem[]>([]);
 
   /** Computed signals (Task 1.3) */
@@ -478,9 +483,17 @@ export class PhotoUploadComponent implements OnDestroy {
 
   /** Validate each file and add to queue (Task 1.4) */
   private addToQueue(files: File[]): void {
+    const currentCount = this.uploadQueue().length;
+    const remaining = PhotoUploadComponent.MAX_FILES_PER_BATCH - currentCount;
+
+    if (remaining <= 0) {
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remaining);
     const newItems: UploadItem[] = [];
 
-    for (const file of files) {
+    for (const file of filesToProcess) {
       const id = `upload-${++this.nextItemId}`;
 
       if (!this.photoUploadService.isValidFileType(file.type)) {
@@ -518,18 +531,19 @@ export class PhotoUploadComponent implements OnDestroy {
     this.uploadQueue.update((queue) => [...queue, ...newItems]);
   }
 
-  /** Process queue sequentially — one file at a time (Task 1.5) */
-  async processQueue(): Promise<void> {
-    if (this.isProcessing()) return; // guard re-entry (Task 2.6)
+  /** Process queue sequentially — one file at a time */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing()) return;
 
     const next = this.uploadQueue().find((item) => item.status === 'pending');
     if (!next) {
-      if (this.totalCount() > 0) {
+      if (this.hasProcessedUpload) {
         this.batchComplete.emit();
       }
       return;
     }
 
+    this.hasProcessedUpload = true;
     this.updateItem(next.id, { status: 'uploading', progress: 0 });
     this.startProgressSimulation(next.id);
 
@@ -559,8 +573,13 @@ export class PhotoUploadComponent implements OnDestroy {
     await this.processQueue();
   }
 
-  /** Set failed item back to pending and restart queue (Task 1.7) */
+  /** Set failed item back to pending and restart queue — with cooldown to prevent server spam */
   retryItem(id: string): void {
+    if (this.retryCooldowns.has(id)) return;
+
+    this.retryCooldowns.add(id);
+    setTimeout(() => this.retryCooldowns.delete(id), 2000);
+
     this.updateItem(id, { status: 'pending', progress: 0, error: null });
     this.processQueue();
   }
@@ -571,11 +590,12 @@ export class PhotoUploadComponent implements OnDestroy {
     this.uploadQueue.update((queue) => queue.filter((item) => item.id !== id));
   }
 
-  /** Reset queue to empty (Task 1.9) */
+  /** Reset queue to empty */
   clearQueue(): void {
     this.progressIntervals.forEach((intervalId) => clearInterval(intervalId));
     this.progressIntervals.clear();
     this.uploadQueue.set([]);
+    this.hasProcessedUpload = false;
   }
 
   /** Reset to idle state — backward compat (Task 1.10) */

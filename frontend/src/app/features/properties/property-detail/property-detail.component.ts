@@ -235,7 +235,6 @@ import {
               <mat-card-content>
                 <app-property-photo-upload
                   [propertyId]="propertyStore.selectedProperty()!.id"
-                  (uploadComplete)="onUploadComplete()"
                   (batchComplete)="onBatchComplete()"
                 />
               </mat-card-content>
@@ -844,14 +843,6 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
    */
   toggleUploadDialog(): void {
     this.showUploadDialog = !this.showUploadDialog;
-  }
-
-  /**
-   * Handle per-file upload completion.
-   * Gallery refreshes via store's internal loadPhotos() call — no action needed here.
-   */
-  onUploadComplete(): void {
-    // No-op: gallery already refreshes after each uploadPhoto() via store
   }
 
   /**

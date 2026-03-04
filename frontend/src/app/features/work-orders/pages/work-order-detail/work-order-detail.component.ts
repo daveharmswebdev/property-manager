@@ -261,7 +261,6 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
               <mat-card-content>
                 <app-photo-upload
                   [uploadFn]="uploadPhoto"
-                  (uploadComplete)="onUploadComplete()"
                   (batchComplete)="onBatchComplete()"
                 />
               </mat-card-content>
@@ -1033,15 +1032,7 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle per-file upload completion (Task 5.4)
-   * Gallery refreshes via store's internal loadPhotos() call — no action needed here.
-   */
-  onUploadComplete(): void {
-    // No-op: gallery already refreshes after each uploadPhoto() via store
-  }
-
-  /**
-   * Handle batch completion — close upload zone (Task 5.2)
+   * Handle batch completion — close upload zone
    */
   onBatchComplete(): void {
     this.showUploadZone.set(false);

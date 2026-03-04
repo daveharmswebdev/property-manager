@@ -780,21 +780,9 @@ describe('WorkOrderDetailComponent', () => {
     });
   });
 
-  describe('photo upload zone behavior (Story 17.9, Task 8.2)', () => {
+  describe('photo upload zone behavior (Story 17.9)', () => {
     beforeEach(() => {
       setupWithWorkOrder();
-    });
-
-    it('onUploadComplete should NOT close the upload zone', () => {
-      // Open the upload zone
-      component.toggleUploadZone();
-      fixture.detectChanges();
-      expect(component['showUploadZone']()).toBe(true);
-
-      // Per-file upload complete should NOT close it
-      component.onUploadComplete();
-      fixture.detectChanges();
-      expect(component['showUploadZone']()).toBe(true);
     });
 
     it('onBatchComplete should close the upload zone', () => {

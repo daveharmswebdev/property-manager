@@ -316,6 +316,23 @@ describe('PhotoUploadComponent', () => {
 
       expect(component.completedCount()).toBe(3);
     });
+
+    it('should NOT emit batchComplete when all files fail validation', () => {
+      (mockPhotoUploadService.isValidFileType as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      const batchCompleteSpy = vi.fn();
+      component.batchComplete.subscribe(batchCompleteSpy);
+
+      const files = [createFile('a.txt', 'text/plain'), createFile('b.txt', 'text/plain')];
+      const dataTransfer = createMockDataTransfer(...files);
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+      fixture.detectChanges();
+
+      // All files failed validation — batchComplete should NOT fire
+      expect(component.failedCount()).toBe(2);
+      expect(batchCompleteSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('Retry failed item (Task 7.9)', () => {
@@ -507,6 +524,49 @@ describe('PhotoUploadComponent', () => {
       fixture.detectChanges();
 
       expect(dropZone.classList.contains('dragging')).toBe(false);
+    });
+  });
+
+  describe('Retry cooldown (Issue 2)', () => {
+    it('should prevent rapid retries on the same item', async () => {
+      mockUploadFn.mockResolvedValueOnce(false).mockResolvedValueOnce(false);
+      const dataTransfer = createMockDataTransfer(createFile('a.jpg'));
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(component.failedCount()).toBe(1);
+      });
+
+      const failedItem = component.uploadQueue().find((i) => i.status === 'error');
+      component.retryItem(failedItem!.id);
+
+      // Second immediate retry should be blocked by cooldown
+      component.retryItem(failedItem!.id);
+
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        // Only one retry attempt should have happened (2 total calls to uploadFn)
+        expect(mockUploadFn).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
+
+  describe('Max file count guard (Issue 7)', () => {
+    it('should cap files at MAX_FILES_PER_BATCH', () => {
+      const maxFiles = PhotoUploadComponent.MAX_FILES_PER_BATCH;
+      mockUploadFn.mockReturnValue(new Promise<boolean>(() => {})); // never resolve
+
+      const files = Array.from({ length: maxFiles + 5 }, (_, i) => createFile(`file-${i}.jpg`));
+      const dataTransfer = createMockDataTransfer(...files);
+
+      const dropZone = fixture.nativeElement.querySelector('[data-testid="drop-zone"]');
+      dropZone.dispatchEvent(createMockDragEvent('drop', dataTransfer));
+      fixture.detectChanges();
+
+      expect(component.totalCount()).toBe(maxFiles);
     });
   });
 
