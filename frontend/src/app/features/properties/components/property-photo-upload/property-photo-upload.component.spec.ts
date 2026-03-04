@@ -57,12 +57,11 @@ describe('PropertyPhotoUploadComponent', () => {
     expect(result).toBe(true);
   });
 
-  it('should emit uploadComplete output', () => {
-    const uploadCompleteSpy = vi.fn();
-    component.uploadComplete.subscribe(uploadCompleteSpy);
-    component.uploadComplete.emit();
-
-    expect(uploadCompleteSpy).toHaveBeenCalled();
+  it('should have batchComplete output wired to child PhotoUploadComponent', () => {
+    const photoUpload = fixture.nativeElement.querySelector('app-photo-upload');
+    expect(photoUpload).toBeTruthy();
+    // Verify the output property exists on the wrapper
+    expect(component.batchComplete).toBeTruthy();
   });
 
   it('should require propertyId input', () => {

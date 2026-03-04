@@ -780,6 +780,24 @@ describe('WorkOrderDetailComponent', () => {
     });
   });
 
+  describe('photo upload zone behavior (Story 17.9)', () => {
+    beforeEach(() => {
+      setupWithWorkOrder();
+    });
+
+    it('onBatchComplete should close the upload zone', () => {
+      // Open the upload zone
+      component.toggleUploadZone();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(true);
+
+      // Batch complete should close it
+      component.onBatchComplete();
+      fixture.detectChanges();
+      expect(component['showUploadZone']()).toBe(false);
+    });
+  });
+
   describe('status badge colors', () => {
     it('should have status-reported class for Reported status', () => {
       const reportedWorkOrder = { ...mockWorkOrder, status: 'Reported' };

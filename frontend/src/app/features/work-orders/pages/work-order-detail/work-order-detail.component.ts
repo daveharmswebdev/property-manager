@@ -261,7 +261,7 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
               <mat-card-content>
                 <app-photo-upload
                   [uploadFn]="uploadPhoto"
-                  (uploadComplete)="onUploadComplete()"
+                  (batchComplete)="onBatchComplete()"
                 />
               </mat-card-content>
             </mat-card>
@@ -1032,9 +1032,9 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle upload completion - close upload zone
+   * Handle batch completion — close upload zone
    */
-  onUploadComplete(): void {
+  onBatchComplete(): void {
     this.showUploadZone.set(false);
   }
 
