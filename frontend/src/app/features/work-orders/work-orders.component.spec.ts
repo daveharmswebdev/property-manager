@@ -495,6 +495,53 @@ describe('WorkOrdersComponent', () => {
     });
   });
 
+  // Story 17.11: Primary Photo Thumbnail (AC-1, AC-2)
+  describe('Row Thumbnail (Story 17.11 AC #1, #2)', () => {
+    it('should render thumbnail img when primaryPhotoThumbnailUrl is present', () => {
+      // wo-2 has primaryPhotoThumbnailUrl: 'http://example.com/thumb.jpg'
+      const rows = fixture.debugElement.queryAll(By.css('.work-order-row'));
+      const woWithPhoto = rows[1];
+      const img = woWithPhoto.query(By.css('.wo-thumbnail img.thumbnail-img'));
+      expect(img).toBeTruthy();
+    });
+
+    it('should set correct src attribute on thumbnail img', () => {
+      const rows = fixture.debugElement.queryAll(By.css('.work-order-row'));
+      const woWithPhoto = rows[1];
+      const img = woWithPhoto.query(By.css('.wo-thumbnail img.thumbnail-img'));
+      expect(img.nativeElement.getAttribute('src')).toBe('http://example.com/thumb.jpg');
+    });
+
+    it('should set loading="lazy" on thumbnail img', () => {
+      const rows = fixture.debugElement.queryAll(By.css('.work-order-row'));
+      const woWithPhoto = rows[1];
+      const img = woWithPhoto.query(By.css('.wo-thumbnail img.thumbnail-img'));
+      expect(img.nativeElement.getAttribute('loading')).toBe('lazy');
+    });
+
+    it('should render placeholder mat-icon with handyman text when primaryPhotoThumbnailUrl is null', () => {
+      // wo-1 has primaryPhotoThumbnailUrl: null
+      const rows = fixture.debugElement.queryAll(By.css('.work-order-row'));
+      const woNoPhoto = rows[0];
+      const icon = woNoPhoto.query(By.css('.wo-thumbnail mat-icon.fallback-icon'));
+      expect(icon).toBeTruthy();
+      expect(icon.nativeElement.textContent.trim()).toBe('handyman');
+    });
+
+    it('should render a .wo-thumbnail container for every row', () => {
+      const thumbnails = fixture.debugElement.queryAll(By.css('.wo-thumbnail'));
+      expect(thumbnails.length).toBe(3);
+    });
+
+    it('should not render img inside placeholder thumbnail (null URL row)', () => {
+      // wo-1 has primaryPhotoThumbnailUrl: null
+      const rows = fixture.debugElement.queryAll(By.css('.work-order-row'));
+      const woNoPhoto = rows[0];
+      const img = woNoPhoto.query(By.css('.wo-thumbnail img'));
+      expect(img).toBeFalsy();
+    });
+  });
+
   // Story 9-7: Filter Work Orders Tests (unchanged — filter section not modified)
   describe('Filter Controls (Story 9-7 AC #1)', () => {
     it('should render filter section', () => {
