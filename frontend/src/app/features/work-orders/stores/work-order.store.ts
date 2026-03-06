@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of, firstValueFrom } from 'rxjs';
+import { pipe, switchMap, exhaustMap, tap, catchError, of, firstValueFrom } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import {
@@ -522,8 +522,12 @@ export const WorkOrderStore = signalStore(
           tap(() =>
             patchState(store, { isUpdatingStatus: true })
           ),
-          switchMap(({ id, status }) => {
-            const wo = store.selectedWorkOrder()!;
+          exhaustMap(({ id, status }) => {
+            const wo = store.selectedWorkOrder();
+            if (!wo) {
+              patchState(store, { isUpdatingStatus: false });
+              return of(null);
+            }
             const request: UpdateWorkOrderRequest = {
               description: wo.description,
               categoryId: wo.categoryId ?? undefined,

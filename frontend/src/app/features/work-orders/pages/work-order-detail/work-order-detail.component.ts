@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -34,7 +34,7 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
  * WorkOrderDetailComponent (Story 9-8)
  *
  * Displays full work order details including:
- * - Status badge (AC #2)
+ * - Status dropdown (AC #2, Story 17-10)
  * - Property name as link (AC #2)
  * - Full description (AC #2)
  * - Category and tags (AC #2)
@@ -186,14 +186,14 @@ import { WorkOrderPdfPreviewDialogComponent } from '../../components/work-order-
           <mat-card-content class="status-content">
             <mat-form-field appearance="outline" class="status-select-field" subscriptSizing="dynamic">
               <mat-select
-                [value]="store.selectedWorkOrder()!.status"
+                [value]="displayStatus()"
                 (selectionChange)="onStatusChange($event.value)"
                 [disabled]="store.isUpdatingStatus()"
                 panelClass="status-select-panel"
               >
                 <mat-select-trigger>
-                  <span class="status-option" [ngClass]="'status-' + store.selectedWorkOrder()!.status.toLowerCase()">
-                    {{ store.selectedWorkOrder()!.status }}
+                  <span class="status-option" [ngClass]="'status-' + displayStatus().toLowerCase()">
+                    {{ displayStatus() }}
                   </span>
                 </mat-select-trigger>
                 @for (s of statuses; track s) {
@@ -788,6 +788,22 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
   /** Available work order statuses for the inline dropdown (Story 17-10) */
   protected readonly statuses = Object.values(WorkOrderStatus);
 
+  /**
+   * Local display status signal for mat-select binding (Story 17-10, AC #3).
+   * Synced from store via effect. Ensures visual rollback on API error —
+   * mat-select binds to this signal, not the store directly.
+   */
+  protected readonly displayStatus = signal('');
+
+  /** Sync displayStatus from store when not mid-update (handles rollback on error) */
+  private syncStatusEffect = effect(() => {
+    const status = this.store.selectedWorkOrder()?.status;
+    const isUpdating = this.store.isUpdatingStatus();
+    if (status && !isUpdating) {
+      this.displayStatus.set(status);
+    }
+  });
+
   protected workOrderId: string | null = null;
 
   /** Whether the upload zone is visible */
@@ -807,13 +823,14 @@ export class WorkOrderDetailComponent implements OnInit, OnDestroy {
 
   /**
    * Handle inline status change from dropdown (Story 17-10, AC #2, #3)
-   * Guard: no-op if same status selected.
-   * On error, store does NOT patch selectedWorkOrder, so mat-select reverts.
+   * Guard: no-op if same status selected or workOrderId is null.
+   * On error, syncStatusEffect resets displayStatus from store.
    */
   onStatusChange(newStatus: string): void {
     const currentStatus = this.store.selectedWorkOrder()?.status;
-    if (!currentStatus || newStatus === currentStatus) return;
-    this.store.updateWorkOrderStatus({ id: this.workOrderId!, status: newStatus });
+    if (!this.workOrderId || !currentStatus || newStatus === currentStatus) return;
+    this.displayStatus.set(newStatus);
+    this.store.updateWorkOrderStatus({ id: this.workOrderId, status: newStatus });
   }
 
   ngOnInit(): void {
