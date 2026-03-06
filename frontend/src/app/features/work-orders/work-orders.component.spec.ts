@@ -393,27 +393,6 @@ describe('WorkOrdersComponent', () => {
       expect(expandPanelAfter).toBeFalsy();
     });
 
-    it('should show photo thumbnail in expand panel when available', () => {
-      // Expand second row (has primaryPhotoThumbnailUrl)
-      const expandBtns = fixture.debugElement.queryAll(By.css('.expand-btn'));
-      expandBtns[1].nativeElement.click();
-      fixture.detectChanges();
-
-      const thumbnail = fixture.debugElement.query(By.css('.expand-thumbnail'));
-      expect(thumbnail).toBeTruthy();
-      expect(thumbnail.nativeElement.getAttribute('src')).toBe('http://example.com/thumb.jpg');
-    });
-
-    it('should not show photo thumbnail when not available', () => {
-      // Expand first row (no photo)
-      const expandBtns = fixture.debugElement.queryAll(By.css('.expand-btn'));
-      expandBtns[0].nativeElement.click();
-      fixture.detectChanges();
-
-      const thumbnail = fixture.debugElement.query(By.css('.expand-thumbnail'));
-      expect(thumbnail).toBeFalsy();
-    });
-
     it('should stop propagation when clicking expand chevron', () => {
       const mockEvent = new MouseEvent('click', { bubbles: true });
       vi.spyOn(mockEvent, 'stopPropagation');

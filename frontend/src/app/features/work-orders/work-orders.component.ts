@@ -125,6 +125,7 @@ import { WorkOrderDto } from './services/work-order.service';
                 <mat-icon>{{ isExpanded(workOrder.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
 
+              <div class="row-main">
               <!-- Row thumbnail (AC-1, AC-2) -->
               <div class="wo-thumbnail">
                 @if (workOrder.primaryPhotoThumbnailUrl) {
@@ -173,6 +174,7 @@ import { WorkOrderDto } from './services/work-order.service';
                   }
                 </div>
               </div>
+              </div>
 
               <!-- Action icons (stop propagation to prevent navigation) -->
               <div class="row-actions">
@@ -192,10 +194,6 @@ import { WorkOrderDto } from './services/work-order.service';
               <div class="expand-panel">
                 <div class="expand-content">
                   <p class="full-description">{{ workOrder.description }}</p>
-                  @if (workOrder.primaryPhotoThumbnailUrl) {
-                    <img [src]="workOrder.primaryPhotoThumbnailUrl" alt="Work order photo"
-                      class="expand-thumbnail" loading="lazy" />
-                  }
                 </div>
               </div>
             }
@@ -444,6 +442,15 @@ import { WorkOrderDto } from './services/work-order.service';
         opacity: 1;
       }
 
+      /* Row main container (keeps thumbnail + content inline at mobile) */
+      .row-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
       /* Row thumbnail (Story 17.11 AC-1, AC-2) */
       .wo-thumbnail {
         display: flex;
@@ -452,7 +459,7 @@ import { WorkOrderDto } from './services/work-order.service';
         width: 48px;
         height: 48px;
         border-radius: 8px;
-        background-color: var(--mat-sys-surface-container);
+        background-color: var(--mat-sys-surface-container-high);
         overflow: hidden;
         flex-shrink: 0;
       }
@@ -494,14 +501,6 @@ import { WorkOrderDto } from './services/work-order.service';
         white-space: pre-wrap;
         line-height: 1.5;
         margin: 0;
-      }
-
-      .expand-thumbnail {
-        max-width: 120px;
-        max-height: 120px;
-        border-radius: 8px;
-        object-fit: cover;
-        border: 1px solid var(--mat-sys-outline-variant);
       }
 
       /* Medium breakpoint — drop category (AC6) */
@@ -566,6 +565,10 @@ import { WorkOrderDto } from './services/work-order.service';
           align-items: flex-start;
           gap: 4px;
           padding-left: 0;
+        }
+
+        .row-main {
+          width: 100%;
         }
 
         .wo-thumbnail {
