@@ -265,8 +265,8 @@ development_status:
   17-6-wire-duplicate-detection-receipt-flow: done     # Issue #244 - S (completed in Epic 16 as 16-8)
   17-7-vendor-detail-work-order-history: done    # Issue #268 - M — PR #290 merged
   17-8-full-size-add-vendor-form: done                   # Issue #274 - M — PR #291 merged
-  17-9-photo-upload-multi-file-support: review  # Issue #276 - M
-  17-10-inline-status-dropdown-wo-detail: pending     # Issue #277 - M
+  17-9-photo-upload-multi-file-support: done    # Issue #276 - M — PR #293 merged
+  17-10-inline-status-dropdown-wo-detail: review           # Issue #277 - M
   17-11-wo-list-primary-photo-thumbnail: pending      # Issue #270 - M
   17-12-replace-year-selector-date-range: pending     # Issue #279 - L
   17-13-vendor-photo-support: pending                 # Issue #271 - L

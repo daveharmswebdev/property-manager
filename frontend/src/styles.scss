@@ -135,6 +135,15 @@ a {
   }
 }
 
+// Status select panel - work order detail inline dropdown (Story 17-10)
+.status-select-panel {
+  .mat-mdc-option {
+    .mdc-list-item__primary-text {
+      width: 100%;
+    }
+  }
+}
+
 // Property photo lightbox panel - fullscreen modal
 .fullscreen-dialog {
   .mat-mdc-dialog-container {

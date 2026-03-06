@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of, firstValueFrom } from 'rxjs';
+import { pipe, switchMap, exhaustMap, tap, catchError, of, firstValueFrom } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import {
@@ -47,6 +47,8 @@ interface WorkOrderState {
   // Edit/Delete state (Story 9-9)
   isUpdating: boolean;
   isDeleting: boolean;
+  // Inline status update state (Story 17-10)
+  isUpdatingStatus: boolean;
 }
 
 /**
@@ -69,6 +71,8 @@ const initialState: WorkOrderState = {
   // Edit/Delete initial state (Story 9-9)
   isUpdating: false,
   isDeleting: false,
+  // Inline status update initial state (Story 17-10)
+  isUpdatingStatus: false,
 };
 
 /**
@@ -505,6 +509,55 @@ export const WorkOrderStore = signalStore(
               })
             )
           )
+        )
+      ),
+      /**
+       * Update work order status inline (Story 17-10, AC #2, #3, #5)
+       * Builds full UpdateWorkOrderRequest from selectedWorkOrder, changing only status.
+       * On success: patches selectedWorkOrder in place, shows snackbar. No navigation.
+       * On error: shows error snackbar, does NOT patch (so mat-select reverts).
+       */
+      updateWorkOrderStatus: rxMethod<{ id: string; status: string }>(
+        pipe(
+          tap(() =>
+            patchState(store, { isUpdatingStatus: true })
+          ),
+          exhaustMap(({ id, status }) => {
+            const wo = store.selectedWorkOrder();
+            if (!wo) {
+              patchState(store, { isUpdatingStatus: false });
+              return of(null);
+            }
+            const request: UpdateWorkOrderRequest = {
+              description: wo.description,
+              categoryId: wo.categoryId ?? undefined,
+              status,
+              vendorId: wo.vendorId ?? undefined,
+              tagIds: wo.tags.map(t => t.id),
+            };
+            return workOrderService.updateWorkOrder(id, request).pipe(
+              tap(() => {
+                patchState(store, {
+                  isUpdatingStatus: false,
+                  selectedWorkOrder: { ...wo, status },
+                });
+                snackBar.open('Status updated', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+              }),
+              catchError(() => {
+                patchState(store, { isUpdatingStatus: false });
+                snackBar.open('Failed to update status', 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                return of(null);
+              })
+            );
+          })
         )
       ),
     })

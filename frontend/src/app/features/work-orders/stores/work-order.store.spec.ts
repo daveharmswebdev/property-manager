@@ -443,6 +443,62 @@ describe('WorkOrderStore', () => {
     });
   });
 
+  describe('updateWorkOrderStatus (Story 17-10)', () => {
+    beforeEach(() => {
+      // Load a work order into selectedWorkOrder so the method can read from it
+      store.loadWorkOrderById('wo-1');
+    });
+
+    it('should patch selectedWorkOrder with new status on success (5.1)', () => {
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(store.selectedWorkOrder()!.status).toBe('Completed');
+    });
+
+    it('should show success snackbar on success (5.2)', () => {
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(snackBarMock.open).toHaveBeenCalledWith('Status updated', 'Close', expect.any(Object));
+    });
+
+    it('should NOT navigate on success (5.3)', () => {
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should show error snackbar on failure (5.4)', () => {
+      workOrderServiceMock.updateWorkOrder.mockReturnValue(throwError(() => ({ status: 500 })));
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(snackBarMock.open).toHaveBeenCalledWith('Failed to update status', 'Close', expect.any(Object));
+    });
+
+    it('should NOT patch selectedWorkOrder on failure — status reverts (5.5)', () => {
+      workOrderServiceMock.updateWorkOrder.mockReturnValue(throwError(() => ({ status: 500 })));
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(store.selectedWorkOrder()!.status).toBe('Reported');
+    });
+
+    it('should toggle isUpdatingStatus true then false during lifecycle (5.6)', () => {
+      // On success, isUpdatingStatus should be false after completion
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(store.isUpdatingStatus()).toBe(false);
+
+      // On error, isUpdatingStatus should also be false after completion
+      workOrderServiceMock.updateWorkOrder.mockReturnValue(throwError(() => ({ status: 500 })));
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Assigned' });
+      expect(store.isUpdatingStatus()).toBe(false);
+    });
+
+    it('should include all required fields in request body (5.7)', () => {
+      store.updateWorkOrderStatus({ id: 'wo-1', status: 'Completed' });
+      expect(workOrderServiceMock.updateWorkOrder).toHaveBeenCalledWith('wo-1', {
+        description: mockWorkOrder.description,
+        categoryId: mockWorkOrder.categoryId,
+        status: 'Completed',
+        vendorId: mockWorkOrder.vendorId,
+        tagIds: mockWorkOrder.tags.map(t => t.id),
+      });
+    });
+  });
+
   describe('clearError', () => {
     it('should clear error state', () => {
       workOrderServiceMock.getWorkOrders.mockReturnValue(throwError(() => new Error('Error')));
