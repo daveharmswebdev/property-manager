@@ -1,6 +1,6 @@
 # Story 17.11: Work Order List — Primary Photo Thumbnail
 
-Status: review
+Status: done
 
 ## Story
 
