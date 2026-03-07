@@ -125,6 +125,19 @@ import { WorkOrderDto } from './services/work-order.service';
                 <mat-icon>{{ isExpanded(workOrder.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
 
+              <div class="row-main">
+              <!-- Row thumbnail (AC-1, AC-2) -->
+              <div class="wo-thumbnail">
+                @if (workOrder.primaryPhotoThumbnailUrl) {
+                  <img [src]="workOrder.primaryPhotoThumbnailUrl"
+                       [alt]="workOrder.description + ' photo'"
+                       class="thumbnail-img"
+                       loading="lazy" />
+                } @else {
+                  <mat-icon class="fallback-icon">handyman</mat-icon>
+                }
+              </div>
+
               <!-- Row content (clickable → navigates to detail) -->
               <div class="row-content" [routerLink]="['/work-orders', workOrder.id]">
                 <!-- Line 1: Scan line -->
@@ -161,6 +174,7 @@ import { WorkOrderDto } from './services/work-order.service';
                   }
                 </div>
               </div>
+              </div>
 
               <!-- Action icons (stop propagation to prevent navigation) -->
               <div class="row-actions">
@@ -180,10 +194,6 @@ import { WorkOrderDto } from './services/work-order.service';
               <div class="expand-panel">
                 <div class="expand-content">
                   <p class="full-description">{{ workOrder.description }}</p>
-                  @if (workOrder.primaryPhotoThumbnailUrl) {
-                    <img [src]="workOrder.primaryPhotoThumbnailUrl" alt="Work order photo"
-                      class="expand-thumbnail" loading="lazy" />
-                  }
                 </div>
               </div>
             }
@@ -432,6 +442,41 @@ import { WorkOrderDto } from './services/work-order.service';
         opacity: 1;
       }
 
+      /* Row main container (keeps thumbnail + content inline at mobile) */
+      .row-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* Row thumbnail (Story 17.11 AC-1, AC-2) */
+      .wo-thumbnail {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        background-color: var(--mat-sys-surface-container-high);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .wo-thumbnail .thumbnail-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .wo-thumbnail .fallback-icon {
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+
       /* Expand button */
       .expand-btn {
         flex-shrink: 0;
@@ -456,14 +501,6 @@ import { WorkOrderDto } from './services/work-order.service';
         white-space: pre-wrap;
         line-height: 1.5;
         margin: 0;
-      }
-
-      .expand-thumbnail {
-        max-width: 120px;
-        max-height: 120px;
-        border-radius: 8px;
-        object-fit: cover;
-        border: 1px solid var(--mat-sys-outline-variant);
       }
 
       /* Medium breakpoint — drop category (AC6) */
@@ -528,6 +565,21 @@ import { WorkOrderDto } from './services/work-order.service';
           align-items: flex-start;
           gap: 4px;
           padding-left: 0;
+        }
+
+        .row-main {
+          width: 100%;
+        }
+
+        .wo-thumbnail {
+          width: 40px;
+          height: 40px;
+        }
+
+        .wo-thumbnail .fallback-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
         }
 
         .row-actions {
