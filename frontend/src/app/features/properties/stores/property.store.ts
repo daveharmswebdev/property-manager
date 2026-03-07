@@ -24,7 +24,8 @@ interface PropertyState {
   properties: PropertySummaryDto[];
   isLoading: boolean;
   error: string | null;
-  selectedYear: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
   // Property detail state (AC-2.3.2)
   selectedProperty: PropertyDetailDto | null;
   isLoadingDetail: boolean;
@@ -44,7 +45,8 @@ const initialState: PropertyState = {
   properties: [],
   isLoading: false,
   error: null,
-  selectedYear: null,
+  dateFrom: null,
+  dateTo: null,
   // Property detail initial state
   selectedProperty: null,
   isLoadingDetail: false,
@@ -137,7 +139,7 @@ export const PropertyStore = signalStore(
      * Load properties from API
      * @param year Optional tax year filter
      */
-    loadProperties: rxMethod<number | undefined>(
+    loadProperties: rxMethod<{ dateFrom?: string; dateTo?: string } | undefined>(
       pipe(
         tap(() =>
           patchState(store, {
@@ -145,13 +147,14 @@ export const PropertyStore = signalStore(
             error: null,
           })
         ),
-        switchMap((year) =>
-          propertyService.getProperties(year).pipe(
+        switchMap((params) =>
+          propertyService.getProperties(params).pipe(
             tap((response) =>
               patchState(store, {
                 properties: response.items,
                 isLoading: false,
-                selectedYear: year ?? null,
+                dateFrom: params?.dateFrom ?? null,
+                dateTo: params?.dateTo ?? null,
               })
             ),
             catchError((error) => {
@@ -182,17 +185,10 @@ export const PropertyStore = signalStore(
     },
 
     /**
-     * Set selected year filter
-     */
-    setSelectedYear(year: number | null): void {
-      patchState(store, { selectedYear: year });
-    },
-
-    /**
      * Load a single property by ID (AC-2.3.2, AC-2.3.5, AC-3.5.6)
-     * @param params Object containing id and optional year filter
+     * @param params Object containing id and optional date range filter
      */
-    loadPropertyById: rxMethod<{ id: string; year?: number }>(
+    loadPropertyById: rxMethod<{ id: string; dateFrom?: string; dateTo?: string }>(
       pipe(
         tap(() =>
           patchState(store, {
@@ -201,8 +197,8 @@ export const PropertyStore = signalStore(
             selectedProperty: null,
           })
         ),
-        switchMap(({ id, year }) =>
-          propertyService.getPropertyById(id, year).pipe(
+        switchMap(({ id, dateFrom, dateTo }) =>
+          propertyService.getPropertyById(id, { dateFrom, dateTo }).pipe(
             tap((property) =>
               patchState(store, {
                 selectedProperty: property,

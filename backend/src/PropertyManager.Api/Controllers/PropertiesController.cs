@@ -38,15 +38,17 @@ public class PropertiesController : ControllerBase
     /// Get all properties for the current user (AC-2.1.4, AC-2.2.6).
     /// </summary>
     /// <param name="year">Optional tax year filter for expense/income totals</param>
+    /// <param name="dateFrom">Optional start date filter (YYYY-MM-DD)</param>
+    /// <param name="dateTo">Optional end date filter (YYYY-MM-DD)</param>
     /// <returns>List of properties with summary information</returns>
     /// <response code="200">Returns the list of properties</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
     [ProducesResponseType(typeof(GetAllPropertiesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllProperties([FromQuery] int? year = null)
+    public async Task<IActionResult> GetAllProperties([FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
-        var query = new GetAllPropertiesQuery(year);
+        var query = new GetAllPropertiesQuery(year, dateFrom, dateTo);
         var response = await _mediator.Send(query);
 
         _logger.LogInformation(
@@ -63,6 +65,8 @@ public class PropertiesController : ControllerBase
     /// </summary>
     /// <param name="id">Property GUID</param>
     /// <param name="year">Optional tax year filter for expense totals (defaults to current year)</param>
+    /// <param name="dateFrom">Optional start date filter (YYYY-MM-DD)</param>
+    /// <param name="dateTo">Optional end date filter (YYYY-MM-DD)</param>
     /// <returns>Property detail information</returns>
     /// <response code="200">Returns the property detail</response>
     /// <response code="401">If user is not authenticated</response>
@@ -71,9 +75,9 @@ public class PropertiesController : ControllerBase
     [ProducesResponseType(typeof(PropertyDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPropertyById(Guid id, [FromQuery] int? year = null)
+    public async Task<IActionResult> GetPropertyById(Guid id, [FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
-        var query = new GetPropertyByIdQuery(id, year);
+        var query = new GetPropertyByIdQuery(id, year, dateFrom, dateTo);
         var property = await _mediator.Send(query);
 
         if (property == null)

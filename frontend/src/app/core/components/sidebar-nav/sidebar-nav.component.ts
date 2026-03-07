@@ -9,7 +9,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../services/auth.service';
-import { YearSelectorComponent } from '../../../shared/components/year-selector/year-selector.component';
 import { ReceiptStore } from '../../../features/receipts/stores/receipt.store';
 
 /**
@@ -44,7 +43,6 @@ interface NavItem {
     MatButtonModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    YearSelectorComponent,
   ],
   templateUrl: './sidebar-nav.component.html',
   styleUrl: './sidebar-nav.component.scss',

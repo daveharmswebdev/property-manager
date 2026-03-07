@@ -6,7 +6,7 @@ import { signal } from '@angular/core';
 import { BatchReportDialogComponent } from './batch-report-dialog.component';
 import { ReportService } from '../../services/report.service';
 import { PropertyStore } from '../../../properties/stores/property.store';
-import { YearSelectorService } from '../../../../core/services/year-selector.service';
+
 
 describe('BatchReportDialogComponent', () => {
   let component: BatchReportDialogComponent;
@@ -25,11 +25,6 @@ describe('BatchReportDialogComponent', () => {
     properties: signal(mockProperties),
     isLoading: signal(false),
     loadProperties: vi.fn(),
-  };
-
-  const mockYearService = {
-    selectedYear: signal(2024),
-    availableYears: signal([2024, 2023, 2022]),
   };
 
   beforeEach(async () => {
@@ -51,7 +46,7 @@ describe('BatchReportDialogComponent', () => {
       providers: [
         { provide: ReportService, useValue: mockReportService },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
+
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: MatSnackBar, useValue: mockSnackBar },
       ],
@@ -124,7 +119,7 @@ describe('BatchReportDialogComponent', () => {
 
       expect(mockReportService.generateBatchScheduleE).toHaveBeenCalledWith(
         ['prop-1', 'prop-2', 'prop-3'],
-        2024
+        new Date().getFullYear()
       );
     });
 
@@ -134,7 +129,7 @@ describe('BatchReportDialogComponent', () => {
 
       await component.generate();
 
-      expect(mockReportService.downloadZip).toHaveBeenCalledWith(mockBlob, 2024);
+      expect(mockReportService.downloadZip).toHaveBeenCalledWith(mockBlob, new Date().getFullYear());
     });
 
     it('should show snackbar on success', async () => {
@@ -200,7 +195,7 @@ describe('BatchReportDialogComponent', () => {
 
       expect(mockReportService.generateBatchScheduleE).toHaveBeenCalledWith(
         ['prop-1', 'prop-3'],
-        2024
+        new Date().getFullYear()
       );
     });
   });
@@ -213,13 +208,4 @@ describe('BatchReportDialogComponent', () => {
     });
   });
 
-  describe('year selector', () => {
-    it('should have 10 year options', () => {
-      expect(component.availableYears.length).toBe(10);
-    });
-
-    it('should default to the current year from service', () => {
-      expect(component.selectedYear).toBe(2024);
-    });
-  });
 });

@@ -10,7 +10,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ReportService } from '../../services/report.service';
 import { PropertyStore } from '../../../properties/stores/property.store';
-import { YearSelectorService } from '../../../../core/services/year-selector.service';
 
 /**
  * Property selection item for the batch dialog.
@@ -263,11 +262,10 @@ interface PropertySelection {
 export class BatchReportDialogComponent implements OnInit {
   private readonly reportService = inject(ReportService);
   private readonly propertyStore = inject(PropertyStore);
-  private readonly yearService = inject(YearSelectorService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialogRef = inject(MatDialogRef<BatchReportDialogComponent>);
 
-  selectedYear = this.yearService.selectedYear();
+  selectedYear = new Date().getFullYear();
   availableYears = this.generateYearOptions();
 
   readonly properties = signal<PropertySelection[]>([]);
@@ -299,7 +297,7 @@ export class BatchReportDialogComponent implements OnInit {
   ngOnInit(): void {
     // Ensure properties are loaded - trigger load if store is empty
     if (this.propertyStore.properties().length === 0 && !this.propertyStore.isLoading()) {
-      this.propertyStore.loadProperties(this.selectedYear);
+      this.propertyStore.loadProperties(undefined);
     }
     // Also initialize immediately if properties already exist
     if (this.propertyStore.properties().length > 0) {

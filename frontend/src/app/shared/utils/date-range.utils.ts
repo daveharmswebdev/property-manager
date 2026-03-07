@@ -3,7 +3,7 @@ import { formatLocalDate } from './date.utils';
 /**
  * Date range preset options for filtering (AC-3.4.3)
  */
-export type DateRangePreset = 'this-month' | 'this-quarter' | 'this-year' | 'custom' | 'all';
+export type DateRangePreset = 'this-month' | 'this-quarter' | 'this-year' | 'last-year' | 'custom' | 'all';
 
 /**
  * Calculate date range from preset.
@@ -36,6 +36,13 @@ export function getDateRangeFromPreset(
       return {
         dateFrom: `${currentYear}-01-01`,
         dateTo: `${currentYear}-12-31`,
+      };
+    }
+    case 'last-year': {
+      const lastYear = today.getFullYear() - 1;
+      return {
+        dateFrom: `${lastYear}-01-01`,
+        dateTo: `${lastYear}-12-31`,
       };
     }
     case 'all':

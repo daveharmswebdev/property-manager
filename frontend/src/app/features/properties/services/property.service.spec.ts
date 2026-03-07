@@ -113,7 +113,7 @@ describe('PropertyService', () => {
         totalCount: 1
       };
 
-      service.getProperties(2024).subscribe(response => {
+      service.getProperties({ year: 2024 }).subscribe(response => {
         expect(response.items).toHaveLength(1);
       });
 
@@ -172,7 +172,7 @@ describe('PropertyService', () => {
     });
 
     it('should get a property by ID filtered by year', () => {
-      service.getPropertyById('prop-1', 2024).subscribe(response => {
+      service.getPropertyById('prop-1', { year: 2024 }).subscribe(response => {
         expect(response.id).toBe('prop-1');
         expect(response.expenseTotal).toBe(5000);
         expect(response.incomeTotal).toBe(18000);

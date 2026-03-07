@@ -10,7 +10,7 @@ namespace PropertyManager.Application.Properties;
 /// </summary>
 /// <param name="Id">Property GUID</param>
 /// <param name="Year">Optional tax year filter (defaults to current year) (AC-3.5.6)</param>
-public record GetPropertyByIdQuery(Guid Id, int? Year = null) : IRequest<PropertyDetailDto?>;
+public record GetPropertyByIdQuery(Guid Id, int? Year = null, DateOnly? DateFrom = null, DateOnly? DateTo = null) : IRequest<PropertyDetailDto?>;
 
 /// <summary>
 /// Detail DTO for property view page (AC-2.3.2, AC-13.3a.9).
@@ -74,10 +74,10 @@ public class GetPropertyByIdQueryHandler : IRequestHandler<GetPropertyByIdQuery,
 
     public async Task<PropertyDetailDto?> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)
     {
-        // Use provided year or default to current year (AC-3.5.6)
+        // Use provided date range, or fall back to year-based range (AC-3.5.6)
         var year = request.Year ?? DateTime.UtcNow.Year;
-        var yearStart = new DateOnly(year, 1, 1);
-        var yearEnd = new DateOnly(year, 12, 31);
+        var yearStart = request.DateFrom ?? new DateOnly(year, 1, 1);
+        var yearEnd = request.DateTo ?? new DateOnly(year, 12, 31);
 
         var propertyData = await _dbContext.Properties
             .Where(p => p.Id == request.Id && p.AccountId == _currentUser.AccountId && p.DeletedAt == null)

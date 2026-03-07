@@ -1,17 +1,18 @@
-import { Component, inject, OnInit, effect } from '@angular/core';
+import { Component, inject, OnInit, effect, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../core/services/auth.service';
-import { YearSelectorService } from '../../core/services/year-selector.service';
 import { PropertyStore } from '../properties/stores/property.store';
 import { StatsBarComponent } from '../../shared/components/stats-bar/stats-bar.component';
 import { PropertyRowComponent } from '../../shared/components/property-row/property-row.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorCardComponent } from '../../shared/components/error-card/error-card.component';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date-range.utils';
 
 /**
  * Dashboard Component (AC-2.2.1, AC-2.2.2, AC-2.2.3, AC-2.2.4)
@@ -35,6 +36,7 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
     EmptyStateComponent,
     ErrorCardComponent,
     LoadingSpinnerComponent,
+    DateRangeFilterComponent,
   ],
   template: `
     <div class="dashboard-container">
@@ -49,6 +51,17 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
           Add Property
         </button>
       </header>
+
+      <!-- Date Range Filter (AC-17.12.2) -->
+      <mat-card class="filters-card">
+        <app-date-range-filter
+          [dateRangePreset]="dateRangePreset()"
+          [dateFrom]="dateFrom()"
+          [dateTo]="dateTo()"
+          (dateRangePresetChange)="onDateRangePresetChange($event)"
+          (customDateRangeChange)="onCustomDateRangeChange($event)"
+        />
+      </mat-card>
 
       <!-- Stats Bar (AC-2.2.1) -->
       <app-stats-bar
@@ -141,6 +154,11 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
       }
     }
 
+    .filters-card {
+      margin-bottom: 24px;
+      padding: 16px;
+    }
+
     .dashboard-content {
       display: flex;
       justify-content: center;
@@ -183,24 +201,44 @@ export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly propertyStore = inject(PropertyStore);
-  readonly yearService = inject(YearSelectorService);
 
   readonly currentUser = this.authService.currentUser;
 
+  readonly dateRangePreset = signal<DateRangePreset>('this-year');
+  readonly dateFrom = signal<string | null>(null);
+  readonly dateTo = signal<string | null>(null);
+
   constructor() {
-    // React to year changes and reload properties (AC-3.5.3)
+    const initial = getDateRangeFromPreset('this-year');
+    this.dateFrom.set(initial.dateFrom);
+    this.dateTo.set(initial.dateTo);
+
     effect(() => {
-      const year = this.yearService.selectedYear();
-      this.propertyStore.loadProperties(year);
+      const from = this.dateFrom();
+      const to = this.dateTo();
+      this.propertyStore.loadProperties({ dateFrom: from ?? undefined, dateTo: to ?? undefined });
     });
   }
 
   ngOnInit(): void {
-    // Initial load happens via effect when selectedYear signal is read
+    // Initial load happens via effect when dateFrom/dateTo signals are read
   }
 
   loadProperties(): void {
-    this.propertyStore.loadProperties(this.yearService.selectedYear());
+    this.propertyStore.loadProperties({ dateFrom: this.dateFrom() ?? undefined, dateTo: this.dateTo() ?? undefined });
+  }
+
+  onDateRangePresetChange(preset: DateRangePreset): void {
+    this.dateRangePreset.set(preset);
+    const { dateFrom, dateTo } = getDateRangeFromPreset(preset);
+    this.dateFrom.set(dateFrom);
+    this.dateTo.set(dateTo);
+  }
+
+  onCustomDateRangeChange(range: { dateFrom: string; dateTo: string }): void {
+    this.dateRangePreset.set('custom');
+    this.dateFrom.set(range.dateFrom);
+    this.dateTo.set(range.dateTo);
   }
 
   navigateToProperty(propertyId: string): void {

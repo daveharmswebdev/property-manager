@@ -8,7 +8,7 @@ namespace PropertyManager.Application.Properties;
 /// Query to get all properties for the current user's account.
 /// </summary>
 /// <param name="Year">Optional tax year filter for expense/income totals (defaults to current year)</param>
-public record GetAllPropertiesQuery(int? Year = null) : IRequest<GetAllPropertiesResponse>;
+public record GetAllPropertiesQuery(int? Year = null, DateOnly? DateFrom = null, DateOnly? DateTo = null) : IRequest<GetAllPropertiesResponse>;
 
 /// <summary>
 /// Response containing list of properties.
@@ -56,6 +56,8 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
     public async Task<GetAllPropertiesResponse> Handle(GetAllPropertiesQuery request, CancellationToken cancellationToken)
     {
         var year = request.Year ?? DateTime.UtcNow.Year;
+        var dateStart = request.DateFrom ?? new DateOnly(year, 1, 1);
+        var dateEnd = request.DateTo ?? new DateOnly(year, 12, 31);
 
         // Query properties with primary photo thumbnail storage key
         var propertiesData = await _dbContext.Properties
@@ -73,13 +75,13 @@ public class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuer
                     .Where(e => e.PropertyId == p.Id
                         && e.AccountId == _currentUser.AccountId
                         && e.DeletedAt == null
-                        && e.Date.Year == year)
+                        && e.Date >= dateStart && e.Date <= dateEnd)
                     .Sum(e => (decimal?)e.Amount) ?? 0m,
                 IncomeTotal = _dbContext.Income
                     .Where(i => i.PropertyId == p.Id
                         && i.AccountId == _currentUser.AccountId
                         && i.DeletedAt == null
-                        && i.Date.Year == year)
+                        && i.Date >= dateStart && i.Date <= dateEnd)
                     .Sum(i => (decimal?)i.Amount) ?? 0m,
                 PrimaryPhotoThumbnailStorageKey = _dbContext.PropertyPhotos
                     .Where(pp => pp.PropertyId == p.Id && pp.IsPrimary)

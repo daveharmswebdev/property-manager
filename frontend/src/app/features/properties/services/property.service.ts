@@ -75,9 +75,14 @@ export class PropertyService {
    * @param year Optional tax year filter for expense/income totals
    * @returns Observable with properties list and total count
    */
-  getProperties(year?: number): Observable<GetAllPropertiesResponse> {
-    const params = year ? { year: year.toString() } : undefined;
-    return this.http.get<GetAllPropertiesResponse>(this.baseUrl, { params });
+  getProperties(params?: { year?: number; dateFrom?: string; dateTo?: string }): Observable<GetAllPropertiesResponse> {
+    const httpParams: Record<string, string> = {};
+    if (params?.year) httpParams['year'] = params.year.toString();
+    if (params?.dateFrom) httpParams['dateFrom'] = params.dateFrom;
+    if (params?.dateTo) httpParams['dateTo'] = params.dateTo;
+    return this.http.get<GetAllPropertiesResponse>(this.baseUrl, {
+      params: Object.keys(httpParams).length > 0 ? httpParams : undefined,
+    });
   }
 
   /**
@@ -86,9 +91,14 @@ export class PropertyService {
    * @param year Optional tax year filter for expense/income totals
    * @returns Observable with property detail or 404 error
    */
-  getPropertyById(id: string, year?: number): Observable<PropertyDetailDto> {
-    const params = year ? { year: year.toString() } : undefined;
-    return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`, { params });
+  getPropertyById(id: string, params?: { year?: number; dateFrom?: string; dateTo?: string }): Observable<PropertyDetailDto> {
+    const httpParams: Record<string, string> = {};
+    if (params?.year) httpParams['year'] = params.year.toString();
+    if (params?.dateFrom) httpParams['dateFrom'] = params.dateFrom;
+    if (params?.dateTo) httpParams['dateTo'] = params.dateTo;
+    return this.http.get<PropertyDetailDto>(`${this.baseUrl}/${id}`, {
+      params: Object.keys(httpParams).length > 0 ? httpParams : undefined,
+    });
   }
 
   /**

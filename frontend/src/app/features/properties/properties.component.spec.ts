@@ -5,7 +5,6 @@ import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { PropertiesComponent } from './properties.component';
 import { PropertyStore } from './stores/property.store';
-import { YearSelectorService } from '../../core/services/year-selector.service';
 
 /**
  * Unit tests for PropertiesComponent (AC-2.1.1)
@@ -35,10 +34,6 @@ describe('PropertiesComponent', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -50,7 +45,6 @@ describe('PropertiesComponent', () => {
           { path: 'properties/:id', component: PropertiesComponent },
         ]),
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -127,17 +121,12 @@ describe('PropertiesComponent loading state', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PropertiesComponent],
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -169,10 +158,6 @@ describe('PropertiesComponent error state', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -181,7 +166,6 @@ describe('PropertiesComponent error state', () => {
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -197,7 +181,7 @@ describe('PropertiesComponent error state', () => {
 
   it('should call loadProperties when retry is triggered', () => {
     component.loadProperties();
-    expect(mockPropertyStore.loadProperties).toHaveBeenCalledWith(2026);
+    expect(mockPropertyStore.loadProperties).toHaveBeenCalled();
   });
 });
 
@@ -213,17 +197,12 @@ describe('PropertiesComponent empty state', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PropertiesComponent],
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 

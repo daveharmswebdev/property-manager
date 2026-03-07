@@ -12,7 +12,8 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject, takeUntil } from 'rxjs';
 import { PropertyStore } from '../stores/property.store';
 import { PropertyPhotoStore } from '../stores/property-photo.store';
-import { YearSelectorService } from '../../../core/services/year-selector.service';
+import { DateRangeFilterComponent } from '../../../shared/components/date-range-filter/date-range-filter.component';
+import { DateRangePreset, getDateRangeFromPreset } from '../../../shared/utils/date-range.utils';
 import { PropertyPhotoGalleryComponent, PropertyPhoto } from '../components/property-photo-gallery/property-photo-gallery.component';
 import { PropertyPhotoUploadComponent } from '../components/property-photo-upload/property-photo-upload.component';
 import { PropertyWorkOrdersComponent } from '../components/property-work-orders/property-work-orders.component';
@@ -60,6 +61,7 @@ import {
     PropertyPhotoUploadComponent,
     PropertyWorkOrdersComponent,
     PropertyIncomeComponent,
+    DateRangeFilterComponent,
   ],
   template: `
     <div class="property-detail-container">
@@ -173,6 +175,17 @@ import {
           </div>
         </header>
 
+        <!-- Date Range Filter (AC-17.12.3) -->
+        <mat-card class="filters-card">
+          <app-date-range-filter
+            [dateRangePreset]="dateRangePreset()"
+            [dateFrom]="dateFrom()"
+            [dateTo]="dateTo()"
+            (dateRangePresetChange)="onDateRangePresetChange($event)"
+            (customDateRangeChange)="onCustomDateRangeChange($event)"
+          />
+        </mat-card>
+
         <!-- Stats Section (AC-2.3.2) -->
         <div class="stats-section">
           <mat-card class="stat-card expense-card">
@@ -181,7 +194,7 @@ import {
                 <mat-icon>trending_down</mat-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-label">YTD Expenses</span>
+                <span class="stat-label">{{ expenseLabel() }}</span>
                 <span class="stat-value expense-value">{{ propertyStore.selectedProperty()!.expenseTotal | currency }}</span>
               </div>
             </mat-card-content>
@@ -193,7 +206,7 @@ import {
                 <mat-icon>trending_up</mat-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-label">YTD Income</span>
+                <span class="stat-label">{{ incomeLabel() }}</span>
                 <span class="stat-value income-value">{{ propertyStore.selectedProperty()!.incomeTotal | currency }}</span>
               </div>
             </mat-card-content>
@@ -390,6 +403,11 @@ import {
           margin-right: 4px;
         }
       }
+    }
+
+    .filters-card {
+      margin-bottom: 24px;
+      padding: 16px;
     }
 
     .stats-section {
@@ -644,7 +662,6 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   private readonly breakpointObserver = inject(BreakpointObserver);
   readonly propertyStore = inject(PropertyStore);
   readonly photoStore = inject(PropertyPhotoStore);
-  readonly yearService = inject(YearSelectorService);
 
   private propertyId: string | null = null;
   private readonly destroy$ = new Subject<void>();
@@ -654,6 +671,15 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   /** Show upload dialog overlay */
   showUploadDialog = false;
+
+  /** Date range filter state */
+  readonly dateRangePreset = signal<DateRangePreset>('this-year');
+  readonly dateFrom = signal<string | null>(null);
+  readonly dateTo = signal<string | null>(null);
+
+  /** Dynamic stat labels based on preset */
+  readonly expenseLabel = computed(() => this.dateRangePreset() === 'this-year' ? 'YTD Expenses' : 'Expenses');
+  readonly incomeLabel = computed(() => this.dateRangePreset() === 'this-year' ? 'YTD Income' : 'Income');
 
   /**
    * Convert store photos to gallery-compatible format
@@ -672,11 +698,15 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   );
 
   constructor() {
-    // React to year changes and reload property detail (AC-3.5.6)
+    const initial = getDateRangeFromPreset('this-year');
+    this.dateFrom.set(initial.dateFrom);
+    this.dateTo.set(initial.dateTo);
+
     effect(() => {
-      const year = this.yearService.selectedYear();
+      const from = this.dateFrom();
+      const to = this.dateTo();
       if (this.propertyId) {
-        this.propertyStore.loadPropertyById({ id: this.propertyId, year });
+        this.propertyStore.loadPropertyById({ id: this.propertyId, dateFrom: from ?? undefined, dateTo: to ?? undefined });
       }
     });
   }
@@ -684,7 +714,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get property ID from route and load (AC-2.3.1)
     this.propertyId = this.route.snapshot.paramMap.get('id');
-    // Initial load happens via effect when selectedYear signal is read
+    // Initial load happens via effect when dateFrom/dateTo signals are read
 
     // Load photos for the property (AC-13.3b.2)
     if (this.propertyId) {
@@ -710,6 +740,19 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/properties']);
+  }
+
+  onDateRangePresetChange(preset: DateRangePreset): void {
+    this.dateRangePreset.set(preset);
+    const { dateFrom, dateTo } = getDateRangeFromPreset(preset);
+    this.dateFrom.set(dateFrom);
+    this.dateTo.set(dateTo);
+  }
+
+  onCustomDateRangeChange(range: { dateFrom: string; dateTo: string }): void {
+    this.dateRangePreset.set('custom');
+    this.dateFrom.set(range.dateFrom);
+    this.dateTo.set(range.dateTo);
   }
 
   /**
@@ -744,7 +787,7 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     const dialogData: ReportDialogData = {
       propertyId: property.id,
       propertyName: property.name,
-      currentYear: this.yearService.selectedYear()
+      currentYear: new Date().getFullYear()
     };
 
     this.dialog.open(ReportDialogComponent, {
