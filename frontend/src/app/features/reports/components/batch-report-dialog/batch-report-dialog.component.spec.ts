@@ -2,10 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { signal } from '@angular/core';
+import { of, throwError } from 'rxjs';
 import { BatchReportDialogComponent } from './batch-report-dialog.component';
 import { ReportService } from '../../services/report.service';
-import { PropertyStore } from '../../../properties/stores/property.store';
+import { PropertyService } from '../../../properties/services/property.service';
 
 
 describe('BatchReportDialogComponent', () => {
@@ -14,23 +14,22 @@ describe('BatchReportDialogComponent', () => {
   let mockReportService: Partial<ReportService>;
   let mockDialogRef: Partial<MatDialogRef<BatchReportDialogComponent>>;
   let mockSnackBar: Partial<MatSnackBar>;
+  let mockPropertyService: Partial<PropertyService>;
 
   const mockProperties = [
-    { id: 'prop-1', name: 'Property 1', city: 'Austin', state: 'TX', incomeTotal: 1000, expenseTotal: 500 },
-    { id: 'prop-2', name: 'Property 2', city: 'Dallas', state: 'TX', incomeTotal: 0, expenseTotal: 0 },
-    { id: 'prop-3', name: 'Property 3', city: 'Houston', state: 'TX', incomeTotal: 2000, expenseTotal: 800 },
+    { id: 'prop-1', name: 'Property 1', street: '123 Main', city: 'Austin', state: 'TX', zipCode: '78701', incomeTotal: 1000, expenseTotal: 500 },
+    { id: 'prop-2', name: 'Property 2', street: '456 Oak', city: 'Dallas', state: 'TX', zipCode: '75201', incomeTotal: 0, expenseTotal: 0 },
+    { id: 'prop-3', name: 'Property 3', street: '789 Elm', city: 'Houston', state: 'TX', zipCode: '77001', incomeTotal: 2000, expenseTotal: 800 },
   ];
-
-  const mockPropertyStore = {
-    properties: signal(mockProperties),
-    isLoading: signal(false),
-    loadProperties: vi.fn(),
-  };
 
   beforeEach(async () => {
     mockReportService = {
       generateBatchScheduleE: vi.fn(),
       downloadZip: vi.fn()
+    };
+
+    mockPropertyService = {
+      getProperties: vi.fn().mockReturnValue(of({ items: mockProperties, totalCount: 3 })),
     };
 
     mockDialogRef = {
@@ -45,8 +44,7 @@ describe('BatchReportDialogComponent', () => {
       imports: [BatchReportDialogComponent, NoopAnimationsModule],
       providers: [
         { provide: ReportService, useValue: mockReportService },
-        { provide: PropertyStore, useValue: mockPropertyStore },
-
+        { provide: PropertyService, useValue: mockPropertyService },
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: MatSnackBar, useValue: mockSnackBar },
       ],
@@ -62,6 +60,14 @@ describe('BatchReportDialogComponent', () => {
   });
 
   describe('initialization', () => {
+    it('should fetch properties with year-scoped date range on init', () => {
+      const year = new Date().getFullYear();
+      expect(mockPropertyService.getProperties).toHaveBeenCalledWith({
+        dateFrom: `${year}-01-01`,
+        dateTo: `${year}-12-31`,
+      });
+    });
+
     it('should load all properties on init', () => {
       expect(component.properties().length).toBe(3);
     });
@@ -79,6 +85,26 @@ describe('BatchReportDialogComponent', () => {
     it('should identify properties with data', () => {
       const hasDataProperty = component.properties().find(p => p.id === 'prop-1');
       expect(hasDataProperty?.hasDataForYear).toBe(true);
+    });
+
+    it('should set error if property fetch fails', () => {
+      (mockPropertyService.getProperties as ReturnType<typeof vi.fn>).mockReturnValue(
+        throwError(() => new Error('fail'))
+      );
+      component.ngOnInit();
+      expect(component.error()).toBe('Failed to load properties.');
+    });
+  });
+
+  describe('year change', () => {
+    it('should reload properties when year changes', () => {
+      (mockPropertyService.getProperties as ReturnType<typeof vi.fn>).mockClear();
+      component.selectedYear = 2024;
+      component.onYearChange();
+      expect(mockPropertyService.getProperties).toHaveBeenCalledWith({
+        dateFrom: '2024-01-01',
+        dateTo: '2024-12-31',
+      });
     });
   });
 

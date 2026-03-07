@@ -674,8 +674,9 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   /** Date range filter state */
   readonly dateRangePreset = signal<DateRangePreset>('this-year');
-  readonly dateFrom = signal<string | null>(null);
-  readonly dateTo = signal<string | null>(null);
+  private readonly dateRange = signal(getDateRangeFromPreset('this-year'));
+  readonly dateFrom = computed(() => this.dateRange().dateFrom);
+  readonly dateTo = computed(() => this.dateRange().dateTo);
 
   /** Dynamic stat labels based on preset */
   readonly expenseLabel = computed(() => this.dateRangePreset() === 'this-year' ? 'YTD Expenses' : 'Expenses');
@@ -698,23 +699,19 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   );
 
   constructor() {
-    const initial = getDateRangeFromPreset('this-year');
-    this.dateFrom.set(initial.dateFrom);
-    this.dateTo.set(initial.dateTo);
+    // Read property ID from route early so the effect can use it
+    this.propertyId = this.route.snapshot.paramMap.get('id');
 
     effect(() => {
-      const from = this.dateFrom();
-      const to = this.dateTo();
+      const { dateFrom, dateTo } = this.dateRange();
       if (this.propertyId) {
-        this.propertyStore.loadPropertyById({ id: this.propertyId, dateFrom: from ?? undefined, dateTo: to ?? undefined });
+        this.propertyStore.loadPropertyById({ id: this.propertyId, dateFrom: dateFrom ?? undefined, dateTo: dateTo ?? undefined });
       }
     });
   }
 
   ngOnInit(): void {
-    // Get property ID from route and load (AC-2.3.1)
-    this.propertyId = this.route.snapshot.paramMap.get('id');
-    // Initial load happens via effect when dateFrom/dateTo signals are read
+    // Property ID already set in constructor for effect to use
 
     // Load photos for the property (AC-13.3b.2)
     if (this.propertyId) {
@@ -744,15 +741,12 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
 
   onDateRangePresetChange(preset: DateRangePreset): void {
     this.dateRangePreset.set(preset);
-    const { dateFrom, dateTo } = getDateRangeFromPreset(preset);
-    this.dateFrom.set(dateFrom);
-    this.dateTo.set(dateTo);
+    this.dateRange.set(getDateRangeFromPreset(preset));
   }
 
   onCustomDateRangeChange(range: { dateFrom: string; dateTo: string }): void {
     this.dateRangePreset.set('custom');
-    this.dateFrom.set(range.dateFrom);
-    this.dateTo.set(range.dateTo);
+    this.dateRange.set(range);
   }
 
   /**
