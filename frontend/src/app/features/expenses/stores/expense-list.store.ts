@@ -159,6 +159,7 @@ export const ExpenseListStore = signalStore(
           'this-month': 'This Month',
           'this-quarter': 'This Quarter',
           'this-year': 'This Year',
+          'last-year': 'Last Year',
           'custom': 'Custom Range',
           'all': 'All Time',
         };

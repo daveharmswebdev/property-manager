@@ -10,7 +10,6 @@ import { By } from '@angular/platform-browser';
 import { IncomeComponent } from './income.component';
 import { IncomeListStore } from './stores/income-list.store';
 import { PropertyStore } from '../properties/stores/property.store';
-import { YearSelectorService } from '../../core/services/year-selector.service';
 
 /**
  * Unit tests for IncomeComponent (AC-4.3.1, AC-4.3.2, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)
@@ -68,10 +67,6 @@ describe('IncomeComponent', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -85,7 +80,6 @@ describe('IncomeComponent', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -217,10 +211,6 @@ describe('IncomeComponent loading state', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IncomeComponent],
@@ -232,7 +222,6 @@ describe('IncomeComponent loading state', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -280,10 +269,6 @@ describe('IncomeComponent error state', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IncomeComponent],
@@ -295,7 +280,6 @@ describe('IncomeComponent error state', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -349,10 +333,6 @@ describe('IncomeComponent truly empty state (AC-4.3.5)', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IncomeComponent],
@@ -364,7 +344,6 @@ describe('IncomeComponent truly empty state (AC-4.3.5)', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -420,10 +399,6 @@ describe('IncomeComponent filtered empty state (AC-4.3.5)', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -437,7 +412,6 @@ describe('IncomeComponent filtered empty state (AC-4.3.5)', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 
@@ -509,10 +483,6 @@ describe('IncomeComponent property filter (AC-4.3.4)', () => {
     loadProperties: vi.fn(),
   };
 
-  const mockYearService = {
-    selectedYear: signal(2026),
-  };
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -526,7 +496,6 @@ describe('IncomeComponent property filter (AC-4.3.4)', () => {
         provideRouter([]),
         { provide: IncomeListStore, useValue: mockIncomeListStore },
         { provide: PropertyStore, useValue: mockPropertyStore },
-        { provide: YearSelectorService, useValue: mockYearService },
       ],
     }).compileComponents();
 

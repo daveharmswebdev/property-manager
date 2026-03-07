@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,8 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ReportService } from '../../services/report.service';
-import { PropertyStore } from '../../../properties/stores/property.store';
-import { YearSelectorService } from '../../../../core/services/year-selector.service';
+import { PropertyService } from '../../../properties/services/property.service';
 
 /**
  * Property selection item for the batch dialog.
@@ -59,7 +58,7 @@ interface PropertySelection {
     <mat-dialog-content data-testid="batch-dialog-content">
       <mat-form-field appearance="outline" class="year-field">
         <mat-label>Tax Year</mat-label>
-        <mat-select [(value)]="selectedYear" data-testid="year-select">
+        <mat-select [(value)]="selectedYear" (selectionChange)="onYearChange()" data-testid="year-select">
           @for (year of availableYears; track year) {
             <mat-option [value]="year">{{ year }}</mat-option>
           }
@@ -262,12 +261,11 @@ interface PropertySelection {
 })
 export class BatchReportDialogComponent implements OnInit {
   private readonly reportService = inject(ReportService);
-  private readonly propertyStore = inject(PropertyStore);
-  private readonly yearService = inject(YearSelectorService);
+  private readonly propertyService = inject(PropertyService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialogRef = inject(MatDialogRef<BatchReportDialogComponent>);
 
-  selectedYear = this.yearService.selectedYear();
+  selectedYear = new Date().getFullYear();
   availableYears = this.generateYearOptions();
 
   readonly properties = signal<PropertySelection[]>([]);
@@ -283,47 +281,36 @@ export class BatchReportDialogComponent implements OnInit {
     this.properties().every(p => p.selected)
   );
 
-  constructor() {
-    // Watch for property changes from the store and update local state
-    effect(() => {
-      const storeProperties = this.propertyStore.properties();
-      const isLoading = this.propertyStore.isLoading();
-
-      // Only update when we have properties and loading is complete
-      if (storeProperties.length > 0 && !isLoading) {
-        this.initializeProperties();
-      }
-    });
-  }
-
   ngOnInit(): void {
-    // Ensure properties are loaded - trigger load if store is empty
-    if (this.propertyStore.properties().length === 0 && !this.propertyStore.isLoading()) {
-      this.propertyStore.loadProperties(this.selectedYear);
-    }
-    // Also initialize immediately if properties already exist
-    if (this.propertyStore.properties().length > 0) {
-      this.initializeProperties();
-    }
+    this.loadPropertiesForYear();
   }
 
   /**
-   * Initialize property selection from store.
-   * Called on init and when store properties update.
+   * Fetch properties with year-scoped totals directly from API.
+   * Avoids reading from the shared PropertyStore whose data reflects
+   * whatever date filter the previous page applied.
    */
-  private initializeProperties(): void {
-    // Load properties from store
-    const storeProperties = this.propertyStore.properties();
-    this.properties.set(
-      storeProperties.map(p => ({
-        id: p.id,
-        name: p.name,
-        address: this.formatAddress(p),
-        selected: true,
-        // Determine if property has data (income or expense > 0)
-        hasDataForYear: p.incomeTotal > 0 || p.expenseTotal > 0
-      }))
-    );
+  private loadPropertiesForYear(): void {
+    const year = this.selectedYear;
+    const dateFrom = `${year}-01-01`;
+    const dateTo = `${year}-12-31`;
+
+    this.propertyService.getProperties({ dateFrom, dateTo }).subscribe({
+      next: (response) => {
+        this.properties.set(
+          response.items.map(p => ({
+            id: p.id,
+            name: p.name,
+            address: this.formatAddress(p),
+            selected: true,
+            hasDataForYear: p.incomeTotal > 0 || p.expenseTotal > 0,
+          }))
+        );
+      },
+      error: () => {
+        this.error.set('Failed to load properties.');
+      },
+    });
   }
 
   /**
@@ -342,6 +329,13 @@ export class BatchReportDialogComponent implements OnInit {
     if (property.city) parts.push(property.city);
     if (property.state) parts.push(property.state);
     return parts.join(', ') || 'No address';
+  }
+
+  /**
+   * Reload property data when tax year changes.
+   */
+  onYearChange(): void {
+    this.loadPropertiesForYear();
   }
 
   /**

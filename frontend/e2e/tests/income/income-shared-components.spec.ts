@@ -41,7 +41,7 @@ test.describe('Story 16.6 — Income Page Shared Components', () => {
       await expect(presetDropdown).toBeVisible();
     });
 
-    test('should show 5 preset options when dropdown opened', async ({
+    test('should show 6 preset options when dropdown opened', async ({
       page,
       authenticatedUser,
     }) => {
@@ -58,9 +58,9 @@ test.describe('Story 16.6 — Income Page Shared Components', () => {
       // WHEN: Opening the preset dropdown
       await page.locator('app-date-range-filter mat-select').click();
 
-      // THEN: All 5 preset options are available
+      // THEN: All 6 preset options are available (All Time, This Month, This Quarter, This Year, Last Year, Custom Range)
       const options = page.locator('mat-option');
-      await expect(options).toHaveCount(5);
+      await expect(options).toHaveCount(6);
     });
 
     test('should show custom date inputs when Custom Range selected', async ({

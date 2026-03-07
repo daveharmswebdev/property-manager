@@ -8,7 +8,7 @@ namespace PropertyManager.Application.Dashboard;
 /// Query to get dashboard totals for the current user's account (AC-4.4.1, AC-4.4.2).
 /// </summary>
 /// <param name="Year">Tax year to aggregate totals for</param>
-public record GetDashboardTotalsQuery(int Year) : IRequest<DashboardTotalsDto>;
+public record GetDashboardTotalsQuery(int? Year = null, DateOnly? DateFrom = null, DateOnly? DateTo = null) : IRequest<DashboardTotalsDto>;
 
 /// <summary>
 /// Dashboard totals DTO containing aggregated financial data.
@@ -39,8 +39,9 @@ public class GetDashboardTotalsQueryHandler : IRequestHandler<GetDashboardTotals
 
     public async Task<DashboardTotalsDto> Handle(GetDashboardTotalsQuery request, CancellationToken cancellationToken)
     {
-        var yearStart = new DateOnly(request.Year, 1, 1);
-        var yearEnd = new DateOnly(request.Year, 12, 31);
+        var year = request.Year ?? DateTime.UtcNow.Year;
+        var yearStart = request.DateFrom ?? new DateOnly(year, 1, 1);
+        var yearEnd = request.DateTo ?? new DateOnly(year, 12, 31);
 
         // Get total expenses for the year
         var totalExpenses = await _dbContext.Expenses

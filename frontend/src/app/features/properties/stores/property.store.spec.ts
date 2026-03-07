@@ -82,8 +82,12 @@ describe('PropertyStore', () => {
       expect(store.error()).toBeNull();
     });
 
-    it('should have null selected year initially', () => {
-      expect(store.selectedYear()).toBeNull();
+    it('should have null dateFrom initially', () => {
+      expect(store.dateFrom()).toBeNull();
+    });
+
+    it('should have null dateTo initially', () => {
+      expect(store.dateTo()).toBeNull();
     });
   });
 
@@ -168,18 +172,19 @@ describe('PropertyStore', () => {
       expect(propertyServiceSpy.getProperties).toHaveBeenCalledWith(undefined);
     });
 
-    it('should call service with year parameter', async () => {
-      store.loadProperties(2024);
+    it('should call service with date range parameters', async () => {
+      store.loadProperties({ dateFrom: '2024-01-01', dateTo: '2024-12-31' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(propertyServiceSpy.getProperties).toHaveBeenCalledWith(2024);
+      expect(propertyServiceSpy.getProperties).toHaveBeenCalledWith({ dateFrom: '2024-01-01', dateTo: '2024-12-31' });
     });
 
-    it('should set selectedYear when loading with year', async () => {
-      store.loadProperties(2024);
+    it('should set dateFrom/dateTo when loading with date range', async () => {
+      store.loadProperties({ dateFrom: '2024-01-01', dateTo: '2024-12-31' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(store.selectedYear()).toBe(2024);
+      expect(store.dateFrom()).toBe('2024-01-01');
+      expect(store.dateTo()).toBe('2024-12-31');
     });
 
     it('should handle error gracefully', async () => {
@@ -237,7 +242,7 @@ describe('PropertyStore', () => {
     it('should reset store to initial state', async () => {
       propertyServiceSpy.getProperties.mockReturnValue(of(mockPropertiesResponse));
 
-      store.loadProperties(2024);
+      store.loadProperties({ dateFrom: '2024-01-01', dateTo: '2024-12-31' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(store.properties().length).toBeGreaterThan(0);
@@ -247,20 +252,8 @@ describe('PropertyStore', () => {
       expect(store.properties()).toEqual([]);
       expect(store.isLoading()).toBe(false);
       expect(store.error()).toBeNull();
-      expect(store.selectedYear()).toBeNull();
-    });
-  });
-
-  describe('setSelectedYear', () => {
-    it('should set selected year', () => {
-      store.setSelectedYear(2024);
-      expect(store.selectedYear()).toBe(2024);
-    });
-
-    it('should allow setting null year', () => {
-      store.setSelectedYear(2024);
-      store.setSelectedYear(null);
-      expect(store.selectedYear()).toBeNull();
+      expect(store.dateFrom()).toBeNull();
+      expect(store.dateTo()).toBeNull();
     });
   });
 
@@ -293,14 +286,14 @@ describe('PropertyStore', () => {
       store.loadPropertyById({ id: 'test-id' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', undefined);
+      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', { dateFrom: undefined, dateTo: undefined });
     });
 
-    it('should call service with property ID and year', async () => {
-      store.loadPropertyById({ id: 'test-id', year: 2024 });
+    it('should call service with property ID and date range', async () => {
+      store.loadPropertyById({ id: 'test-id', dateFrom: '2024-01-01', dateTo: '2024-12-31' });
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', 2024);
+      expect(propertyServiceSpy.getPropertyById).toHaveBeenCalledWith('test-id', { dateFrom: '2024-01-01', dateTo: '2024-12-31' });
     });
 
     it('should handle 404 error with specific message', async () => {

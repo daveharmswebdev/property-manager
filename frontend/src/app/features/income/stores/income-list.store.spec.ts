@@ -177,19 +177,6 @@ describe('IncomeListStore (AC-4.3.1, AC-4.3.3, AC-4.3.4, AC-4.3.5, AC-4.3.6)', (
     });
   });
 
-  describe('setYear', () => {
-    it('should filter by year', () => {
-      // Act
-      store.setYear(2025);
-
-      // Assert
-      expect(incomeServiceMock.getAllIncome).toHaveBeenCalledWith(
-        expect.objectContaining({
-          year: 2025,
-        })
-      );
-    });
-  });
 
   describe('clearFilters (AC-4.3.5)', () => {
     it('should clear all filters', () => {

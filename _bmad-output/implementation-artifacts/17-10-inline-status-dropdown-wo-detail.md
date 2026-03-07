@@ -1,6 +1,6 @@
 # Story 17.10: Inline Status Dropdown on Work Order Detail
 
-Status: review
+Status: done
 
 ## Story
 
@@ -282,3 +282,4 @@ Claude Opus 4.6
 
 ## Change Log
 - 2026-03-04: All 6 tasks completed, all 2618 unit tests passing, Playwright visual verification done, story set to review
+- 2026-03-05: Code review fixes merged (rollback bug, null guards, exhaustMap, test coverage), 2619 tests passing, story done

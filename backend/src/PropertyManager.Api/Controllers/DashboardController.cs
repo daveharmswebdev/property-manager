@@ -30,16 +30,18 @@ public class DashboardController : ControllerBase
     /// Get dashboard totals for the specified tax year (AC-4.4.1, AC-4.4.2, AC-4.4.6).
     /// Returns aggregated expenses, income, net income, and property count.
     /// </summary>
-    /// <param name="year">Tax year to aggregate totals for (required)</param>
+    /// <param name="year">Optional tax year to aggregate totals for (defaults to current year)</param>
+    /// <param name="dateFrom">Optional start date filter (YYYY-MM-DD)</param>
+    /// <param name="dateTo">Optional end date filter (YYYY-MM-DD)</param>
     /// <returns>Dashboard totals including expenses, income, net income, and property count</returns>
     /// <response code="200">Returns the dashboard totals</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet("totals")]
     [ProducesResponseType(typeof(DashboardTotalsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetTotals([FromQuery] int year)
+    public async Task<IActionResult> GetTotals([FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
-        var query = new GetDashboardTotalsQuery(year);
+        var query = new GetDashboardTotalsQuery(year, dateFrom, dateTo);
         var response = await _mediator.Send(query);
 
         _logger.LogInformation(

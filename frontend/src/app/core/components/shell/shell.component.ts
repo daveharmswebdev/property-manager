@@ -12,7 +12,6 @@ import { map } from 'rxjs';
 
 import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
-import { YearSelectorComponent } from '../../../shared/components/year-selector/year-selector.component';
 import { MobileCaptureFabComponent } from '../../../features/receipts/components/mobile-capture-fab/mobile-capture-fab.component';
 import { ReceiptSignalRService } from '../../../features/receipts/services/receipt-signalr.service';
 import { SignalRService } from '../../signalr/signalr.service';
@@ -44,7 +43,6 @@ import { BREAKPOINTS } from '../../constants/layout.constants';
     MatProgressSpinnerModule,
     SidebarNavComponent,
     BottomNavComponent,
-    YearSelectorComponent,
     MobileCaptureFabComponent,
   ],
   templateUrl: './shell.component.html',

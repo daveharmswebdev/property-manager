@@ -38,6 +38,7 @@ import { formatLocalDate } from '../../utils/date.utils';
           <mat-option value="this-month">This Month</mat-option>
           <mat-option value="this-quarter">This Quarter</mat-option>
           <mat-option value="this-year">This Year</mat-option>
+          <mat-option value="last-year">Last Year</mat-option>
           <mat-option value="custom">Custom Range</mat-option>
         </mat-select>
       </mat-form-field>

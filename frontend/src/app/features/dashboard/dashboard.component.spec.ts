@@ -57,13 +57,10 @@ describe('DashboardComponent', () => {
     const propertiesSignal = signal(properties);
     const isLoadingSignal = signal(isLoading);
     const errorSignal = signal(error);
-    const selectedYearSignal = signal<number | null>(null);
-
     return {
       properties: propertiesSignal,
       isLoading: isLoadingSignal,
       error: errorSignal,
-      selectedYear: selectedYearSignal,
       totalCount: computed(() => propertiesSignal().length),
       totalExpenses: computed(() =>
         propertiesSignal().reduce((sum, p) => sum + p.expenseTotal, 0)
@@ -81,7 +78,6 @@ describe('DashboardComponent', () => {
       loadProperties: vi.fn(),
       clearError: vi.fn(),
       reset: vi.fn(),
-      setSelectedYear: vi.fn(),
     };
   }
 

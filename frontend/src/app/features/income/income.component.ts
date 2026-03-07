@@ -25,7 +25,6 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { YearSelectorService } from '../../core/services/year-selector.service';
 import { formatDateShort } from '../../shared/utils/date.utils';
 import { DateRangePreset } from '../../shared/utils/date-range.utils';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
@@ -478,7 +477,6 @@ import { ListTotalDisplayComponent } from '../../shared/components/list-total-di
 export class IncomeComponent implements OnInit, OnDestroy {
   readonly incomeStore = inject(IncomeListStore);
   readonly propertyStore = inject(PropertyStore);
-  private readonly yearService = inject(YearSelectorService);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
@@ -491,12 +489,6 @@ export class IncomeComponent implements OnInit, OnDestroy {
 
   // Computed signal for date range preset
   dateRangePreset = computed(() => this.incomeStore.dateRangePreset());
-
-  // Effect to react to year changes (AC-4.3.2 - respects global tax year selector)
-  private yearEffect = effect(() => {
-    const year = this.yearService.selectedYear();
-    this.incomeStore.setYear(year);
-  });
 
   // Sync search input with store state
   private searchEffect = effect(() => {
