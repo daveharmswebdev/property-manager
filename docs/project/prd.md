@@ -2,244 +2,167 @@
 
 **Author:** Dave
 **Date:** 2025-11-28
-**Version:** 1.0
+**Version:** 2.0 (evolved 2026-03-28)
 
 ---
 
 ## Executive Summary
 
-Property Manager is a web application that transforms chaotic paper-based rental property expense tracking into organized, tax-ready financial records. Built for small landlords managing properties as a side business, the system captures expenses throughout the year and generates reports that map directly to IRS Schedule E (Supplemental Income and Loss), eliminating the annual scramble to gather paperwork for accountants.
+Property Manager is a lean property management platform for small landlords. It manages the full lifecycle of property ownership — from a tenant reporting a leaky faucet, to a vendor completing the repair, to the receipt becoming a line item on IRS Schedule E.
 
-The primary user is a non-technical property manager (Dave's wife) who needs simple, fast expense entry. The system prioritizes practical daily usability over feature complexity, with the core value proposition being: **enter expenses easily throughout the year, get accountant-ready reports at tax time.**
+Built for landlords who manage properties as a team (typically a couple), the system covers the daily workflows that small property owners actually deal with: tracking expenses, managing work orders, coordinating with vendors, capturing receipts, and producing tax-ready reports. The entire landlord-to-tenant-to-vendor workflow is handled in one place, without the enterprise bloat of tools built for large property management companies.
 
 ### What Makes This Special
 
-**"From Shoebox to Schedule E"** - This isn't generic expense tracking. Every feature is designed around one outcome: transforming scattered paper receipts into the exact format accountants need for Schedule E tax reporting. The system understands rental property tax categories natively, so users don't need to think about tax implications when entering data - they just record what they spent, and the system organizes it correctly.
+**Full lifecycle, no bloat.** Competitors like AppFolio and Buildium are built for property management companies with hundreds of units. They're packed with features nobody asked for. Property Manager is built for the landlord with 5-50 properties who wants things to just work.
 
-Secondary value: This is Dave's hands-on cloud computing learning project - full ownership from database design to deployment, building skills that complement his day-job experience.
+**The core workflow:**
+1. Tenant submits a maintenance request through the tenant portal
+2. Landlord reviews and assigns a vendor
+3. Vendor completes the work, receipts are captured
+4. Expense is created and linked to the work order
+5. At tax time, one click → Schedule E worksheets ready for the accountant
+
+**Competitive advantage:** Solo developer with agentic coding tools can ship faster and respond to real user feedback quicker than enterprise teams with 50 people shipping features nobody asked for.
+
+### Secondary Value
+
+This is Dave's graduate school — a career-building portfolio piece demonstrating full-stack SaaS development from database design to Stripe integration to deployment. Even if the business doesn't scale, the skills transfer directly to professional work.
 
 ---
 
 ## Project Classification
 
-**Technical Type:** web_app
-**Domain:** general (real estate/property management)
-**Complexity:** low
+**Technical Type:** web_app (SaaS)
+**Domain:** real estate / property management
+**Complexity:** moderate
+**Business Model:** Subscription SaaS (Stripe integration planned)
+**Legal Entity:** LLC formed, EIN in progress
 
-This is a browser-based single-page application (SPA) with a .NET backend, designed for responsive use on desktop and mobile browsers. The domain is straightforward property expense management with no specialized regulatory requirements (not fintech, not healthcare). Standard security and data protection practices apply.
+This is a browser-based SPA with a .NET backend, designed for responsive use on desktop and mobile. Multi-role: landlords, co-managers, and tenants. Deployed on Render with a production URL.
 
-### Technology Stack (from brainstorming session)
+### Technology Stack
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| Frontend | Angular 20 + @ngrx/signals | Expert knowledge, structured state management |
+| Frontend | Angular 21 + @ngrx/signals | Expert knowledge, structured state management |
 | Backend | .NET 10 + ASP.NET Core | Expert knowledge, Clean Architecture |
 | Database | PostgreSQL + EF Core 10 | Proven, cloud-ready, excellent tooling |
 | API Contracts | NSwag | Auto-generate TypeScript from C# |
 | Architecture | Clean Architecture + CQRS/MediatR | Testable, maintainable |
+| Hosting | Render | Deployed, production-ready |
+| Payments | Stripe (planned) | Subscription billing |
+
+---
+
+## User Roles
+
+### Property Owner (Primary — the paying subscriber)
+The person who owns the rental properties. Creates the account, manages billing, oversees everything. This is the person who currently deals with a shoebox of receipts, coordinates repairs, and dreads tax time.
+
+### Co-Manager (Invited by owner)
+Typically the owner's spouse or business partner. Same access to properties, expenses, work orders, and reports. Invited by the primary owner. Reflects the reality that small property management is almost always a team effort.
+
+### Tenant (Portal user)
+Lives in the property. Interacts through a lightweight tenant portal. Initially can only submit maintenance requests and view their status. Does NOT have access to financial data, other tenants, or landlord workflows.
+
+### Vendor (Not a user)
+Plumbers, electricians, handymen. Vendors are data entities referenced by work orders — they do not log in to the system. Landlords track vendor contact info, trade tags, and work history, but vendors interact through phone/email, not through the app.
 
 ---
 
 ## Success Criteria
 
 ### The Magic Moment
-**One click → PDF worksheets for every property, Schedule E format, ready to email or print.**
+A tenant submits a maintenance request. The landlord assigns it to a vendor. The work gets done, the receipt is captured, the expense is created, and at tax time it shows up on the Schedule E worksheet — all without leaving the app.
 
-That's the test. If your wife can click a button at tax time and hand the accountant exactly what they need - no scrambling, no follow-up questions, no missing receipts - the product succeeded.
+### User Adoption (The Real Test)
+- **"It's part of my routine"** — The beta user integrates it into their property management workflow
+- **"I like this"** — Positive feedback, not just tolerance
+- **They keep using it** — Sustained adoption, not a one-week trial that fades
 
-### User Adoption (Primary User: Your Wife)
-- **She actually uses it** - Prefers the app over paper/spreadsheets for expense entry
-- **Minimal friction** - Adding an expense takes under 30 seconds
-- **Self-sufficient** - Doesn't need to ask Dave "how do I...?" for normal operations
-- **Trust** - She believes the data is complete and correct
+### Demo Readiness
+Before demoing to the target beta candidate:
+- Co-manager invitation flow with UI (not just API)
+- Tenant portal (minimal — submit maintenance request, view status)
+- Stripe integration (demonstrates project maturity and technical capability)
 
-### Tax Time Victory
-- **One-click export** - Generate Schedule E worksheets for all properties instantly
-- **Accountant-ready** - No back-and-forth questions about categorization or missing data
-- **No surprises** - No "oh wait, we forgot about that $2,000 repair" after filing
-- **Dramatic time savings** - Hours of annual prep work reduced to minutes
+### Tax Time Victory (Still Core)
+- One-click export → Schedule E worksheets for all properties
+- Accountant-ready — no back-and-forth questions
+- Every expense traceable back to a work order, receipt, or manual entry
 
 ### Data Integrity
-- **Nothing gets lost** - Every expense entered is reliably stored
-- **Accurate totals** - Reports match bank statements and receipts
-- **Audit-ready** - If questioned, you can trace any line item back to source
+- Nothing gets lost — every expense reliably stored
+- Accurate totals — reports match bank statements
+- Audit-ready — any line item traceable to source
 
 ### Technical Learning (Dave's Goals)
-- **Full ownership** - Built and deployed the entire stack yourself
-- **Cloud fluency** - Confident with cloud infrastructure decisions
-- **Pride in craft** - Codebase demonstrates Clean Architecture done right
-- **Reusable knowledge** - Skills transfer to day job and future projects
+- **Full-stack SaaS** — Auth, multi-tenancy, Stripe, tenant portal, deployment
+- **Agentic development** — Built with Claude Code, demonstrating what solo dev + AI can produce
+- **Portfolio piece** — LinkedIn-worthy: "Built a SaaS property management platform with Stripe integration"
 
 ---
 
 ## Product Scope
 
-### MVP - Minimum Viable Product
-
-The first tax season. Everything needed to go from "paper shoebox" to "Schedule E PDFs ready for accountant."
+### Built (Epics 1-17)
 
 **Core Data Management:**
-- Properties: Add, edit, delete rental properties (name, address)
-- Expenses: Add, edit, delete expenses linked to properties
-- Income: Track rental income per property
-- Categories: Expense categories aligned with Schedule E line items
+- Properties: CRUD with photos, detail pages
+- Expenses: CRUD with Schedule E categories, duplicate detection, date range filtering
+- Income: CRUD with filtering
+- Receipt capture: Mobile camera, S3 upload, process into expense, real-time sync via SignalR
+- Schedule E PDF generation: Per-property and batch
 
-**Views & Dashboard:**
-- Dashboard: Basic expenses overview across all properties
-- Single property view: Expenses and income for one property
-- All properties total: Aggregate expenses across portfolio
-- Year-to-date filtering: View data by tax year
+**Workflow Management:**
+- Vendors: CRUD with trade tags, contact info, detail pages with work history
+- Work orders: Create, assign vendor (or DIY), status tracking, category hierarchy, tag system
+- Work order photos and notes
+- Expense ↔ work order linking (bidirectional)
+- Create expense from work order, create work order from expense
 
-**Receipt Capture (Mobile-First):**
-- Mobile: Property detail → "Save Receipt" button → Camera opens → Photo saved to S3
-- "Capture now, categorize later" workflow - minimal friction at point of purchase
-- Link receipts to expenses when convenient
+**Platform:**
+- Authentication: Registration, login, JWT, password reset, email verification
+- Invitation system (API-level, no UI yet)
+- Dashboard with financial summaries and date range filtering
+- Responsive design (desktop primary, mobile for receipt capture)
+- CI/CD pipeline (GitHub Actions), deployed on Render
 
-**Tax Reporting:**
-- One-click PDF export: Generate Schedule E worksheet per property
-- All properties export: Batch generate all worksheets
+### Next Phase (Demo-Ready)
 
-**Authentication:**
-- User login (single user for MVP - Dave's wife)
+| Feature | Description | Why |
+|---------|-------------|-----|
+| Co-manager invitation UI | Primary owner invites co-manager via email, UI for the invitation flow | Small landlords work as a team |
+| RBAC | Owner and co-manager roles with appropriate permissions | Foundation for multi-user |
+| Tenant portal (minimal) | Tenant submits maintenance request, views status | Core workflow starts with the tenant |
+| Stripe integration | Subscription billing for landlord accounts | Business model + credibility for demo |
 
-**Out of Scope for MVP:**
-- Mortgage interest tracking (accountant handles)
-- Partial ownership % calculations (properties owned outright)
-- Multi-user / sharing
-- Tenant management
-- Vendor management
+### Future State
 
-### Growth Features (Post-MVP)
+| Feature | Description |
+|---------|-------------|
+| Tenant portal — Phase 2 | Lease info, payment history |
+| Tenant portal — Phase 3 | Rent payments via Stripe |
+| Lease management | Store lease terms, renewal dates, rent amounts |
+| Landlord-tenant messaging | Communication within the platform |
+| Advanced financial dashboards | Profit/loss, cash flow beyond Schedule E |
+| General document storage | Leases, insurance, tax docs |
+| Mileage tracking | Auto-calculate mileage for property visits |
+| AI receipt categorization | Auto-categorize from receipt photos |
+| Bank integration | Auto-import transactions |
 
-_To be revisited after first successful tax season._
-
-- **Multi-user support** - Friends and partners with their own accounts/properties
-- **Mileage tracking** - Start trip → drive → auto-calculate mileage (primary user already values this pattern from work)
-- **Shared properties** - Co-ownership scenarios if needed
-
-### Vision (Future)
-
-_Parked for now. Revisit when Growth features are proven._
-
-- White-label SaaS for other small landlords
-- Bank integration for auto-importing transactions
-- AI-powered expense categorization from receipt photos
-- Tenant portal
-- Vendor management / 1099 generation
-
----
-
-## Web Application Requirements
-
-### Browser Support
-| Platform | Browser | Notes |
-|----------|---------|-------|
-| Mobile (iOS) | Safari | Primary mobile use for receipt capture |
-| Mobile (Android) | Chrome | If needed |
-| Desktop/Laptop | Chrome | Primary for data entry and reporting |
-
-**Target:** Modern evergreen browsers only. No legacy browser support required.
-
-### Responsive Design
-- **Mobile-first for receipt capture** - Camera flow must work smoothly on phone
-- **Desktop-optimized for data entry** - Forms, lists, and reports designed for larger screens
-- **Dashboard readable on both** - Key metrics visible regardless of device
-
-### SEO Strategy
-Not applicable - authenticated application, no public-facing content.
-
-### Real-Time Features
-Not required. Standard request/response model. "Refresh to see updates" is acceptable.
-
-### Accessibility
-Standard good practices:
-- Keyboard navigation
-- Proper form labels
-- Sufficient color contrast
-- Screen reader compatible markup
-
-No specific WCAG compliance certification required.
-
-### Offline Capability
-Not required for MVP. User can wait for connectivity to capture receipts.
-_Future consideration: Offline capture → sync when online._
-
----
-
-## User Experience Principles
-
-### Design Philosophy
-**"Obvious, not clever."**
-
-The primary user is non-technical, busy with a full-time job, and currently tolerates Google Sheets because it's free - not because she enjoys it. The UI must be immediately understandable without explanation.
-
-### Visual Personality
-- **Friendly and colorful** - Not sterile corporate, not overwhelming
-- **Big buttons** - Easy tap targets, hard to miss
-- **Clear labels** - No icon-only mystery buttons
-- **Visible navigation** - No hidden hamburger menus for critical functions
-- **Obvious affordances** - If it's clickable, it looks clickable
-
-### User Behavior Pattern
-Primary user batches work - collects receipts throughout the week, then enters everything at once at home on desktop. Mobile capture is available but not the primary workflow initially.
-
-**Design implication:** Desktop data entry must be fast and efficient. Mobile is secondary but ready when habits change.
-
-### Key Interactions
-
-**1. Dashboard (Home Screen)**
-- Headline: "How much have we spent this year?" - total across all properties
-- Property cards/list showing per-property totals
-- Drill-down: Click property → see that property's detail
-
-**2. Add Expense (Primary Action)**
-- Quick form - minimal required fields
-- Property selector (dropdown or recent)
-- Amount, date, category, optional description
-- Optional receipt attachment
-- Save and done - no multi-step wizards
-
-**3. Receipt Capture (Mobile)**
-- Property detail page → "Add Receipt" button (big, obvious)
-- Camera opens → snap photo → saved
-- "Add details later" - receipt exists without full expense entry
-- List of unprocessed receipts visible for later categorization
-
-**4. Tax Report Generation**
-- Clear "Generate Reports" action
-- Year selector
-- One click → all properties exported as PDFs
-- Or select individual property
-
-### Information Architecture
-
-```
-Dashboard (All Properties)
-├── Total YTD expenses
-├── Property cards with individual totals
-│   └── Click → Property Detail
-│       ├── Property expenses list
-│       ├── Property income
-│       ├── "Add Expense" button
-│       ├── "Add Receipt" button (mobile)
-│       └── "Generate Report" for this property
-├── "Add Expense" (global quick-add)
-└── "Generate All Reports"
-```
-
-### The Bar to Clear
-Better than Google Sheets - which means:
-- Faster to enter data (no scrolling to find the right row)
-- Easier to categorize (dropdowns vs. typing)
-- Reports generated automatically (no manual formulas)
-- Receipts attached to records (no separate folder of photos)
-- **Joy** - the feeling of "this is better" when using it
+### Out of Scope (Permanently)
+- Enterprise property management (100+ units)
+- HOA management
+- Commercial real estate
+- Mortgage origination
 
 ---
 
 ## Functional Requirements
 
-### User Account & Access
+### User Account & Access (Built)
 
 - **FR1:** Users can register a new account with email and password
 - **FR2:** Users receive email verification after registration
@@ -248,7 +171,15 @@ Better than Google Sheets - which means:
 - **FR5:** Users can reset their password via email
 - **FR6:** System maintains user session across browser tabs
 
-### Property Management
+### Multi-User & Roles (Next Phase)
+
+- **FR58:** Primary owner can invite a co-manager via email
+- **FR59:** Co-manager receives invitation email with registration link
+- **FR60:** Co-manager has full access to the account's properties, expenses, work orders, and reports
+- **FR61:** Primary owner can revoke co-manager access
+- **FR62:** Invitation management UI shows pending and accepted invitations
+
+### Property Management (Built)
 
 - **FR7:** Users can create a new property with name and address
 - **FR8:** Users can view a list of all their properties
@@ -256,7 +187,7 @@ Better than Google Sheets - which means:
 - **FR10:** Users can delete a property (with confirmation)
 - **FR11:** Users can view a single property's detail page
 
-### Expense Management
+### Expense Management (Built)
 
 - **FR12:** Users can create an expense linked to a specific property
 - **FR13:** Expenses have required fields: amount, date, category, property
@@ -265,60 +196,91 @@ Better than Google Sheets - which means:
 - **FR16:** Users can delete an expense (with confirmation)
 - **FR17:** Users can view a list of expenses for a single property
 - **FR18:** Users can view a list of all expenses across all properties
-- **FR19:** Expense categories align with IRS Schedule E line items (advertising, auto/travel, cleaning/maintenance, commissions, insurance, legal/professional fees, management fees, mortgage interest, other interest, repairs, supplies, taxes, utilities, depreciation, other)
-- **FR20:** Users can filter expenses by date range (year-to-date, custom range)
+- **FR19:** Expense categories align with IRS Schedule E line items
+- **FR20:** Users can filter expenses by date range
 - **FR21:** Users can filter expenses by category
 - **FR22:** Users can search expenses by description text
 
-### Income Management
+### Income Management (Built)
 
 - **FR23:** Users can create an income entry linked to a specific property
 - **FR24:** Income entries have required fields: amount, date, property
-- **FR25:** Income entries have optional fields: description, source (e.g., tenant name)
+- **FR25:** Income entries have optional fields: description, source
 - **FR26:** Users can edit an existing income entry
 - **FR27:** Users can delete an income entry (with confirmation)
 - **FR28:** Users can view income entries for a single property
 - **FR29:** Users can filter income by date range
 
-### Receipt Management
+### Receipt Management (Built)
 
 - **FR30:** Users can capture a receipt photo using device camera (mobile)
-- **FR31:** Users can upload a receipt image from device storage
+- **FR31:** Users can upload a receipt image from device storage (desktop)
 - **FR32:** Receipts are stored in cloud blob storage (S3)
-- **FR33:** Users can create a receipt without immediately linking to an expense ("capture now, categorize later")
-- **FR34:** Users can view a list of unprocessed receipts (not yet linked to expenses)
+- **FR33:** Users can create a receipt without immediately linking to an expense
+- **FR34:** Users can view a list of unprocessed receipts
 - **FR35:** Users can link an existing receipt to an expense
 - **FR36:** Users can view the receipt image attached to an expense
 - **FR37:** Users can delete a receipt
 
-### Dashboard & Views
+### Dashboard & Views (Built)
 
-- **FR38:** Dashboard displays total expenses year-to-date across all properties
-- **FR39:** Dashboard displays total income year-to-date across all properties
-- **FR40:** Dashboard displays net income (income minus expenses) year-to-date
-- **FR41:** Dashboard displays a list/cards of all properties with individual expense totals
+- **FR38:** Dashboard displays total expenses across all properties for selected date range
+- **FR39:** Dashboard displays total income across all properties for selected date range
+- **FR40:** Dashboard displays net income (income minus expenses)
+- **FR41:** Dashboard displays a list of all properties with individual totals
 - **FR42:** Users can click a property to navigate to its detail page
-- **FR43:** Property detail page shows expense total for that property
-- **FR44:** Property detail page shows income total for that property
+- **FR43:** Property detail page shows expense total
+- **FR44:** Property detail page shows income total
 - **FR45:** Property detail page shows list of recent expenses
 - **FR46:** Property detail page shows list of recent income entries
-- **FR47:** Users can select which tax year to view (default: current year)
-- **FR48:** All totals and lists respect the selected tax year filter
+- **FR47:** Users can select date ranges for filtering (presets and custom)
+- **FR48:** All totals and lists respect the selected date range filter
 
-### Tax Reporting
+### Vendor Management (Built)
+
+- **FR63:** Users can create a vendor with name, contact info, trade tags
+- **FR64:** Users can view, edit, and delete vendors
+- **FR65:** Users can search and filter vendors by trade, name
+- **FR66:** Vendor detail page shows work order history
+
+### Work Order Management (Built)
+
+- **FR67:** Users can create a work order linked to a property
+- **FR68:** Work orders can be assigned to a vendor or marked DIY
+- **FR69:** Work orders have status tracking (Reported → Assigned → Completed)
+- **FR70:** Work orders support photos, notes, and tags
+- **FR71:** Expenses can be linked to work orders (bidirectional)
+- **FR72:** Users can create an expense from a work order or vice versa
+
+### Tax Reporting (Built)
 
 - **FR49:** Users can generate a Schedule E worksheet PDF for a single property
 - **FR50:** Users can generate Schedule E worksheet PDFs for all properties in one action
-- **FR51:** Generated PDFs include: property address, all expense categories with totals, income total, organized by Schedule E line item structure
+- **FR51:** Generated PDFs include property address, expense categories with totals, income total
 - **FR52:** Users can select the tax year for report generation
-- **FR53:** Generated PDFs can be downloaded to user's device
+- **FR53:** Generated PDFs can be downloaded
 - **FR54:** Generated PDFs can be previewed before download
 
-### Data Integrity
+### Tenant Portal (Next Phase — Minimal)
 
-- **FR55:** All data changes are persisted immediately (no manual "save" required)
-- **FR56:** Deleted items are soft-deleted with ability to restore (or permanently deleted with clear warning)
-- **FR57:** System prevents duplicate expense entries (same property, amount, date, category within short time window - with override option)
+- **FR73:** Tenants can log in with a separate tenant role
+- **FR74:** Tenants can submit a maintenance request (description, optional photo)
+- **FR75:** Maintenance requests create a work order visible to the landlord
+- **FR76:** Tenants can view the status of their submitted requests
+- **FR77:** Tenants cannot access financial data, other tenants, or landlord workflows
+
+### Stripe Integration (Next Phase)
+
+- **FR78:** Landlord accounts have a subscription plan managed via Stripe
+- **FR79:** Primary owner can manage billing (update payment method, view invoices)
+- **FR80:** Subscription status gates access to the platform (grace period for lapses)
+- **FR81:** Stripe webhooks update account status on payment events
+
+### Data Integrity (Built)
+
+- **FR55:** All data changes are persisted immediately
+- **FR56:** Deleted items are soft-deleted
+- **FR57:** System prevents duplicate expense entries (with override option)
 
 ---
 
@@ -326,56 +288,73 @@ Better than Google Sheets - which means:
 
 ### Performance
 
-- **NFR1:** Pages load in under 3 seconds on typical broadband connection
+- **NFR1:** Pages load in under 3 seconds on typical broadband
 - **NFR2:** Expense list pagination handles hundreds of records without degradation
 - **NFR3:** PDF generation completes within 10 seconds per property
 
-_No strict SLA required. "Reasonably fast" is the target - users shouldn't wait or feel friction._
-
 ### Security
 
-**Design Principle:** "If we can't secure our own data, we can't secure someone else's." Build trustworthy from day 1.
-
 - **NFR4:** All data transmitted over HTTPS (TLS 1.2+)
-- **NFR5:** Passwords hashed using industry-standard algorithm (bcrypt/Argon2)
-- **NFR6:** Authentication tokens (JWT) with appropriate expiration
-- **NFR7:** API endpoints require authentication (no unauthenticated data access)
-- **NFR8:** Receipt images stored in private S3 bucket with signed URLs (not public)
+- **NFR5:** Passwords hashed using industry-standard algorithm
+- **NFR6:** JWT authentication with appropriate expiration
+- **NFR7:** API endpoints require authentication
+- **NFR8:** Receipt images stored in private S3 bucket with signed URLs
 - **NFR9:** S3 objects encrypted at rest
-- **NFR10:** Database credentials stored in environment variables/secrets manager (not in code)
-- **NFR11:** Application runs in isolated container (not shared hosting with other tenants)
-- **NFR12:** Input validation on all user-submitted data (prevent injection attacks)
+- **NFR10:** Database credentials in environment variables (not in code)
+- **NFR11:** Application runs in isolated container
+- **NFR12:** Input validation on all user-submitted data
 - **NFR13:** CORS configured to allow only the application domain
+- **NFR28:** Tenant role cannot access landlord data (role-based API authorization)
+- **NFR29:** Stripe webhook signatures verified to prevent spoofing
 
 ### Scalability
 
-**Design Principle:** Build for today's needs, but don't close doors. Not architecting for 1000 users on day 1, but avoid decisions that would require a rewrite.
-
-- **NFR14:** Data model supports multi-user from day 1 (user_id on all tables) even if MVP is single user
-- **NFR15:** Stateless API design (no server-side session state) to allow horizontal scaling later
-- **NFR16:** Database connection pooling configured appropriately
-- **NFR17:** Receipt storage in S3 (not local filesystem) - scales independently
+- **NFR14:** Multi-tenant data model (AccountId on all tables) — already implemented
+- **NFR15:** Stateless API design for horizontal scaling
+- **NFR16:** Database connection pooling configured
+- **NFR17:** Receipt storage in S3 (scales independently)
 
 ### Backup & Recovery
 
-**Design Principle:** Paper is the backup for now, but data loss would kill adoption. Don't make users re-enter everything.
-
 - **NFR18:** Database backups run automatically (daily minimum)
-- **NFR19:** Point-in-time recovery available for at least 7 days
+- **NFR19:** Point-in-time recovery for at least 7 days
 - **NFR20:** S3 versioning enabled for receipt images
 - **NFR21:** Backup restoration tested and documented
 
 ### Availability
 
-- **NFR22:** Target 99% uptime (allows for maintenance windows, not mission-critical 24/7)
-- **NFR23:** Graceful error handling with user-friendly messages (no stack traces shown to users)
+- **NFR22:** Target 99% uptime
+- **NFR23:** Graceful error handling with user-friendly messages
 
 ### Maintainability
 
-- **NFR24:** Codebase follows Clean Architecture patterns (from brainstorming decision)
-- **NFR25:** Automated tests for critical paths (expense CRUD, PDF generation)
-- **NFR26:** CI/CD pipeline for deployment (no manual server updates)
-- **NFR27:** Logging sufficient to diagnose issues without reproducing them
+- **NFR24:** Clean Architecture patterns
+- **NFR25:** Automated tests for critical paths
+- **NFR26:** CI/CD pipeline (GitHub Actions → Render)
+- **NFR27:** Structured logging sufficient to diagnose issues
+
+---
+
+## Web Application Requirements
+
+### Browser Support
+| Platform | Browser | Notes |
+|----------|---------|-------|
+| Mobile (iOS) | Safari | Receipt capture, tenant portal |
+| Mobile (Android) | Chrome | Receipt capture, tenant portal |
+| Desktop/Laptop | Chrome | Primary for landlord data entry and reporting |
+
+### Responsive Design
+- **Mobile-first for tenant portal** — maintenance requests from phone
+- **Mobile for receipt capture** — camera flow must work smoothly
+- **Desktop-optimized for landlord workflows** — forms, lists, reports
+
+### Accessibility
+Standard good practices: keyboard navigation, proper form labels, sufficient color contrast, screen reader compatible markup.
+
+### Real-Time Features
+- SignalR for receipt sync between devices (built)
+- Future: real-time notification when tenant submits maintenance request
 
 ---
 
@@ -383,41 +362,21 @@ _No strict SLA required. "Reasonably fast" is the target - users shouldn't wait 
 
 | Metric | Count |
 |--------|-------|
-| Functional Requirements | 57 |
-| Non-Functional Requirements | 27 |
-| Capability Areas | 7 (Auth, Properties, Expenses, Income, Receipts, Dashboard, Reports) |
-
-### MVP Scope Summary
-- Single user (Dave's wife) managing 14 rental properties
-- Expense and income tracking with Schedule E categories
-- Mobile receipt capture with "categorize later" workflow
-- Dashboard with YTD totals and per-property drill-down
-- One-click PDF export for Schedule E worksheets
+| Functional Requirements | 81 (FR1-FR81) |
+| Non-Functional Requirements | 29 (NFR1-NFR29) |
+| User Roles | 3 (Owner, Co-Manager, Tenant) + Vendor (data only) |
+| Features Built | Epics 1-17 |
+| Next Phase | Co-manager UI, Tenant Portal (minimal), Stripe |
 
 ### Key Design Decisions
-- **UX:** "Obvious, not clever" - friendly, colorful, big buttons
-- **Security:** Trustworthy from day 1 - proper auth, encrypted storage, isolated hosting
-- **Architecture:** Clean Architecture + CQRS (from brainstorming)
-- **Data Model:** Multi-user ready even for MVP single user
+- **UX:** "Obvious, not clever" — friendly, no bloat
+- **Security:** Multi-tenant from day 1, role-based access
+- **Architecture:** Clean Architecture + CQRS
+- **Business:** SaaS subscription model, LLC formed
 
-### Out of Scope (MVP)
-- Multi-user / sharing
-- Mileage tracking
-- Tenant portal
-- Bank integration
-- AI categorization
+### The Pitch
+A lean property management platform for small landlords. Full lifecycle from tenant repair request to Schedule E tax report. No enterprise bloat. Built by a developer who actually manages rental properties.
 
 ---
 
-## Input Documents
-
-**Product Brief:** None (standalone workflow)
-**Domain Brief:** None (general domain, no specialized research needed)
-**Research Documents:** Brainstorming session (`docs/bmm-brainstorming-session-2025-11-28.md`) - covers stack selection, architecture patterns, and lessons learned from previous project (Upkeep.io)
-
----
-
-_This PRD captures the essence of property-manager - transforming paper-based rental property chaos into tax-ready Schedule E reports with minimal friction for the busy landlord._
-
-_Created through collaborative discovery between Dave and AI facilitator._
-
+_Evolved from v1.0 (2025-11-28) through collaborative discovery. Original vision: single-user tax tool. Current vision: multi-role SaaS property management platform._
