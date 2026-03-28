@@ -115,9 +115,40 @@ await page.route('*/**/api/v1/properties', async (route) => {
 
 **E2E tests run with 1 worker in CI** (`Running N tests using 1 worker`). Run locally with `--workers=1` to match CI behavior. Never use `npx vitest` directly for frontend tests (see memory notes).
 
-## BMad Method Workflows
+## Project Skills (Slash Commands)
 
-This project uses BMad Method for planning. Key slash commands:
-- `/bmad:bmm:workflows:create-story` - Create user stories
-- `/bmad:bmm:workflows:dev-story` - Execute story implementation
-- `/bmad:bmm:workflows:sprint-planning` - Sprint management
+### Daily Development
+- `/dev-story` — Execute next story (TDD, validation gates, sprint status)
+- `/create-story` — Create story from epics with exhaustive context
+- `/code-review` — Adversarial review (3-10 issues min, git cross-reference)
+- `/create-atdd` — Generate failing acceptance tests
+- `/sprint-status` — View sprint progress and next actions
+
+### Planning (at epic/project boundaries)
+- `/create-product-brief` — Collaborative product brief
+- `/create-prd` — Step-by-step PRD creation
+- `/create-architecture` — Architecture decision document
+- `/create-ux` — UX design specification
+- `/create-epics` — Break PRD into epics and stories
+
+### Meta
+- `/generate-context` — Regenerate project-context.md
+- `/create-excalidraw` — Generate diagrams (flowcharts, wireframes, architecture, dataflow)
+- `/orchestrate` — Chain skills (story-cycle, planning-cycle, test-first-cycle)
+
+## Critical Tools (Use Proactively)
+
+- **GitHub CLI (`gh`)** — The repo's PRs, actions, and commit history are institutional memory. Use `gh` proactively to gather context, investigate CI failures, and find existing patterns.
+- **Playwright MCP** — Use the browser during frontend development for visual verification, not just E2E test runs. Navigate to pages and confirm UI behavior during implementation.
+- **Ref MCP** — Look up documentation BEFORE writing code, not after hitting errors. Use `mcp__Ref__ref_search_documentation` to verify API signatures, configuration patterns, and library usage. The LLM's training data is ~1 year behind current package versions.
+
+## Project Artifacts
+
+Planning and implementation artifacts live in `docs/project/`:
+- `project-context.md` — Critical implementation rules (read before coding)
+- `prd.md` — Product requirements document
+- `architecture.md` — Architecture decisions
+- `epics.md` — Feature breakdown with BDD acceptance criteria
+- `ux-design-specification.md` — UX patterns and design system
+- `sprint-status.yaml` — Current sprint tracking
+- `stories/` — Implementation story files (organized by epic)
