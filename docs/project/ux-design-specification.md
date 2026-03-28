@@ -1,7 +1,7 @@
 # property-manager UX Design Specification
 
 _Created on 2025-11-28 by Dave_
-_Generated using BMad Method - Create UX Design Workflow v1.0_
+_Created 2025-11-28_
 
 ---
 

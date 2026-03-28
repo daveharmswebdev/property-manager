@@ -1,7 +1,7 @@
 ---
 project_name: 'property-manager'
 user_name: 'Dave'
-date: '2026-02-23'
+date: '2026-03-28'
 sections_completed: ['technology_stack', 'language_specific_rules', 'framework_specific_rules', 'testing_rules', 'code_quality_style', 'development_workflow', 'critical_dont_miss']
 status: 'complete'
 rule_count: 65
@@ -23,9 +23,9 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | .NET | 10 | LTS, `net10.0` TFM |
 | ASP.NET Core | 10 | Web API with JWT Bearer auth |
 | EF Core | 10.0.3 | PostgreSQL via Npgsql 10.0.0 |
-| Angular | 21.x | ^21.1.5 in package.json |
+| Angular | 21.x | ^21.2.0 in package.json |
 | @ngrx/signals | 21.0.1 | Signal-based state management |
-| Angular Material | 21.1.5 | UI component library |
+| Angular Material | 21.2.0 | UI component library |
 | TypeScript | 5.9.2 | Strict mode enabled |
 
 ### Key Dependencies
@@ -68,6 +68,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Target `ES2022`, module `preserve`
 - Functional interceptors (not class-based) — `HttpInterceptorFn` pattern
 - `inject()` function preferred over constructor injection
+- `input()` / `input.required()` / `output()` signal-based component API — not `@Input()` / `@Output()` decorators
+- `@if` / `@for` control flow syntax — not `*ngIf` / `*ngFor` structural directives
 - Prettier config in package.json: `singleQuote: true`, `printWidth: 100`, angular HTML parser
 - No standalone ESLint config — Prettier only
 
@@ -219,7 +221,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Do NOT add `using System;` or other implicit usings in C# files
 
 **Critical Patterns to Follow:**
-- MANDATORY: Documentation-first development at BOTH story authoring and implementation. **SM agent (story creation):** Use `mcp__Ref__ref_search_documentation` to verify API signatures, framework patterns, and library usage BEFORE writing Dev Notes and technical requirements — the dev agent trusts stories as authoritative. **Dev agent (implementation):** Do upfront research via Ref MCP at story start for key technologies involved, then during implementation use Ref MCP and WebSearch when encountering unfamiliar APIs, errors, or unexpected behavior — research docs BEFORE retrying. Do NOT re-fetch docs already verified in the story's Dev Notes. Applies to Angular, .NET, EF Core, ngrx/signals, Angular Material, Playwright, and all project dependencies.
+- MANDATORY: Documentation-first development at BOTH story authoring and implementation. **Story creation (`/create-story`):** Use `mcp__Ref__ref_search_documentation` to verify API signatures, framework patterns, and library usage BEFORE writing Dev Notes and technical requirements — the dev workflow trusts stories as authoritative. **Implementation (`/dev-story`):** Do upfront research via Ref MCP at story start for key technologies involved, then during implementation use Ref MCP and WebSearch when encountering unfamiliar APIs, errors, or unexpected behavior — research docs BEFORE retrying. Do NOT re-fetch docs already verified in the story's Dev Notes. Applies to Angular, .NET, EF Core, ngrx/signals, Angular Material, Playwright, and all project dependencies.
 - Always check `DeletedAt == null` when querying soft-deletable entities (in addition to global filters)
 - Always throw `NotFoundException(nameof(Entity), id)` when entity not found — middleware maps to 404
 - Always use `_dbContext.SaveChangesAsync(cancellationToken)` — pass the token through
@@ -254,4 +256,4 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-02-23
+Last Updated: 2026-03-28
