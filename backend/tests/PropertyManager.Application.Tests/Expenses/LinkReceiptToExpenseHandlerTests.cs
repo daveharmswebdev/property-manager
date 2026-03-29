@@ -266,7 +266,7 @@ public class LinkReceiptToExpenseHandlerTests
 
     private void SetupExpensesDbSet(List<Expense> expenses)
     {
-        var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = expenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -274,7 +274,7 @@ public class LinkReceiptToExpenseHandlerTests
 
     private void SetupReceiptsDbSet(List<Receipt> receipts)
     {
-        var mockDbSet = receipts.AsQueryable().BuildMockDbSet();
+        var mockDbSet = receipts.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Receipts).Returns(mockDbSet.Object);
     }
 }

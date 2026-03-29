@@ -386,20 +386,20 @@ public class GenerateWorkOrderPdfHandlerTests
     private void SetupDbContext(WorkOrder workOrder, List<Note> notes, List<Expense> expenses)
     {
         var workOrders = new List<WorkOrder> { workOrder };
-        var workOrdersMock = workOrders.AsQueryable().BuildMockDbSet();
+        var workOrdersMock = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(workOrdersMock.Object);
 
-        var notesMock = notes.AsQueryable().BuildMockDbSet();
+        var notesMock = notes.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Notes).Returns(notesMock.Object);
 
-        var expensesMock = expenses.AsQueryable().BuildMockDbSet();
+        var expensesMock = expenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(expensesMock.Object);
     }
 
     private void SetupEmptyWorkOrders()
     {
         var workOrders = new List<WorkOrder>();
-        var workOrdersMock = workOrders.AsQueryable().BuildMockDbSet();
+        var workOrdersMock = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(workOrdersMock.Object);
     }
 

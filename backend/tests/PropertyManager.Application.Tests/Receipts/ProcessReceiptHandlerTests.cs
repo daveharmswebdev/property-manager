@@ -192,7 +192,7 @@ public class ProcessReceiptHandlerTests
 
         Expense? addedExpense = null;
         var expenses = new List<Expense>();
-        var mockExpensesDbSet = expenses.AsQueryable().BuildMockDbSet();
+        var mockExpensesDbSet = expenses.BuildMockDbSet();
         mockExpensesDbSet.Setup(x => x.Add(It.IsAny<Expense>()))
             .Callback<Expense>(e =>
             {
@@ -312,19 +312,19 @@ public class ProcessReceiptHandlerTests
 
     private void SetupReceiptsDbSet(List<Receipt> receipts)
     {
-        var mockDbSet = receipts.AsQueryable().BuildMockDbSet();
+        var mockDbSet = receipts.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Receipts).Returns(mockDbSet.Object);
     }
 
     private void SetupPropertiesDbSet(List<Property> properties)
     {
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
     private void SetupExpenseCategoriesDbSet(List<ExpenseCategory> categories)
     {
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
@@ -494,13 +494,13 @@ public class ProcessReceiptHandlerTests
 
     private void SetupWorkOrdersDbSet(List<WorkOrder> workOrders)
     {
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
     private void SetupExpensesDbSet(List<Expense> expenses)
     {
-        var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = expenses.BuildMockDbSet();
         mockDbSet.Setup(x => x.Add(It.IsAny<Expense>()))
             .Callback<Expense>(e =>
             {

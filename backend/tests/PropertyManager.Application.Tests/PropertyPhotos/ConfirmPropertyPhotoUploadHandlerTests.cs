@@ -243,13 +243,13 @@ public class ConfirmPropertyPhotoUploadHandlerTests
 
     private void SetupPropertiesDbSet(List<Property> properties)
     {
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
     private void SetupPropertyPhotosDbSet(List<PropertyPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
         _dbContextMock.Setup(x => x.PropertyPhotos).Returns(mockDbSet.Object);
     }
 

@@ -397,13 +397,13 @@ public class UpdateVendorHandlerTests
 
     private void SetupVendorsDbSet(List<Vendor> vendors)
     {
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 
     private void SetupTradeTagsDbSet(List<VendorTradeTag> tags)
     {
-        var mockDbSet = tags.AsQueryable().BuildMockDbSet();
+        var mockDbSet = tags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.VendorTradeTags).Returns(mockDbSet.Object);
     }
 }

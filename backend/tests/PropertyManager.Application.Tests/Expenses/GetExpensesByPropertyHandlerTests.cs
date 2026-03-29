@@ -448,7 +448,7 @@ public class GetExpensesByPropertyHandlerTests
             }
             : new List<Property>();
 
-        var mockPropertiesDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockPropertiesDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockPropertiesDbSet.Object);
 
         // Filter expenses to simulate global query filter (soft delete)
@@ -456,7 +456,7 @@ public class GetExpensesByPropertyHandlerTests
             .Where(e => e.DeletedAt == null && e.PropertyId == _testPropertyId)
             .ToList();
 
-        var mockExpensesDbSet = filteredExpenses.AsQueryable().BuildMockDbSet();
+        var mockExpensesDbSet = filteredExpenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockExpensesDbSet.Object);
     }
 

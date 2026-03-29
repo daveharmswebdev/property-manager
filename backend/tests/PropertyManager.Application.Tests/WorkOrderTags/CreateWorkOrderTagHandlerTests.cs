@@ -192,7 +192,7 @@ public class CreateWorkOrderTagHandlerTests
 
     private void SetupTagsDbSet(List<WorkOrderTag> tags)
     {
-        var mockDbSet = tags.AsQueryable().BuildMockDbSet();
+        var mockDbSet = tags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderTags).Returns(mockDbSet.Object);
     }
 }

@@ -29,7 +29,7 @@ public class CreateNoteCommandHandlerTests
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
         // Setup Notes DbSet
-        var notes = new List<Note>().AsQueryable().BuildMockDbSet();
+        var notes = new List<Note>().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Notes).Returns(notes.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 

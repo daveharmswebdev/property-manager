@@ -224,13 +224,13 @@ public class ConfirmWorkOrderPhotoUploadHandlerTests
 
     private void SetupWorkOrdersDbSet(List<WorkOrder> workOrders)
     {
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
     private void SetupWorkOrderPhotosDbSet(List<WorkOrderPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderPhotos).Returns(mockDbSet.Object);
     }
 

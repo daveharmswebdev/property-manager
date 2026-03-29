@@ -268,6 +268,21 @@ development_status:
   17-9-photo-upload-multi-file-support: done    # Issue #276 - M — PR #293 merged
   17-10-inline-status-dropdown-wo-detail: done              # Issue #277 - M — PR #294 merged
   17-11-wo-list-primary-photo-thumbnail: done         # Issue #270 - M — PR #295 merged
-  17-12-replace-year-selector-date-range: ready-for-dev  # Issue #279 - L
+  17-12-replace-year-selector-date-range: done  # Issue #279 - L — all ACs verified in codebase
   17-13-vendor-photo-support: pending                 # Issue #271 - L
   epic-17-retrospective: optional
+
+  # ============================================================
+  # TEST INFRASTRUCTURE IMPROVEMENTS
+  # Source: epics-test-infrastructure.md
+  # GitHub Issues: #319, #292
+  # Added: 2026-03-29
+  # Stories are independent — no inter-story dependencies
+  # ============================================================
+
+  # Epic 18: Test Infrastructure Improvements
+  # User Outcome: "The test suite is current and E2E tests clean up after themselves"
+  epic-18: in-progress
+  18-1-upgrade-mockqueryable-moq: done                # Issue #319 - S
+  18-2-e2e-test-data-cleanup: pending                  # Issue #292 - M
+  epic-18-retrospective: optional

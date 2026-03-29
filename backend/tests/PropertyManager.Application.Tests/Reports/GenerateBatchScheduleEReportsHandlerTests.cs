@@ -240,7 +240,7 @@ public class GenerateBatchScheduleEReportsHandlerTests
 
     private void SetupDbContext(IEnumerable<Property> properties)
     {
-        var propertiesMock = properties.AsQueryable().BuildMockDbSet();
+        var propertiesMock = properties.ToList().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(propertiesMock.Object);
     }
 

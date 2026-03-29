@@ -179,7 +179,7 @@ public class GetIncomeByIdHandlerTests
             .Where(i => i.AccountId == _testAccountId && i.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredIncome.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredIncome.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 }

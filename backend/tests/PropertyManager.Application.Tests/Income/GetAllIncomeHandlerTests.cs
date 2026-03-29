@@ -374,7 +374,7 @@ public class GetAllIncomeHandlerTests
             .Where(i => i.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredIncome.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredIncome.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 }

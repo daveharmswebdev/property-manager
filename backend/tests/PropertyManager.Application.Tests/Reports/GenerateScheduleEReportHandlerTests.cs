@@ -312,18 +312,18 @@ public class GenerateScheduleEReportHandlerTests
     {
         // Setup Properties
         var properties = property != null
-            ? new List<Property> { property }.AsQueryable().BuildMockDbSet()
-            : new List<Property>().AsQueryable().BuildMockDbSet();
+            ? new List<Property> { property }.BuildMockDbSet()
+            : new List<Property>().BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(properties.Object);
 
         // Setup Expenses
         var filteredExpenses = expenses.Where(e => e.DeletedAt == null).ToList();
-        var expensesMock = filteredExpenses.AsQueryable().BuildMockDbSet();
+        var expensesMock = filteredExpenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(expensesMock.Object);
 
         // Setup Income
         var filteredIncome = income.Where(i => i.DeletedAt == null).ToList();
-        var incomeMock = filteredIncome.AsQueryable().BuildMockDbSet();
+        var incomeMock = filteredIncome.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(incomeMock.Object);
     }
 }

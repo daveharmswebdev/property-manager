@@ -30,14 +30,14 @@ public class CreateVendorHandlerTests
 
         // Setup Vendors DbSet with Add tracking (uses synchronous Add, not AddAsync)
         var vendors = new List<Vendor>();
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         mockDbSet.Setup(x => x.Add(It.IsAny<Vendor>()))
             .Callback<Vendor>(v => _addedVendors.Add(v));
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Setup VendorTradeTags DbSet
-        var mockTradeTagDbSet = _tradeTags.AsQueryable().BuildMockDbSet();
+        var mockTradeTagDbSet = _tradeTags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.VendorTradeTags).Returns(mockTradeTagDbSet.Object);
 
         _handler = new CreateVendorCommandHandler(_dbContextMock.Object, _currentUserMock.Object);
@@ -199,7 +199,7 @@ public class CreateVendorHandlerTests
             new VendorTradeTag { Id = tagId2, AccountId = _testAccountId, Name = "HVAC" }
         });
         // Rebuild mock DbSet after adding tags
-        var mockTradeTagDbSet = _tradeTags.AsQueryable().BuildMockDbSet();
+        var mockTradeTagDbSet = _tradeTags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.VendorTradeTags).Returns(mockTradeTagDbSet.Object);
 
         var command = CreateCommand(tradeTagIds: new List<Guid> { tagId1, tagId2 });

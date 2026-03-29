@@ -238,7 +238,7 @@ public class GetIncomeByPropertyHandlerTests
             }
             : new List<Property>();
 
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
@@ -248,7 +248,7 @@ public class GetIncomeByPropertyHandlerTests
             .Where(i => i.DeletedAt == null && i.PropertyId == _testPropertyId)
             .ToList();
 
-        var mockDbSet = filteredIncome.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredIncome.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 }

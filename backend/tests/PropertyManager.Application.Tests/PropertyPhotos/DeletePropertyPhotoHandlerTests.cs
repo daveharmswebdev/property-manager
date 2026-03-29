@@ -204,7 +204,7 @@ public class DeletePropertyPhotoHandlerTests
 
     private void SetupPropertyPhotosDbSet(List<PropertyPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
 
         // Setup Remove to actually remove from list
         mockDbSet.Setup(m => m.Remove(It.IsAny<PropertyPhoto>()))

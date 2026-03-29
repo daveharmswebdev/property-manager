@@ -32,6 +32,16 @@ Identify the first incomplete task (unchecked `[ ]`). If no incomplete tasks rem
 
 If this is a continuation after a code review (story has a "Senior Developer Review" section with unchecked follow-up items), prioritize those review follow-up tasks first.
 
+### Step 1.5: Ensure feature branch
+
+Check the current git branch. If on `main` (or another shared/default branch), create and switch to a new feature branch before making any code changes.
+
+**Branch naming**: derive from the story number and title. Format: `story/<number>-<kebab-case-title>`. Examples:
+- Story 18-1 "Upgrade MockQueryable Moq" → `story/18-1-upgrade-mockqueryable-moq`
+- Story 5-3 "Add Vendor Search" → `story/5-3-add-vendor-search`
+
+If already on a branch that matches the story (e.g., from a previous session), stay on it. Only create a new branch when needed.
+
 ### Step 2: Load context and research
 
 - Load `docs/project/project-context.md` for coding standards and project-wide patterns

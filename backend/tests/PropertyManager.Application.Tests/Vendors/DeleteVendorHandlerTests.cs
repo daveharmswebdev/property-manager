@@ -173,7 +173,7 @@ public class DeleteVendorHandlerTests
 
     private void SetupVendorsDbSet(List<Vendor> vendors)
     {
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);

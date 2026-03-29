@@ -247,7 +247,7 @@ public class SetPrimaryWorkOrderPhotoHandlerTests
 
     private void SetupWorkOrderPhotosDbSet(List<WorkOrderPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderPhotos).Returns(mockDbSet.Object);
     }
 }

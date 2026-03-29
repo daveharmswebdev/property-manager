@@ -371,7 +371,7 @@ public class GetUnprocessedReceiptsHandlerTests
             .Where(r => r.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredReceipts.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredReceipts.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Receipts).Returns(mockDbSet.Object);
     }
 

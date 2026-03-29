@@ -174,7 +174,7 @@ public class DeleteExpenseHandlerTests
             .Where(e => e.AccountId == _testAccountId && e.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredExpenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredExpenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);

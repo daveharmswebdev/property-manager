@@ -537,25 +537,25 @@ public class GetPropertyByIdHandlerTests
 
     private void SetupPropertiesDbSet(List<Property> properties)
     {
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
     private void SetupExpensesDbSet(List<Expense> expenses)
     {
-        var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = expenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
     }
 
     private void SetupIncomeDbSet(List<IncomeEntity> income)
     {
-        var mockDbSet = income.AsQueryable().BuildMockDbSet();
+        var mockDbSet = income.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
     }
 
     private void SetupPropertyPhotosDbSet(List<PropertyPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
         _dbContextMock.Setup(x => x.PropertyPhotos).Returns(mockDbSet.Object);
     }
 

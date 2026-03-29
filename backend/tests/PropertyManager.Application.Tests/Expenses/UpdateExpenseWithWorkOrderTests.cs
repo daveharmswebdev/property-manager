@@ -160,7 +160,7 @@ public class UpdateExpenseWithWorkOrderTests
         var filtered = expenses
             .Where(e => e.AccountId == _testAccountId && e.DeletedAt == null)
             .ToList();
-        var mockDbSet = filtered.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filtered.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
@@ -170,7 +170,7 @@ public class UpdateExpenseWithWorkOrderTests
         var filtered = workOrders
             .Where(w => w.AccountId == _testAccountId && w.DeletedAt == null)
             .ToList();
-        var mockDbSet = filtered.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filtered.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
@@ -180,7 +180,7 @@ public class UpdateExpenseWithWorkOrderTests
         {
             new() { Id = _testCategoryId, Name = "Repairs", SortOrder = 1 }
         };
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
