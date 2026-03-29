@@ -223,7 +223,7 @@ public class GetExpenseTotalsHandlerTests
             .Where(e => e.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredExpenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredExpenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
     }
 }

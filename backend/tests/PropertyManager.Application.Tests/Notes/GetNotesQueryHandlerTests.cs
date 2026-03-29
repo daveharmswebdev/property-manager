@@ -214,7 +214,7 @@ public class GetNotesQueryHandlerTests
 
     private void SetupNotesDbSet(List<Note> notes)
     {
-        var mockDbSet = notes.AsQueryable().BuildMockDbSet();
+        var mockDbSet = notes.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Notes).Returns(mockDbSet.Object);
     }
 }

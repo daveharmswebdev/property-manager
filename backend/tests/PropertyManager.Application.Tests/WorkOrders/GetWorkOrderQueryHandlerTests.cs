@@ -253,7 +253,7 @@ public class GetWorkOrderQueryHandlerTests
 
     private void SetupWorkOrdersDbSet(List<WorkOrder> workOrders)
     {
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 }

@@ -465,14 +465,14 @@ public class UpdateWorkOrderHandlerTests
     private void SetupWorkOrderExists(WorkOrder workOrder)
     {
         var workOrders = new List<WorkOrder> { workOrder };
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
     private void SetupWorkOrderNotFound()
     {
         var workOrders = new List<WorkOrder>();
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
@@ -482,14 +482,14 @@ public class UpdateWorkOrderHandlerTests
         {
             new ExpenseCategory { Id = categoryId, Name = "Repairs" }
         };
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
     private void SetupCategoryNotFound()
     {
         var categories = new List<ExpenseCategory>();
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
@@ -502,13 +502,13 @@ public class UpdateWorkOrderHandlerTests
             Name = $"Tag-{id.ToString().Substring(0, 8)}",
             CreatedAt = DateTime.UtcNow
         }).ToList();
-        var mockDbSet = tags.AsQueryable().BuildMockDbSet();
+        var mockDbSet = tags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderTags).Returns(mockDbSet.Object);
     }
 
     private void SetupTagAssignmentsDbSet(List<WorkOrderTagAssignment> assignments)
     {
-        var mockDbSet = assignments.AsQueryable().BuildMockDbSet();
+        var mockDbSet = assignments.BuildMockDbSet();
         mockDbSet.Setup(x => x.RemoveRange(It.IsAny<IEnumerable<WorkOrderTagAssignment>>()))
             .Callback<IEnumerable<WorkOrderTagAssignment>>(items =>
             {
@@ -526,14 +526,14 @@ public class UpdateWorkOrderHandlerTests
         {
             new Vendor { Id = vendorId, AccountId = accountId, FirstName = "Test", LastName = "Vendor" }
         };
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 
     private void SetupVendorNotFound()
     {
         var vendors = new List<Vendor>();
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 }

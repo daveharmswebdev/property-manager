@@ -108,7 +108,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Test organization mirrors source: `PropertyManager.Application.Tests/Expenses/DeleteExpenseHandlerTests.cs`
 - Constructor setup — no `[SetUp]` attribute. Mocks initialized in constructor
 - Standard mocks: `Mock<IAppDbContext>` and `Mock<ICurrentUser>` for handler tests
-- EF Core DbSet mocking: `MockQueryable.Moq` — `expenses.AsQueryable().BuildMockDbSet()`
+- EF Core DbSet mocking: `MockQueryable.Moq` v10 — `expenses.BuildMockDbSet()` (no `.AsQueryable()` — v10 extends `ICollection<T>` directly)
 - Simulate global query filters in `SetupDbSet()` helper: filter by `AccountId` and `DeletedAt == null`
 - FluentAssertions for all assertions: `.Should().Be()`, `.Should().ThrowAsync<>()`
 - Verify persistence: `_dbContextMock.Verify(x => x.SaveChangesAsync(...), Times.Once)`

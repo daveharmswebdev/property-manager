@@ -185,7 +185,7 @@ public class UnlinkReceiptHandlerTests
 
     private void SetupExpensesDbSet(List<Expense> expenses)
     {
-        var mockDbSet = expenses.AsQueryable().BuildMockDbSet();
+        var mockDbSet = expenses.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);

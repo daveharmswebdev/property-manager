@@ -160,14 +160,14 @@ public class GetWorkOrderExpensesHandlerTests
     private void SetupWorkOrders(List<WorkOrder> workOrders)
     {
         var filtered = workOrders.Where(w => w.DeletedAt == null).ToList();
-        var mockDbSet = filtered.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filtered.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
     }
 
     private void SetupExpenses(List<Expense> expenses)
     {
         var filtered = expenses.Where(e => e.DeletedAt == null).ToList();
-        var mockDbSet = filtered.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filtered.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Expenses).Returns(mockDbSet.Object);
     }
 

@@ -351,7 +351,7 @@ public class UpdateIncomeHandlerTests
             .Where(i => i.AccountId == _testAccountId && i.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredIncome.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredIncome.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Income).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -366,7 +366,7 @@ public class UpdateIncomeHandlerTests
             new() { Id = _otherAccountPropertyId, AccountId = _otherAccountId, Name = "Other Account Property" }
         };
 
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 

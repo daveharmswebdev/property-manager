@@ -146,7 +146,7 @@ public class GetAllVendorTradeTagsHandlerTests
 
     private void SetupTradeTagsDbSet(List<VendorTradeTag> tradeTags)
     {
-        var mockDbSet = tradeTags.AsQueryable().BuildMockDbSet();
+        var mockDbSet = tradeTags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.VendorTradeTags).Returns(mockDbSet.Object);
     }
 }

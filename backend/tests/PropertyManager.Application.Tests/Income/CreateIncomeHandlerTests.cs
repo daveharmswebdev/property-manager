@@ -55,7 +55,7 @@ public class CreateIncomeHandlerTests
                 ZipCode = "78701"
             }
         };
-        var propertiesDbSetMock = properties.AsQueryable().BuildMockDbSet();
+        var propertiesDbSetMock = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(propertiesDbSetMock.Object);
 
         _currentUserMock = new Mock<ICurrentUser>();

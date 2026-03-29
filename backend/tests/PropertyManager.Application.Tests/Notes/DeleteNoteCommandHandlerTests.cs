@@ -187,7 +187,7 @@ public class DeleteNoteCommandHandlerTests
 
     private void SetupNotesDbSet(List<Note> notes)
     {
-        var mockDbSet = notes.AsQueryable().BuildMockDbSet();
+        var mockDbSet = notes.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Notes).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }

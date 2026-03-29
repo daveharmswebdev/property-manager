@@ -45,7 +45,7 @@ public class CreateInvitationTests
             .ReturnsAsync(false);
 
         var invitations = new List<Invitation>();
-        var mockDbSet = invitations.AsQueryable().BuildMockDbSet();
+        var mockDbSet = invitations.BuildMockDbSet();
         mockDbSet.Setup(x => x.Add(It.IsAny<Invitation>())).Callback<Invitation>(inv =>
         {
             inv.Id = Guid.NewGuid();
@@ -118,7 +118,7 @@ public class CreateInvitationTests
         };
 
         var invitations = new List<Invitation> { existingInvitation };
-        var mockDbSet = invitations.AsQueryable().BuildMockDbSet();
+        var mockDbSet = invitations.BuildMockDbSet();
         _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
 
         // Act

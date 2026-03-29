@@ -223,7 +223,7 @@ public class GetGeneratedReportsHandlerTests
             .Where(r => r.AccountId == _testAccountId && r.DeletedAt == null)
             .ToList();
 
-        var mockDbSet = filteredReports.AsQueryable().BuildMockDbSet();
+        var mockDbSet = filteredReports.BuildMockDbSet();
         _dbContextMock.Setup(x => x.GeneratedReports).Returns(mockDbSet.Object);
     }
 }

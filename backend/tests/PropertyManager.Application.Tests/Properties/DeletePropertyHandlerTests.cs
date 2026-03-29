@@ -253,7 +253,7 @@ public class DeletePropertyHandlerTests
 
     private void SetupPropertiesDbSet(List<Property> properties)
     {
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
         _dbContextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);

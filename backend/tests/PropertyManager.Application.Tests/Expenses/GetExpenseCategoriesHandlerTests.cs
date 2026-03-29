@@ -118,7 +118,7 @@ public class GetExpenseCategoriesHandlerTests
 
     private void SetupExpenseCategoriesDbSet(List<ExpenseCategory> categories)
     {
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 }

@@ -167,7 +167,7 @@ public class SetPrimaryPropertyPhotoHandlerTests
 
     private void SetupPropertyPhotosDbSet(List<PropertyPhoto> photos)
     {
-        var mockDbSet = photos.AsQueryable().BuildMockDbSet();
+        var mockDbSet = photos.BuildMockDbSet();
         _dbContextMock.Setup(x => x.PropertyPhotos).Returns(mockDbSet.Object);
     }
 

@@ -37,7 +37,7 @@ public class CreateReceiptHandlerTests
         _currentUserMock.Setup(x => x.UserId).Returns(_testUserId);
 
         // Setup receipts DbSet for Add operations
-        var mockReceiptsDbSet = _receipts.AsQueryable().BuildMockDbSet();
+        var mockReceiptsDbSet = _receipts.BuildMockDbSet();
         mockReceiptsDbSet.Setup(x => x.Add(It.IsAny<Receipt>()))
             .Callback<Receipt>(r =>
             {
@@ -436,7 +436,7 @@ public class CreateReceiptHandlerTests
 
     private void SetupPropertiesDbSet(List<Property> properties)
     {
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 

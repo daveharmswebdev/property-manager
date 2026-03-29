@@ -32,7 +32,7 @@ public class CreateWorkOrderHandlerTests
 
         // Setup WorkOrders DbSet with Add tracking
         var workOrders = new List<WorkOrder>();
-        var mockDbSet = workOrders.AsQueryable().BuildMockDbSet();
+        var mockDbSet = workOrders.BuildMockDbSet();
         mockDbSet.Setup(x => x.Add(It.IsAny<WorkOrder>()))
             .Callback<WorkOrder>(w => _addedWorkOrders.Add(w));
         _dbContextMock.Setup(x => x.WorkOrders).Returns(mockDbSet.Object);
@@ -278,14 +278,14 @@ public class CreateWorkOrderHandlerTests
         {
             new Property { Id = propertyId, AccountId = accountId, Name = "Test Property" }
         };
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
     private void SetupPropertyNotFound()
     {
         var properties = new List<Property>();
-        var mockDbSet = properties.AsQueryable().BuildMockDbSet();
+        var mockDbSet = properties.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Properties).Returns(mockDbSet.Object);
     }
 
@@ -295,14 +295,14 @@ public class CreateWorkOrderHandlerTests
         {
             new ExpenseCategory { Id = categoryId, Name = "Repairs" }
         };
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
     private void SetupCategoryNotFound()
     {
         var categories = new List<ExpenseCategory>();
-        var mockDbSet = categories.AsQueryable().BuildMockDbSet();
+        var mockDbSet = categories.BuildMockDbSet();
         _dbContextMock.Setup(x => x.ExpenseCategories).Returns(mockDbSet.Object);
     }
 
@@ -448,14 +448,14 @@ public class CreateWorkOrderHandlerTests
             Name = $"Tag-{id.ToString().Substring(0, 8)}",
             CreatedAt = DateTime.UtcNow
         }).ToList();
-        var mockDbSet = tags.AsQueryable().BuildMockDbSet();
+        var mockDbSet = tags.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderTags).Returns(mockDbSet.Object);
     }
 
     private void SetupTagAssignmentsDbSet()
     {
         var assignments = new List<WorkOrderTagAssignment>();
-        var mockDbSet = assignments.AsQueryable().BuildMockDbSet();
+        var mockDbSet = assignments.BuildMockDbSet();
         _dbContextMock.Setup(x => x.WorkOrderTagAssignments).Returns(mockDbSet.Object);
     }
 
@@ -570,14 +570,14 @@ public class CreateWorkOrderHandlerTests
         {
             new Vendor { Id = vendorId, AccountId = accountId, FirstName = "Test", LastName = "Vendor" }
         };
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 
     private void SetupVendorNotFound()
     {
         var vendors = new List<Vendor>();
-        var mockDbSet = vendors.AsQueryable().BuildMockDbSet();
+        var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
     }
 
