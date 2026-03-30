@@ -67,6 +67,12 @@ A task marked `[x]` but not actually done is a CRITICAL finding. An acceptance c
 4. Code Quality — complex functions, magic numbers, poor naming
 5. Test Quality — are tests real assertions or placeholders?
 
+**Testing Pyramid Audit**: For full-stack stories, verify all three levels are present:
+- Unit tests in `PropertyManager.Application.Tests/` and frontend `.spec.ts` files
+- Integration tests in `PropertyManager.Api.Tests/` (WebApplicationFactory-based endpoint tests)
+- E2E tests in `frontend/e2e/tests/` (Playwright user-flow tests)
+- Missing a level of the pyramid → HIGH severity finding
+
 **If fewer than 3 issues found**: Look harder — edge cases, null handling, architecture violations, documentation gaps, integration issues, dependency problems.
 
 ### Step 4: Present findings and offer fixes

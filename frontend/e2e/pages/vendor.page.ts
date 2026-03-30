@@ -126,6 +126,30 @@ export class VendorPage extends BasePage {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Locators - Vendor Photos (Story 8.12)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Photos section card on vendor detail page */
+  get detailPhotosSection(): Locator {
+    return this.page.locator('.section-card', { hasText: 'Photos' });
+  }
+
+  /** Drag-drop upload zone */
+  get photoUploadZone(): Locator {
+    return this.page.locator('[data-testid="drop-zone"]');
+  }
+
+  /** Photo gallery component on detail page */
+  get photoGallerySection(): Locator {
+    return this.page.locator('app-property-photo-gallery');
+  }
+
+  /** Add Photo button (the drop zone acts as the add photo trigger) */
+  get addPhotoButton(): Locator {
+    return this.page.locator('.drop-zone');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Locators - Vendor Form (Create/Edit)
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -868,5 +892,71 @@ export class VendorPage extends BasePage {
    */
   async expectDetailDeleteButtonVisible(): Promise<void> {
     await expect(this.detailDeleteButton).toBeVisible();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Assertions - Vendor Photos (Story 8.12)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assert photos section is visible on detail page
+   */
+  async expectDetailPhotosSectionVisible(): Promise<void> {
+    await expect(this.detailPhotosSection).toBeVisible();
+  }
+
+  /**
+   * Assert the upload drop zone is visible
+   */
+  async expectPhotoUploadZoneVisible(): Promise<void> {
+    await expect(this.photoUploadZone).toBeVisible();
+  }
+
+  /**
+   * Assert the upload drop zone contains expected text
+   */
+  async expectUploadZoneText(text: string): Promise<void> {
+    await expect(this.photoUploadZone).toContainText(text);
+  }
+
+  /**
+   * Assert photo gallery is visible
+   */
+  async expectPhotoGalleryVisible(): Promise<void> {
+    await expect(this.photoGallerySection).toBeVisible();
+  }
+
+  /**
+   * Get the vendor thumbnail image for a specific vendor in the list
+   * @param vendorName - Full name of the vendor
+   */
+  vendorThumbnail(vendorName: string): Locator {
+    return this.vendorCards.filter({ hasText: vendorName }).first().locator('img.vendor-thumbnail');
+  }
+
+  /**
+   * Get the vendor person icon for a specific vendor in the list
+   * @param vendorName - Full name of the vendor
+   */
+  vendorPersonIcon(vendorName: string): Locator {
+    return this.vendorCards.filter({ hasText: vendorName }).first().locator('mat-icon.vendor-icon');
+  }
+
+  /**
+   * Assert vendor in list shows person icon (no photo)
+   * @param vendorName - Full name of the vendor
+   */
+  async expectVendorShowsPersonIcon(vendorName: string): Promise<void> {
+    await expect(this.vendorPersonIcon(vendorName)).toBeVisible();
+    await expect(this.vendorThumbnail(vendorName)).not.toBeVisible();
+  }
+
+  /**
+   * Assert vendor in list shows thumbnail image
+   * @param vendorName - Full name of the vendor
+   */
+  async expectVendorShowsThumbnail(vendorName: string): Promise<void> {
+    await expect(this.vendorThumbnail(vendorName)).toBeVisible();
+    await expect(this.vendorPersonIcon(vendorName)).not.toBeVisible();
   }
 }

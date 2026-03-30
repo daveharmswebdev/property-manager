@@ -63,6 +63,8 @@ For each incomplete task/subtask, follow this cycle:
 
 **REFACTOR**: Improve code structure while keeping tests green. Ensure code follows architecture patterns from Dev Notes.
 
+**MIGRATION**: If the task creates an EF Core migration, always run `dotnet ef database update` to apply it to the local database. The app cannot be verified against the real database otherwise.
+
 **Validate and mark complete**:
 - Verify ALL tests for this task actually exist and pass
 - Confirm implementation matches exactly what the task specifies — no extra features
@@ -99,10 +101,12 @@ If more tasks remain, repeat Step 4. If all tasks done, continue to Step 5.
 **Definition of Done checklist**:
 - All tasks/subtasks marked complete
 - Implementation satisfies every Acceptance Criterion
-- Unit tests for core functionality added/updated
-- Integration tests added when required
-- E2E tests for critical flows added when story demands them
+- **Testing pyramid respected** (all three levels required for full-stack stories):
+  - Unit tests: handler/validator/store/component logic (always required)
+  - Integration tests: API endpoint tests via `WebApplicationFactory` in `PropertyManager.Api.Tests/` — auth, validation, CRUD, tenant isolation, full-cycle flow (required for new/changed endpoints)
+  - E2E tests: Playwright tests in `frontend/e2e/tests/` — critical user flows through the real UI (required for new/changed UI features)
 - All tests pass (no regressions)
+- EF Core migrations applied locally (`dotnet ef database update`)
 - File List includes every new/modified/deleted file
 - Dev Agent Record contains implementation notes
 
