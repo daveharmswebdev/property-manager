@@ -239,7 +239,7 @@ development_status:
   16-4-expense-workorder-and-receipt-linking: done  # Issue #235
   16-5-ux-polish-bundle: done                      # Issues #220, #222, #223
   16-6-shared-component-extraction: done  # Issues #215, #216 - depends on 16.2
-  16-7-test-infrastructure-high-priority-gaps: backlog  # Issue #212
+  16-7-test-infrastructure-high-priority-gaps: closed    # Issue #212 - not planned, items addressed elsewhere
   16-8-wire-duplicate-detection-receipt-flow: done  # Issue #244 - bug: wiring gap, all plumbing exists
   16-9-receipt-thumbnail-reactivity: done           # Issue #241 - thumbnail shows placeholder after upload
   16-10-unify-income-list-property-detail: done    # Issue #240 - depends on 16.2 (DONE)
@@ -284,5 +284,5 @@ development_status:
   # User Outcome: "The test suite is current and E2E tests clean up after themselves"
   epic-18: in-progress
   18-1-upgrade-mockqueryable-moq: done                # Issue #319 - S
-  18-2-e2e-test-data-cleanup: pending                  # Issue #292 - M
+  18-2-e2e-test-data-cleanup: review                    # Issue #292 - M
   epic-18-retrospective: optional
