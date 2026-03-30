@@ -48,7 +48,7 @@ public class TestController : ControllerBase
         }
 
         var accountId = _currentUser.AccountId;
-        _logger.LogInformation("Resetting test data for account {AccountId}", accountId);
+        _logger.LogInformation("Resetting test data for current account");
 
         var response = new TestResetResponse();
 
@@ -143,8 +143,7 @@ public class TestController : ControllerBase
             .ExecuteDeleteAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Test data reset complete for account {AccountId}: {TotalDeleted} entities deleted",
-            accountId,
+            "Test data reset complete: {TotalDeleted} entities deleted",
             response.TotalDeleted);
 
         return Ok(response);
