@@ -246,7 +246,7 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
     @media (max-width: 768px) {
       .expense-list-row {
         grid-template-columns: 1fr auto;
-        grid-template-rows: auto auto auto;
+        grid-template-rows: auto auto auto auto;
         gap: 4px 16px;
         padding: 12px 16px;
       }
@@ -283,7 +283,27 @@ import { formatDateShort } from '../../../../shared/utils/date.utils';
       }
 
       .expense-work-order {
-        display: none;
+        grid-column: 1;
+        grid-row: 4;
+        justify-content: flex-start;
+
+        mat-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      .cell-actions {
+        grid-column: 2;
+        grid-row: 4;
+        justify-content: flex-end;
+
+        button {
+          width: 44px;
+          height: 44px;
+          line-height: 44px;
+        }
       }
     }
   `],
