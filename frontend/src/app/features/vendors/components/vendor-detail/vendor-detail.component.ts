@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -8,10 +8,21 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { VendorStore } from '../../stores/vendor.store';
+import { VendorPhotoStore } from '../../stores/vendor-photo.store';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  PhotoLightboxComponent,
+  PhotoLightboxData,
+  LightboxPhoto,
+} from '../../../../shared/components/photo-lightbox/photo-lightbox.component';
+import {
+  PropertyPhotoGalleryComponent,
+  PropertyPhoto,
+} from '../../../properties/components/property-photo-gallery/property-photo-gallery.component';
+import { PhotoUploadComponent } from '../../../../shared/components/photo-upload/photo-upload.component';
 import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
 
 /**
@@ -38,6 +49,8 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
     MatChipsModule,
     MatDialogModule,
     PhoneFormatPipe,
+    PropertyPhotoGalleryComponent,
+    PhotoUploadComponent,
   ],
   template: `
     <div class="vendor-detail-container">
@@ -92,10 +105,26 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
           </div>
         </header>
 
-        <!-- Contact Information Section (AC #3) -->
+        <!-- Contact Information Section (AC #3, AC-1) -->
         <mat-card class="section-card">
           <mat-card-header>
-            <mat-card-title>Contact Information</mat-card-title>
+            <div class="contact-header-row">
+              <div class="profile-photo-container">
+                @if (vendorPhotoStore.primaryPhoto()?.thumbnailUrl) {
+                  <img
+                    [src]="vendorPhotoStore.primaryPhoto()!.thumbnailUrl"
+                    alt="Vendor profile photo"
+                    class="profile-photo"
+                    (click)="openLightbox(0)"
+                  />
+                } @else {
+                  <div class="profile-photo-placeholder">
+                    <mat-icon>person</mat-icon>
+                  </div>
+                }
+              </div>
+              <mat-card-title>Contact Information</mat-card-title>
+            </div>
           </mat-card-header>
           <mat-card-content>
             <!-- Phone Numbers -->
@@ -159,6 +188,44 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
               </div>
             } @else {
               <p class="empty-text">No trade tags assigned</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Photos Section (AC-2, AC-3) -->
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>
+              Photos
+              @if (vendorPhotoStore.photoCount() > 0) {
+                ({{ vendorPhotoStore.photoCount() }})
+              }
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <app-photo-upload
+              [uploadFn]="uploadPhotoFn"
+              (uploadComplete)="onUploadComplete()"
+            ></app-photo-upload>
+
+            @if (vendorPhotoStore.isLoading()) {
+              <div class="loading-container">
+                <mat-spinner diameter="32"></mat-spinner>
+              </div>
+            } @else if (vendorPhotoStore.hasPhotos()) {
+              <app-property-photo-gallery
+                [photos]="vendorPhotosAsPropertyPhotos()"
+                [isLoading]="vendorPhotoStore.isLoading()"
+                (photoClick)="onPhotoClick($event)"
+                (deleteClick)="onDeletePhoto($event)"
+                (setPrimaryClick)="onSetPrimaryClick($event)"
+                (reorderClick)="onReorder($event)"
+              ></app-property-photo-gallery>
+            } @else {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">photo_library</mat-icon>
+                <p>No photos yet. Upload business cards, certifications, or work samples.</p>
+              </div>
             }
           </mat-card-content>
         </mat-card>
@@ -447,6 +514,46 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
         white-space: nowrap;
       }
 
+      .contact-header-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .profile-photo-container {
+        flex-shrink: 0;
+      }
+
+      .profile-photo {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .profile-photo:hover {
+        opacity: 0.8;
+      }
+
+      .profile-photo-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .profile-photo-placeholder mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: rgba(0, 0, 0, 0.3);
+      }
+
       /* Responsive */
       @media (max-width: 600px) {
         .vendor-detail-container {
@@ -474,22 +581,137 @@ import { PhoneFormatPipe } from '../../../../shared/pipes/phone-format.pipe';
 })
 export class VendorDetailComponent implements OnInit, OnDestroy {
   protected readonly store = inject(VendorStore);
+  protected readonly vendorPhotoStore = inject(VendorPhotoStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
 
   protected vendorId: string | null = null;
 
+  /**
+   * Computed signal to convert VendorPhotoDto[] to PropertyPhoto[] for reuse of
+   * PropertyPhotoGalleryComponent. Using computed() avoids recalculation on every
+   * change detection cycle (unlike a method call in template).
+   */
+  protected readonly vendorPhotosAsPropertyPhotos = computed<PropertyPhoto[]>(() =>
+    this.vendorPhotoStore.sortedPhotos().map((p) => ({
+      id: p.id ?? '',
+      thumbnailUrl: p.thumbnailUrl,
+      viewUrl: p.viewUrl,
+      isPrimary: p.isPrimary ?? false,
+      displayOrder: p.displayOrder ?? 0,
+      originalFileName: p.originalFileName,
+      fileSizeBytes: p.fileSizeBytes,
+      createdAt: p.createdAt,
+    }))
+  );
+
   ngOnInit(): void {
     this.vendorId = this.route.snapshot.paramMap.get('id');
     if (this.vendorId) {
       this.store.loadVendor(this.vendorId);
       this.store.loadVendorWorkOrders(this.vendorId);
+      this.vendorPhotoStore.loadPhotos(this.vendorId);
     }
   }
 
   ngOnDestroy(): void {
     this.store.clearSelectedVendor();
+    this.vendorPhotoStore.clear();
+  }
+
+  /**
+   * Upload function bound for PhotoUploadComponent (AC-2)
+   */
+  uploadPhotoFn = (file: File): Promise<boolean> => {
+    return this.vendorPhotoStore.uploadPhoto(file);
+  };
+
+  /**
+   * Handle upload completion - refresh photos
+   */
+  onUploadComplete(): void {
+    if (this.vendorId) {
+      this.vendorPhotoStore.loadPhotos(this.vendorId);
+    }
+  }
+
+  /**
+   * Handle photo click from gallery (AC-3)
+   */
+  onPhotoClick(photo: PropertyPhoto): void {
+    const photos = this.vendorPhotoStore.sortedPhotos();
+    const index = photos.findIndex((p) => p.id === photo.id);
+    this.openLightbox(index >= 0 ? index : 0);
+  }
+
+  /**
+   * Open lightbox for photo viewing (AC-3)
+   */
+  openLightbox(index: number): void {
+    const photos = this.vendorPhotoStore.sortedPhotos();
+    if (photos.length === 0) return;
+
+    const lightboxPhotos: LightboxPhoto[] = photos.map((p) => ({
+      id: p.id ?? '',
+      viewUrl: p.viewUrl,
+      thumbnailUrl: p.thumbnailUrl,
+      originalFileName: p.originalFileName,
+    }));
+
+    const lightboxData: PhotoLightboxData = {
+      photos: lightboxPhotos,
+      currentIndex: index,
+    };
+
+    this.dialog.open(PhotoLightboxComponent, {
+      data: lightboxData,
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: '100vw',
+      height: '100vh',
+      panelClass: 'photo-lightbox-dialog',
+    });
+  }
+
+  /**
+   * Handle photo delete (AC-3)
+   */
+  onDeletePhoto(photo: PropertyPhoto): void {
+    const photoId = photo.id;
+    const dialogData: ConfirmDialogData = {
+      title: 'Delete Photo?',
+      message: 'This photo will be permanently deleted.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      iconColor: 'warn',
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '400px',
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.vendorPhotoStore.deletePhoto(photoId);
+      }
+    });
+  }
+
+  /**
+   * Handle set primary photo (AC-1)
+   */
+  onSetPrimaryClick(photo: PropertyPhoto): void {
+    this.vendorPhotoStore.setPrimaryPhoto(photo.id);
+  }
+
+  /**
+   * Handle photo reorder (AC-2)
+   */
+  onReorder(photoIds: string[]): void {
+    this.vendorPhotoStore.reorderPhotos(photoIds);
   }
 
   /**

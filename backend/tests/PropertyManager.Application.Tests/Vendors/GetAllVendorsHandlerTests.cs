@@ -15,6 +15,7 @@ public class GetAllVendorsHandlerTests
 {
     private readonly Mock<IAppDbContext> _dbContextMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IPhotoService> _photoServiceMock;
     private readonly GetAllVendorsQueryHandler _handler;
     private readonly Guid _testAccountId = Guid.NewGuid();
     private readonly Guid _otherAccountId = Guid.NewGuid();
@@ -23,10 +24,14 @@ public class GetAllVendorsHandlerTests
     {
         _dbContextMock = new Mock<IAppDbContext>();
         _currentUserMock = new Mock<ICurrentUser>();
+        _photoServiceMock = new Mock<IPhotoService>();
         _currentUserMock.Setup(x => x.AccountId).Returns(_testAccountId);
         _currentUserMock.Setup(x => x.IsAuthenticated).Returns(true);
 
-        _handler = new GetAllVendorsQueryHandler(_dbContextMock.Object, _currentUserMock.Object);
+        // Setup empty VendorPhotos by default
+        SetupVendorPhotosDbSet(new List<VendorPhoto>());
+
+        _handler = new GetAllVendorsQueryHandler(_dbContextMock.Object, _currentUserMock.Object, _photoServiceMock.Object);
     }
 
     [Fact]
@@ -320,5 +325,11 @@ public class GetAllVendorsHandlerTests
     {
         var mockDbSet = vendors.BuildMockDbSet();
         _dbContextMock.Setup(x => x.Vendors).Returns(mockDbSet.Object);
+    }
+
+    private void SetupVendorPhotosDbSet(List<VendorPhoto> photos)
+    {
+        var mockDbSet = photos.BuildMockDbSet();
+        _dbContextMock.Setup(x => x.VendorPhotos).Returns(mockDbSet.Object);
     }
 }

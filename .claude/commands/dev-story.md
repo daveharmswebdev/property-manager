@@ -93,6 +93,9 @@ If more tasks remain, repeat Step 4. If all tasks done, continue to Step 5.
 - Update story Status to "review"
 - Update `docs/project/sprint-status.yaml`: set story status to "review"
 
+**Cleanup**:
+- Delete all files in `screenshots/` (keep `.gitkeep`): `find screenshots/ -type f ! -name '.gitkeep' -delete`
+
 **Definition of Done checklist**:
 - All tasks/subtasks marked complete
 - Implementation satisfies every Acceptance Criterion

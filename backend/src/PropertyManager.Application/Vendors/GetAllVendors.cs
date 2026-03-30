@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Application.VendorTradeTags;
+using PropertyManager.Domain.Entities;
 
 namespace PropertyManager.Application.Vendors;
 
@@ -30,13 +31,16 @@ public class GetAllVendorsQueryHandler : IRequestHandler<GetAllVendorsQuery, Get
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IPhotoService _photoService;
 
     public GetAllVendorsQueryHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IPhotoService photoService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _photoService = photoService;
     }
 
     public async Task<GetAllVendorsResponse> Handle(GetAllVendorsQuery request, CancellationToken cancellationToken)
@@ -50,6 +54,25 @@ public class GetAllVendorsQueryHandler : IRequestHandler<GetAllVendorsQuery, Get
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+        // Get primary photo thumbnail storage keys for all vendors in one query
+        var vendorIds = vendors.Select(v => v.Id).ToList();
+        var primaryPhotos = await _dbContext.VendorPhotos
+            .Where(vp => vendorIds.Contains(vp.VendorId) && vp.IsPrimary)
+            .Select(vp => new { vp.VendorId, vp.ThumbnailStorageKey })
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Generate presigned thumbnail URLs
+        var thumbnailUrlMap = new Dictionary<Guid, string?>();
+        foreach (var photo in primaryPhotos)
+        {
+            if (!string.IsNullOrEmpty(photo.ThumbnailStorageKey))
+            {
+                var url = await _photoService.GetThumbnailUrlAsync(photo.ThumbnailStorageKey, cancellationToken);
+                thumbnailUrlMap[photo.VendorId] = url;
+            }
+        }
+
         var vendorDtos = vendors.Select(v => new VendorDto(
             v.Id,
             v.FirstName,
@@ -59,7 +82,8 @@ public class GetAllVendorsQueryHandler : IRequestHandler<GetAllVendorsQuery, Get
             v.Emails.ToList(),
             v.TradeTagAssignments
                 .Select(a => new VendorTradeTagDto(a.TradeTag.Id, a.TradeTag.Name))
-                .ToList()
+                .ToList(),
+            thumbnailUrlMap.GetValueOrDefault(v.Id)
         )).ToList();
 
         return new GetAllVendorsResponse(vendorDtos, vendorDtos.Count);

@@ -50,6 +50,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<PropertyPhoto> PropertyPhotos => Set<PropertyPhoto>();
     public DbSet<WorkOrderPhoto> WorkOrderPhotos => Set<WorkOrderPhoto>();
     public DbSet<Note> Notes => Set<Note>();
+    public DbSet<VendorPhoto> VendorPhotos => Set<VendorPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +128,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         // Apply tenant filter to WorkOrderPhoto (no soft delete)
         modelBuilder.Entity<WorkOrderPhoto>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
+
+        // Apply tenant filter to VendorPhoto (no soft delete)
+        modelBuilder.Entity<VendorPhoto>()
             .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
 
         // Apply tenant filter to Note (combined with soft delete) (AC #3, #8)

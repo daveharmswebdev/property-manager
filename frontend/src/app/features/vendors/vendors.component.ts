@@ -161,7 +161,15 @@ import { PhoneFormatPipe } from '../../shared/pipes/phone-format.pipe';
             <mat-card class="vendor-card" [routerLink]="['/vendors', vendor.id]">
               <mat-card-content>
                 <div class="vendor-row">
-                  <mat-icon class="vendor-icon">person</mat-icon>
+                  @if (vendor.primaryPhotoThumbnailUrl) {
+                    <img
+                      [src]="vendor.primaryPhotoThumbnailUrl"
+                      alt="{{ vendor.fullName }} photo"
+                      class="vendor-thumbnail"
+                    />
+                  } @else {
+                    <mat-icon class="vendor-icon">person</mat-icon>
+                  }
                   <div class="vendor-info">
                     <span class="vendor-name">{{ vendor.fullName }}</span>
                     <div class="vendor-details">
@@ -318,6 +326,14 @@ import { PhoneFormatPipe } from '../../shared/pipes/phone-format.pipe';
 
       .vendor-icon {
         color: rgba(0, 0, 0, 0.5);
+      }
+
+      .vendor-thumbnail {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
       }
 
       .vendor-info {
