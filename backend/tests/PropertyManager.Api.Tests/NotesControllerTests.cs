@@ -399,9 +399,9 @@ public class NotesControllerTests : IClassFixture<PropertyManagerWebApplicationF
         var workOrder = await dbContext.WorkOrders.FindAsync(workOrderId);
         var accountId = workOrder!.AccountId;
 
-        // Create User 2 in the SAME account
+        // Create User 2 in the SAME account (Owner role so they pass permission checks)
         var user2Email = $"sameaccount-user2-{Guid.NewGuid():N}@example.com";
-        await _factory.CreateTestUserInAccountAsync(accountId, user2Email);
+        await _factory.CreateTestUserInAccountAsync(accountId, user2Email, role: "Owner");
 
         // Login as User 2
         var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", new { Email = user2Email, Password = "Test@123456" });

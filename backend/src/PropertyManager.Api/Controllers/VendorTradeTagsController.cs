@@ -15,6 +15,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/vendor-trade-tags")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessVendors")]
 public class VendorTradeTagsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -41,6 +42,7 @@ public class VendorTradeTagsController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(GetAllVendorTradeTagsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllVendorTradeTags(CancellationToken cancellationToken)
     {
         var query = new GetAllVendorTradeTagsQuery();
@@ -67,6 +69,7 @@ public class VendorTradeTagsController : ControllerBase
     [ProducesResponseType(typeof(CreateVendorTradeTagResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateVendorTradeTag(
         [FromBody] CreateVendorTradeTagRequest? request,

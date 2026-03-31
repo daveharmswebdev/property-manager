@@ -16,6 +16,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/reports")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessReports")]
 public class ReportsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -59,6 +60,7 @@ public class ReportsController : ControllerBase
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GenerateScheduleE(
         [FromBody] GenerateScheduleERequest request,
@@ -154,6 +156,7 @@ public class ReportsController : ControllerBase
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GenerateBatchScheduleE(
         [FromBody] GenerateBatchScheduleERequest request,
         CancellationToken ct)
@@ -260,6 +263,7 @@ public class ReportsController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(List<GeneratedReportDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetReports(CancellationToken ct)
     {
         var reports = await _mediator.Send(new GetGeneratedReportsQuery(), ct);
@@ -278,6 +282,7 @@ public class ReportsController : ControllerBase
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadReport(Guid id, CancellationToken ct)
     {
@@ -297,6 +302,7 @@ public class ReportsController : ControllerBase
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteReport(Guid id, CancellationToken ct)
     {

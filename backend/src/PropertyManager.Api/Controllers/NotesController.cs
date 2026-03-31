@@ -17,6 +17,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/notes")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanViewWorkOrders")]
 public class NotesController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -44,8 +44,10 @@ public class PropertiesController : ControllerBase
     /// <response code="200">Returns the list of properties</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpGet]
+    [Authorize(Policy = "CanViewProperties")]
     [ProducesResponseType(typeof(GetAllPropertiesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllProperties([FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
         var query = new GetAllPropertiesQuery(year, dateFrom, dateTo);
@@ -72,8 +74,10 @@ public class PropertiesController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If property not found or belongs to different account</response>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "CanManageProperties")]
     [ProducesResponseType(typeof(PropertyDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPropertyById(Guid id, [FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
@@ -115,9 +119,11 @@ public class PropertiesController : ControllerBase
     /// <response code="400">If validation fails</response>
     /// <response code="401">If user is not authenticated</response>
     [HttpPost]
+    [Authorize(Policy = "CanManageProperties")]
     [ProducesResponseType(typeof(CreatePropertyResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateProperty([FromBody] CreatePropertyRequest request)
     {
         var command = new CreatePropertyCommand(
@@ -161,9 +167,11 @@ public class PropertiesController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If property not found or belongs to different account</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "CanManageProperties")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProperty(Guid id, [FromBody] UpdatePropertyRequest request)
     {
@@ -202,8 +210,10 @@ public class PropertiesController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If property not found or belongs to different account</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "CanManageProperties")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProperty(Guid id)
     {
