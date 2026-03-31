@@ -14,6 +14,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/work-orders")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanViewWorkOrders")]
 public class WorkOrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -89,9 +90,11 @@ public class WorkOrdersController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If property or category not found</response>
     [HttpPost]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(typeof(CreateWorkOrderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateWorkOrder(
         [FromBody] CreateWorkOrderRequest request,
@@ -159,9 +162,11 @@ public class WorkOrdersController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order, category, or tag not found</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWorkOrder(
         Guid id,
@@ -202,9 +207,11 @@ public class WorkOrdersController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order not found</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteWorkOrder(Guid id, CancellationToken cancellationToken)
     {

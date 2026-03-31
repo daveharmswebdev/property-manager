@@ -16,6 +16,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/work-orders/{workOrderId:guid}/photos")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanViewWorkOrders")]
 public class WorkOrderPhotosController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -55,6 +56,7 @@ public class WorkOrderPhotosController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order not found</response>
     [HttpPost("upload-url")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(typeof(GenerateWorkOrderPhotoUploadUrlResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -95,6 +97,7 @@ public class WorkOrderPhotosController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order not found</response>
     [HttpPost]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(typeof(ConfirmWorkOrderPhotoUploadResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -161,8 +164,10 @@ public class WorkOrderPhotosController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order or photo not found</response>
     [HttpDelete("{photoId:guid}")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePhoto(Guid workOrderId, Guid photoId)
     {
@@ -196,8 +201,10 @@ public class WorkOrderPhotosController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order or photo not found</response>
     [HttpPut("{photoId:guid}/primary")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetPrimaryPhoto(Guid workOrderId, Guid photoId)
     {
@@ -232,9 +239,11 @@ public class WorkOrderPhotosController : ControllerBase
     /// <response code="401">If user is not authenticated</response>
     /// <response code="404">If work order or any photo not found</response>
     [HttpPut("reorder")]
+    [Authorize(Policy = "CanManageWorkOrders")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReorderPhotos(Guid workOrderId, [FromBody] ReorderWorkOrderPhotosRequest request)
     {

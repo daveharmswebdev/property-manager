@@ -15,6 +15,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/work-order-tags")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanManageWorkOrders")]
 public class WorkOrderTagsController : ControllerBase
 {
     private readonly IMediator _mediator;

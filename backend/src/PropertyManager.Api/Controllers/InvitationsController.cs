@@ -45,7 +45,7 @@ public class InvitationsController : ControllerBase
     /// <response code="401">If not authenticated</response>
     /// <response code="403">If not an Owner</response>
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Policy = "CanManageUsers")]
     [ProducesResponseType(typeof(CreateInvitationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

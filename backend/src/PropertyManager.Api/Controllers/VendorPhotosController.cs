@@ -14,6 +14,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/vendors/{vendorId:guid}/photos")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessVendors")]
 public class VendorPhotosController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -56,6 +57,7 @@ public class VendorPhotosController : ControllerBase
     [ProducesResponseType(typeof(GenerateVendorPhotoUploadUrlResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GenerateUploadUrl(Guid vendorId, [FromBody] VendorPhotoUploadUrlRequest request)
     {
@@ -97,6 +99,7 @@ public class VendorPhotosController : ControllerBase
     [ProducesResponseType(typeof(ConfirmVendorPhotoUploadResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmUpload(Guid vendorId, [FromBody] VendorPhotoConfirmRequest request)
     {
@@ -136,6 +139,7 @@ public class VendorPhotosController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(GetVendorPhotosResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPhotos(Guid vendorId)
     {
@@ -163,6 +167,7 @@ public class VendorPhotosController : ControllerBase
     [HttpDelete("{photoId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePhoto(Guid vendorId, Guid photoId)
     {
@@ -198,6 +203,7 @@ public class VendorPhotosController : ControllerBase
     [HttpPut("{photoId:guid}/primary")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetPrimaryPhoto(Guid vendorId, Guid photoId)
     {
@@ -235,6 +241,7 @@ public class VendorPhotosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReorderPhotos(Guid vendorId, [FromBody] ReorderVendorPhotosRequest request)
     {

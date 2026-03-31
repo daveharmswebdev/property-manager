@@ -10,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PropertyManager.Api.Hubs;
 using PropertyManager.Api.Middleware;
+using Microsoft.AspNetCore.Authorization;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Authorization;
 using PropertyManager.Infrastructure.Email;
 using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Api.Services;
@@ -156,7 +158,38 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    AddPermissionPolicy(options, "CanManageProperties", Permissions.Properties.Create);
+    AddPermissionPolicy(options, "CanViewProperties", Permissions.Properties.ViewList);
+    AddPermissionPolicy(options, "CanAccessExpenses", Permissions.Expenses.View);
+    AddPermissionPolicy(options, "CanAccessIncome", Permissions.Income.View);
+    AddPermissionPolicy(options, "CanAccessVendors", Permissions.Vendors.View);
+    AddPermissionPolicy(options, "CanAccessReceipts", Permissions.Receipts.ViewAll);
+    AddPermissionPolicy(options, "CanProcessReceipts", Permissions.Receipts.Process);
+    AddPermissionPolicy(options, "CanManageWorkOrders", Permissions.WorkOrders.Create);
+    AddPermissionPolicy(options, "CanViewWorkOrders", Permissions.WorkOrders.View);
+    AddPermissionPolicy(options, "CanAccessReports", Permissions.Reports.View);
+    AddPermissionPolicy(options, "CanManageUsers", Permissions.Users.View);
+});
+
+// Helper method to create permission-based policies
+void AddPermissionPolicy(AuthorizationOptions options, string policyName, string permission)
+{
+    options.AddPolicy(policyName, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireAssertion(context =>
+        {
+            if (context.Resource is HttpContext httpContext)
+            {
+                var permissionService = httpContext.RequestServices.GetRequiredService<IPermissionService>();
+                return permissionService.HasPermission(permission);
+            }
+            return false;
+        });
+    });
+}
 
 // Configure MediatR
 builder.Services.AddMediatR(cfg =>

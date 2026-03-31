@@ -13,6 +13,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/dashboard")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessExpenses")]
 public class DashboardController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -39,6 +40,7 @@ public class DashboardController : ControllerBase
     [HttpGet("totals")]
     [ProducesResponseType(typeof(DashboardTotalsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTotals([FromQuery] int? year = null, [FromQuery] DateOnly? dateFrom = null, [FromQuery] DateOnly? dateTo = null)
     {
         var query = new GetDashboardTotalsQuery(year, dateFrom, dateTo);

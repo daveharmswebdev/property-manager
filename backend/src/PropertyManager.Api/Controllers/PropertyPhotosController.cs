@@ -14,6 +14,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/properties/{propertyId:guid}/photos")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanManageProperties")]
 public class PropertyPhotosController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -56,6 +57,7 @@ public class PropertyPhotosController : ControllerBase
     [ProducesResponseType(typeof(GeneratePropertyPhotoUploadUrlResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GenerateUploadUrl(Guid propertyId, [FromBody] PropertyPhotoUploadUrlRequest request)
     {
@@ -97,6 +99,7 @@ public class PropertyPhotosController : ControllerBase
     [ProducesResponseType(typeof(ConfirmPropertyPhotoUploadResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmUpload(Guid propertyId, [FromBody] PropertyPhotoConfirmRequest request)
     {
@@ -136,6 +139,7 @@ public class PropertyPhotosController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(GetPropertyPhotosResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPhotos(Guid propertyId)
     {
@@ -163,6 +167,7 @@ public class PropertyPhotosController : ControllerBase
     [HttpDelete("{photoId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePhoto(Guid propertyId, Guid photoId)
     {
@@ -198,6 +203,7 @@ public class PropertyPhotosController : ControllerBase
     [HttpPut("{photoId:guid}/primary")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetPrimaryPhoto(Guid propertyId, Guid photoId)
     {
@@ -235,6 +241,7 @@ public class PropertyPhotosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReorderPhotos(Guid propertyId, [FromBody] ReorderPropertyPhotosRequest request)
     {

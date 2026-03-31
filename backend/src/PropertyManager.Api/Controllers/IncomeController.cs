@@ -14,6 +14,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessIncome")]
 public class IncomeController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -47,6 +48,7 @@ public class IncomeController : ControllerBase
     [HttpGet("income")]
     [ProducesResponseType(typeof(IncomeListResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllIncome(
         [FromQuery] DateOnly? dateFrom = null,
         [FromQuery] DateOnly? dateTo = null,
@@ -83,6 +85,7 @@ public class IncomeController : ControllerBase
     [ProducesResponseType(typeof(CreateIncomeResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateIncome([FromBody] CreateIncomeRequest request)
     {
@@ -130,6 +133,7 @@ public class IncomeController : ControllerBase
     [HttpGet("properties/{id:guid}/income")]
     [ProducesResponseType(typeof(IncomeListDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetIncomeByProperty(Guid id, [FromQuery] int? year = null)
     {
@@ -158,6 +162,7 @@ public class IncomeController : ControllerBase
     [HttpGet("properties/{id:guid}/income/total")]
     [ProducesResponseType(typeof(IncomeTotalResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetIncomeTotalByProperty(Guid id, [FromQuery] int? year = null)
     {
@@ -186,6 +191,7 @@ public class IncomeController : ControllerBase
     [HttpGet("income/{id:guid}")]
     [ProducesResponseType(typeof(IncomeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetIncomeById(Guid id)
     {
@@ -214,6 +220,7 @@ public class IncomeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateIncome(Guid id, [FromBody] UpdateIncomeRequest request)
     {
@@ -255,6 +262,7 @@ public class IncomeController : ControllerBase
     [HttpDelete("income/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteIncome(Guid id)
     {

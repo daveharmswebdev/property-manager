@@ -15,6 +15,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/vendors")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessVendors")]
 public class VendorsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -47,6 +48,7 @@ public class VendorsController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(GetAllVendorsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllVendors(CancellationToken cancellationToken)
     {
         var query = new GetAllVendorsQuery();
@@ -72,6 +74,7 @@ public class VendorsController : ControllerBase
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(VendorDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetVendor(
         Guid id,
@@ -104,6 +107,7 @@ public class VendorsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateVendor(
         Guid id,
@@ -166,6 +170,7 @@ public class VendorsController : ControllerBase
     [ProducesResponseType(typeof(CreateVendorResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateVendor(
         [FromBody] CreateVendorRequest? request,
         CancellationToken cancellationToken)
@@ -229,6 +234,7 @@ public class VendorsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteVendor(
         Guid id,

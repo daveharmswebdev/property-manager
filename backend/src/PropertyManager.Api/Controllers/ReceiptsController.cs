@@ -15,6 +15,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/receipts")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessReceipts")]
 public class ReceiptsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -208,9 +209,11 @@ public class ReceiptsController : ControllerBase
     /// <response code="404">If receipt, property, or category not found</response>
     /// <response code="409">If receipt is already processed</response>
     [HttpPost("{id:guid}/process")]
+    [Authorize(Policy = "CanProcessReceipts")]
     [ProducesResponseType(typeof(ProcessReceiptResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ProcessReceipt(Guid id, [FromBody] ProcessReceiptRequest request)

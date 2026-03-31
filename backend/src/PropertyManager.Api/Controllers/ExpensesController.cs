@@ -16,6 +16,7 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(Policy = "CanAccessExpenses")]
 public class ExpensesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -53,6 +54,7 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(DuplicateCheckResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CheckDuplicateExpense(
         [FromQuery] Guid? propertyId,
         [FromQuery] decimal? amount,
@@ -112,6 +114,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("expenses/totals")]
     [ProducesResponseType(typeof(ExpenseTotalsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetExpenseTotals([FromQuery] int? year = null)
     {
         var effectiveYear = year ?? DateTime.UtcNow.Year;
@@ -145,6 +148,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("expenses")]
     [ProducesResponseType(typeof(PagedResult<ExpenseListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllExpenses(
         [FromQuery] DateOnly? dateFrom = null,
         [FromQuery] DateOnly? dateTo = null,
@@ -195,6 +199,7 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(CreateExpenseResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateExpense([FromBody] CreateExpenseRequest request)
     {
@@ -240,6 +245,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("expense-categories")]
     [ProducesResponseType(typeof(ExpenseCategoriesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetExpenseCategories()
     {
         var query = new GetExpenseCategoriesQuery();
@@ -267,6 +273,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("properties/{id:guid}/expenses")]
     [ProducesResponseType(typeof(PagedExpenseListDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExpensesByProperty(
         Guid id,
@@ -300,6 +307,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("expenses/{id:guid}")]
     [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExpense(Guid id)
     {
@@ -329,6 +337,7 @@ public class ExpensesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateExpense(Guid id, [FromBody] UpdateExpenseRequest request)
     {
@@ -372,6 +381,7 @@ public class ExpensesController : ControllerBase
     [HttpDelete("expenses/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteExpense(Guid id)
     {
@@ -398,6 +408,7 @@ public class ExpensesController : ControllerBase
     [HttpDelete("expenses/{id:guid}/receipt")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnlinkReceipt(Guid id)
     {
@@ -425,6 +436,7 @@ public class ExpensesController : ControllerBase
     [HttpPost("expenses/{id:guid}/link-receipt")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> LinkReceipt(Guid id, [FromBody] LinkReceiptRequest request)
     {
