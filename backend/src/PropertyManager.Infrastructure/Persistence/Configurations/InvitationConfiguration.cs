@@ -32,6 +32,17 @@ public class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
         builder.Property(e => e.UsedAt)
             .IsRequired(false);
 
+        builder.Property(e => e.AccountId)
+            .IsRequired(false);
+
+        builder.Property(e => e.Role)
+            .HasMaxLength(50)
+            .IsRequired()
+            .HasDefaultValue("Owner");
+
+        builder.Property(e => e.InvitedByUserId)
+            .IsRequired(false);
+
         // Index on Email for fast lookup of pending invitations
         builder.HasIndex(e => e.Email)
             .HasDatabaseName("IX_Invitations_Email");

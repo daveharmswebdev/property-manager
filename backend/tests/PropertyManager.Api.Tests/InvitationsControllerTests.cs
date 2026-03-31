@@ -26,7 +26,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
     public async Task CreateInvitation_WithoutAuth_Returns401()
     {
         // Arrange
-        var request = new { Email = "newuser@example.com" };
+        var request = new { Email = "newuser@example.com", Role = "Owner" };
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/v1/invitations", request);
@@ -43,7 +43,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Member");
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
-        var request = new { Email = $"invitee{Guid.NewGuid():N}@example.com" };
+        var request = new { Email = $"invitee{Guid.NewGuid():N}@example.com", Role = "Owner" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -55,13 +55,13 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
     [Fact]
     public async Task CreateInvitation_WithOwnerRole_Returns201AndSendsEmail()
     {
-        // Arrange
+        // Arrange — AC: #1 — includes Role in request
         var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
         await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var request = new { Email = inviteeEmail };
+        var request = new { Email = inviteeEmail, Role = "Owner" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -90,7 +90,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
-        var request = new { Email = "not-an-email" };
+        var request = new { Email = "not-an-email", Role = "Owner" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -107,7 +107,24 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
-        var request = new { Email = "" };
+        var request = new { Email = "", Role = "Owner" };
+
+        // Act
+        var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateInvitation_WithInvalidRole_Returns400()
+    {
+        // Arrange — AC: validates role is Owner or Contributor
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        var request = new { Email = $"invitee{Guid.NewGuid():N}@example.com", Role = "Admin" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -128,7 +145,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var existingUserEmail = $"existing{Guid.NewGuid():N}@example.com";
         await _factory.CreateTestUserAsync(existingUserEmail, "Test@123456", "Owner");
 
-        var request = new { Email = existingUserEmail };
+        var request = new { Email = existingUserEmail, Role = "Owner" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -150,7 +167,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
 
         // Create first invitation
-        var request = new { Email = inviteeEmail };
+        var request = new { Email = inviteeEmail, Role = "Owner" };
         var firstResponse = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -174,7 +191,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var uniquePart = Guid.NewGuid().ToString("N");
         var mixedCaseEmail = $"InvitEE{uniquePart}@Example.COM";
 
-        var request = new { Email = mixedCaseEmail };
+        var request = new { Email = mixedCaseEmail, Role = "Owner" };
 
         // Act
         var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
@@ -189,10 +206,38 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         sentInvitation.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task CreateInvitation_StoresAccountIdAndInvitedByUserId()
+    {
+        // Arrange — AC: #1 — invitation stores inviter's AccountId and UserId
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
+        var request = new { Email = inviteeEmail, Role = "Contributor" };
+
+        // Act
+        var response = await PostAsJsonWithAuthAsync("/api/v1/invitations", request, token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var responseContent = await response.Content.ReadFromJsonAsync<CreateInvitationResponse>();
+
+        // Verify invitation in database has correct AccountId and InvitedByUserId
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var invitation = await dbContext.Invitations.FindAsync(responseContent!.InvitationId);
+        invitation.Should().NotBeNull();
+        invitation!.AccountId.Should().Be(ownerAccountId);
+        invitation.InvitedByUserId.Should().Be(ownerUserId);
+        invitation.Role.Should().Be("Contributor");
+    }
+
     // ==================== VALIDATE INVITATION TESTS ====================
 
     [Fact]
-    public async Task ValidateInvitation_WithValidCode_ReturnsValidWithEmail()
+    public async Task ValidateInvitation_WithValidCode_ReturnsValidWithEmailAndRole()
     {
         // Arrange - Create an invitation
         var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
@@ -200,7 +245,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Contributor" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code from fake email service
@@ -219,6 +264,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         content.Should().NotBeNull();
         content!.IsValid.Should().BeTrue();
         content.Email.Should().Be(inviteeEmail.ToLowerInvariant());
+        content.Role.Should().Be("Contributor");
         content.ErrorMessage.Should().BeNull();
     }
 
@@ -329,7 +375,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code
@@ -350,7 +396,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         content.Should().NotBeNull();
         content!.UserId.Should().NotBe(Guid.Empty);
         content.Email.Should().Be(inviteeEmail.ToLowerInvariant());
-        content.Message.Should().Contain("success");
+        content.Message.Should().Contain("joined account");
     }
 
     [Fact]
@@ -363,7 +409,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
         var password = "NewUser@123456";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code
@@ -476,7 +522,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code
@@ -505,7 +551,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code
@@ -532,7 +578,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
         var createResponse = await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
         var createContent = await createResponse.Content.ReadFromJsonAsync<CreateInvitationResponse>();
         var invitationId = createContent!.InvitationId;
@@ -564,16 +610,52 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
     }
 
     [Fact]
-    public async Task AcceptInvitation_CreatesUserWithOwnerRole()
+    public async Task AcceptInvitation_JoinsInviterAccount_WithOwnerRole()
     {
-        // Arrange - Create an invitation
+        // Arrange — AC: #2, #4 — user joins inviter's account with Owner role
         var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
-        await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
         var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
 
         var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
         var password = "NewUser@123456";
-        var createRequest = new { Email = inviteeEmail };
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
+        await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
+
+        // Get the invitation code
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentInvitation = fakeEmailService.SentInvitationEmails
+            .First(e => e.Email == inviteeEmail.ToLowerInvariant());
+        var code = sentInvitation.Code;
+
+        // Accept the invitation
+        var acceptRequest = new { Password = password };
+        await _client.PostAsJsonAsync($"/api/v1/invitations/{code}/accept", acceptRequest);
+
+        // Act - Login and check JWT claims
+        var loginRequest = new { Email = inviteeEmail, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+
+        // Decode JWT and verify role and accountId
+        var payload = DecodeJwtPayload(loginContent!.AccessToken);
+
+        // Assert
+        payload["role"]!.ToString().Should().Be("Owner");
+        payload["accountId"]!.ToString().Should().Be(ownerAccountId.ToString());
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_WithContributorRole_CreatesUserWithContributorRole()
+    {
+        // Arrange — AC: #3 — Contributor role is passed through
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
+        var password = "NewUser@123456";
+        var createRequest = new { Email = inviteeEmail, Role = "Contributor" };
         await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
 
         // Get the invitation code
@@ -595,6 +677,98 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var payload = DecodeJwtPayload(loginContent!.AccessToken);
 
         // Assert
+        payload["role"]!.ToString().Should().Be("Contributor");
+        payload["accountId"]!.ToString().Should().Be(ownerAccountId.ToString());
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_JoinsInviterAccount_SeesSharedData()
+    {
+        // Arrange — AC: #2 — invitee sees same properties as inviter
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var ownerToken = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        // Create a property as owner
+        var propertyRequest = new
+        {
+            Name = $"Shared Property {Guid.NewGuid():N}",
+            Street = "123 Shared St",
+            City = "Austin",
+            State = "TX",
+            ZipCode = "78701"
+        };
+        var propertyResponse = await PostAsJsonWithAuthAsync("/api/v1/properties", propertyRequest, ownerToken);
+        propertyResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Create invitation for invitee
+        var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
+        var password = "NewUser@123456";
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
+        await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, ownerToken);
+
+        // Accept the invitation
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sentInvitation = fakeEmailService.SentInvitationEmails
+            .First(e => e.Email == inviteeEmail.ToLowerInvariant());
+        var acceptRequest = new { Password = password };
+        await _client.PostAsJsonAsync($"/api/v1/invitations/{sentInvitation.Code}/accept", acceptRequest);
+
+        // Act — Login as invitee and list properties
+        var inviteeToken = await GetAccessTokenAsync(inviteeEmail, password);
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/properties");
+        request.Headers.Add("Authorization", $"Bearer {inviteeToken}");
+        var propertiesResponse = await _client.SendAsync(request);
+
+        // Assert
+        propertiesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var propertiesContent = await propertiesResponse.Content.ReadAsStringAsync();
+        propertiesContent.Should().Contain("Shared Property");
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_WithoutAccountId_CreatesNewAccount()
+    {
+        // Arrange — AC: #5 — legacy path creates new account + Owner role
+        var inviteeEmail = $"legacy{Guid.NewGuid():N}@example.com";
+        var rawCode = GenerateSecureCode();
+        var codeHash = ComputeHash(rawCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // Create invitation without AccountId (legacy path)
+            var invitation = new Invitation
+            {
+                Email = inviteeEmail,
+                CodeHash = codeHash,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24),
+                AccountId = null,
+                InvitedByUserId = null,
+                Role = "Owner"
+            };
+            dbContext.Invitations.Add(invitation);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var password = "NewUser@123456";
+        var acceptRequest = new { Password = password };
+
+        // Act
+        var response = await _client.PostAsJsonAsync($"/api/v1/invitations/{rawCode}/accept", acceptRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var content = await response.Content.ReadFromJsonAsync<AcceptInvitationResponse>();
+        content.Should().NotBeNull();
+        content!.Message.Should().Contain("Account created");
+
+        // Verify user can login with Owner role
+        var loginRequest = new { Email = inviteeEmail, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var payload = DecodeJwtPayload(loginContent!.AccessToken);
         payload["role"]!.ToString().Should().Be("Owner");
     }
 
@@ -647,7 +821,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
 
     // DTOs for deserialization
     private record CreateInvitationResponse(Guid InvitationId, string Message);
-    private record ValidateInvitationResponse(bool IsValid, string? Email, string? ErrorMessage);
+    private record ValidateInvitationResponse(bool IsValid, string? Email, string? Role, string? ErrorMessage);
     private record AcceptInvitationResponse(Guid UserId, string Email, string Message);
     private record LoginResponse(string AccessToken, int ExpiresIn);
 }

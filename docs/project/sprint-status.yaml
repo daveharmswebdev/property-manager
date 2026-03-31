@@ -286,3 +286,24 @@ development_status:
   18-1-upgrade-mockqueryable-moq: done                # Issue #319 - S
   18-2-e2e-test-data-cleanup: review                    # Issue #292 - M
   epic-18-retrospective: optional
+
+  # ============================================================
+  # MULTI-USER ACCOUNT WITH RBAC
+  # Source: epic-19-multi-user-rbac.md
+  # Added: 2026-03-30
+  # Dependencies: 19.1 first, then 19.2 (parallel), 19.3 depends on 19.2,
+  #   19.4 depends on 19.2, 19.5 depends on 19.3, 19.6 depends on 19.1+19.5,
+  #   19.7 depends on 19.4+19.5+19.6
+  # ============================================================
+
+  # Epic 19: Multi-User Account with RBAC
+  # User Outcome: "My wife and I can both use the app — the tool reflects that we're a team"
+  epic-19: in-progress
+  19-1-refactor-invitation-join-account: done    # FR58, FR59 - Size 5
+  19-2-permission-infrastructure: pending                  # Size 3
+  19-3-backend-permission-enforcement: pending             # FR60 - Size 5 - depends on 19.2
+  19-4-account-user-management-api: pending                # FR61, FR62 - Size 3 - depends on 19.2
+  19-5-frontend-auth-state-permission-service: pending     # FR60 - Size 5 - depends on 19.3
+  19-6-invitation-management-ui: pending                   # FR58, FR62 - Size 5 - depends on 19.1, 19.5
+  19-7-account-user-management-ui: pending                 # FR61, FR62 - Size 3 - depends on 19.4, 19.5, 19.6
+  epic-19-retrospective: optional

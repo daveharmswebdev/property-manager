@@ -60,6 +60,25 @@ mat-form-field {
   }
 }
 
+.role-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--mat-sys-surface-container-high);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+
+  span {
+    font-size: 14px;
+    color: var(--mat-sys-on-surface);
+  }
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;

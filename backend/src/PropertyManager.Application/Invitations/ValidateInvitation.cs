@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
@@ -18,20 +17,9 @@ public record ValidateInvitationQuery(string Code) : IRequest<ValidateInvitation
 public record ValidateInvitationResult(
     bool IsValid,
     string? Email,
+    string? Role,
     string? ErrorMessage
 );
-
-/// <summary>
-/// Validator for ValidateInvitationQuery.
-/// </summary>
-public class ValidateInvitationQueryValidator : AbstractValidator<ValidateInvitationQuery>
-{
-    public ValidateInvitationQueryValidator()
-    {
-        RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("Invitation code is required");
-    }
-}
 
 /// <summary>
 /// Handler for ValidateInvitationQuery.
@@ -57,23 +45,23 @@ public class ValidateInvitationQueryHandler : IRequestHandler<ValidateInvitation
 
         if (invitation == null)
         {
-            return new ValidateInvitationResult(false, null, "Invalid invitation code");
+            return new ValidateInvitationResult(false, null, null, "Invalid invitation code");
         }
 
         // Check if used (AC: TD.6.2)
         if (invitation.IsUsed)
         {
-            return new ValidateInvitationResult(false, null, "This invitation has already been used");
+            return new ValidateInvitationResult(false, null, null, "This invitation has already been used");
         }
 
         // Check if expired (AC: TD.6.2)
         if (invitation.IsExpired)
         {
-            return new ValidateInvitationResult(false, null, "This invitation has expired");
+            return new ValidateInvitationResult(false, null, null, "This invitation has expired");
         }
 
         // Valid invitation
-        return new ValidateInvitationResult(true, invitation.Email, null);
+        return new ValidateInvitationResult(true, invitation.Email, invitation.Role, null);
     }
 
     /// <summary>

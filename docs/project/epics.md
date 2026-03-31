@@ -23,6 +23,7 @@ This document provides the complete epic and story breakdown for property-manage
 | 4 | Income Tracking | User can record earnings | FR23-FR29, FR39-FR40, FR44, FR46 |
 | 5 | Receipt Capture | User can snap receipts on mobile | FR30-FR37 |
 | 6 | Tax Reports | One click → Schedule E PDFs | FR49-FR54, FR55-FR57 |
+| 19 | Multi-User Account with RBAC | My wife and I can both use the app | FR58-FR62 |
 
 ---
 
