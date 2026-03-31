@@ -135,3 +135,7 @@ docker-compose.local.yml
 
 .playwright-mcp
 backend/CoverageReport
+
+# Playwright MCP screenshots (development)
+screenshots/*
+!screenshots/.gitkeep

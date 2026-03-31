@@ -79,6 +79,12 @@ export interface IApiClient {
     vendors_GetVendor(id: string): Observable<VendorDetailDto>;
     vendors_UpdateVendor(id: string, request?: UpdateVendorRequest | undefined): Observable<void>;
     vendors_DeleteVendor(id: string): Observable<void>;
+    vendorPhotos_GenerateUploadUrl(vendorId: string, request: VendorPhotoUploadUrlRequest): Observable<GenerateVendorPhotoUploadUrlResponse>;
+    vendorPhotos_ConfirmUpload(vendorId: string, request: VendorPhotoConfirmRequest): Observable<ConfirmVendorPhotoUploadResponse>;
+    vendorPhotos_GetPhotos(vendorId: string): Observable<GetVendorPhotosResponse>;
+    vendorPhotos_DeletePhoto(vendorId: string, photoId: string): Observable<void>;
+    vendorPhotos_SetPrimaryPhoto(vendorId: string, photoId: string): Observable<void>;
+    vendorPhotos_ReorderPhotos(vendorId: string, request: ReorderVendorPhotosRequest): Observable<void>;
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse>;
     vendorTradeTags_CreateVendorTradeTag(request?: CreateVendorTradeTagRequest | undefined): Observable<CreateVendorTradeTagResponse>;
     workOrderPhotos_GenerateUploadUrl(workOrderId: string, request: WorkOrderPhotoUploadUrlRequest): Observable<GenerateWorkOrderPhotoUploadUrlResponse>;
@@ -4103,6 +4109,321 @@ export class ApiClient implements IApiClient {
         return _observableOf(null as any);
     }
 
+    vendorPhotos_GenerateUploadUrl(vendorId: string, request: VendorPhotoUploadUrlRequest): Observable<GenerateVendorPhotoUploadUrlResponse> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos/upload-url";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_GenerateUploadUrl(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_GenerateUploadUrl(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GenerateVendorPhotoUploadUrlResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GenerateVendorPhotoUploadUrlResponse>;
+        }));
+    }
+
+    protected processVendorPhotos_GenerateUploadUrl(response: HttpResponseBase): Observable<GenerateVendorPhotoUploadUrlResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GenerateVendorPhotoUploadUrlResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendorPhotos_ConfirmUpload(vendorId: string, request: VendorPhotoConfirmRequest): Observable<ConfirmVendorPhotoUploadResponse> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_ConfirmUpload(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_ConfirmUpload(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ConfirmVendorPhotoUploadResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ConfirmVendorPhotoUploadResponse>;
+        }));
+    }
+
+    protected processVendorPhotos_ConfirmUpload(response: HttpResponseBase): Observable<ConfirmVendorPhotoUploadResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ConfirmVendorPhotoUploadResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendorPhotos_GetPhotos(vendorId: string): Observable<GetVendorPhotosResponse> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_GetPhotos(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_GetPhotos(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetVendorPhotosResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetVendorPhotosResponse>;
+        }));
+    }
+
+    protected processVendorPhotos_GetPhotos(response: HttpResponseBase): Observable<GetVendorPhotosResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetVendorPhotosResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendorPhotos_DeletePhoto(vendorId: string, photoId: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos/{photoId}";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        if (photoId === undefined || photoId === null)
+            throw new globalThis.Error("The parameter 'photoId' must be defined.");
+        url_ = url_.replace("{photoId}", encodeURIComponent("" + photoId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_DeletePhoto(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_DeletePhoto(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processVendorPhotos_DeletePhoto(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendorPhotos_SetPrimaryPhoto(vendorId: string, photoId: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos/{photoId}/primary";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        if (photoId === undefined || photoId === null)
+            throw new globalThis.Error("The parameter 'photoId' must be defined.");
+        url_ = url_.replace("{photoId}", encodeURIComponent("" + photoId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_SetPrimaryPhoto(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_SetPrimaryPhoto(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processVendorPhotos_SetPrimaryPhoto(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    vendorPhotos_ReorderPhotos(vendorId: string, request: ReorderVendorPhotosRequest): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/vendors/{vendorId}/photos/reorder";
+        if (vendorId === undefined || vendorId === null)
+            throw new globalThis.Error("The parameter 'vendorId' must be defined.");
+        url_ = url_.replace("{vendorId}", encodeURIComponent("" + vendorId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processVendorPhotos_ReorderPhotos(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processVendorPhotos_ReorderPhotos(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processVendorPhotos_ReorderPhotos(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     vendorTradeTags_GetAllVendorTradeTags(): Observable<GetAllVendorTradeTagsResponse> {
         let url_ = this.baseUrl + "/api/v1/vendor-trade-tags";
         url_ = url_.replace(/[?&]$/, "");
@@ -5774,6 +6095,52 @@ export interface ReorderPropertyPhotosRequest {
     photoIds?: string[];
 }
 
+export interface GenerateVendorPhotoUploadUrlResponse {
+    uploadUrl?: string;
+    storageKey?: string;
+    thumbnailStorageKey?: string;
+    expiresAt?: Date;
+}
+
+export interface VendorPhotoUploadUrlRequest {
+    contentType?: string;
+    fileSizeBytes?: number;
+    originalFileName?: string;
+}
+
+export interface ConfirmVendorPhotoUploadResponse {
+    id?: string;
+    thumbnailUrl?: string | null;
+    viewUrl?: string | null;
+}
+
+export interface VendorPhotoConfirmRequest {
+    storageKey?: string;
+    thumbnailStorageKey?: string;
+    contentType?: string;
+    fileSizeBytes?: number;
+    originalFileName?: string;
+}
+
+export interface GetVendorPhotosResponse {
+    items?: VendorPhotoDto[];
+}
+
+export interface VendorPhotoDto {
+    id?: string;
+    thumbnailUrl?: string | null;
+    viewUrl?: string | null;
+    isPrimary?: boolean;
+    displayOrder?: number;
+    originalFileName?: string;
+    fileSizeBytes?: number;
+    createdAt?: Date;
+}
+
+export interface ReorderVendorPhotosRequest {
+    photoIds?: string[];
+}
+
 export interface UploadUrlResponse {
     uploadUrl?: string;
     storageKey?: string;
@@ -5872,6 +6239,7 @@ export interface VendorDto {
     phones?: PhoneNumberDto[];
     emails?: string[];
     tradeTags?: VendorTradeTagDto[];
+    primaryPhotoThumbnailUrl?: string | null;
 }
 
 export interface PhoneNumberDto {

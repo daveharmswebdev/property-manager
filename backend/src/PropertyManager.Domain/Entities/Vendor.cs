@@ -15,4 +15,7 @@ public class Vendor : Person, ISoftDeletable
 
     // Navigation to work orders
     public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
+
+    // Navigation to vendor photos
+    public ICollection<VendorPhoto> VendorPhotos { get; set; } = new List<VendorPhoto>();
 }

@@ -30,6 +30,7 @@ public interface IAppDbContext
     DbSet<PropertyPhoto> PropertyPhotos { get; }
     DbSet<WorkOrderPhoto> WorkOrderPhotos { get; }
     DbSet<Note> Notes { get; }
+    DbSet<VendorPhoto> VendorPhotos { get; }
 
     /// <summary>
     /// Provides access to database-related information and operations (e.g., transactions).

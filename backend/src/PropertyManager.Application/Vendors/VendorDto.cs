@@ -12,5 +12,6 @@ public record VendorDto(
     string FullName,
     IReadOnlyList<PhoneNumberDto> Phones,
     IReadOnlyList<string> Emails,
-    IReadOnlyList<VendorTradeTagDto> TradeTags
+    IReadOnlyList<VendorTradeTagDto> TradeTags,
+    string? PrimaryPhotoThumbnailUrl = null
 );
