@@ -63,6 +63,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // Configure Email settings
 builder.Services.Configure<EmailSettings>(
