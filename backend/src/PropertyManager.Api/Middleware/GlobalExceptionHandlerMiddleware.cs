@@ -120,6 +120,11 @@ public class GlobalExceptionHandlerMiddleware
                 "https://propertymanager.app/errors/conflict",
                 "Resource conflict"
             ),
+            ForbiddenAccessException => (
+                StatusCodes.Status403Forbidden,
+                "https://propertymanager.app/errors/forbidden",
+                "Access forbidden"
+            ),
             UnauthorizedAccessException => (
                 StatusCodes.Status403Forbidden,
                 "https://propertymanager.app/errors/forbidden",

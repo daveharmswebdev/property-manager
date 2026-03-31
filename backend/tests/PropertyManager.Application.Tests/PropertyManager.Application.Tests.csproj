@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PropertyManager.Application\PropertyManager.Application.csproj" />
+    <ProjectReference Include="..\..\src\PropertyManager.Infrastructure\PropertyManager.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
