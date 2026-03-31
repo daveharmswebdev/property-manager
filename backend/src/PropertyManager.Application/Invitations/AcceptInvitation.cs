@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 
@@ -24,27 +25,6 @@ public record AcceptInvitationResult(
     string Email,
     string Message
 );
-
-/// <summary>
-/// Validator for AcceptInvitationCommand.
-/// </summary>
-public class AcceptInvitationCommandValidator : AbstractValidator<AcceptInvitationCommand>
-{
-    public AcceptInvitationCommandValidator()
-    {
-        RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("Invitation code is required");
-
-        // Password requirements matching Register.cs (AC3.2)
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters")
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter")
-            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter")
-            .Matches("[0-9]").WithMessage("Password must contain at least one number")
-            .Matches(@"[!@#$%^&*()_+\-=\[\]{}|;':"",./<>?]").WithMessage("Password must contain at least one special character");
-    }
-}
 
 /// <summary>
 /// Handler for AcceptInvitationCommand.
@@ -110,27 +90,43 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             });
         }
 
-        // Create Account entity (same as Register.cs)
-        var account = new Account
-        {
-            Name = $"{invitation.Email}'s Account"
-        };
-        _dbContext.Accounts.Add(account);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        // Determine account and role based on invitation type
+        Guid accountId;
+        string role;
+        Account? newAccount = null;
 
-        // Create User via Identity with "Owner" role and pre-confirmed email (AC: TD.6.6)
+        if (invitation.AccountId.HasValue)
+        {
+            // Join existing account (new RBAC flow)
+            accountId = invitation.AccountId.Value;
+            role = invitation.Role;
+        }
+        else
+        {
+            // Create new account (legacy/standalone flow — preserves curl workflow)
+            newAccount = new Account { Name = $"{invitation.Email}'s Account" };
+            _dbContext.Accounts.Add(newAccount);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            accountId = newAccount.Id;
+            role = "Owner";
+        }
+
+        // Create User via Identity with assigned role and pre-confirmed email (AC: TD.6.6)
         var (userId, errors) = await _identityService.CreateUserWithConfirmedEmailAsync(
             invitation.Email,
             request.Password,
-            account.Id,
-            "Owner",
+            accountId,
+            role,
             cancellationToken);
 
         if (userId is null)
         {
-            // Rollback account creation
-            _dbContext.Accounts.Remove(account);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            // Rollback only if we created a new account
+            if (newAccount is not null)
+            {
+                _dbContext.Accounts.Remove(newAccount);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
 
             throw new ValidationException(
                 errors.Select(e => new FluentValidation.Results.ValidationFailure("Password", e)));
@@ -140,9 +136,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         invitation.UsedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Invitation accepted for {Email}, UserId: {UserId}", invitation.Email, userId);
+        var message = invitation.AccountId.HasValue
+            ? "Successfully joined account"
+            : "Account created successfully";
 
-        return new AcceptInvitationResult(userId.Value, invitation.Email, "Account created successfully");
+        _logger.LogInformation("Invitation accepted for {Email}, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
+            LogSanitizer.MaskEmail(invitation.Email), userId, invitation.AccountId.HasValue);
+
+        return new AcceptInvitationResult(userId.Value, invitation.Email, message);
     }
 
     /// <summary>

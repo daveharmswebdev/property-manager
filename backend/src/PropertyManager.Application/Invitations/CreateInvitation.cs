@@ -13,7 +13,7 @@ namespace PropertyManager.Application.Invitations;
 /// Command for creating an invitation to register.
 /// Only owners can create invitations (AC: TD.6.3).
 /// </summary>
-public record CreateInvitationCommand(string Email) : IRequest<CreateInvitationResult>;
+public record CreateInvitationCommand(string Email, string Role) : IRequest<CreateInvitationResult>;
 
 /// <summary>
 /// Result of invitation creation.
@@ -24,19 +24,6 @@ public record CreateInvitationResult(
 );
 
 /// <summary>
-/// Validator for CreateInvitationCommand.
-/// </summary>
-public class CreateInvitationCommandValidator : AbstractValidator<CreateInvitationCommand>
-{
-    public CreateInvitationCommandValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required")
-            .EmailAddress().WithMessage("Invalid email format");
-    }
-}
-
-/// <summary>
 /// Handler for CreateInvitationCommand.
 /// Generates a secure invitation code, saves it, and triggers email.
 /// </summary>
@@ -45,17 +32,20 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
     private readonly IAppDbContext _dbContext;
     private readonly IIdentityService _identityService;
     private readonly IEmailService _emailService;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<CreateInvitationCommandHandler> _logger;
 
     public CreateInvitationCommandHandler(
         IAppDbContext dbContext,
         IIdentityService identityService,
         IEmailService emailService,
+        ICurrentUser currentUser,
         ILogger<CreateInvitationCommandHandler> logger)
     {
         _dbContext = dbContext;
         _identityService = identityService;
         _emailService = emailService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -95,7 +85,10 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
             Email = email,
             CodeHash = codeHash,
             CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(24) // 24-hour expiration per AC: TD.6.2
+            ExpiresAt = DateTime.UtcNow.AddHours(24), // 24-hour expiration per AC: TD.6.2
+            AccountId = _currentUser.AccountId,
+            InvitedByUserId = _currentUser.UserId,
+            Role = request.Role
         };
 
         _dbContext.Invitations.Add(invitation);

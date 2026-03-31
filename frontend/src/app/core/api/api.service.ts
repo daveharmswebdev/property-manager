@@ -5897,11 +5897,13 @@ export interface CreateInvitationResponse {
 
 export interface CreateInvitationRequest {
     email?: string;
+    role?: string;
 }
 
 export interface ValidateInvitationResponse {
     isValid?: boolean;
     email?: string | undefined;
+    role?: string | undefined;
     errorMessage?: string | undefined;
 }
 

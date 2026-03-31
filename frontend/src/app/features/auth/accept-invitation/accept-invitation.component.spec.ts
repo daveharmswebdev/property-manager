@@ -92,6 +92,16 @@ describe('AcceptInvitationComponent', () => {
       expect(component['validating']()).toBe(false);
     });
 
+    it('should set role when validation returns role', () => {
+      createComponent('valid-code', { isValid: true, email: 'user@example.com', role: 'Contributor' });
+      expect(component['role']()).toBe('Contributor');
+    });
+
+    it('should set role to null when validation returns no role', () => {
+      createComponent('valid-code', { isValid: true, email: 'user@example.com' });
+      expect(component['role']()).toBeNull();
+    });
+
     it('should set invalidCode when validation returns invalid', () => {
       createComponent('expired-code', { isValid: false, errorMessage: 'Invitation has expired' });
       expect(component['invalidCode']()).toBe(true);

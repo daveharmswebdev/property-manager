@@ -91,4 +91,20 @@ export class MailHogHelper {
     }
     return token;
   }
+
+  extractInvitationCode(message: MailHogMessage): string | null {
+    const body = this.decodeQuotedPrintable(message.Content.Body);
+    // Match the invitation code from the accept-invitation URL
+    const codeMatch = body.match(/[?&]code=([a-zA-Z0-9_%-]+)/);
+    return codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+  }
+
+  async getInvitationCode(email: string): Promise<string> {
+    const message = await this.waitForEmail(email, 'invited');
+    const code = this.extractInvitationCode(message);
+    if (!code) {
+      throw new Error(`Could not extract invitation code from email to ${email}`);
+    }
+    return code;
+  }
 }

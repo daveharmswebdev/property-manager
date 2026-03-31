@@ -38,6 +38,21 @@ public class Invitation
     public DateTime? UsedAt { get; set; }
 
     /// <summary>
+    /// The account the invitee will join. Null means create a new account (legacy flow).
+    /// </summary>
+    public Guid? AccountId { get; set; }
+
+    /// <summary>
+    /// The role assigned to the invitee. Defaults to "Owner".
+    /// </summary>
+    public string Role { get; set; } = "Owner";
+
+    /// <summary>
+    /// The user who sent the invitation. Null for legacy invitations.
+    /// </summary>
+    public Guid? InvitedByUserId { get; set; }
+
+    /// <summary>
     /// Checks if the invitation is expired.
     /// </summary>
     public bool IsExpired => DateTime.UtcNow > ExpiresAt;

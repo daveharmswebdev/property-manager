@@ -45,6 +45,7 @@ export class AcceptInvitationComponent implements OnInit {
   protected readonly email = signal<string | null>(null);
   protected readonly invalidCode = signal(false);
   protected readonly invalidReason = signal<string | null>(null);
+  protected readonly role = signal<string | null>(null);
 
   protected readonly form: FormGroup = this.fb.group({
     password: ['', [
@@ -75,6 +76,7 @@ export class AcceptInvitationComponent implements OnInit {
         this.validating.set(false);
         if (result.isValid && result.email) {
           this.email.set(result.email);
+          this.role.set(result.role ?? null);
         } else {
           this.invalidCode.set(true);
           this.invalidReason.set(result.errorMessage || 'This invitation is invalid');

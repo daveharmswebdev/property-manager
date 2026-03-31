@@ -42,6 +42,13 @@
             <span>{{ email() }}</span>
           </div>
 
+          @if (role()) {
+            <div class="role-display">
+              <mat-icon>badge</mat-icon>
+              <span>You've been invited as <strong>{{ role() }}</strong></span>
+            </div>
+          }
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Password</mat-label>
             <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" autocomplete="new-password">

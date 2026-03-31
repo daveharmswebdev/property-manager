@@ -52,7 +52,7 @@ public class InvitationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateInvitation([FromBody] CreateInvitationRequest request)
     {
-        var command = new CreateInvitationCommand(request.Email);
+        var command = new CreateInvitationCommand(request.Email, request.Role);
 
         var validationResult = await _createValidator.ValidateAsync(command);
         if (!validationResult.IsValid)
@@ -103,6 +103,7 @@ public class InvitationsController : ControllerBase
         var response = new ValidateInvitationResponse(
             result.IsValid,
             result.Email,
+            result.Role,
             result.ErrorMessage);
 
         return Ok(response);
@@ -186,10 +187,10 @@ public class InvitationsController : ControllerBase
 }
 
 // DTOs
-public record CreateInvitationRequest(string Email);
+public record CreateInvitationRequest(string Email, string Role = "Owner");
 public record CreateInvitationResponse(Guid InvitationId, string Message);
 
-public record ValidateInvitationResponse(bool IsValid, string? Email, string? ErrorMessage);
+public record ValidateInvitationResponse(bool IsValid, string? Email, string? Role, string? ErrorMessage);
 
 public record AcceptInvitationRequest(string Password);
 public record AcceptInvitationResponse(Guid UserId, string Email, string Message);
