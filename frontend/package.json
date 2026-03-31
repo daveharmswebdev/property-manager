@@ -56,7 +56,7 @@
     "jsdom": "^29.0.1",
     "nswag": "^14.6.3",
     "source-map-explorer": "^2.5.3",
-    "typescript": "~5.9.2",
+    "typescript": "~6.0.2",
     "vitest": "^4.0.18"
   }
 }
