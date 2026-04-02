@@ -1,6 +1,7 @@
 using System.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PropertyManager.Application.AccountUsers;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Infrastructure.Persistence;
 
@@ -279,5 +280,73 @@ public class IdentityService : IIdentityService
                 u => u.Id,
                 u => u.DisplayName ?? u.Email ?? "Unknown",
                 cancellationToken);
+    }
+
+    public async Task<List<AccountUserDto>> GetAccountUsersAsync(Guid accountId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.AccountId == accountId && u.EmailConfirmed)
+            .Select(u => new AccountUserDto(
+                u.Id,
+                u.Email ?? string.Empty,
+                u.DisplayName,
+                u.Role,
+                u.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(
+        Guid userId, Guid accountId, string newRole, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.AccountId == accountId, cancellationToken);
+
+        if (user == null)
+        {
+            return (false, "User not found");
+        }
+
+        if (newRole != "Owner" && newRole != "Contributor")
+        {
+            return (false, "Invalid role. Must be 'Owner' or 'Contributor'");
+        }
+
+        user.Role = newRole;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> RemoveUserFromAccountAsync(
+        Guid userId, Guid accountId, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.AccountId == accountId, cancellationToken);
+
+        if (user == null)
+        {
+            return (false, "User not found");
+        }
+
+        // Disable login by setting EmailConfirmed to false
+        // ValidateCredentialsAsync already checks EmailConfirmed, so this blocks login
+        user.EmailConfirmed = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return (true, null);
+    }
+
+    public async Task<int> CountOwnersInAccountAsync(Guid accountId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .IgnoreQueryFilters()
+            .CountAsync(u => u.AccountId == accountId
+                && u.Role == "Owner"
+                && u.EmailConfirmed, cancellationToken);
     }
 }
