@@ -139,8 +139,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             ? "Successfully joined account"
             : "Account created successfully";
 
-        _logger.LogInformation("Invitation accepted for {Email}, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
-            LogSanitizer.MaskEmail(invitation.Email), userId, invitation.AccountId.HasValue);
+        _logger.LogInformation("Invitation {InvitationId} accepted, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
+            invitation.Id, userId, invitation.AccountId.HasValue);
 
         return new AcceptInvitationResult(userId.Value, message);
     }
