@@ -395,7 +395,6 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         var content = await response.Content.ReadFromJsonAsync<AcceptInvitationResponse>();
         content.Should().NotBeNull();
         content!.UserId.Should().NotBe(Guid.Empty);
-        content.Email.Should().Be(inviteeEmail.ToLowerInvariant());
         content.Message.Should().Contain("joined account");
     }
 

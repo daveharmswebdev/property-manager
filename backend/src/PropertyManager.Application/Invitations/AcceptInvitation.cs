@@ -22,7 +22,6 @@ public record AcceptInvitationCommand(
 /// </summary>
 public record AcceptInvitationResult(
     Guid UserId,
-    string Email,
     string Message
 );
 
@@ -143,7 +142,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         _logger.LogInformation("Invitation accepted for {Email}, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
             LogSanitizer.MaskEmail(invitation.Email), userId, invitation.AccountId.HasValue);
 
-        return new AcceptInvitationResult(userId.Value, invitation.Email, message);
+        return new AcceptInvitationResult(userId.Value, message);
     }
 
     /// <summary>
