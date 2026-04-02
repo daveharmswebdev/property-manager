@@ -139,7 +139,6 @@ public class InvitationsController : ControllerBase
             var result = await _mediator.Send(command);
             var response = new AcceptInvitationResponse(
                 result.UserId,
-                result.Email,
                 result.Message);
 
             return CreatedAtAction(
@@ -193,4 +192,4 @@ public record CreateInvitationResponse(Guid InvitationId, string Message);
 public record ValidateInvitationResponse(bool IsValid, string? Email, string? Role, string? ErrorMessage);
 
 public record AcceptInvitationRequest(string Password);
-public record AcceptInvitationResponse(Guid UserId, string Email, string Message);
+public record AcceptInvitationResponse(Guid UserId, string Message);

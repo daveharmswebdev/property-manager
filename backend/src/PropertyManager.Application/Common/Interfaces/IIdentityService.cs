@@ -1,3 +1,5 @@
+using PropertyManager.Application.AccountUsers;
+
 namespace PropertyManager.Application.Common.Interfaces;
 
 /// <summary>
@@ -90,4 +92,24 @@ public interface IIdentityService
     Task<Dictionary<Guid, string>> GetUserDisplayNamesAsync(
         IEnumerable<Guid> userIds,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all users in an account.
+    /// </summary>
+    Task<List<AccountUserDto>> GetAccountUsersAsync(Guid accountId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates a user's role within an account.
+    /// </summary>
+    Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(Guid userId, Guid accountId, string newRole, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes (disables) a user from an account.
+    /// </summary>
+    Task<(bool Success, string? ErrorMessage)> RemoveUserFromAccountAsync(Guid userId, Guid accountId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts the number of active (non-locked-out) owners in an account.
+    /// </summary>
+    Task<int> CountOwnersInAccountAsync(Guid accountId, CancellationToken cancellationToken = default);
 }
