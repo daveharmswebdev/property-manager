@@ -52,7 +52,7 @@
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.2",
-    "baseline-browser-mapping": "^2.10.12",
+    "baseline-browser-mapping": "^2.10.15",
     "jsdom": "^29.0.1",
     "nswag": "^14.6.3",
     "source-map-explorer": "^2.5.3",
