@@ -46,6 +46,9 @@ export interface IApiClient {
     invitations_CreateInvitation(request: CreateInvitationRequest): Observable<CreateInvitationResponse>;
     invitations_ValidateInvitation(code: string): Observable<ValidateInvitationResponse>;
     invitations_AcceptInvitation(code: string, request: AcceptInvitationRequest): Observable<AcceptInvitationResponse>;
+    invitations_GetAccountInvitations(): Observable<GetAccountInvitationsResponse>;
+    invitations_ResendInvitation(id: string): Observable<CreateInvitationResponse>;
+    accountUsers_GetAccountUsers(): Observable<GetAccountUsersResponse>;
     notes_GetNotes(entityType?: string | undefined, entityId?: string | undefined): Observable<GetNotesResult>;
     notes_CreateNote(request: CreateNoteRequest): Observable<CreateNoteResponse>;
     notes_UpdateNote(id: string, request: UpdateNoteRequest): Observable<void>;
@@ -1971,6 +1974,200 @@ export class ApiClient implements IApiClient {
         }
         return _observableOf(null as any);
     }
+
+    // === Manually added methods for Story 19.6 ===
+
+    invitations_GetAccountInvitations(): Observable<GetAccountInvitationsResponse> {
+        let url_ = this.baseUrl + "/api/v1/invitations";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processInvitations_GetAccountInvitations(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processInvitations_GetAccountInvitations(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetAccountInvitationsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetAccountInvitationsResponse>;
+        }));
+    }
+
+    protected processInvitations_GetAccountInvitations(response: HttpResponseBase): Observable<GetAccountInvitationsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetAccountInvitationsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    invitations_ResendInvitation(id: string): Observable<CreateInvitationResponse> {
+        let url_ = this.baseUrl + "/api/v1/invitations/{id}/resend";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processInvitations_ResendInvitation(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processInvitations_ResendInvitation(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CreateInvitationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CreateInvitationResponse>;
+        }));
+    }
+
+    protected processInvitations_ResendInvitation(response: HttpResponseBase): Observable<CreateInvitationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CreateInvitationResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    accountUsers_GetAccountUsers(): Observable<GetAccountUsersResponse> {
+        let url_ = this.baseUrl + "/api/v1/account/users";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            withCredentials: true,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAccountUsers_GetAccountUsers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAccountUsers_GetAccountUsers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetAccountUsersResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetAccountUsersResponse>;
+        }));
+    }
+
+    protected processAccountUsers_GetAccountUsers(response: HttpResponseBase): Observable<GetAccountUsersResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetAccountUsersResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    // === End manually added methods for Story 19.6 ===
 
     notes_GetNotes(entityType?: string | undefined, entityId?: string | undefined): Observable<GetNotesResult> {
         let url_ = this.baseUrl + "/api/v1/notes?";
@@ -6437,6 +6634,38 @@ export interface CreateWorkOrderTagResponse {
 export interface CreateWorkOrderTagRequest {
     name?: string;
 }
+
+// === Manually added interfaces for Story 19.6 ===
+
+export interface InvitationDto {
+    id?: string;
+    email?: string;
+    role?: string;
+    createdAt?: Date;
+    expiresAt?: Date;
+    usedAt?: Date | undefined;
+    status?: string;
+}
+
+export interface GetAccountInvitationsResponse {
+    items?: InvitationDto[];
+    totalCount?: number;
+}
+
+export interface AccountUserDto {
+    userId?: string;
+    email?: string;
+    displayName?: string | undefined;
+    role?: string;
+    createdAt?: Date;
+}
+
+export interface GetAccountUsersResponse {
+    items?: AccountUserDto[];
+    totalCount?: number;
+}
+
+// === End manually added interfaces for Story 19.6 ===
 
 export interface FileResponse {
     data: Blob;

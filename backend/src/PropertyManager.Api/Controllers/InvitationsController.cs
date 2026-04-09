@@ -18,6 +18,7 @@ public class InvitationsController : ControllerBase
     private readonly IValidator<CreateInvitationCommand> _createValidator;
     private readonly IValidator<ValidateInvitationQuery> _validateValidator;
     private readonly IValidator<AcceptInvitationCommand> _acceptValidator;
+    private readonly IValidator<ResendInvitationCommand> _resendValidator;
     private readonly ILogger<InvitationsController> _logger;
 
     public InvitationsController(
@@ -25,13 +26,71 @@ public class InvitationsController : ControllerBase
         IValidator<CreateInvitationCommand> createValidator,
         IValidator<ValidateInvitationQuery> validateValidator,
         IValidator<AcceptInvitationCommand> acceptValidator,
+        IValidator<ResendInvitationCommand> resendValidator,
         ILogger<InvitationsController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _validateValidator = validateValidator;
         _acceptValidator = acceptValidator;
+        _resendValidator = resendValidator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Get all invitations for the current user's account.
+    /// Only authenticated users with Owner role can view invitations.
+    /// </summary>
+    /// <returns>List of account invitations with status</returns>
+    /// <response code="200">List of invitations</response>
+    /// <response code="401">If not authenticated</response>
+    /// <response code="403">If not an Owner</response>
+    [HttpGet]
+    [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(typeof(GetAccountInvitationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAccountInvitations()
+    {
+        var result = await _mediator.Send(new GetAccountInvitationsQuery());
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Resend an expired invitation with a new code and expiry.
+    /// Creates a new invitation record for audit trail.
+    /// </summary>
+    /// <param name="id">The ID of the expired invitation to resend</param>
+    /// <returns>New invitation ID on success</returns>
+    /// <response code="201">Invitation resent successfully</response>
+    /// <response code="400">If invitation is not expired or already used</response>
+    /// <response code="401">If not authenticated</response>
+    /// <response code="403">If not an Owner</response>
+    /// <response code="404">If invitation not found</response>
+    [HttpPost("{id:guid}/resend")]
+    [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(typeof(ResendInvitationResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResendInvitation([FromRoute] Guid id)
+    {
+        var command = new ResendInvitationCommand(id);
+
+        var validationResult = await _resendValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(CreateValidationProblemDetails(validationResult));
+        }
+
+        var result = await _mediator.Send(command);
+        var response = new ResendInvitationResponse(result.InvitationId, result.Message);
+
+        return CreatedAtAction(
+            nameof(ResendInvitation),
+            new { id = result.InvitationId },
+            response);
     }
 
     /// <summary>
@@ -193,3 +252,5 @@ public record ValidateInvitationResponse(bool IsValid, string? Email, string? Ro
 
 public record AcceptInvitationRequest(string Password);
 public record AcceptInvitationResponse(Guid UserId, string Message);
+
+public record ResendInvitationResponse(Guid InvitationId, string Message);
