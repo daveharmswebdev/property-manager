@@ -1,6 +1,7 @@
 import { Component, inject, effect, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,10 +36,12 @@ import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date
     <div class="properties-container">
       <header class="properties-header">
         <h1>Properties</h1>
-        <button mat-raised-button color="primary" routerLink="/properties/new">
-          <mat-icon>add</mat-icon>
-          Add Property
-        </button>
+        @if (isOwner()) {
+          <button mat-raised-button color="primary" routerLink="/properties/new">
+            <mat-icon>add</mat-icon>
+            Add Property
+          </button>
+        }
       </header>
 
       <!-- Date Range Filter (AC-17.12.4) -->
@@ -171,8 +174,10 @@ import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date
   `]
 })
 export class PropertiesComponent {
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly propertyStore = inject(PropertyStore);
+  readonly isOwner = computed(() => this.authService.currentUser()?.role === 'Owner');
 
   readonly dateRangePreset = signal<DateRangePreset>('this-year');
   private readonly dateRange = signal(getDateRangeFromPreset('this-year'));

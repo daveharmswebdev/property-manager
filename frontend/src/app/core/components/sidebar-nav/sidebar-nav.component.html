@@ -6,7 +6,7 @@
 
   <!-- Navigation List (AC7.1) -->
   <mat-nav-list class="nav-list">
-    @for (item of navItems; track item.route) {
+    @for (item of navItems(); track item.route) {
       <a
         mat-list-item
         [routerLink]="item.route"

@@ -84,10 +84,12 @@ describe('DashboardComponent', () => {
   async function setupTest(
     properties: PropertySummaryDto[] = [],
     isLoading = false,
-    error: string | null = null
+    error: string | null = null,
+    role = 'Owner'
   ) {
+    const user: User = { ...mockUser, role };
     const mockAuthService = {
-      currentUser: signal<User | null>(mockUser),
+      currentUser: signal<User | null>(user),
     };
 
     const mockPropertyStore = createMockPropertyStore(properties, isLoading, error);
@@ -121,7 +123,7 @@ describe('DashboardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should load properties on init', async () => {
+  it('should load properties on init for Owner', async () => {
     const { mockPropertyStore } = await setupTest();
     expect(mockPropertyStore.loadProperties).toHaveBeenCalled();
   });
@@ -147,14 +149,12 @@ describe('DashboardComponent', () => {
 
     it('should display expense total in stats bar', async () => {
       await setupTest(mockProperties);
-      // Check that the stats bar renders with the correct expense total (1500 + 800 = 2300)
       const expenseCard = fixture.nativeElement.querySelector('.expense-card .stat-value');
       expect(expenseCard.textContent).toContain('$2,300.00');
     });
 
     it('should display income total in stats bar', async () => {
       await setupTest(mockProperties);
-      // Check that the stats bar renders with the correct income total (3000 + 2000 = 5000)
       const incomeCard = fixture.nativeElement.querySelector('.income-card .stat-value');
       expect(incomeCard.textContent).toContain('$5,000.00');
     });
@@ -222,13 +222,11 @@ describe('DashboardComponent', () => {
       await setupTest(mockProperties);
       const rows = fixture.debugElement.queryAll(By.css('app-property-row'));
 
-      // First property has a thumbnail URL
       const firstRow = rows[0].nativeElement;
       const firstThumbnail = firstRow.querySelector('.thumbnail-img');
       expect(firstThumbnail).toBeTruthy();
       expect(firstThumbnail.getAttribute('src')).toBe('https://example.com/photos/prop-1-thumb.jpg');
 
-      // Second property has null thumbnail, should show fallback icon
       const secondRow = rows[1].nativeElement;
       const secondThumbnail = secondRow.querySelector('.thumbnail-img');
       const fallbackIcon = secondRow.querySelector('.fallback-icon');
@@ -269,7 +267,6 @@ describe('DashboardComponent', () => {
       const { mockPropertyStore } = await setupTest([], false, 'Failed to load properties. Please try again.');
       const retryButton = fixture.debugElement.query(By.css('.error-card button'));
       retryButton.nativeElement.click();
-      // loadProperties is called once on init, and once on retry
       expect(mockPropertyStore.loadProperties).toHaveBeenCalledTimes(2);
     });
   });
@@ -285,6 +282,50 @@ describe('DashboardComponent', () => {
       await setupTest(mockProperties);
       const subtitle = fixture.debugElement.query(By.css('mat-card-subtitle'));
       expect(subtitle.nativeElement.textContent).toContain('2 properties');
+    });
+  });
+
+  describe('Contributor dashboard (AC-19.5 #2, Task 7)', () => {
+    it('should show contributor dashboard for Contributor role', async () => {
+      await setupTest([], false, null, 'Contributor');
+      const contributorDashboard = fixture.debugElement.query(
+        By.css('[data-testid="contributor-dashboard"]')
+      );
+      expect(contributorDashboard).toBeTruthy();
+    });
+
+    it('should show welcome message with user display name for Contributor', async () => {
+      await setupTest([], false, null, 'Contributor');
+      const header = fixture.debugElement.query(By.css('.dashboard-header h1'));
+      expect(header.nativeElement.textContent).toContain('Welcome, Test User');
+    });
+
+    it('should NOT show stats bar for Contributor', async () => {
+      await setupTest([], false, null, 'Contributor');
+      const statsBar = fixture.debugElement.query(By.css('app-stats-bar'));
+      expect(statsBar).toBeFalsy();
+    });
+
+    it('should NOT show Add Property button for Contributor', async () => {
+      await setupTest([], false, null, 'Contributor');
+      const buttons = fixture.debugElement.queryAll(By.css('button'));
+      const addPropertyButton = buttons.find((b) =>
+        b.nativeElement.textContent.includes('Add Property')
+      );
+      expect(addPropertyButton).toBeFalsy();
+    });
+
+    it('should show Receipts and Work Orders links for Contributor', async () => {
+      await setupTest([], false, null, 'Contributor');
+      const links = fixture.debugElement.queryAll(By.css('.contributor-links a'));
+      expect(links.length).toBe(2);
+      expect(links[0].nativeElement.textContent).toContain('Receipts');
+      expect(links[1].nativeElement.textContent).toContain('Work Orders');
+    });
+
+    it('should NOT load properties for Contributor', async () => {
+      const { mockPropertyStore } = await setupTest([], false, null, 'Contributor');
+      expect(mockPropertyStore.loadProperties).not.toHaveBeenCalled();
     });
   });
 });

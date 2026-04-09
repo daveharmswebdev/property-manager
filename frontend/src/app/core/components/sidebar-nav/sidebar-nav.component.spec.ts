@@ -18,13 +18,6 @@ describe('SidebarNavComponent', () => {
   let mockLogout: ReturnType<typeof vi.fn>;
   let mockLogoutAndRedirect: ReturnType<typeof vi.fn>;
 
-  const mockUser: User = {
-    userId: 'test-user-id',
-    accountId: 'test-account-id',
-    role: 'Owner',
-    email: 'test@example.com',
-    displayName: 'John Doe',
-  };
   const mockReceiptStore = {
     unprocessedReceipts: signal([]),
     isLoading: signal(false),
@@ -35,7 +28,15 @@ describe('SidebarNavComponent', () => {
     loadUnprocessedReceipts: vi.fn().mockResolvedValue(undefined),
   };
 
-  beforeEach(async () => {
+  async function setupWithRole(role: string) {
+    const mockUser: User = {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'John Doe',
+    };
+
     mockLogout = vi.fn().mockReturnValue(of(undefined));
     mockLogoutAndRedirect = vi.fn();
 
@@ -45,6 +46,7 @@ describe('SidebarNavComponent', () => {
       logoutAndRedirect: mockLogoutAndRedirect,
     };
 
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [SidebarNavComponent, NoopAnimationsModule],
       providers: [
@@ -67,71 +69,110 @@ describe('SidebarNavComponent', () => {
     fixture = TestBed.createComponent(SidebarNavComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  describe('Owner role (AC: #1)', () => {
+    beforeEach(async () => {
+      await setupWithRole('Owner');
+    });
+
+    it('should create', () => {
+      expect(component).toBeTruthy();
+    });
+
+    it('should have 9 navigation items for Owner', () => {
+      expect(component.navItems().length).toBe(9);
+    });
+
+    it('should have correct navigation items in order for Owner', () => {
+      const expectedLabels = [
+        'Dashboard',
+        'Properties',
+        'Expenses',
+        'Income',
+        'Receipts',
+        'Vendors',
+        'Work Orders',
+        'Reports',
+        'Settings',
+      ];
+      const actualLabels = component.navItems().map((item) => item.label);
+      expect(actualLabels).toEqual(expectedLabels);
+    });
+
+    it('should have Dashboard as first item', () => {
+      expect(component.navItems()[0].label).toBe('Dashboard');
+      expect(component.navItems()[0].route).toBe('/dashboard');
+    });
+
+    it('should have Receipts nav item with dynamic badge (AC-5.3.1)', () => {
+      const receiptsItem = component.navItems().find((item) => item.label === 'Receipts');
+      expect(receiptsItem).toBeTruthy();
+      expect(receiptsItem?.route).toBe('/receipts');
+      expect(component.getBadgeCount(receiptsItem!)).toBe(0);
+    });
+
+    it('should return unprocessed count for Receipts badge (AC-5.3.1)', () => {
+      const receiptsItem = component.navItems().find((item) => item.label === 'Receipts');
+      mockReceiptStore.unprocessedCount.set(5);
+      expect(component.getBadgeCount(receiptsItem!)).toBe(5);
+    });
+
+    it('should display displayName when available (AC-7.2.1)', () => {
+      expect(component.userDisplayName).toBe('John Doe');
+    });
+
+    it('should render logout button (AC7.2)', () => {
+      const logoutButton = fixture.debugElement.query(
+        By.css('[data-testid="logout-button"]')
+      );
+      expect(logoutButton).toBeTruthy();
+    });
+
+    it('should call logout on auth service when logout clicked (AC7.2)', () => {
+      component.logout();
+      expect(mockLogoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
+    });
+
+    it('should render all 9 nav items in the DOM', () => {
+      const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
+      expect(navItems.length).toBe(9);
+    });
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  describe('Contributor role (AC: #2)', () => {
+    beforeEach(async () => {
+      await setupWithRole('Contributor');
+    });
 
-  it('should have 9 navigation items (AC7.1, Story 8.3, Story 9.2)', () => {
-    expect(component.navItems.length).toBe(9);
-  });
+    it('should have 3 navigation items for Contributor', () => {
+      expect(component.navItems().length).toBe(3);
+    });
 
-  it('should have correct navigation items in order (AC7.1, Story 8.3, Story 9.2)', () => {
-    const expectedLabels = [
-      'Dashboard',
-      'Properties',
-      'Expenses',
-      'Income',
-      'Receipts',
-      'Vendors',
-      'Work Orders',
-      'Reports',
-      'Settings',
-    ];
-    const actualLabels = component.navItems.map((item) => item.label);
-    expect(actualLabels).toEqual(expectedLabels);
-  });
+    it('should show Dashboard, Receipts, Work Orders for Contributor', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).toEqual(['Dashboard', 'Receipts', 'Work Orders']);
+    });
 
-  it('should have Dashboard as first item (AC7.1)', () => {
-    expect(component.navItems[0].label).toBe('Dashboard');
-    expect(component.navItems[0].route).toBe('/dashboard');
-  });
+    it('should NOT show Properties for Contributor', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).not.toContain('Properties');
+    });
 
-  it('should have Receipts nav item with dynamic badge (AC-5.3.1)', () => {
-    const receiptsItem = component.navItems.find((item) => item.label === 'Receipts');
-    expect(receiptsItem).toBeTruthy();
-    expect(receiptsItem?.route).toBe('/receipts');
-    // Badge is now dynamic from store, default 0 when no receipts
-    expect(component.getBadgeCount(receiptsItem!)).toBe(0);
-  });
+    it('should NOT show Expenses for Contributor', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).not.toContain('Expenses');
+    });
 
-  it('should return unprocessed count for Receipts badge (AC-5.3.1)', () => {
-    const receiptsItem = component.navItems.find((item) => item.label === 'Receipts');
-    // Verify the getBadgeCount method returns the store signal value
-    mockReceiptStore.unprocessedCount.set(5);
-    expect(component.getBadgeCount(receiptsItem!)).toBe(5);
-  });
+    it('should NOT show Settings for Contributor', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).not.toContain('Settings');
+    });
 
-  it('should display displayName when available (AC-7.2.1)', () => {
-    expect(component.userDisplayName).toBe('John Doe');
-  });
-
-  it('should render logout button (AC7.2)', () => {
-    const logoutButton = fixture.debugElement.query(
-      By.css('[data-testid="logout-button"]')
-    );
-    expect(logoutButton).toBeTruthy();
-  });
-
-  it('should call logout on auth service when logout clicked (AC7.2)', () => {
-    component.logout();
-    expect(mockLogoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
-  });
-
-  it('should render all nav items in the DOM (AC7.1, Story 8.3, Story 9.2)', () => {
-    const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
-    expect(navItems.length).toBe(9);
+    it('should render 3 nav items in the DOM', () => {
+      const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
+      expect(navItems.length).toBe(3);
+    });
   });
 
   describe('userDisplayName fallback logic (AC-7.2.2)', () => {

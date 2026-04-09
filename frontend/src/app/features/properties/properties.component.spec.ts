@@ -5,17 +5,10 @@ import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { PropertiesComponent } from './properties.component';
 import { PropertyStore } from './stores/property.store';
+import { AuthService, User } from '../../core/services/auth.service';
 
 /**
- * Unit tests for PropertiesComponent (AC-2.1.1)
- *
- * Test coverage:
- * - Component creation
- * - Header and Add Property button
- * - Loading state
- * - Error state
- * - Empty state
- * - Property list display
+ * Unit tests for PropertiesComponent (AC-2.1.1, AC-19.5 #4, #5)
  */
 describe('PropertiesComponent', () => {
   let component: PropertiesComponent;
@@ -34,6 +27,16 @@ describe('PropertiesComponent', () => {
     loadProperties: vi.fn(),
   };
 
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    };
+  }
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -45,6 +48,7 @@ describe('PropertiesComponent', () => {
           { path: 'properties/:id', component: PropertiesComponent },
         ]),
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: AuthService, useValue: { currentUser: signal<User | null>(createUser('Owner')) } },
       ],
     }).compileComponents();
 
@@ -70,7 +74,7 @@ describe('PropertiesComponent', () => {
     expect(header.nativeElement.textContent.trim()).toBe('Properties');
   });
 
-  it('should render Add Property button', () => {
+  it('should render Add Property button for Owner (AC: #5)', () => {
     const addBtn = fixture.debugElement.query(By.css('.properties-header button'));
     expect(addBtn).toBeTruthy();
     expect(addBtn.nativeElement.textContent).toContain('Add Property');
@@ -104,13 +108,66 @@ describe('PropertiesComponent', () => {
   });
 
   it('should call loadProperties on yearService', () => {
-    // Effect runs on init, loadProperties is called
     expect(mockPropertyStore.loadProperties).toHaveBeenCalled();
+  });
+});
+
+describe('PropertiesComponent — Contributor role (AC: #4)', () => {
+  let fixture: ComponentFixture<PropertiesComponent>;
+
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    };
+  }
+
+  const mockPropertyStore = {
+    isLoading: signal(false),
+    error: signal<string | null>(null),
+    isEmpty: signal(false),
+    properties: signal([
+      { id: 'prop-1', name: 'Test Property 1', city: 'Austin', state: 'TX', expenseTotal: 1000, incomeTotal: 2000 },
+    ]),
+    totalCount: signal(1),
+    loadProperties: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PropertiesComponent],
+      providers: [
+        provideRouter([]),
+        { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: AuthService, useValue: { currentUser: signal<User | null>(createUser('Contributor')) } },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PropertiesComponent);
+    fixture.detectChanges();
+  });
+
+  it('should NOT render Add Property button for Contributor', () => {
+    const addBtn = fixture.debugElement.query(By.css('.properties-header button'));
+    expect(addBtn).toBeFalsy();
   });
 });
 
 describe('PropertiesComponent loading state', () => {
   let fixture: ComponentFixture<PropertiesComponent>;
+
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    };
+  }
 
   const mockPropertyStore = {
     isLoading: signal(true),
@@ -127,6 +184,7 @@ describe('PropertiesComponent loading state', () => {
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: AuthService, useValue: { currentUser: signal<User | null>(createUser('Owner')) } },
       ],
     }).compileComponents();
 
@@ -149,6 +207,16 @@ describe('PropertiesComponent error state', () => {
   let component: PropertiesComponent;
   let fixture: ComponentFixture<PropertiesComponent>;
 
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    };
+  }
+
   const mockPropertyStore = {
     isLoading: signal(false),
     error: signal<string | null>('Failed to load properties'),
@@ -166,6 +234,7 @@ describe('PropertiesComponent error state', () => {
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: AuthService, useValue: { currentUser: signal<User | null>(createUser('Owner')) } },
       ],
     }).compileComponents();
 
@@ -188,6 +257,16 @@ describe('PropertiesComponent error state', () => {
 describe('PropertiesComponent empty state', () => {
   let fixture: ComponentFixture<PropertiesComponent>;
 
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    };
+  }
+
   const mockPropertyStore = {
     isLoading: signal(false),
     error: signal<string | null>(null),
@@ -203,6 +282,7 @@ describe('PropertiesComponent empty state', () => {
       providers: [
         provideRouter([]),
         { provide: PropertyStore, useValue: mockPropertyStore },
+        { provide: AuthService, useValue: { currentUser: signal<User | null>(createUser('Owner')) } },
       ],
     }).compileComponents();
 

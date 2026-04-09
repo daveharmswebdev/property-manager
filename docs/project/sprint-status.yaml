@@ -303,7 +303,7 @@ development_status:
   19-2-permission-infrastructure: done              # Size 3
   19-3-backend-permission-enforcement: done           # FR60 - Size 5 - depends on 19.2
   19-4-account-user-management-api: done           # FR61, FR62 - Size 3 - depends on 19.2
-  19-5-frontend-auth-state-permission-service: pending     # FR60 - Size 5 - depends on 19.3
+  19-5-frontend-auth-state-permission-service: done     # FR60 - Size 5 - depends on 19.3
   19-6-invitation-management-ui: pending                   # FR58, FR62 - Size 5 - depends on 19.1, 19.5
   19-7-account-user-management-ui: pending                 # FR61, FR62 - Size 3 - depends on 19.4, 19.5, 19.6
   epic-19-retrospective: optional

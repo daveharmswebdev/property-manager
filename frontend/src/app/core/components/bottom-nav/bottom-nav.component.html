@@ -1,6 +1,6 @@
 <!-- Mobile Bottom Navigation (AC7.5) -->
 <nav class="bottom-nav" aria-label="Mobile navigation">
-  @for (item of navItems; track item.route) {
+  @for (item of navItems(); track item.route) {
     <a
       [routerLink]="item.route"
       routerLinkActive="active"
