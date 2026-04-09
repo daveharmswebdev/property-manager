@@ -40,84 +40,111 @@ import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date
   ],
   template: `
     <div class="dashboard-container">
-      <!-- Welcome Section -->
-      <header class="dashboard-header">
-        <div class="header-content">
-          <h1>Welcome back!</h1>
-          <p class="subtitle">Here's your property management overview.</p>
-        </div>
-        <button mat-raised-button color="primary" routerLink="/properties/new">
-          <mat-icon>add</mat-icon>
-          Add Property
-        </button>
-      </header>
+      @if (isOwner()) {
+        <!-- Owner Dashboard -->
+        <header class="dashboard-header">
+          <div class="header-content">
+            <h1>Welcome back!</h1>
+            <p class="subtitle">Here's your property management overview.</p>
+          </div>
+          <button mat-raised-button color="primary" routerLink="/properties/new">
+            <mat-icon>add</mat-icon>
+            Add Property
+          </button>
+        </header>
 
-      <!-- Date Range Filter (AC-17.12.2) -->
-      <mat-card class="filters-card">
-        <app-date-range-filter
-          [dateRangePreset]="dateRangePreset()"
-          [dateFrom]="dateFrom()"
-          [dateTo]="dateTo()"
-          (dateRangePresetChange)="onDateRangePresetChange($event)"
-          (customDateRangeChange)="onCustomDateRangeChange($event)"
-        />
-      </mat-card>
+        <!-- Date Range Filter (AC-17.12.2) -->
+        <mat-card class="filters-card">
+          <app-date-range-filter
+            [dateRangePreset]="dateRangePreset()"
+            [dateFrom]="dateFrom()"
+            [dateTo]="dateTo()"
+            (dateRangePresetChange)="onDateRangePresetChange($event)"
+            (customDateRangeChange)="onCustomDateRangeChange($event)"
+          />
+        </mat-card>
 
-      <!-- Stats Bar (AC-2.2.1) -->
-      <app-stats-bar
-        [expenseTotal]="propertyStore.totalExpenses()"
-        [incomeTotal]="propertyStore.totalIncome()">
-      </app-stats-bar>
+        <!-- Stats Bar (AC-2.2.1) -->
+        <app-stats-bar
+          [expenseTotal]="propertyStore.totalExpenses()"
+          [incomeTotal]="propertyStore.totalIncome()">
+        </app-stats-bar>
 
-      <!-- Loading State -->
-      @if (propertyStore.isLoading()) {
-        <app-loading-spinner />
-      }
+        <!-- Loading State -->
+        @if (propertyStore.isLoading()) {
+          <app-loading-spinner />
+        }
 
-      <!-- Error State -->
-      @if (propertyStore.error()) {
-        <app-error-card
-          [message]="propertyStore.error()!"
-          (retry)="loadProperties()" />
-      }
+        <!-- Error State -->
+        @if (propertyStore.error()) {
+          <app-error-card
+            [message]="propertyStore.error()!"
+            (retry)="loadProperties()" />
+        }
 
-      <!-- Properties List or Empty State -->
-      @if (!propertyStore.isLoading() && !propertyStore.error()) {
-        <div class="dashboard-content">
-          @if (propertyStore.isEmpty()) {
-            <!-- Empty State (AC-2.2.3) -->
-            <app-empty-state
-              icon="home_work"
-              title="No properties yet"
-              message="Add your first property to get started."
-              actionLabel="Add Property"
-              actionRoute="/properties/new"
-              actionIcon="add" />
-          } @else {
-            <!-- Properties List (AC-2.2.2, AC-2.2.4) -->
-            <mat-card class="properties-list-card">
-              <mat-card-header>
-                <mat-card-title>Your Properties</mat-card-title>
-                <mat-card-subtitle>{{ propertyStore.totalCount() }} {{ propertyStore.totalCount() === 1 ? 'property' : 'properties' }}</mat-card-subtitle>
-              </mat-card-header>
-              <mat-card-content>
-                <div class="property-list">
-                  @for (property of propertyStore.properties(); track property.id) {
-                    <app-property-row
-                      [id]="property.id"
-                      [name]="property.name"
-                      [city]="property.city"
-                      [state]="property.state"
-                      [expenseTotal]="property.expenseTotal"
-                      [incomeTotal]="property.incomeTotal"
-                      [thumbnailUrl]="property.primaryPhotoThumbnailUrl"
-                      (rowClick)="navigateToProperty($event)">
-                    </app-property-row>
-                  }
-                </div>
-              </mat-card-content>
-            </mat-card>
-          }
+        <!-- Properties List or Empty State -->
+        @if (!propertyStore.isLoading() && !propertyStore.error()) {
+          <div class="dashboard-content">
+            @if (propertyStore.isEmpty()) {
+              <!-- Empty State (AC-2.2.3) -->
+              <app-empty-state
+                icon="home_work"
+                title="No properties yet"
+                message="Add your first property to get started."
+                actionLabel="Add Property"
+                actionRoute="/properties/new"
+                actionIcon="add" />
+            } @else {
+              <!-- Properties List (AC-2.2.2, AC-2.2.4) -->
+              <mat-card class="properties-list-card">
+                <mat-card-header>
+                  <mat-card-title>Your Properties</mat-card-title>
+                  <mat-card-subtitle>{{ propertyStore.totalCount() }} {{ propertyStore.totalCount() === 1 ? 'property' : 'properties' }}</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <div class="property-list">
+                    @for (property of propertyStore.properties(); track property.id) {
+                      <app-property-row
+                        [id]="property.id"
+                        [name]="property.name"
+                        [city]="property.city"
+                        [state]="property.state"
+                        [expenseTotal]="property.expenseTotal"
+                        [incomeTotal]="property.incomeTotal"
+                        [thumbnailUrl]="property.primaryPhotoThumbnailUrl"
+                        (rowClick)="navigateToProperty($event)">
+                      </app-property-row>
+                    }
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
+        }
+      } @else {
+        <!-- Contributor Dashboard (AC-19.5 #2, Task 7) -->
+        <header class="dashboard-header">
+          <div class="header-content">
+            <h1>Welcome, {{ currentUser()?.displayName || currentUser()?.email || 'User' }}!</h1>
+            <p class="subtitle">Use the links below to get started.</p>
+          </div>
+        </header>
+
+        <div class="contributor-dashboard" data-testid="contributor-dashboard">
+          <mat-card class="contributor-card">
+            <mat-card-content>
+              <div class="contributor-links">
+                <a mat-raised-button color="primary" routerLink="/receipts">
+                  <mat-icon>document_scanner</mat-icon>
+                  Receipts
+                </a>
+                <a mat-raised-button routerLink="/work-orders">
+                  <mat-icon>assignment</mat-icon>
+                  Work Orders
+                </a>
+              </div>
+            </mat-card-content>
+          </mat-card>
         </div>
       }
     </div>
@@ -181,6 +208,30 @@ import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date
       }
     }
 
+    .contributor-dashboard {
+      display: flex;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .contributor-card {
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+    }
+
+    .contributor-links {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+
+      a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+    }
+
     @media (max-width: 767px) {
       .dashboard-header {
         flex-direction: column;
@@ -194,6 +245,15 @@ import { DateRangePreset, getDateRangeFromPreset } from '../../shared/utils/date
           width: 100%;
         }
       }
+
+      .contributor-links {
+        flex-direction: column;
+
+        a {
+          width: 100%;
+          justify-content: center;
+        }
+      }
     }
   `]
 })
@@ -203,6 +263,7 @@ export class DashboardComponent {
   readonly propertyStore = inject(PropertyStore);
 
   readonly currentUser = this.authService.currentUser;
+  readonly isOwner = computed(() => this.authService.currentUser()?.role === 'Owner');
 
   readonly dateRangePreset = signal<DateRangePreset>('this-year');
   private readonly dateRange = signal(getDateRangeFromPreset('this-year'));
@@ -211,8 +272,11 @@ export class DashboardComponent {
 
   constructor() {
     effect(() => {
-      const { dateFrom, dateTo } = this.dateRange();
-      this.propertyStore.loadProperties({ dateFrom: dateFrom ?? undefined, dateTo: dateTo ?? undefined });
+      // Only load properties for Owner role — Contributors get 403 from the dashboard API
+      if (this.isOwner()) {
+        const { dateFrom, dateTo } = this.dateRange();
+        this.propertyStore.loadProperties({ dateFrom: dateFrom ?? undefined, dateTo: dateTo ?? undefined });
+      }
     });
   }
 

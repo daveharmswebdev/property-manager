@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
+import { ownerGuard } from './core/auth/owner.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
@@ -68,6 +69,7 @@ export const routes: Routes = [
           import('./features/properties/property-form/property-form.component').then(
             (m) => m.PropertyFormComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Property Detail (AC-2.3.1)
       {
@@ -76,6 +78,7 @@ export const routes: Routes = [
           import('./features/properties/property-detail/property-detail.component').then(
             (m) => m.PropertyDetailComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Property Edit (AC-2.4.1, AC-2.4.3)
       {
@@ -84,6 +87,7 @@ export const routes: Routes = [
           import('./features/properties/property-edit/property-edit.component').then(
             (m) => m.PropertyEditComponent
           ),
+        canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
       // Property Expense Workspace (AC-3.1.1)
@@ -93,6 +97,7 @@ export const routes: Routes = [
           import('./features/expenses/expense-workspace/expense-workspace.component').then(
             (m) => m.ExpenseWorkspaceComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Property Income Workspace (AC-4.1.1)
       {
@@ -101,6 +106,7 @@ export const routes: Routes = [
           import('./features/income/income-workspace/income-workspace.component').then(
             (m) => m.IncomeWorkspaceComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Expenses (AC7.7)
       {
@@ -109,6 +115,7 @@ export const routes: Routes = [
           import('./features/expenses/expenses.component').then(
             (m) => m.ExpensesComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Expense Detail (AC-15.5.1)
       {
@@ -117,6 +124,7 @@ export const routes: Routes = [
           import('./features/expenses/expense-detail/expense-detail.component').then(
             (m) => m.ExpenseDetailComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Income (AC7.7)
       {
@@ -125,6 +133,7 @@ export const routes: Routes = [
           import('./features/income/income.component').then(
             (m) => m.IncomeComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Income Detail (AC-16.2.3)
       {
@@ -133,6 +142,7 @@ export const routes: Routes = [
           import('./features/income/income-detail/income-detail.component').then(
             (m) => m.IncomeDetailComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Receipts (AC7.7)
       {
@@ -142,13 +152,14 @@ export const routes: Routes = [
             (m) => m.ReceiptsComponent
           ),
       },
-      // Receipt Processing (AC-5.4.1)
+      // Receipt Processing (AC-5.4.1) — Owner-only (Contributors can view list but not process)
       {
         path: 'receipts/:id',
         loadComponent: () =>
           import('./features/receipts/receipt-process/receipt-process.component').then(
             (m) => m.ReceiptProcessComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Reports (AC7.7)
       {
@@ -157,6 +168,7 @@ export const routes: Routes = [
           import('./features/reports/reports.component').then(
             (m) => m.ReportsComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Settings (AC7.7)
       {
@@ -165,6 +177,7 @@ export const routes: Routes = [
           import('./features/settings/settings.component').then(
             (m) => m.SettingsComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Vendors (Story 8.3 - AC #1)
       {
@@ -173,6 +186,7 @@ export const routes: Routes = [
           import('./features/vendors/vendors.component').then(
             (m) => m.VendorsComponent
           ),
+        canActivate: [ownerGuard],
       },
       {
         path: 'vendors/new',
@@ -180,6 +194,7 @@ export const routes: Routes = [
           import('./features/vendors/components/vendor-form/vendor-form.component').then(
             (m) => m.VendorFormComponent
           ),
+        canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
       // Vendor Detail (Story 8.9 - AC #1)
@@ -189,6 +204,7 @@ export const routes: Routes = [
           import('./features/vendors/components/vendor-detail/vendor-detail.component').then(
             (m) => m.VendorDetailComponent
           ),
+        canActivate: [ownerGuard],
       },
       // Vendor Edit (Story 8.4 - AC #1, Story 8.7 - AC #4, #5, Story 8.9 - AC #6)
       {
@@ -197,6 +213,7 @@ export const routes: Routes = [
           import('./features/vendors/components/vendor-edit/vendor-edit.component').then(
             (m) => m.VendorEditComponent
           ),
+        canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
       // Work Orders (Story 9.2 - AC #6)
@@ -213,6 +230,7 @@ export const routes: Routes = [
           import('./features/work-orders/pages/work-order-create/work-order-create.component').then(
             (m) => m.WorkOrderCreateComponent
           ),
+        canActivate: [ownerGuard],
       },
       {
         path: 'work-orders/:id',
@@ -228,6 +246,7 @@ export const routes: Routes = [
           import('./features/work-orders/pages/work-order-edit/work-order-edit.component').then(
             (m) => m.WorkOrderEditComponent
           ),
+        canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
       // Default child redirect to dashboard

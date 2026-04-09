@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
@@ -57,18 +57,28 @@ export class SidebarNavComponent implements OnInit {
   /** Unprocessed receipt count for badge (AC-5.3.1) */
   readonly unprocessedReceiptCount = this.receiptStore.unprocessedCount;
 
-  // Navigation items (AC7.1)
-  readonly navItems: NavItem[] = [
-    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
-    { label: 'Properties', route: '/properties', icon: 'home_work' },
-    { label: 'Expenses', route: '/expenses', icon: 'receipt_long' },
-    { label: 'Income', route: '/income', icon: 'payments' },
-    { label: 'Receipts', route: '/receipts', icon: 'document_scanner' },
-    { label: 'Vendors', route: '/vendors', icon: 'business' }, // Story 8.3 - AC #1
-    { label: 'Work Orders', route: '/work-orders', icon: 'assignment' }, // Story 9.2 - AC #6
-    { label: 'Reports', route: '/reports', icon: 'assessment' },
-    { label: 'Settings', route: '/settings', icon: 'settings' },
-  ];
+  // Navigation items filtered by role (AC7.1, AC-19.5 #1, #2)
+  readonly navItems = computed<NavItem[]>(() => {
+    const allItems: NavItem[] = [
+      { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
+      { label: 'Properties', route: '/properties', icon: 'home_work' },
+      { label: 'Expenses', route: '/expenses', icon: 'receipt_long' },
+      { label: 'Income', route: '/income', icon: 'payments' },
+      { label: 'Receipts', route: '/receipts', icon: 'document_scanner' },
+      { label: 'Vendors', route: '/vendors', icon: 'business' },
+      { label: 'Work Orders', route: '/work-orders', icon: 'assignment' },
+      { label: 'Reports', route: '/reports', icon: 'assessment' },
+      { label: 'Settings', route: '/settings', icon: 'settings' },
+    ];
+
+    if (this.authService.currentUser()?.role === 'Owner') {
+      return allItems;
+    }
+
+    // Contributor sees only these routes
+    const contributorRoutes = ['/dashboard', '/receipts', '/work-orders'];
+    return allItems.filter((item) => contributorRoutes.includes(item.route));
+  });
 
   ngOnInit(): void {
     // Load unprocessed receipts on init to populate badge count
