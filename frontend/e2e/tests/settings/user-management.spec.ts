@@ -350,8 +350,8 @@ test.describe('User Management Page', () => {
       page.getByText('This user will lose access to the account'),
     ).toBeVisible();
 
-    // Click Remove in the confirm dialog
-    await page.getByRole('button', { name: 'Remove' }).click();
+    // Click Remove in the confirm dialog (exact: true to avoid matching "Remove user" icon button)
+    await page.getByRole('button', { name: 'Remove', exact: true }).click();
 
     // See success snackbar
     await expect(page.getByText('User removed')).toBeVisible({ timeout: 5000 });
