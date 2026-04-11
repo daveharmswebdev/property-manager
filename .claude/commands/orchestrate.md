@@ -8,7 +8,7 @@ description: "Chain skills for long-running workflows: story-cycle, planning-cyc
 
 Chain multiple skills together for long-running workflows. Each phase runs in an isolated sub-agent with a fresh context window, communicating through files on disk (story files, code, git state). The orchestrator manages state, validates outputs, and pauses for user approval between phases.
 
-**Why sub-agents?** Each phase (create-story, dev-story, code-review) can consume significant context. Running them inline causes context bloat — by the review phase, the window is stuffed with create + develop history. Sub-agents get the full context budget for their phase and communicate results via files.
+**Why sub-agents?** Each phase (create-story, dev-story, evaluate) can consume significant context. Running them inline causes context bloat — by the evaluate phase, the window is stuffed with create + develop history. Sub-agents get the full context budget for their phase and communicate results via files.
 
 ## Recipes
 
@@ -16,7 +16,7 @@ Chain multiple skills together for long-running workflows. Each phase runs in an
 The daily development loop:
 1. **Create** → `/create-story` logic (sub-agent)
 2. **Develop** → `/dev-story` logic (sub-agent)
-3. **Review** → `/code-review` logic (sub-agent)
+3. **Evaluate** → `/evaluate` logic (sub-agent)
 4. **Ship** → create branch, commit, push, open PR (orchestrator — lightweight, no sub-agent needed)
 
 ### planning-cycle
@@ -32,7 +32,7 @@ ATDD variant of the story cycle:
 1. **Create** → `/create-story` logic (sub-agent)
 2. **ATDD** → `/create-atdd` logic (sub-agent)
 3. **Develop** → `/dev-story` logic (sub-agent)
-4. **Review** → `/code-review` logic (sub-agent)
+4. **Evaluate** → `/evaluate` logic (sub-agent)
 
 ## Process
 
@@ -52,7 +52,7 @@ current_phase: create
 phases:
   create: { status: pending, story_file: null }
   develop: { status: pending }
-  review: { status: pending }
+  evaluate: { status: pending }
   ship: { status: pending }
 ```
 
@@ -105,7 +105,7 @@ IMPORTANT RULES:
 
 - **Create phase**: Include the user's story arg if provided.
 - **Develop phase**: Include the story file path from the create phase output (stored in state).
-- **Review phase**: Include the story file path. The sub-agent will discover git changes itself.
+- **Evaluate phase**: Include the story file path. The sub-agent will discover git changes, run tests, and smoke-test the live app itself.
 - **Ship phase**: No sub-agent — the orchestrator handles this directly (git add, commit, push, PR).
 - **Planning phases** (brief, PRD, architecture, UX, epics): Include any user-provided context or references.
 
@@ -124,10 +124,12 @@ After each sub-agent returns, the orchestrator validates:
 - [ ] Story status is "review"
 - [ ] Sub-agent reported all tests passing
 
-### Review phase
-- [ ] Sub-agent identified 3+ issues (or justified fewer)
-- [ ] All HIGH/MEDIUM issues are fixed (if user chose auto-fix)
-- [ ] Story status is "done" (if all issues resolved)
+### Evaluate phase
+- [ ] All three test suites executed (backend, frontend, E2E)
+- [ ] Every AC smoke-tested in the live app with screenshots
+- [ ] All four grading dimensions scored with evidence
+- [ ] Overall verdict is PASS or CONDITIONAL PASS (all issues fixed)
+- [ ] Story status is "done" (if evaluation passed)
 
 ### ATDD phase
 - [ ] Acceptance test files created
