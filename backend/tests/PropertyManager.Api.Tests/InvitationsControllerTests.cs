@@ -771,6 +771,141 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         payload["role"]!.ToString().Should().Be("Owner");
     }
 
+    // ==================== GET ACCOUNT INVITATIONS TESTS ====================
+
+    [Fact]
+    public async Task GetAccountInvitations_AsOwner_ReturnsInvitationList()
+    {
+        // Arrange — AC: #3 — Owner sees invitations for their account
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        // Create an invitation
+        var inviteeEmail = $"invitee{Guid.NewGuid():N}@example.com";
+        var createRequest = new { Email = inviteeEmail, Role = "Contributor" };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/invitations");
+        request.Headers.Add("Authorization", $"Bearer {token}");
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetAccountInvitationsResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().NotBeEmpty();
+        content.Items.Should().Contain(i => i.Email == inviteeEmail.ToLowerInvariant());
+        content.TotalCount.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task GetAccountInvitations_AsContributor_Returns403()
+    {
+        // Arrange — AC: #6 — Contributor cannot access
+        var contributorEmail = $"contributor{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(contributorEmail, "Test@123456", "Contributor");
+        var token = await GetAccessTokenAsync(contributorEmail, "Test@123456");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/invitations");
+        request.Headers.Add("Authorization", $"Bearer {token}");
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // ==================== RESEND INVITATION TESTS ====================
+
+    [Fact]
+    public async Task ResendInvitation_ExpiredInvitation_Returns201AndSendsEmail()
+    {
+        // Arrange — AC: #4 — resend an expired invitation
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        // Create an expired invitation directly in database
+        var inviteeEmail = $"expired{Guid.NewGuid():N}@example.com";
+        var rawCode = GenerateSecureCode();
+        var codeHash = ComputeHash(rawCode);
+        Guid invitationId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var invitation = new Invitation
+            {
+                Email = inviteeEmail,
+                CodeHash = codeHash,
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+                AccountId = ownerAccountId,
+                Role = "Contributor"
+            };
+            dbContext.Invitations.Add(invitation);
+            await dbContext.SaveChangesAsync();
+            invitationId = invitation.Id;
+        }
+
+        // Clear email log to isolate
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var emailCountBefore = fakeEmailService.SentInvitationEmails.Count;
+
+        // Act
+        var response = await PostAsJsonWithAuthAsync($"/api/v1/invitations/{invitationId}/resend", new { }, token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var content = await response.Content.ReadFromJsonAsync<ResendInvitationResponse>();
+        content.Should().NotBeNull();
+        content!.InvitationId.Should().NotBe(Guid.Empty);
+        content.Message.Should().Contain("resent");
+
+        // Verify email was sent
+        fakeEmailService.SentInvitationEmails.Count.Should().BeGreaterThan(emailCountBefore);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_ActiveInvitation_Returns400()
+    {
+        // Arrange — cannot resend an active invitation
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var token = await GetAccessTokenAsync(ownerEmail, "Test@123456");
+
+        // Create an active invitation
+        var inviteeEmail = $"active{Guid.NewGuid():N}@example.com";
+        var createRequest = new { Email = inviteeEmail, Role = "Owner" };
+        var createResponse = await PostAsJsonWithAuthAsync("/api/v1/invitations", createRequest, token);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createContent = await createResponse.Content.ReadFromJsonAsync<CreateInvitationResponse>();
+
+        // Act
+        var response = await PostAsJsonWithAuthAsync($"/api/v1/invitations/{createContent!.InvitationId}/resend", new { }, token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AsContributor_Returns403()
+    {
+        // Arrange — Contributor cannot resend
+        var contributorEmail = $"contributor{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(contributorEmail, "Test@123456", "Contributor");
+        var token = await GetAccessTokenAsync(contributorEmail, "Test@123456");
+
+        // Act
+        var response = await PostAsJsonWithAuthAsync($"/api/v1/invitations/{Guid.NewGuid()}/resend", new { }, token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     // ==================== HELPER METHODS ====================
 
     private async Task<string> GetAccessTokenAsync(string email, string password)
@@ -818,9 +953,19 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(json)!;
     }
 
+    private async Task<HttpResponseMessage> GetWithAuthAsync(string url, string token)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Authorization", $"Bearer {token}");
+        return await _client.SendAsync(request);
+    }
+
     // DTOs for deserialization
     private record CreateInvitationResponse(Guid InvitationId, string Message);
     private record ValidateInvitationResponse(bool IsValid, string? Email, string? Role, string? ErrorMessage);
     private record AcceptInvitationResponse(Guid UserId, string Email, string Message);
+    private record ResendInvitationResponse(Guid InvitationId, string Message);
+    private record GetAccountInvitationsResponse(List<InvitationItemDto> Items, int TotalCount);
+    private record InvitationItemDto(Guid Id, string Email, string Role, DateTime CreatedAt, DateTime ExpiresAt, DateTime? UsedAt, string Status);
     private record LoginResponse(string AccessToken, int ExpiresIn);
 }
