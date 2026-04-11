@@ -1,4 +1,22 @@
 import { test, expect } from '../../fixtures/test-fixtures';
+import type { Route } from '@playwright/test';
+
+/**
+ * Extract the userId from the JWT Authorization header on an intercepted request.
+ * The component uses currentUserId() from AuthService (decoded from JWT) to hide
+ * the remove button for the current user. Mock data must use this real userId.
+ */
+function extractUserIdFromRequest(route: Route): string {
+  const authHeader = route.request().headers()['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) return 'unknown';
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    return payload.userId || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
 
 /**
  * User Management E2E Tests (Story 19.6 AC #1, #2, #3)
@@ -97,7 +115,6 @@ test.describe('User Management Page', () => {
   }) => {
     // AC #1: User list with Name/Email, Role, Joined Date
     // Story 19.7 AC #2, #4: role dropdown and remove button visible
-    const currentUserId = '33333333-3333-3333-3333-333333333333';
 
     await page.route('*/**/api/v1/invitations', async (route) => {
       if (route.request().method() === 'GET') {
@@ -113,6 +130,8 @@ test.describe('User Management Page', () => {
 
     await page.route('*/**/api/v1/account/users', async (route) => {
       if (route.request().method() === 'GET') {
+        // Extract real userId from JWT so remove button hiding works correctly
+        const currentUserId = extractUserIdFromRequest(route);
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -181,10 +200,11 @@ test.describe('User Management Page', () => {
 
     await page.route('*/**/api/v1/account/users', async (route) => {
       if (route.request().method() === 'GET') {
+        const currentUserId = extractUserIdFromRequest(route);
         const items = roleUpdateCalled
           ? [
               {
-                userId: '33333333-3333-3333-3333-333333333333',
+                userId: currentUserId,
                 email: 'claude@claude.com',
                 displayName: 'Claude Owner',
                 role: 'Owner',
@@ -200,7 +220,7 @@ test.describe('User Management Page', () => {
             ]
           : [
               {
-                userId: '33333333-3333-3333-3333-333333333333',
+                userId: currentUserId,
                 email: 'claude@claude.com',
                 displayName: 'Claude Owner',
                 role: 'Owner',
@@ -268,10 +288,11 @@ test.describe('User Management Page', () => {
 
     await page.route('*/**/api/v1/account/users', async (route) => {
       if (route.request().method() === 'GET') {
+        const currentUserId = extractUserIdFromRequest(route);
         const items = userRemoved
           ? [
               {
-                userId: '33333333-3333-3333-3333-333333333333',
+                userId: currentUserId,
                 email: 'claude@claude.com',
                 displayName: 'Claude Owner',
                 role: 'Owner',
@@ -280,7 +301,7 @@ test.describe('User Management Page', () => {
             ]
           : [
               {
-                userId: '33333333-3333-3333-3333-333333333333',
+                userId: currentUserId,
                 email: 'claude@claude.com',
                 displayName: 'Claude Owner',
                 role: 'Owner',
@@ -320,8 +341,8 @@ test.describe('User Management Page', () => {
     // Verify user is present
     await expect(page.getByRole('cell', { name: 'contrib@example.com' })).toBeVisible();
 
-    // Click the Remove button
-    await page.getByRole('button', { name: /Remove user/i }).click();
+    // Click the Remove button for the contrib user (scoped to their row)
+    await page.getByRole('row', { name: /contrib@example\.com/ }).getByRole('button', { name: /Remove user/i }).click();
 
     // Confirm dialog should appear
     await expect(page.getByText('Remove User?')).toBeVisible();
