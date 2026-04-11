@@ -131,6 +131,12 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
                 errors.Select(e => new FluentValidation.Results.ValidationFailure("Password", e)));
         }
 
+        // Set account creator for new accounts
+        if (newAccount is not null)
+        {
+            newAccount.CreatedByUserId = userId.Value;
+        }
+
         // Mark invitation as used (AC: TD.6.2)
         invitation.UsedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);

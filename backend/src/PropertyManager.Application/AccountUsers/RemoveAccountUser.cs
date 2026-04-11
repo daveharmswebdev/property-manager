@@ -35,6 +35,12 @@ public class RemoveAccountUserCommandHandler : IRequestHandler<RemoveAccountUser
             throw new Domain.Exceptions.NotFoundException("User", request.UserId);
         }
 
+        // Account creator guard: the account creator cannot be removed
+        if (targetUser.IsAccountCreator)
+        {
+            throw new ValidationException("Cannot remove the account creator");
+        }
+
         // Last-owner guard: prevent removing the last owner
         if (targetUser.Role == "Owner")
         {

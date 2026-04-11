@@ -6812,6 +6812,7 @@ export interface AccountUserDto {
     displayName?: string | undefined;
     role?: string;
     createdAt?: Date;
+    isAccountCreator?: boolean;
 }
 
 export interface GetAccountUsersResponse {

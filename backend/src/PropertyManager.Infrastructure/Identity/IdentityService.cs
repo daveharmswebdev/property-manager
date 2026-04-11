@@ -284,6 +284,12 @@ public class IdentityService : IIdentityService
 
     public async Task<List<AccountUserDto>> GetAccountUsersAsync(Guid accountId, CancellationToken cancellationToken = default)
     {
+        var account = await _dbContext.Accounts
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
+
+        var createdByUserId = account?.CreatedByUserId;
+
         return await _dbContext.Users
             .IgnoreQueryFilters()
             .Where(u => u.AccountId == accountId && u.EmailConfirmed)
@@ -292,7 +298,8 @@ public class IdentityService : IIdentityService
                 u.Email ?? string.Empty,
                 u.DisplayName,
                 u.Role,
-                u.CreatedAt))
+                u.CreatedAt,
+                createdByUserId != null && u.Id == createdByUserId))
             .ToListAsync(cancellationToken);
     }
 

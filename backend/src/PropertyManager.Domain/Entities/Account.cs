@@ -8,6 +8,7 @@ public class Account
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public Guid? CreatedByUserId { get; set; }
 
     // Navigation properties
     // Note: Users are managed via ApplicationUser (Identity) in Infrastructure layer

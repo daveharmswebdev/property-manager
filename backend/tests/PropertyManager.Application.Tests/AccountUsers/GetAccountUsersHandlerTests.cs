@@ -30,8 +30,8 @@ public class GetAccountUsersHandlerTests
         // Arrange
         var users = new List<AccountUserDto>
         {
-            new(Guid.NewGuid(), "owner@test.com", "Owner User", "Owner", DateTime.UtcNow),
-            new(Guid.NewGuid(), "contrib@test.com", "Contributor User", "Contributor", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner@test.com", "Owner User", "Owner", DateTime.UtcNow, true),
+            new(Guid.NewGuid(), "contrib@test.com", "Contributor User", "Contributor", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))

@@ -7,6 +7,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { UserManagementStore } from './stores/user-management.store';
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
@@ -34,6 +35,7 @@ import { AuthService } from '../../core/services/auth.service';
     MatProgressSpinnerModule,
     MatSelectModule,
     MatFormFieldModule,
+    MatTooltipModule,
   ],
   template: `
     <div class="user-management-container">
@@ -147,6 +149,7 @@ import { AuthService } from '../../core/services/auth.service';
                         <mat-form-field appearance="outline" class="role-select">
                           <mat-select
                             [value]="user.role"
+                            [disabled]="user.isAccountCreator"
                             (selectionChange)="onRoleChange(user.userId!, $event.value)"
                           >
                             <mat-option value="Owner">Owner</mat-option>
@@ -156,12 +159,13 @@ import { AuthService } from '../../core/services/auth.service';
                       </td>
                       <td>{{ user.createdAt | date: 'mediumDate' }}</td>
                       <td>
-                        @if (user.userId !== currentUserId()) {
+                        @if (user.userId !== currentUserId() && !user.isAccountCreator) {
                           <button
                             mat-icon-button
                             color="warn"
                             (click)="onRemoveUser(user.userId!, user.email!)"
-                            aria-label="Remove user"
+                            aria-label="Remove user from account"
+                            matTooltip="Remove user from account"
                           >
                             <mat-icon>person_remove</mat-icon>
                           </button>
