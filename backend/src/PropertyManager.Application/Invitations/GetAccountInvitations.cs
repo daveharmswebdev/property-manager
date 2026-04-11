@@ -63,10 +63,7 @@ public class GetAccountInvitationsQueryHandler : IRequestHandler<GetAccountInvit
             i.UsedAt,
             DeriveStatus(i))).ToList();
 
-        var accountIdForLog = _currentUser.AccountId == Guid.Empty
-            ? "empty"
-            : _currentUser.AccountId.ToString("N")[..8];
-        _logger.LogInformation("Retrieved {Count} invitations for account {AccountId}", dtos.Count, accountIdForLog);
+        _logger.LogInformation("Retrieved {Count} invitations for current account", dtos.Count);
 
         return new GetAccountInvitationsResponse(dtos.AsReadOnly(), dtos.Count);
     }
