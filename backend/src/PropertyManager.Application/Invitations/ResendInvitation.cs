@@ -95,8 +95,8 @@ public class ResendInvitationCommandHandler : IRequestHandler<ResendInvitationCo
         // Send invitation email
         await _emailService.SendInvitationEmailAsync(original.Email, rawCode, cancellationToken);
 
-        _logger.LogInformation("Resent invitation for {Email}, new ID: {InvitationId} (original: {OriginalId})",
-            LogSanitizer.MaskEmail(original.Email), newInvitation.Id, original.Id);
+        _logger.LogInformation("Resent invitation. New ID: {InvitationId} (original: {OriginalId}) for account {AccountId}",
+            newInvitation.Id, original.Id, _currentUser.AccountId);
 
         return new ResendInvitationResult(newInvitation.Id, "Invitation resent successfully");
     }
