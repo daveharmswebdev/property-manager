@@ -59,7 +59,8 @@ public class OwnerAccountSeeder
         {
             Id = OwnerAccountId,
             Name = OwnerAccountName,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatedByUserId = OwnerUserId
         };
 
         // Check if account exists (in case user was deleted but account remains)

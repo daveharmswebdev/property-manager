@@ -26,14 +26,19 @@ public class UpdateUserRoleCommandHandler : IRequestHandler<UpdateUserRoleComman
 
     public async Task Handle(UpdateUserRoleCommand request, CancellationToken cancellationToken)
     {
+        var users = await _identityService.GetAccountUsersAsync(_currentUser.AccountId, cancellationToken);
+        var targetUser = users.FirstOrDefault(u => u.UserId == request.UserId);
+
+        // Account creator guard: the account creator's role is immutable
+        if (targetUser?.IsAccountCreator == true)
+        {
+            throw new ValidationException("Cannot change the account creator's role");
+        }
+
         // Last-owner guard: if changing a user away from Owner, ensure at least 1 Owner remains
         if (request.Role != "Owner")
         {
             var ownerCount = await _identityService.CountOwnersInAccountAsync(_currentUser.AccountId, cancellationToken);
-
-            // Check if the target user is currently an Owner
-            var users = await _identityService.GetAccountUsersAsync(_currentUser.AccountId, cancellationToken);
-            var targetUser = users.FirstOrDefault(u => u.UserId == request.UserId);
 
             if (targetUser?.Role == "Owner" && ownerCount <= 1)
             {

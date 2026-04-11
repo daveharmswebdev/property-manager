@@ -32,8 +32,8 @@ public class RemoveAccountUserHandlerTests
         var contributorId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow),
-            new(contributorId, "contrib@test.com", "Contributor", "Contributor", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true),
+            new(contributorId, "contrib@test.com", "Contributor", "Contributor", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
@@ -54,27 +54,23 @@ public class RemoveAccountUserHandlerTests
     }
 
     [Fact]
-    public async Task Handle_LastOwner_ThrowsValidationException()
+    public async Task Handle_AccountCreator_ThrowsValidationException()
     {
-        // Arrange — only 1 owner, trying to remove them
+        // Arrange — trying to remove the account creator
         var ownerId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(ownerId, "owner@test.com", "Owner", "Owner", DateTime.UtcNow)
+            new(ownerId, "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(users);
-        _identityServiceMock
-            .Setup(x => x.CountOwnersInAccountAsync(_testAccountId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
-
         var command = new RemoveAccountUserCommand(ownerId);
 
         // Act & Assert
         var act = () => _handler.Handle(command, CancellationToken.None);
         await act.Should().ThrowAsync<FluentValidation.ValidationException>()
-            .WithMessage("*Cannot remove the last owner from the account*");
+            .WithMessage("*Cannot remove the account creator*");
     }
 
     [Fact]
@@ -84,7 +80,7 @@ public class RemoveAccountUserHandlerTests
         var nonExistentUserId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
@@ -100,12 +96,12 @@ public class RemoveAccountUserHandlerTests
     [Fact]
     public async Task Handle_RemoveOwnerWithMultipleOwners_Succeeds()
     {
-        // Arrange — 2 owners, removing one is fine
+        // Arrange — 2 owners, removing non-creator is fine
         var ownerId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(ownerId, "owner1@test.com", "Owner 1", "Owner", DateTime.UtcNow),
-            new(Guid.NewGuid(), "owner2@test.com", "Owner 2", "Owner", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner1@test.com", "Owner 1", "Owner", DateTime.UtcNow, true),
+            new(ownerId, "owner2@test.com", "Owner 2", "Owner", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))

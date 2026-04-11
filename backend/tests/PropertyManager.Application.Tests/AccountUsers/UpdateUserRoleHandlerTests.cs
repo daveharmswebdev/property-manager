@@ -32,8 +32,8 @@ public class UpdateUserRoleHandlerTests
         // Arrange — target user is a Contributor being promoted to Owner (no last-owner concern)
         var users = new List<AccountUserDto>
         {
-            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow),
-            new(_targetUserId, "contrib@test.com", "Contrib", "Contributor", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true),
+            new(_targetUserId, "contrib@test.com", "Contrib", "Contributor", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
@@ -54,13 +54,35 @@ public class UpdateUserRoleHandlerTests
     }
 
     [Fact]
-    public async Task Handle_LastOwnerDemotion_ThrowsValidationException()
+    public async Task Handle_AccountCreatorDemotion_ThrowsValidationException()
     {
-        // Arrange — only 1 owner in account, trying to demote to Contributor
+        // Arrange — account creator cannot be demoted regardless of owner count
         var ownerId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(ownerId, "owner@test.com", "Owner", "Owner", DateTime.UtcNow)
+            new(ownerId, "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true),
+            new(Guid.NewGuid(), "owner2@test.com", "Owner 2", "Owner", DateTime.UtcNow, false)
+        };
+        _identityServiceMock
+            .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(users);
+
+        var command = new UpdateUserRoleCommand(ownerId, "Contributor");
+
+        // Act & Assert
+        var act = () => _handler.Handle(command, CancellationToken.None);
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*Cannot change the account creator's role*");
+    }
+
+    [Fact]
+    public async Task Handle_LastOwnerDemotion_ThrowsValidationException()
+    {
+        // Arrange — only 1 owner (non-creator) in account, trying to demote to Contributor
+        var ownerId = Guid.NewGuid();
+        var users = new List<AccountUserDto>
+        {
+            new(ownerId, "owner@test.com", "Owner", "Owner", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
@@ -80,12 +102,12 @@ public class UpdateUserRoleHandlerTests
     [Fact]
     public async Task Handle_DemoteOwnerWithMultipleOwners_Succeeds()
     {
-        // Arrange — 2 owners, demoting one to Contributor is fine
+        // Arrange — 2 owners, demoting non-creator to Contributor is fine
         var ownerId = Guid.NewGuid();
         var users = new List<AccountUserDto>
         {
-            new(ownerId, "owner1@test.com", "Owner 1", "Owner", DateTime.UtcNow),
-            new(Guid.NewGuid(), "owner2@test.com", "Owner 2", "Owner", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner1@test.com", "Owner 1", "Owner", DateTime.UtcNow, true),
+            new(ownerId, "owner2@test.com", "Owner 2", "Owner", DateTime.UtcNow, false)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))
@@ -114,7 +136,7 @@ public class UpdateUserRoleHandlerTests
         // Arrange
         var users = new List<AccountUserDto>
         {
-            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow)
+            new(Guid.NewGuid(), "owner@test.com", "Owner", "Owner", DateTime.UtcNow, true)
         };
         _identityServiceMock
             .Setup(x => x.GetAccountUsersAsync(_testAccountId, It.IsAny<CancellationToken>()))

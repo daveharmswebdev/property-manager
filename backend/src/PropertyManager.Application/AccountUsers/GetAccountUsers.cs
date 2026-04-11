@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MediatR;
 using PropertyManager.Application.Common.Interfaces;
 
@@ -11,7 +12,8 @@ public record AccountUserDto(
     string Email,
     string? DisplayName,
     string Role,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    [property: JsonPropertyName("isAccountCreator")] bool IsAccountCreator);
 
 /// <summary>
 /// Query to retrieve all users in the current user's account.

@@ -22,6 +22,8 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(e => e.CreatedAt)
             .IsRequired();
 
+        builder.Property(e => e.CreatedByUserId);
+
         // Relationships configured in child entities
     }
 }
