@@ -42,6 +42,21 @@ Check the current git branch. If on `main` (or another shared/default branch), c
 
 If already on a branch that matches the story (e.g., from a previous session), stay on it. Only create a new branch when needed.
 
+### Step 1.75: Infrastructure check (Docker + services)
+
+Before writing any code, verify Docker and required services are running. TDD requires running tests, and tests require infrastructure.
+
+```bash
+docker ps --format '{{.Names}}' 2>&1
+```
+
+**Required containers:** `property-manager-db-1` (PostgreSQL), `property-manager-mailhog-1` (MailHog).
+
+- If Docker daemon is not running → **HALT**: Tell the user: "Docker is not running. Please start Docker Desktop, then run `docker compose up -d db mailhog` and tell me to continue."
+- If required containers are missing/stopped → **HALT**: Tell the user: "Required containers are not running. Please run `docker compose up -d db mailhog` and tell me to continue."
+
+**NEVER skip tests because infrastructure is down.** Ask the user to start it.
+
 ### Step 2: Load context and research
 
 - Load `docs/project/project-context.md` for coding standards and project-wide patterns

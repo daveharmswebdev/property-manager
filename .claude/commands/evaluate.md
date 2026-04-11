@@ -43,6 +43,30 @@ Rules for your mindset:
 6. Load `docs/project/architecture.md` for architecture patterns
 7. Determine which features/pages are affected (needed for smoke testing)
 
+### Step 1.5: Infrastructure check (Docker + services)
+
+Before building or testing, verify Docker and required services are running. Integration tests, E2E tests, and smoke testing ALL depend on this infrastructure. **Do NOT skip tests because infrastructure is down — ask the user to start it.**
+
+```bash
+docker ps --format '{{.Names}}' 2>&1
+```
+
+**Required containers:** `property-manager-db-1` (PostgreSQL), `property-manager-mailhog-1` (MailHog).
+
+- If Docker daemon is not running → **HALT**: Tell the user: "Docker is not running. Please start Docker Desktop, then run `docker compose up -d db mailhog` and tell me to continue."
+- If required containers are missing/stopped → **HALT**: Tell the user: "Required containers are not running. Please run `docker compose up -d db mailhog` and tell me to continue."
+
+**Also check that the backend API and frontend dev server are reachable:**
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5292/swagger/index.html
+curl -s -o /dev/null -w "%{http_code}" http://localhost:4200
+```
+
+- If backend is not reachable → **HALT**: Tell the user: "Backend API is not running at localhost:5292. Please start it with `cd backend && dotnet run --project src/PropertyManager.Api` and tell me to continue."
+- If frontend is not reachable → **HALT**: Tell the user: "Frontend dev server is not running at localhost:4200. Please start it with `cd frontend && ng serve` and tell me to continue."
+
+**NEVER proceed past this step with infrastructure down.** Skipping tests because "Docker is unavailable" defeats the purpose of evaluation. The whole point is to catch bugs before CI — if you skip locally, you're just rubber-stamping.
+
 ### Step 2: Build verification (sanity check)
 
 Before running tests, verify both apps compile cleanly. Catch build failures locally before they become red X's in CI.
