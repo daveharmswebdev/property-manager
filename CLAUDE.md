@@ -113,6 +113,8 @@ await page.route('*/**/api/v1/properties', async (route) => {
 });
 ```
 
+**Rate limiting is disabled in development** via `appsettings.Development.json` (`RateLimiting.Disabled: true`). CI also disables it via `RateLimiting__Disabled=true` env var. Without this, E2E tests hit 429s after ~5 tests due to the auth endpoint's 5-req/min sliding window limit.
+
 **E2E tests run with 1 worker in CI** (`Running N tests using 1 worker`). Run locally with `--workers=1` to match CI behavior. Never use `npx vitest` directly for frontend tests (see memory notes).
 
 ## Project Skills (Slash Commands)

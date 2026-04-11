@@ -45,7 +45,8 @@ public class RateLimitingTests
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Cors:AllowedOrigins:0"] = "http://localhost:4200"
+                    ["Cors:AllowedOrigins:0"] = "http://localhost:4200",
+                    ["RateLimiting:Disabled"] = "false"
                 });
             });
 
