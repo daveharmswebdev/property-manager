@@ -91,6 +91,256 @@ test.describe('User Management Page', () => {
     await expect(page.getByRole('cell', { name: 'claude@claude.com' })).toBeVisible();
   });
 
+  test('Owner sees user list with role dropdown and remove button', async ({
+    authenticatedUser,
+    page,
+  }) => {
+    // AC #1: User list with Name/Email, Role, Joined Date
+    // Story 19.7 AC #2, #4: role dropdown and remove button visible
+    const currentUserId = '33333333-3333-3333-3333-333333333333';
+
+    await page.route('*/**/api/v1/invitations', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items: [], totalCount: 0 }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route('*/**/api/v1/account/users', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            items: [
+              {
+                userId: currentUserId,
+                email: 'claude@claude.com',
+                displayName: 'Claude Owner',
+                role: 'Owner',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+              {
+                userId: '44444444-4444-4444-4444-444444444444',
+                email: 'contrib@example.com',
+                displayName: 'Contrib User',
+                role: 'Contributor',
+                createdAt: '2026-02-01T00:00:00Z',
+              },
+            ],
+            totalCount: 2,
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto('/settings');
+    await page.waitForLoadState('networkidle');
+
+    // Verify Account Users section
+    await expect(page.getByText('Account Users')).toBeVisible();
+
+    // Verify users are listed
+    await expect(page.getByRole('cell', { name: 'claude@claude.com' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'contrib@example.com' })).toBeVisible();
+
+    // Verify role dropdowns exist (mat-select elements)
+    const roleSelects = page.locator('mat-select');
+    await expect(roleSelects).toHaveCount(2);
+
+    // Verify remove button exists for non-current user but not for current user
+    const removeButtons = page.getByRole('button', { name: /Remove user/i });
+    await expect(removeButtons).toHaveCount(1);
+  });
+
+  test('Owner changes a user role via dropdown, sees success snackbar', async ({
+    authenticatedUser,
+    page,
+  }) => {
+    // AC #2: Role change via dropdown
+    let roleUpdateCalled = false;
+
+    await page.route('*/**/api/v1/invitations', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items: [], totalCount: 0 }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route('*/**/api/v1/account/users', async (route) => {
+      if (route.request().method() === 'GET') {
+        const items = roleUpdateCalled
+          ? [
+              {
+                userId: '33333333-3333-3333-3333-333333333333',
+                email: 'claude@claude.com',
+                displayName: 'Claude Owner',
+                role: 'Owner',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+              {
+                userId: '44444444-4444-4444-4444-444444444444',
+                email: 'contrib@example.com',
+                displayName: 'Contrib User',
+                role: 'Owner',
+                createdAt: '2026-02-01T00:00:00Z',
+              },
+            ]
+          : [
+              {
+                userId: '33333333-3333-3333-3333-333333333333',
+                email: 'claude@claude.com',
+                displayName: 'Claude Owner',
+                role: 'Owner',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+              {
+                userId: '44444444-4444-4444-4444-444444444444',
+                email: 'contrib@example.com',
+                displayName: 'Contrib User',
+                role: 'Contributor',
+                createdAt: '2026-02-01T00:00:00Z',
+              },
+            ];
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items, totalCount: 2 }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route('*/**/api/v1/account/users/*/role', async (route) => {
+      if (route.request().method() === 'PUT') {
+        roleUpdateCalled = true;
+        await route.fulfill({ status: 204 });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto('/settings');
+    await page.waitForLoadState('networkidle');
+
+    // Click the second user's role dropdown (the non-current user)
+    const roleSelects = page.locator('mat-select');
+    await roleSelects.nth(1).click();
+
+    // Select "Owner" option
+    await page.getByRole('option', { name: 'Owner' }).click();
+
+    // See success snackbar
+    await expect(page.getByText('Role updated successfully')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Owner clicks Remove on a user, confirms dialog, user disappears from list', async ({
+    authenticatedUser,
+    page,
+  }) => {
+    // AC #4: Remove user flow
+    let userRemoved = false;
+
+    await page.route('*/**/api/v1/invitations', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items: [], totalCount: 0 }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route('*/**/api/v1/account/users', async (route) => {
+      if (route.request().method() === 'GET') {
+        const items = userRemoved
+          ? [
+              {
+                userId: '33333333-3333-3333-3333-333333333333',
+                email: 'claude@claude.com',
+                displayName: 'Claude Owner',
+                role: 'Owner',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+            ]
+          : [
+              {
+                userId: '33333333-3333-3333-3333-333333333333',
+                email: 'claude@claude.com',
+                displayName: 'Claude Owner',
+                role: 'Owner',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+              {
+                userId: '44444444-4444-4444-4444-444444444444',
+                email: 'contrib@example.com',
+                displayName: 'Contrib User',
+                role: 'Contributor',
+                createdAt: '2026-02-01T00:00:00Z',
+              },
+            ];
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items, totalCount: items.length }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // Intercept DELETE on the specific user endpoint
+    await page.route('*/**/api/v1/account/users/*', async (route) => {
+      if (route.request().method() === 'DELETE') {
+        userRemoved = true;
+        await route.fulfill({ status: 204 });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto('/settings');
+    await page.waitForLoadState('networkidle');
+
+    // Verify user is present
+    await expect(page.getByRole('cell', { name: 'contrib@example.com' })).toBeVisible();
+
+    // Click the Remove button
+    await page.getByRole('button', { name: /Remove user/i }).click();
+
+    // Confirm dialog should appear
+    await expect(page.getByText('Remove User?')).toBeVisible();
+    await expect(
+      page.getByText('This user will lose access to the account'),
+    ).toBeVisible();
+
+    // Click Remove in the confirm dialog
+    await page.getByRole('button', { name: 'Remove' }).click();
+
+    // See success snackbar
+    await expect(page.getByText('User removed')).toBeVisible({ timeout: 5000 });
+
+    // User should disappear from the list
+    await expect(page.getByRole('cell', { name: 'contrib@example.com' })).not.toBeVisible({
+      timeout: 5000,
+    });
+  });
+
   test('Owner clicks Invite User, fills form, submits, sees success snackbar', async ({
     authenticatedUser,
     page,

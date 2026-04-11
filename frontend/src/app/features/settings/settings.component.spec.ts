@@ -7,6 +7,7 @@ import { signal } from '@angular/core';
 import { SettingsComponent } from './settings.component';
 import { UserManagementStore } from './stores/user-management.store';
 import { InvitationDto, AccountUserDto } from '../../core/api/api.service';
+import { AuthService } from '../../core/services/auth.service';
 
 describe('SettingsComponent (User Management)', () => {
   let component: SettingsComponent;
@@ -20,8 +21,11 @@ describe('SettingsComponent (User Management)', () => {
     loadUsers: ReturnType<typeof vi.fn>;
     sendInvitation: ReturnType<typeof vi.fn>;
     resendInvitation: ReturnType<typeof vi.fn>;
+    updateUserRole: ReturnType<typeof vi.fn>;
+    removeUser: ReturnType<typeof vi.fn>;
   };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
+  let mockAuthService: { currentUser: ReturnType<typeof signal> };
 
   const mockInvitations: InvitationDto[] = [
     {
@@ -50,6 +54,13 @@ describe('SettingsComponent (User Management)', () => {
       role: 'Owner',
       createdAt: new Date('2026-01-01'),
     },
+    {
+      userId: 'u2',
+      email: 'contributor@example.com',
+      displayName: 'Contributor User',
+      role: 'Contributor',
+      createdAt: new Date('2026-02-01'),
+    },
   ];
 
   beforeEach(async () => {
@@ -62,6 +73,8 @@ describe('SettingsComponent (User Management)', () => {
       loadUsers: vi.fn(),
       sendInvitation: vi.fn(),
       resendInvitation: vi.fn(),
+      updateUserRole: vi.fn(),
+      removeUser: vi.fn(),
     };
 
     mockDialog = {
@@ -70,11 +83,16 @@ describe('SettingsComponent (User Management)', () => {
       } as unknown as MatDialogRef<unknown>),
     };
 
+    mockAuthService = {
+      currentUser: signal({ userId: 'u1', accountId: 'a1', role: 'Owner', email: 'owner@example.com', displayName: 'Owner User' }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [SettingsComponent, NoopAnimationsModule],
       providers: [
         { provide: UserManagementStore, useValue: mockStore },
         { provide: MatDialog, useValue: mockDialog },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
 
@@ -125,5 +143,55 @@ describe('SettingsComponent (User Management)', () => {
   it('should call resendInvitation on store', () => {
     component.onResendInvitation('2');
     expect(mockStore.resendInvitation).toHaveBeenCalledWith('2');
+  });
+
+  // Story 19.7 Tests
+
+  it('should call updateUserRole on store when role changes', () => {
+    // AC #2: Role change triggers store method
+    component.onRoleChange('u2', 'Owner');
+    expect(mockStore.updateUserRole).toHaveBeenCalledWith({ userId: 'u2', role: 'Owner' });
+  });
+
+  it('should open confirm dialog and call removeUser on confirm', () => {
+    // AC #4: Remove triggers confirm dialog then store method
+    mockDialog.open.mockReturnValue({
+      afterClosed: () => of(true),
+    });
+
+    component.onRemoveUser('u2', 'contributor@example.com');
+
+    expect(mockDialog.open).toHaveBeenCalled();
+    expect(mockStore.removeUser).toHaveBeenCalledWith('u2');
+  });
+
+  it('should not call removeUser when confirm dialog is cancelled', () => {
+    mockDialog.open.mockReturnValue({
+      afterClosed: () => of(false),
+    });
+
+    component.onRemoveUser('u2', 'contributor@example.com');
+
+    expect(mockDialog.open).toHaveBeenCalled();
+    expect(mockStore.removeUser).not.toHaveBeenCalled();
+  });
+
+  it('should not show remove button for the current user', () => {
+    // AC #3/#5: Remove button hidden for self
+    fixture.detectChanges();
+
+    // The Account Users table is the second table
+    const accountUsersTable = fixture.nativeElement.querySelectorAll('.data-table')[1];
+    expect(accountUsersTable).toBeTruthy();
+
+    const rows = accountUsersTable.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(2);
+
+    // First row (u1 = current user) should NOT have remove button
+    const firstRowRemoveBtn = rows[0]?.querySelector('button[color="warn"]');
+    expect(firstRowRemoveBtn).toBeNull();
+    // Second row (u2 = different user) SHOULD have remove button
+    const secondRowRemoveBtn = rows[1]?.querySelector('button[color="warn"]');
+    expect(secondRowRemoveBtn).toBeTruthy();
   });
 });

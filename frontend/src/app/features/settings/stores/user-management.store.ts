@@ -8,6 +8,7 @@ import {
   InvitationDto,
   AccountUserDto,
   CreateInvitationRequest,
+  UpdateUserRoleRequest,
 } from '../../../core/api/api.service';
 
 /**
@@ -41,6 +42,14 @@ export const UserManagementStore = signalStore(
       api.invitations_GetAccountInvitations().subscribe({
         next: (res) => patchState(store, { invitations: res.items ?? [] }),
         error: (err) => console.error('Error reloading invitations:', err),
+      });
+    };
+
+    // Helper to reload users into state
+    const reloadUsers = () => {
+      api.accountUsers_GetAccountUsers().subscribe({
+        next: (res) => patchState(store, { users: res.items ?? [] }),
+        error: (err) => console.error('Error reloading users:', err),
       });
     };
 
@@ -160,6 +169,88 @@ export const UserManagementStore = signalStore(
                   verticalPosition: 'bottom',
                 });
                 console.error('Error resending invitation:', error);
+                return of(null);
+              }),
+            ),
+          ),
+        ),
+      ),
+
+      /**
+       * Update a user's role (AC: #2, #3)
+       */
+      updateUserRole: rxMethod<{ userId: string; role: string }>(
+        pipe(
+          tap(() => patchState(store, { loading: true, error: null })),
+          switchMap(({ userId, role }) =>
+            api
+              .accountUsers_UpdateUserRole(userId, { role } as UpdateUserRoleRequest)
+              .pipe(
+                tap(() => {
+                  patchState(store, { loading: false });
+                  snackBar.open('Role updated successfully', 'Close', {
+                    duration: 3000,
+                    horizontalPosition: 'center',
+                    verticalPosition: 'bottom',
+                  });
+                  reloadUsers();
+                }),
+                catchError((error) => {
+                  let errorMessage = 'Failed to update role';
+                  if (error?.errors) {
+                    const messages = Object.values(error.errors).flat();
+                    errorMessage = (messages as string[]).join('. ');
+                  } else if (error?.title) {
+                    errorMessage = error.title;
+                  }
+                  patchState(store, { loading: false, error: errorMessage });
+                  snackBar.open(errorMessage, 'Close', {
+                    duration: 5000,
+                    horizontalPosition: 'center',
+                    verticalPosition: 'bottom',
+                  });
+                  console.error('Error updating user role:', error);
+                  // Reload users to revert the dropdown to the correct server state
+                  reloadUsers();
+                  return of(null);
+                }),
+              ),
+          ),
+        ),
+      ),
+
+      /**
+       * Remove a user from the account (AC: #4, #5)
+       */
+      removeUser: rxMethod<string>(
+        pipe(
+          tap(() => patchState(store, { loading: true, error: null })),
+          switchMap((userId) =>
+            api.accountUsers_RemoveUser(userId).pipe(
+              tap(() => {
+                patchState(store, { loading: false });
+                snackBar.open('User removed', 'Close', {
+                  duration: 3000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                reloadUsers();
+              }),
+              catchError((error) => {
+                let errorMessage = 'Failed to remove user';
+                if (error?.errors) {
+                  const messages = Object.values(error.errors).flat();
+                  errorMessage = (messages as string[]).join('. ');
+                } else if (error?.title) {
+                  errorMessage = error.title;
+                }
+                patchState(store, { loading: false, error: errorMessage });
+                snackBar.open(errorMessage, 'Close', {
+                  duration: 5000,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'bottom',
+                });
+                console.error('Error removing user:', error);
                 return of(null);
               }),
             ),

@@ -1,13 +1,20 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { UserManagementStore } from './stores/user-management.store';
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { AuthService } from '../../core/services/auth.service';
 
 /**
  * User Management page (AC: #1, #3, #4, #7).
@@ -25,6 +32,8 @@ import { InviteUserDialogComponent } from './components/invite-user-dialog/invit
     MatButtonModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
+    MatFormFieldModule,
   ],
   template: `
     <div class="user-management-container">
@@ -122,6 +131,7 @@ import { InviteUserDialogComponent } from './components/invite-user-dialog/invit
                     <th>Name / Email</th>
                     <th>Role</th>
                     <th>Joined</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,8 +143,30 @@ import { InviteUserDialogComponent } from './components/invite-user-dialog/invit
                         }
                         <div class="user-email">{{ user.email }}</div>
                       </td>
-                      <td>{{ user.role }}</td>
+                      <td>
+                        <mat-form-field appearance="outline" class="role-select">
+                          <mat-select
+                            [value]="user.role"
+                            (selectionChange)="onRoleChange(user.userId!, $event.value)"
+                          >
+                            <mat-option value="Owner">Owner</mat-option>
+                            <mat-option value="Contributor">Contributor</mat-option>
+                          </mat-select>
+                        </mat-form-field>
+                      </td>
                       <td>{{ user.createdAt | date: 'mediumDate' }}</td>
+                      <td>
+                        @if (user.userId !== currentUserId()) {
+                          <button
+                            mat-icon-button
+                            color="warn"
+                            (click)="onRemoveUser(user.userId!, user.email!)"
+                            aria-label="Remove user"
+                          >
+                            <mat-icon>person_remove</mat-icon>
+                          </button>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -235,12 +267,29 @@ import { InviteUserDialogComponent } from './components/invite-user-dialog/invit
         font-size: 0.875rem;
         color: var(--pm-text-secondary);
       }
+
+      .role-select {
+        width: 140px;
+      }
+
+      .role-select ::ng-deep .mat-mdc-form-field-infix {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        min-height: unset;
+      }
+
+      .role-select ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
     `,
   ],
 })
 export class SettingsComponent implements OnInit {
   protected readonly store = inject(UserManagementStore);
   private readonly dialog = inject(MatDialog);
+  private readonly authService = inject(AuthService);
+
+  protected currentUserId = computed(() => this.authService.currentUser()?.userId);
 
   ngOnInit(): void {
     this.store.loadInvitations();
@@ -261,5 +310,27 @@ export class SettingsComponent implements OnInit {
 
   onResendInvitation(id: string): void {
     this.store.resendInvitation(id);
+  }
+
+  onRoleChange(userId: string, role: string): void {
+    this.store.updateUserRole({ userId, role });
+  }
+
+  onRemoveUser(userId: string, email: string): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Remove User?',
+        message: `This user will lose access to the account. This action cannot be undone.`,
+        confirmText: 'Remove',
+        icon: 'person_remove',
+        iconColor: 'warn',
+      } as ConfirmDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.store.removeUser(userId);
+      }
+    });
   }
 }
