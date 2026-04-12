@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject, takeUntil } from 'rxjs';
 import { PropertyStore } from '../stores/property.store';
@@ -30,6 +31,10 @@ import {
   PhotoLightboxComponent,
   PhotoLightboxData,
 } from '../../../shared/components/photo-lightbox/photo-lightbox.component';
+import { InviteTenantDialogComponent, InviteTenantDialogData, InviteTenantDialogResult } from '../components/invite-tenant-dialog/invite-tenant-dialog.component';
+import { PermissionService } from '../../../core/auth/permission.service';
+import { ApiClient } from '../../../core/api/api.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 /**
  * Property Detail Component (AC-2.3.1, AC-2.3.2, AC-2.3.3, AC-2.3.4, AC-2.3.6)
@@ -114,6 +119,17 @@ import {
               <mat-icon>add</mat-icon>
               <span class="button-text">Add Income</span>
             </button>
+
+            <!-- Invite Tenant button (AC: 20.2 #1, #5 — Owner only) -->
+            @if (permissionService.isOwner()) {
+              <button mat-stroked-button
+                      color="primary"
+                      (click)="onInviteTenant()"
+                      data-testid="invite-tenant-button">
+                <mat-icon>person_add</mat-icon>
+                <span class="button-text">Invite Tenant</span>
+              </button>
+            }
 
             <!-- Desktop: Show all buttons -->
             @if (!isMobile()) {
@@ -660,6 +676,9 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly apiClient = inject(ApiClient);
+  readonly permissionService = inject(PermissionService);
   readonly propertyStore = inject(PropertyStore);
   readonly photoStore = inject(PropertyPhotoStore);
 
@@ -964,5 +983,43 @@ export class PropertyDetailComponent implements OnInit, OnDestroy {
     if (property) {
       this.router.navigate(['/properties', property.id, 'income']);
     }
+  }
+
+  /**
+   * Open invite tenant dialog (AC: 20.2 #1, #9)
+   */
+  onInviteTenant(): void {
+    const property = this.propertyStore.selectedProperty();
+    if (!property) return;
+
+    const dialogData: InviteTenantDialogData = { propertyId: property.id };
+
+    const dialogRef = this.dialog.open(InviteTenantDialogComponent, {
+      width: '450px',
+      data: dialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: InviteTenantDialogResult | undefined) => {
+      if (result) {
+        this.apiClient
+          .invitations_CreateInvitation({
+            email: result.email,
+            role: result.role,
+            propertyId: result.propertyId,
+          })
+          .subscribe({
+            next: () => {
+              this.snackBar.open('Tenant invitation sent successfully', 'Close', {
+                duration: 3000,
+              });
+            },
+            error: () => {
+              this.snackBar.open('Failed to send invitation', 'Close', {
+                duration: 5000,
+              });
+            },
+          });
+      }
+    });
   }
 }

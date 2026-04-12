@@ -418,4 +418,42 @@ describe('AcceptInvitationComponent', () => {
       expect(component['hideConfirmPassword']()).toBe(true);
     });
   });
+
+  // === Story 20.2 Tests ===
+
+  describe('property address display', () => {
+    // AC: 20.2 Task 12.4
+    it('should display property address when present in validation response', () => {
+      createComponent('valid-code', {
+        isValid: true,
+        email: 'tenant@example.com',
+        role: 'Tenant',
+        propertyAddress: '123 Main St, Austin, TX 78701',
+      });
+
+      expect(component['propertyAddress']()).toBe('123 Main St, Austin, TX 78701');
+
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const propertyDisplay = compiled.querySelector('.property-display');
+      expect(propertyDisplay).toBeTruthy();
+      expect(propertyDisplay?.textContent).toContain('123 Main St, Austin, TX 78701');
+    });
+
+    // AC: 20.2 Task 12.5
+    it('should not display property address when not present', () => {
+      createComponent('valid-code', {
+        isValid: true,
+        email: 'user@example.com',
+        role: 'Owner',
+      });
+
+      expect(component['propertyAddress']()).toBeNull();
+
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const propertyDisplay = compiled.querySelector('.property-display');
+      expect(propertyDisplay).toBeNull();
+    });
+  });
 });

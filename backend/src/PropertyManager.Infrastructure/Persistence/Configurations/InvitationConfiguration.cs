@@ -43,6 +43,18 @@ public class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
         builder.Property(e => e.InvitedByUserId)
             .IsRequired(false);
 
+        builder.Property(e => e.PropertyId)
+            .IsRequired(false);
+
+        builder.HasOne(e => e.Property)
+            .WithMany()
+            .HasForeignKey(e => e.PropertyId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Index on PropertyId for invitation lookups
+        builder.HasIndex(e => e.PropertyId)
+            .HasDatabaseName("IX_Invitations_PropertyId");
+
         // Index on Email for fast lookup of pending invitations
         builder.HasIndex(e => e.Email)
             .HasDatabaseName("IX_Invitations_Email");

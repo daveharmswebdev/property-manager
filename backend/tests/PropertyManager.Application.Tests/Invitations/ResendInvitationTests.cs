@@ -202,6 +202,118 @@ public class ResendInvitationHandlerTests
         await act.Should().ThrowAsync<FluentValidation.ValidationException>()
             .WithMessage("*used*");
     }
+
+    // === Story 20.2 Tests ===
+
+    [Fact]
+    public async Task Handle_TenantInvitation_PreservesPropertyIdAndSendsTenantEmail()
+    {
+        // Arrange — AC: 20.2 #1, #4 — resend preserves PropertyId and sends tenant email
+        var propertyId = Guid.NewGuid();
+        var originalInvitation = new Invitation
+        {
+            Id = Guid.NewGuid(),
+            Email = "tenant@example.com",
+            CodeHash = "old-hash",
+            Role = "Tenant",
+            AccountId = _ownerAccountId,
+            InvitedByUserId = _ownerUserId,
+            PropertyId = propertyId,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+            UsedAt = null
+        };
+
+        var invitations = new List<Invitation> { originalInvitation };
+        var mockDbSet = invitations.BuildMockDbSet();
+        mockDbSet.Setup(x => x.Add(It.IsAny<Invitation>())).Callback<Invitation>(inv =>
+        {
+            inv.Id = Guid.NewGuid();
+            invitations.Add(inv);
+        });
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var properties = new List<Property>
+        {
+            new Property { Id = propertyId, AccountId = _ownerAccountId, Street = "123 Main St", City = "Austin", State = "TX", ZipCode = "78701" }
+        };
+        var mockPropertySet = properties.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Properties).Returns(mockPropertySet.Object);
+
+        _mockEmailService.Setup(x => x.SendTenantInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var command = new ResendInvitationCommand(originalInvitation.Id);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        invitations.Should().HaveCount(2);
+        var newInvitation = invitations[1];
+        newInvitation.PropertyId.Should().Be(propertyId);
+        newInvitation.Role.Should().Be("Tenant");
+
+        _mockEmailService.Verify(x => x.SendTenantInvitationEmailAsync(
+            "tenant@example.com", It.IsAny<string>(), "123 Main St, Austin, TX 78701", It.IsAny<CancellationToken>()), Times.Once);
+
+        // Generic email should NOT be called
+        _mockEmailService.Verify(x => x.SendInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_NonTenantInvitation_DoesNotSetPropertyIdSendsGenericEmail()
+    {
+        // Arrange — AC: 20.2 — non-tenant resend does not set PropertyId
+        var originalInvitation = new Invitation
+        {
+            Id = Guid.NewGuid(),
+            Email = "owner@example.com",
+            CodeHash = "old-hash",
+            Role = "Owner",
+            AccountId = _ownerAccountId,
+            InvitedByUserId = _ownerUserId,
+            PropertyId = null,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+            UsedAt = null
+        };
+
+        var invitations = new List<Invitation> { originalInvitation };
+        var mockDbSet = invitations.BuildMockDbSet();
+        mockDbSet.Setup(x => x.Add(It.IsAny<Invitation>())).Callback<Invitation>(inv =>
+        {
+            inv.Id = Guid.NewGuid();
+            invitations.Add(inv);
+        });
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        _mockEmailService.Setup(x => x.SendInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var command = new ResendInvitationCommand(originalInvitation.Id);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        invitations.Should().HaveCount(2);
+        var newInvitation = invitations[1];
+        newInvitation.PropertyId.Should().BeNull();
+
+        _mockEmailService.Verify(x => x.SendInvitationEmailAsync(
+            "owner@example.com", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        // Tenant email should NOT be called
+        _mockEmailService.Verify(x => x.SendTenantInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
 
 /// <summary>

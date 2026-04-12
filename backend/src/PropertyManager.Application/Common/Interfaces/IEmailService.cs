@@ -31,4 +31,14 @@ public interface IEmailService
         string email,
         string code,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a tenant invitation email that includes the property address (AC: 20.2 #4).
+    /// Link format: {frontend_url}/accept-invitation?code={code}
+    /// </summary>
+    Task SendTenantInvitationEmailAsync(
+        string email,
+        string code,
+        string propertyAddress,
+        CancellationToken cancellationToken = default);
 }

@@ -236,6 +236,14 @@ public class FakeEmailService : IEmailService
         SentInvitationEmails.Add((email, code));
         return Task.CompletedTask;
     }
+
+    public List<(string Email, string Code, string PropertyAddress)> SentTenantInvitationEmails { get; } = [];
+
+    public Task SendTenantInvitationEmailAsync(string email, string code, string propertyAddress, CancellationToken cancellationToken = default)
+    {
+        SentTenantInvitationEmails.Add((email, code, propertyAddress));
+        return Task.CompletedTask;
+    }
 }
 
 public class FakeStorageService : IStorageService

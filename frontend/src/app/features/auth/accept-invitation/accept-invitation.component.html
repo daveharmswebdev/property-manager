@@ -42,7 +42,12 @@
             <span>{{ email() }}</span>
           </div>
 
-          @if (role()) {
+          @if (propertyAddress()) {
+            <div class="property-display">
+              <mat-icon>home</mat-icon>
+              <span>You're being invited to submit maintenance requests for <strong>{{ propertyAddress() }}</strong></span>
+            </div>
+          } @else if (role()) {
             <div class="role-display">
               <mat-icon>badge</mat-icon>
               <span>You've been invited as <strong>{{ role() }}</strong></span>
