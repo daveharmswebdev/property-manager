@@ -67,7 +67,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
     public async Task<LoginResult> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         // Validate credentials (checks email exists, password correct, email verified)
-        var (success, userId, accountId, role, email, displayName, errorMessage) = await _identityService.ValidateCredentialsAsync(
+        var (success, userId, accountId, role, email, displayName, propertyId, errorMessage) = await _identityService.ValidateCredentialsAsync(
             request.Email,
             request.Password,
             cancellationToken);
@@ -90,6 +90,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
             role!,
             email!,
             displayName,
+            propertyId,
             cancellationToken);
 
         // Generate and store refresh token (AC4.6)

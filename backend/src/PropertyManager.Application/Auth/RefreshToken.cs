@@ -40,7 +40,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         // Validate the refresh token
-        var (isValid, userId, accountId, role, email, displayName) = await _jwtService.ValidateRefreshTokenAsync(
+        var (isValid, userId, accountId, role, email, displayName, propertyId) = await _jwtService.ValidateRefreshTokenAsync(
             request.RefreshToken,
             cancellationToken);
 
@@ -57,6 +57,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             role,
             email,
             displayName,
+            propertyId,
             cancellationToken);
 
         _logger.LogInformation(

@@ -64,6 +64,13 @@ public static class RolePermissions
                 Permissions.Users.Invite,
                 Permissions.Users.EditRole,
                 Permissions.Users.Remove,
+
+                // Maintenance Requests (Owner has all permissions)
+                Permissions.MaintenanceRequests.Create,
+                Permissions.MaintenanceRequests.ViewOwn,
+
+                // Properties - ViewAssigned (Owner has all property permissions)
+                Permissions.Properties.ViewAssigned,
             },
 
             ["Contributor"] = new HashSet<string>
@@ -74,6 +81,13 @@ public static class RolePermissions
                 Permissions.WorkOrders.View,
                 Permissions.WorkOrders.EditStatus,
                 Permissions.WorkOrders.AddNotes,
+            },
+
+            ["Tenant"] = new HashSet<string>
+            {
+                Permissions.MaintenanceRequests.Create,
+                Permissions.MaintenanceRequests.ViewOwn,
+                Permissions.Properties.ViewAssigned,
             },
         };
 }

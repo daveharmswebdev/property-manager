@@ -9,4 +9,5 @@ public interface IPermissionService
     bool HasPermission(string permission);
     bool IsOwner();
     bool IsContributor();
+    bool IsTenant();
 }

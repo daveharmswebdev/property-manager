@@ -47,6 +47,15 @@ public class CurrentUserService : ICurrentUser
         }
     }
 
+    public Guid? PropertyId
+    {
+        get
+        {
+            var propertyIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("propertyId")?.Value;
+            return Guid.TryParse(propertyIdClaim, out var propertyId) ? propertyId : null;
+        }
+    }
+
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 }

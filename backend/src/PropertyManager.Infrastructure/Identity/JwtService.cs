@@ -33,6 +33,7 @@ public class JwtService : IJwtService
         string role,
         string email,
         string? displayName,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default)
     {
         var expiresIn = _settings.AccessTokenExpiryMinutes * 60; // Convert to seconds
@@ -54,6 +55,11 @@ public class JwtService : IJwtService
         if (!string.IsNullOrEmpty(displayName))
         {
             claims.Add(new("displayName", displayName));
+        }
+
+        if (propertyId.HasValue)
+        {
+            claims.Add(new("propertyId", propertyId.Value.ToString()));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
@@ -104,7 +110,7 @@ public class JwtService : IJwtService
         return refreshToken;
     }
 
-    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName)> ValidateRefreshTokenAsync(
+    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId)> ValidateRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default)
     {
@@ -117,7 +123,7 @@ public class JwtService : IJwtService
 
         if (storedToken == null || !storedToken.IsValid)
         {
-            return (false, null, null, null, null, null);
+            return (false, null, null, null, null, null, null);
         }
 
         // Get user info
@@ -127,10 +133,10 @@ public class JwtService : IJwtService
 
         if (user == null)
         {
-            return (false, null, null, null, null, null);
+            return (false, null, null, null, null, null, null);
         }
 
-        return (true, storedToken.UserId, storedToken.AccountId, user.Role, user.Email, user.DisplayName);
+        return (true, storedToken.UserId, storedToken.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId);
     }
 
     public async Task RevokeRefreshTokenAsync(

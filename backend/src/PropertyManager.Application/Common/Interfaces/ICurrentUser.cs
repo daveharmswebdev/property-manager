@@ -10,5 +10,6 @@ public interface ICurrentUser
     Guid UserId { get; }
     Guid AccountId { get; }
     string Role { get; }
+    Guid? PropertyId { get; }
     bool IsAuthenticated { get; }
 }

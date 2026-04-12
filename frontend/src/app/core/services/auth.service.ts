@@ -30,6 +30,7 @@ export interface User {
   role: string;
   email: string;
   displayName: string | null;
+  propertyId: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -208,6 +209,7 @@ export class AuthService {
         role: payload.role,
         email: payload.email,
         displayName: payload.displayName || null,
+        propertyId: payload.propertyId || null,
       };
     } catch {
       return null;

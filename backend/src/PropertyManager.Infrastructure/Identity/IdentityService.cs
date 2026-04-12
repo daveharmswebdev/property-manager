@@ -28,9 +28,10 @@ public class IdentityService : IIdentityService
         string password,
         Guid accountId,
         string role,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default)
     {
-        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: false);
+        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: false, propertyId: propertyId);
     }
 
     public async Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserWithConfirmedEmailAsync(
@@ -38,9 +39,10 @@ public class IdentityService : IIdentityService
         string password,
         Guid accountId,
         string role,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default)
     {
-        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: true);
+        return await CreateUserInternalAsync(email, password, accountId, role, emailConfirmed: true, propertyId: propertyId);
     }
 
     private async Task<(Guid? UserId, IEnumerable<string> Errors)> CreateUserInternalAsync(
@@ -48,7 +50,8 @@ public class IdentityService : IIdentityService
         string password,
         Guid accountId,
         string role,
-        bool emailConfirmed)
+        bool emailConfirmed,
+        Guid? propertyId = null)
     {
         var user = new ApplicationUser
         {
@@ -56,7 +59,8 @@ public class IdentityService : IIdentityService
             UserName = email,
             AccountId = accountId,
             Role = role,
-            EmailConfirmed = emailConfirmed
+            EmailConfirmed = emailConfirmed,
+            PropertyId = propertyId
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -145,7 +149,7 @@ public class IdentityService : IIdentityService
         }
     }
 
-    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, string? ErrorMessage)> ValidateCredentialsAsync(
+    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, string? ErrorMessage)> ValidateCredentialsAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
@@ -160,23 +164,23 @@ public class IdentityService : IIdentityService
 
         if (user == null)
         {
-            return (false, null, null, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, null, invalidCredentialsError);
         }
 
         // Check if email is verified per AC4.4
         if (!user.EmailConfirmed)
         {
-            return (false, null, null, null, null, null, "Please verify your email before logging in");
+            return (false, null, null, null, null, null, null, "Please verify your email before logging in");
         }
 
         // Validate password
         var passwordValid = await _userManager.CheckPasswordAsync(user, password);
         if (!passwordValid)
         {
-            return (false, null, null, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, null, invalidCredentialsError);
         }
 
-        return (true, user.Id, user.AccountId, user.Role, user.Email, user.DisplayName, null);
+        return (true, user.Id, user.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId, null);
     }
 
     public async Task<Guid?> GetUserIdByEmailAsync(string email, CancellationToken cancellationToken = default)
@@ -315,9 +319,9 @@ public class IdentityService : IIdentityService
             return (false, "User not found");
         }
 
-        if (newRole != "Owner" && newRole != "Contributor")
+        if (newRole != "Owner" && newRole != "Contributor" && newRole != "Tenant")
         {
-            return (false, "Invalid role. Must be 'Owner' or 'Contributor'");
+            return (false, "Invalid role. Must be 'Owner', 'Contributor', or 'Tenant'");
         }
 
         user.Role = newRole;

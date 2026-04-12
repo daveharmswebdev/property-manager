@@ -78,7 +78,7 @@ public class AcceptInvitationTests
         _mockIdentityService.Setup(x => x.EmailExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _mockIdentityService.Setup(x => x.CreateUserWithConfirmedEmailAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((_createdUserId, Enumerable.Empty<string>()));
     }
 
@@ -106,6 +106,7 @@ public class AcceptInvitationTests
             "NewUser@123456",
             _existingAccountId,
             "Owner",
+            It.IsAny<Guid?>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Verify NO new Account was added
@@ -132,6 +133,7 @@ public class AcceptInvitationTests
             "NewUser@123456",
             _existingAccountId,
             "Contributor",
+            It.IsAny<Guid?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -163,6 +165,7 @@ public class AcceptInvitationTests
             "NewUser@123456",
             It.IsAny<Guid>(),
             "Owner",
+            It.IsAny<Guid?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -175,7 +178,7 @@ public class AcceptInvitationTests
         _mockIdentityService.Setup(x => x.EmailExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _mockIdentityService.Setup(x => x.CreateUserWithConfirmedEmailAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(((Guid?)null, new[] { "Password too weak" }));
         _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
@@ -211,7 +214,7 @@ public class AcceptInvitationTests
         _mockIdentityService.Setup(x => x.EmailExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _mockIdentityService.Setup(x => x.CreateUserWithConfirmedEmailAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(((Guid?)null, new[] { "Password too weak" }));
         _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 

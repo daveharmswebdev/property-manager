@@ -20,6 +20,7 @@ describe('AuthService', () => {
     role: 'Owner',
     email: 'test@example.com',
     displayName: 'Test User',
+    propertyId: null,
   };
 
   // Create a mock JWT token (header.payload.signature)
@@ -538,6 +539,28 @@ describe('AuthService', () => {
   });
 
   describe('token decoding edge cases', () => {
+    it('should extract propertyId from JWT payload when present', () => {
+      const tenantUser = { ...mockUser, role: 'Tenant', propertyId: 'prop-789' };
+      const token = createMockToken(tenantUser);
+      const response = { accessToken: token, expiresIn: 3600 };
+
+      service.login('test@example.com', 'password').subscribe();
+      httpMock.expectOne(`${baseUrl}/login`).flush(response);
+
+      expect(service.currentUser()?.propertyId).toBe('prop-789');
+    });
+
+    it('should set propertyId to null when not present in JWT payload', () => {
+      const ownerUser = { ...mockUser, propertyId: undefined };
+      const token = createMockToken(ownerUser);
+      const response = { accessToken: token, expiresIn: 3600 };
+
+      service.login('test@example.com', 'password').subscribe();
+      httpMock.expectOne(`${baseUrl}/login`).flush(response);
+
+      expect(service.currentUser()?.propertyId).toBeNull();
+    });
+
     it('should handle token without displayName', () => {
       const userWithoutDisplayName = { ...mockUser, displayName: undefined };
       const token = createMockToken(userWithoutDisplayName);

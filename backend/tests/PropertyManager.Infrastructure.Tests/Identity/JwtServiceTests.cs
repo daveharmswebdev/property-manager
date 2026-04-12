@@ -43,7 +43,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -64,7 +64,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -85,7 +85,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -107,7 +107,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -118,5 +118,48 @@ public class JwtServiceTests
         token.Claims.Should().Contain(c => c.Type == "role" && c.Value == role);
         token.Claims.Should().Contain(c => c.Type == "email" && c.Value == email);
         token.Claims.Should().Contain(c => c.Type == "displayName" && c.Value == displayName);
+    }
+
+    [Fact]
+    public async Task GenerateAccessToken_IncludesPropertyIdClaim_WhenProvided()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+        var propertyId = Guid.NewGuid();
+        var role = "Tenant";
+        var email = "tenant@example.com";
+        string? displayName = "Tenant User";
+
+        // Act
+        var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
+            userId, accountId, role, email, displayName, propertyId: propertyId, CancellationToken.None);
+
+        // Assert
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(accessToken);
+
+        token.Claims.Should().Contain(c => c.Type == "propertyId" && c.Value == propertyId.ToString());
+    }
+
+    [Fact]
+    public async Task GenerateAccessToken_OmitsPropertyIdClaim_WhenNull()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+        var role = "Owner";
+        var email = "owner@example.com";
+        string? displayName = "Owner User";
+
+        // Act
+        var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
+            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+
+        // Assert
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(accessToken);
+
+        token.Claims.Should().NotContain(c => c.Type == "propertyId");
     }
 }
