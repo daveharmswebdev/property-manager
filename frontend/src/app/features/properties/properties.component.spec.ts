@@ -34,6 +34,7 @@ describe('PropertiesComponent', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 
@@ -122,6 +123,7 @@ describe('PropertiesComponent — Contributor role (AC: #4)', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 
@@ -166,6 +168,7 @@ describe('PropertiesComponent loading state', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 
@@ -214,6 +217,7 @@ describe('PropertiesComponent error state', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 
@@ -264,6 +268,7 @@ describe('PropertiesComponent empty state', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 

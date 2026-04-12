@@ -10,9 +10,16 @@ public static class Permissions
     {
         public const string View = "Properties.View";
         public const string ViewList = "Properties.ViewList";
+        public const string ViewAssigned = "Properties.ViewAssigned";
         public const string Create = "Properties.Create";
         public const string Edit = "Properties.Edit";
         public const string Delete = "Properties.Delete";
+    }
+
+    public static class MaintenanceRequests
+    {
+        public const string Create = "MaintenanceRequests.Create";
+        public const string ViewOwn = "MaintenanceRequests.ViewOwn";
     }
 
     public static class Expenses

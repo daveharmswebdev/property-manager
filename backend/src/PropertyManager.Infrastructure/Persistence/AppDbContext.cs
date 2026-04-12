@@ -59,6 +59,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         // Apply all entity configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
+        // Configure ApplicationUser FK to Property for tenant scoping
+        modelBuilder.Entity<ApplicationUser>()
+            .HasOne(u => u.AssignedProperty)
+            .WithMany()
+            .HasForeignKey(u => u.PropertyId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasIndex(u => u.PropertyId);
+
         // Configure global query filters for tenant isolation (ITenantEntity)
         ConfigureTenantFilters(modelBuilder);
 

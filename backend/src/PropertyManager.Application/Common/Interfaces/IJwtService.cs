@@ -17,6 +17,7 @@ public interface IJwtService
         string role,
         string email,
         string? displayName,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -33,7 +34,7 @@ public interface IJwtService
     /// Validates a refresh token and returns the associated user info if valid.
     /// </summary>
     /// <returns>Tuple of (IsValid, UserId, AccountId, Role, Email, DisplayName).</returns>
-    Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName)> ValidateRefreshTokenAsync(
+    Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId)> ValidateRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default);
 

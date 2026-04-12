@@ -84,7 +84,7 @@ describe('SettingsComponent (User Management)', () => {
     };
 
     mockAuthService = {
-      currentUser: signal({ userId: 'u1', accountId: 'a1', role: 'Owner', email: 'owner@example.com', displayName: 'Owner User' }),
+      currentUser: signal({ userId: 'u1', accountId: 'a1', role: 'Owner', email: 'owner@example.com', displayName: 'Owner User', propertyId: null }),
     };
 
     await TestBed.configureTestingModule({

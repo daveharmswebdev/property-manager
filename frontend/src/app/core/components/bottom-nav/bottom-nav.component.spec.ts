@@ -28,6 +28,7 @@ describe('BottomNavComponent', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
 
     TestBed.resetTestingModule();

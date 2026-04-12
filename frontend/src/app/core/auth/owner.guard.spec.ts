@@ -16,6 +16,7 @@ describe('ownerGuard', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 

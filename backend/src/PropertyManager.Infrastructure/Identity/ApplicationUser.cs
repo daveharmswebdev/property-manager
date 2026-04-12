@@ -16,7 +16,7 @@ public class ApplicationUser : IdentityUser<Guid>
     public Guid AccountId { get; set; }
 
     /// <summary>
-    /// User role within the account: "Owner" or "Contributor".
+    /// User role within the account: "Owner", "Contributor", or "Tenant".
     /// </summary>
     public string Role { get; set; } = "Owner";
 
@@ -36,6 +36,17 @@ public class ApplicationUser : IdentityUser<Guid>
     [MaxLength(100)]
     public string? DisplayName { get; set; }
 
-    // Navigation property
+    /// <summary>
+    /// Foreign key to the Property (tenant-to-property scoping).
+    /// Nullable — only set for users with the Tenant role.
+    /// </summary>
+    public Guid? PropertyId { get; set; }
+
+    // Navigation properties
     public Account Account { get; set; } = null!;
+
+    /// <summary>
+    /// The property assigned to this tenant user. Null for Owner/Contributor users.
+    /// </summary>
+    public Property? AssignedProperty { get; set; }
 }

@@ -193,6 +193,107 @@ public class PermissionServiceTests
         result.Should().BeFalse();
     }
 
+    // ===== Tenant Role Tests (Story 20.1 AC: #1, #4, #5) =====
+
+    // AC: #1, #5 — RolePermissions contains "Tenant" key with exactly 3 permissions
+    [Fact]
+    public void RolePermissions_Tenant_HasExactlyThreePermissions()
+    {
+        RolePermissions.Mappings.Should().ContainKey("Tenant");
+        var tenantPermissions = RolePermissions.Mappings["Tenant"];
+        tenantPermissions.Should().HaveCount(3);
+        tenantPermissions.Should().Contain(Permissions.MaintenanceRequests.Create);
+        tenantPermissions.Should().Contain(Permissions.MaintenanceRequests.ViewOwn);
+        tenantPermissions.Should().Contain(Permissions.Properties.ViewAssigned);
+    }
+
+    // AC: #5 — Tenant has MaintenanceRequests.Create permission
+    [Fact]
+    public void HasPermission_TenantWithMaintenanceRequestsCreate_ReturnsTrue()
+    {
+        var service = CreateService("Tenant");
+
+        var result = service.HasPermission(Permissions.MaintenanceRequests.Create);
+
+        result.Should().BeTrue();
+    }
+
+    // AC: #5 — Tenant has MaintenanceRequests.ViewOwn permission
+    [Fact]
+    public void HasPermission_TenantWithMaintenanceRequestsViewOwn_ReturnsTrue()
+    {
+        var service = CreateService("Tenant");
+
+        var result = service.HasPermission(Permissions.MaintenanceRequests.ViewOwn);
+
+        result.Should().BeTrue();
+    }
+
+    // AC: #5 — Tenant has Properties.ViewAssigned permission
+    [Fact]
+    public void HasPermission_TenantWithPropertiesViewAssigned_ReturnsTrue()
+    {
+        var service = CreateService("Tenant");
+
+        var result = service.HasPermission(Permissions.Properties.ViewAssigned);
+
+        result.Should().BeTrue();
+    }
+
+    // AC: #4 — Tenant does NOT have landlord permissions
+    [Theory]
+    [InlineData("Properties.ViewList")]
+    [InlineData("Properties.Create")]
+    [InlineData("Expenses.View")]
+    [InlineData("Income.View")]
+    [InlineData("Receipts.ViewAll")]
+    [InlineData("WorkOrders.View")]
+    [InlineData("Vendors.View")]
+    [InlineData("Reports.View")]
+    [InlineData("Account.View")]
+    [InlineData("Users.View")]
+    public void HasPermission_TenantWithLandlordPermission_ReturnsFalse(string permission)
+    {
+        var service = CreateService("Tenant");
+
+        var result = service.HasPermission(permission);
+
+        result.Should().BeFalse();
+    }
+
+    // AC: #1 — IsTenant returns true when role is "Tenant"
+    [Fact]
+    public void IsTenant_WhenRoleIsTenant_ReturnsTrue()
+    {
+        var service = CreateService("Tenant");
+
+        var result = service.IsTenant();
+
+        result.Should().BeTrue();
+    }
+
+    // AC: #1 — IsTenant returns false when role is "Owner"
+    [Fact]
+    public void IsTenant_WhenRoleIsOwner_ReturnsFalse()
+    {
+        var service = CreateService("Owner");
+
+        var result = service.IsTenant();
+
+        result.Should().BeFalse();
+    }
+
+    // AC: #1 — IsTenant returns false when role is "Contributor"
+    [Fact]
+    public void IsTenant_WhenRoleIsContributor_ReturnsFalse()
+    {
+        var service = CreateService("Contributor");
+
+        var result = service.IsTenant();
+
+        result.Should().BeFalse();
+    }
+
     /// <summary>
     /// Helper to get all permission constants via reflection.
     /// </summary>

@@ -116,6 +116,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             request.Password,
             accountId,
             role,
+            propertyId: null,
             cancellationToken);
 
         if (userId is null)

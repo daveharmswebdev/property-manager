@@ -18,6 +18,7 @@ public interface IIdentityService
         string password,
         Guid accountId,
         string role,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -30,6 +31,7 @@ public interface IIdentityService
         string password,
         Guid accountId,
         string role,
+        Guid? propertyId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -55,7 +57,7 @@ public interface IIdentityService
     /// Checks email exists, password is correct, and email is verified.
     /// </summary>
     /// <returns>Tuple of (Success, UserId, AccountId, Role, Email, DisplayName, ErrorMessage).</returns>
-    Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, string? ErrorMessage)> ValidateCredentialsAsync(
+    Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, string? ErrorMessage)> ValidateCredentialsAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default);

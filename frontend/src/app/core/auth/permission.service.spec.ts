@@ -15,6 +15,7 @@ describe('PermissionService', () => {
       role,
       email: 'test@example.com',
       displayName: 'Test User',
+      propertyId: null,
     };
   }
 
@@ -61,6 +62,28 @@ describe('PermissionService', () => {
     it('should return false for null user', () => {
       currentUserSignal.set(null);
       expect(service.isContributor()).toBe(false);
+    });
+  });
+
+  describe('isTenant', () => {
+    it('should return true for Tenant role', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.isTenant()).toBe(true);
+    });
+
+    it('should return false for Owner role', () => {
+      currentUserSignal.set(createUser('Owner'));
+      expect(service.isTenant()).toBe(false);
+    });
+
+    it('should return false for Contributor role', () => {
+      currentUserSignal.set(createUser('Contributor'));
+      expect(service.isTenant()).toBe(false);
+    });
+
+    it('should return false for null user', () => {
+      currentUserSignal.set(null);
+      expect(service.isTenant()).toBe(false);
     });
   });
 
@@ -136,6 +159,47 @@ describe('PermissionService', () => {
     it('should allow Contributor to access /work-orders/123', () => {
       currentUserSignal.set(createUser('Contributor'));
       expect(service.canAccess('/work-orders/123')).toBe(true);
+    });
+
+    // Tenant role — AC: #4 — Tenant denied all landlord routes
+    it('should deny Tenant access to /expenses', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/expenses')).toBe(false);
+    });
+
+    it('should deny Tenant access to /properties', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/properties')).toBe(false);
+    });
+
+    it('should deny Tenant access to /vendors', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/vendors')).toBe(false);
+    });
+
+    it('should deny Tenant access to /reports', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/reports')).toBe(false);
+    });
+
+    it('should deny Tenant access to /settings', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/settings')).toBe(false);
+    });
+
+    it('should deny Tenant access to /dashboard', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/dashboard')).toBe(false);
+    });
+
+    it('should deny Tenant access to /receipts', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/receipts')).toBe(false);
+    });
+
+    it('should deny Tenant access to /work-orders', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/work-orders')).toBe(false);
     });
 
     // Null user

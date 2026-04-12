@@ -19,13 +19,23 @@ export class PermissionService {
   /** True if the current user has the Contributor role */
   readonly isContributor = computed(() => this.authService.currentUser()?.role === 'Contributor');
 
+  /** True if the current user has the Tenant role */
+  readonly isTenant = computed(() => this.authService.currentUser()?.role === 'Tenant');
+
   /**
    * Check if the current user's role allows access to the given route path.
    * Owners can access all routes. Contributors can only access a subset.
+   * Tenants can only access tenant routes (populated in Story 20.5).
    */
   canAccess(route: string): boolean {
     if (this.isOwner()) return true;
     if (!this.authService.currentUser()) return false;
+
+    // Tenant-accessible routes (empty for now, will be populated in Story 20.5)
+    if (this.isTenant()) {
+      const tenantRoutes: string[] = [];
+      return tenantRoutes.some((r) => route === r || route.startsWith(r + '/'));
+    }
 
     // Contributor-accessible routes
     const contributorRoutes = ['/dashboard', '/receipts', '/work-orders'];

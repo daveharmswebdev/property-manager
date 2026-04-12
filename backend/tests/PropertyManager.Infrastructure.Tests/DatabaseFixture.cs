@@ -58,6 +58,7 @@ public class TestCurrentUser : ICurrentUser
     public Guid UserId { get; set; }
     public Guid AccountId { get; set; }
     public string Role { get; set; } = "Owner";
+    public Guid? PropertyId { get; set; }
     public bool IsAuthenticated { get; set; } = true;
 }
 

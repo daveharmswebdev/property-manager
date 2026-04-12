@@ -307,3 +307,20 @@ development_status:
   19-6-invitation-management-ui: done              # FR58, FR62 - Size 5 - depends on 19.1, 19.5
   19-7-account-user-management-ui: done              # FR61, FR62 - Size 3 - depends on 19.4, 19.5, 19.6
   epic-19-retrospective: optional
+
+  # ============================================================
+  # TENANT PORTAL
+  # Source: epic-20-tenant-portal.md
+  # PRD: prd-tenant-portal.md
+  # Added: 2026-04-11
+  # Dependencies: 20.1 first, then 20.2 and 20.3 parallel,
+  #   20.4 depends on 20.3, 20.5 depends on 20.1+20.3,
+  #   20.6 depends on 20.5, 20.7 depends on 20.3,
+  #   20.8 depends on 20.7, 20.9 depends on 20.7,
+  #   20.10 depends on 20.8, 20.11 depends on 20.5
+  # ============================================================
+
+  # Epic 20: Tenant Portal
+  # User Outcome: "Tenants can submit maintenance requests and I can triage them into work orders"
+  epic-20: in-progress
+  20-1-tenant-role-property-association: done    # FR-TP2, FR-TP3, FR-TP10, NFR-TP3 - Size 5
