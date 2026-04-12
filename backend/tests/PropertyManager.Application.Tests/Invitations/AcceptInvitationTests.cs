@@ -248,4 +248,60 @@ public class AcceptInvitationTests
         invitation.UsedAt.Should().NotBeNull();
         _mockDbContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // === Story 20.2 Tests ===
+
+    [Fact]
+    public async Task Handle_InvitationWithPropertyId_PassesPropertyIdToCreateUser()
+    {
+        // Arrange — AC: 20.2 #2 — tenant invitation passes PropertyId to user creation
+        var propertyId = Guid.NewGuid();
+        var invitation = CreateValidInvitation(accountId: _existingAccountId, role: "Tenant");
+        invitation.PropertyId = propertyId;
+
+        SetupInvitationDbSet(new List<Invitation> { invitation });
+        SetupIdentitySuccess();
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var command = new AcceptInvitationCommand("test-code", "NewUser@123456");
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.UserId.Should().Be(_createdUserId);
+        _mockIdentityService.Verify(x => x.CreateUserWithConfirmedEmailAsync(
+            invitation.Email,
+            "NewUser@123456",
+            _existingAccountId,
+            "Tenant",
+            propertyId,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_InvitationWithoutPropertyId_PassesNullPropertyId()
+    {
+        // Arrange — AC: 20.2 — Owner/Contributor invitations have null PropertyId
+        var invitation = CreateValidInvitation(accountId: _existingAccountId, role: "Owner");
+        // invitation.PropertyId is null by default
+
+        SetupInvitationDbSet(new List<Invitation> { invitation });
+        SetupIdentitySuccess();
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var command = new AcceptInvitationCommand("test-code", "NewUser@123456");
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _mockIdentityService.Verify(x => x.CreateUserWithConfirmedEmailAsync(
+            invitation.Email,
+            "NewUser@123456",
+            _existingAccountId,
+            "Owner",
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

@@ -18,7 +18,9 @@ public record ValidateInvitationResult(
     bool IsValid,
     string? Email,
     string? Role,
-    string? ErrorMessage
+    string? ErrorMessage,
+    Guid? PropertyId = null,
+    string? PropertyAddress = null
 );
 
 /// <summary>
@@ -60,8 +62,23 @@ public class ValidateInvitationQueryHandler : IRequestHandler<ValidateInvitation
             return new ValidateInvitationResult(false, null, null, "This invitation has expired");
         }
 
+        // Load property address for Tenant invitations (AC: 20.2 #4)
+        string? propertyAddress = null;
+        if (invitation.PropertyId.HasValue)
+        {
+            var property = await _dbContext.Properties
+                .Where(p => p.Id == invitation.PropertyId.Value)
+                .Select(p => new { p.Street, p.City, p.State, p.ZipCode })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (property != null)
+            {
+                propertyAddress = $"{property.Street}, {property.City}, {property.State} {property.ZipCode}";
+            }
+        }
+
         // Valid invitation
-        return new ValidateInvitationResult(true, invitation.Email, invitation.Role, null);
+        return new ValidateInvitationResult(true, invitation.Email, invitation.Role, null, invitation.PropertyId, propertyAddress);
     }
 
     /// <summary>

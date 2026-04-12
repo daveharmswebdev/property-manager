@@ -86,14 +86,35 @@ public class ResendInvitationCommandHandler : IRequestHandler<ResendInvitationCo
             ExpiresAt = DateTime.UtcNow.AddHours(24),
             AccountId = _currentUser.AccountId,
             InvitedByUserId = _currentUser.UserId,
-            Role = original.Role
+            Role = original.Role,
+            PropertyId = original.PropertyId
         };
 
         _dbContext.Invitations.Add(newInvitation);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Send invitation email
-        await _emailService.SendInvitationEmailAsync(original.Email, rawCode, cancellationToken);
+        // Send invitation email (AC: 20.2 #4 — tenant-specific email with property address)
+        if (original.PropertyId.HasValue)
+        {
+            var property = await _dbContext.Properties
+                .Where(p => p.Id == original.PropertyId.Value)
+                .Select(p => new { p.Street, p.City, p.State, p.ZipCode })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (property != null)
+            {
+                var propertyAddress = $"{property.Street}, {property.City}, {property.State} {property.ZipCode}";
+                await _emailService.SendTenantInvitationEmailAsync(original.Email, rawCode, propertyAddress, cancellationToken);
+            }
+            else
+            {
+                await _emailService.SendInvitationEmailAsync(original.Email, rawCode, cancellationToken);
+            }
+        }
+        else
+        {
+            await _emailService.SendInvitationEmailAsync(original.Email, rawCode, cancellationToken);
+        }
 
         _logger.LogInformation("Resent invitation. New ID: {InvitationId} (original: {OriginalId})",
             newInvitation.Id, original.Id);

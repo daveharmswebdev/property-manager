@@ -324,3 +324,4 @@ development_status:
   # User Outcome: "Tenants can submit maintenance requests and I can triage them into work orders"
   epic-20: in-progress
   20-1-tenant-role-property-association: done    # FR-TP2, FR-TP3, FR-TP10, NFR-TP3 - Size 5
+  20-2-tenant-invitation-flow: done    # FR-TP1, FR-TP4, FR-TP5, NFR-TP4 - Size 5

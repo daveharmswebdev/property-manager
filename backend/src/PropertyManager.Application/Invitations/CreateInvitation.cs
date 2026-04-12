@@ -13,7 +13,7 @@ namespace PropertyManager.Application.Invitations;
 /// Command for creating an invitation to register.
 /// Only owners can create invitations (AC: TD.6.3).
 /// </summary>
-public record CreateInvitationCommand(string Email, string Role) : IRequest<CreateInvitationResult>;
+public record CreateInvitationCommand(string Email, string Role, Guid? PropertyId = null) : IRequest<CreateInvitationResult>;
 
 /// <summary>
 /// Result of invitation creation.
@@ -79,6 +79,26 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         var rawCode = GenerateSecureCode();
         var codeHash = ComputeHash(rawCode);
 
+        // Validate property ownership for Tenant invitations (AC: 20.2 #5)
+        string? propertyAddress = null;
+        if (request.PropertyId.HasValue)
+        {
+            var property = await _dbContext.Properties
+                .Where(p => p.Id == request.PropertyId.Value && p.AccountId == _currentUser.AccountId)
+                .Select(p => new { p.Street, p.City, p.State, p.ZipCode })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (property == null)
+            {
+                throw new ValidationException(new[]
+                {
+                    new FluentValidation.Results.ValidationFailure("PropertyId", "Property not found or does not belong to your account")
+                });
+            }
+
+            propertyAddress = $"{property.Street}, {property.City}, {property.State} {property.ZipCode}";
+        }
+
         // Create invitation entity (AC: TD.6.2)
         var invitation = new Invitation
         {
@@ -88,14 +108,22 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
             ExpiresAt = DateTime.UtcNow.AddHours(24), // 24-hour expiration per AC: TD.6.2
             AccountId = _currentUser.AccountId,
             InvitedByUserId = _currentUser.UserId,
-            Role = request.Role
+            Role = request.Role,
+            PropertyId = request.PropertyId
         };
 
         _dbContext.Invitations.Add(invitation);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Send invitation email (AC: TD.6.5)
-        await _emailService.SendInvitationEmailAsync(email, rawCode, cancellationToken);
+        // Send invitation email (AC: TD.6.5, AC: 20.2 #4)
+        if (request.PropertyId.HasValue && propertyAddress != null)
+        {
+            await _emailService.SendTenantInvitationEmailAsync(email, rawCode, propertyAddress, cancellationToken);
+        }
+        else
+        {
+            await _emailService.SendInvitationEmailAsync(email, rawCode, cancellationToken);
+        }
 
         _logger.LogInformation("Invitation created for {Email}, ID: {InvitationId}", LogSanitizer.MaskEmail(email), invitation.Id);
 

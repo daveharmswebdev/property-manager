@@ -15,7 +15,19 @@ public class CreateInvitationCommandValidator : AbstractValidator<CreateInvitati
 
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is required")
-            .Must(r => r == "Owner" || r == "Contributor")
-            .WithMessage("Role must be 'Owner' or 'Contributor'");
+            .Must(r => r == "Owner" || r == "Contributor" || r == "Tenant")
+            .WithMessage("Role must be 'Owner', 'Contributor', or 'Tenant'");
+
+        When(x => x.Role == "Tenant", () =>
+        {
+            RuleFor(x => x.PropertyId)
+                .NotNull().WithMessage("PropertyId is required for Tenant invitations");
+        });
+
+        When(x => x.Role != "Tenant", () =>
+        {
+            RuleFor(x => x.PropertyId)
+                .Null().WithMessage("PropertyId should only be set for Tenant invitations");
+        });
     }
 }

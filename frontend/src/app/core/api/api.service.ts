@@ -6249,6 +6249,7 @@ export interface CreateInvitationResponse {
 export interface CreateInvitationRequest {
     email?: string;
     role?: string;
+    propertyId?: string | undefined;
 }
 
 export interface ValidateInvitationResponse {
@@ -6256,6 +6257,7 @@ export interface ValidateInvitationResponse {
     email?: string | undefined;
     role?: string | undefined;
     errorMessage?: string | undefined;
+    propertyAddress?: string | undefined;
 }
 
 export interface AcceptInvitationResponse {

@@ -238,4 +238,69 @@ IMPORTANT: This invitation expires in 24 hours.
 
 If you didn't expect this invitation, you can safely ignore this email.";
     }
+
+    /// <summary>
+    /// Sends a tenant invitation email with property address (AC: 20.2 #4).
+    /// </summary>
+    public async Task SendTenantInvitationEmailAsync(
+        string email,
+        string code,
+        string propertyAddress,
+        CancellationToken cancellationToken = default)
+    {
+        var inviteUrl = $"{_settings.BaseUrl}/accept-invitation?code={Uri.EscapeDataString(code)}";
+
+        var subject = "You're invited as a tenant - Upkeep";
+        var htmlBody = GenerateTenantInvitationEmailHtml(inviteUrl, propertyAddress);
+        var textBody = GenerateTenantInvitationEmailText(inviteUrl, propertyAddress);
+
+        await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
+
+        _logger.LogInformation("Tenant invitation email sent to {Email} for property {PropertyAddress}", LogSanitizer.MaskEmail(email), propertyAddress);
+    }
+
+    private static string GenerateTenantInvitationEmailHtml(string inviteUrl, string propertyAddress)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>You're invited as a tenant</title>
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"">
+    <div style=""background-color: #66BB6A; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;"">
+        <h1 style=""color: white; margin: 0;"">Upkeep</h1>
+    </div>
+    <div style=""background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;"">
+        <h2 style=""color: #333; margin-top: 0;"">You're invited as a tenant!</h2>
+        <p>You've been invited to submit maintenance requests for <strong>{propertyAddress}</strong>.</p>
+        <p>Click the button below to create your account and get started.</p>
+        <div style=""text-align: center; margin: 30px 0;"">
+            <a href=""{inviteUrl}"" style=""background-color: #66BB6A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;"">Accept Invitation</a>
+        </div>
+        <p style=""color: #d9534f; font-size: 14px;""><strong>Important:</strong> This invitation expires in 24 hours.</p>
+        <p style=""color: #666; font-size: 14px;"">If you didn't expect this invitation, you can safely ignore this email.</p>
+        <hr style=""border: none; border-top: 1px solid #ddd; margin: 20px 0;"">
+        <p style=""color: #999; font-size: 12px;"">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style=""color: #999; font-size: 12px; word-break: break-all;"">{inviteUrl}</p>
+    </div>
+</body>
+</html>";
+    }
+
+    private static string GenerateTenantInvitationEmailText(string inviteUrl, string propertyAddress)
+    {
+        return $@"Upkeep - You're invited as a tenant!
+
+You've been invited to submit maintenance requests for {propertyAddress}.
+
+Click the link below to create your account and get started.
+
+Accept your invitation: {inviteUrl}
+
+IMPORTANT: This invitation expires in 24 hours.
+
+If you didn't expect this invitation, you can safely ignore this email.";
+    }
 }

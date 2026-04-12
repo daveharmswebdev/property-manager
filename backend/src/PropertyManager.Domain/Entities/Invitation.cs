@@ -53,6 +53,16 @@ public class Invitation
     public Guid? InvitedByUserId { get; set; }
 
     /// <summary>
+    /// The property the invitee is associated with. Only set for Tenant invitations.
+    /// </summary>
+    public Guid? PropertyId { get; set; }
+
+    /// <summary>
+    /// Navigation property for the associated property. Only set for Tenant invitations.
+    /// </summary>
+    public Property? Property { get; set; }
+
+    /// <summary>
     /// Checks if the invitation is expired.
     /// </summary>
     public bool IsExpired => DateTime.UtcNow > ExpiresAt;

@@ -299,4 +299,199 @@ public class CreateInvitationTests
         // Assert
         result.IsValid.Should().BeTrue();
     }
+
+    // === Story 20.2 Tests ===
+
+    [Fact]
+    public async Task Handle_TenantRoleWithValidPropertyId_CreatesInvitationWithPropertyId()
+    {
+        // Arrange — AC: 20.2 #1 — Tenant invitation stores PropertyId
+        var propertyId = Guid.NewGuid();
+        var email = "tenant@example.com";
+        var command = new CreateInvitationCommand(email, "Tenant", propertyId);
+
+        _mockIdentityService.Setup(x => x.EmailExistsAsync(email.ToLowerInvariant(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var invitations = new List<Invitation>();
+        var mockDbSet = invitations.BuildMockDbSet();
+        mockDbSet.Setup(x => x.Add(It.IsAny<Invitation>())).Callback<Invitation>(inv =>
+        {
+            inv.Id = Guid.NewGuid();
+            invitations.Add(inv);
+        });
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var properties = new List<Property>
+        {
+            new Property { Id = propertyId, AccountId = _ownerAccountId, Street = "123 Main St", City = "Austin", State = "TX", ZipCode = "78701" }
+        };
+        var mockPropertySet = properties.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Properties).Returns(mockPropertySet.Object);
+
+        _mockEmailService.Setup(x => x.SendTenantInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        invitations.Should().HaveCount(1);
+        invitations[0].PropertyId.Should().Be(propertyId);
+        invitations[0].Role.Should().Be("Tenant");
+    }
+
+    [Fact]
+    public async Task Handle_TenantRoleWithPropertyFromDifferentAccount_ThrowsValidationException()
+    {
+        // Arrange — AC: 20.2 #5 — PropertyId must belong to landlord's account
+        var propertyId = Guid.NewGuid();
+        var otherAccountId = Guid.NewGuid();
+        var email = "tenant@example.com";
+        var command = new CreateInvitationCommand(email, "Tenant", propertyId);
+
+        _mockIdentityService.Setup(x => x.EmailExistsAsync(email.ToLowerInvariant(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var invitations = new List<Invitation>();
+        var mockDbSet = invitations.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+
+        // Property belongs to a different account
+        var properties = new List<Property>
+        {
+            new Property { Id = propertyId, AccountId = otherAccountId, Street = "123 Main St", City = "Austin", State = "TX", ZipCode = "78701" }
+        };
+        var mockPropertySet = properties.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Properties).Returns(mockPropertySet.Object);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("*Property not found*");
+    }
+
+    [Fact]
+    public async Task Handle_TenantRoleWithNonExistentPropertyId_ThrowsValidationException()
+    {
+        // Arrange — AC: 20.2 #5 — PropertyId must exist
+        var propertyId = Guid.NewGuid();
+        var email = "tenant@example.com";
+        var command = new CreateInvitationCommand(email, "Tenant", propertyId);
+
+        _mockIdentityService.Setup(x => x.EmailExistsAsync(email.ToLowerInvariant(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var invitations = new List<Invitation>();
+        var mockDbSet = invitations.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+
+        // No matching property exists
+        var properties = new List<Property>();
+        var mockPropertySet = properties.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Properties).Returns(mockPropertySet.Object);
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("*Property not found*");
+    }
+
+    [Fact]
+    public async Task Handle_TenantRole_CallsSendTenantInvitationEmailWithPropertyAddress()
+    {
+        // Arrange — AC: 20.2 #4 — tenant email includes property address
+        var propertyId = Guid.NewGuid();
+        var email = "tenant@example.com";
+        var command = new CreateInvitationCommand(email, "Tenant", propertyId);
+
+        _mockIdentityService.Setup(x => x.EmailExistsAsync(email.ToLowerInvariant(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var invitations = new List<Invitation>();
+        var mockDbSet = invitations.BuildMockDbSet();
+        mockDbSet.Setup(x => x.Add(It.IsAny<Invitation>())).Callback<Invitation>(inv =>
+        {
+            inv.Id = Guid.NewGuid();
+            invitations.Add(inv);
+        });
+        _mockDbContext.Setup(x => x.Invitations).Returns(mockDbSet.Object);
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var properties = new List<Property>
+        {
+            new Property { Id = propertyId, AccountId = _ownerAccountId, Street = "123 Main St", City = "Austin", State = "TX", ZipCode = "78701" }
+        };
+        var mockPropertySet = properties.BuildMockDbSet();
+        _mockDbContext.Setup(x => x.Properties).Returns(mockPropertySet.Object);
+
+        _mockEmailService.Setup(x => x.SendTenantInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _mockEmailService.Verify(x => x.SendTenantInvitationEmailAsync(
+            email.ToLowerInvariant(),
+            It.IsAny<string>(),
+            "123 Main St, Austin, TX 78701",
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Generic email should NOT be called
+        _mockEmailService.Verify(x => x.SendInvitationEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void Validator_TenantRole_IsValid()
+    {
+        // Arrange — AC: 20.2 #1 — "Tenant" is a valid role
+        var validator = new CreateInvitationCommandValidator();
+        var command = new CreateInvitationCommand("valid@example.com", "Tenant", Guid.NewGuid());
+
+        // Act
+        var result = validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_TenantRole_PropertyIdRequired()
+    {
+        // Arrange — AC: 20.2 #1 — PropertyId is required when role is Tenant
+        var validator = new CreateInvitationCommandValidator();
+        var command = new CreateInvitationCommand("valid@example.com", "Tenant", null);
+
+        // Act
+        var result = validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage.Contains("required"));
+    }
+
+    [Fact]
+    public void Validator_OwnerRole_PropertyIdMustBeNull()
+    {
+        // Arrange — AC: 20.2 — PropertyId should only be set for Tenant role
+        var validator = new CreateInvitationCommandValidator();
+        var command = new CreateInvitationCommand("valid@example.com", "Owner", Guid.NewGuid());
+
+        // Act
+        var result = validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage.Contains("only be set for Tenant"));
+    }
 }

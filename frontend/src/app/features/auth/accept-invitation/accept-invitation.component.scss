@@ -60,7 +60,8 @@ mat-form-field {
   }
 }
 
-.role-display {
+.role-display,
+.property-display {
   display: flex;
   align-items: center;
   gap: 12px;
