@@ -20,6 +20,7 @@ public static class Permissions
     {
         public const string Create = "MaintenanceRequests.Create";
         public const string ViewOwn = "MaintenanceRequests.ViewOwn";
+        public const string ViewAll = "MaintenanceRequests.ViewAll";
     }
 
     public static class Expenses

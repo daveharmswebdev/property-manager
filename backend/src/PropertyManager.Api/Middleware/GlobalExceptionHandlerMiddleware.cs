@@ -130,6 +130,11 @@ public class GlobalExceptionHandlerMiddleware
                 "https://propertymanager.app/errors/forbidden",
                 "Access forbidden"
             ),
+            BusinessRuleException => (
+                StatusCodes.Status400BadRequest,
+                "https://propertymanager.app/errors/business-rule-violation",
+                "Business rule violation"
+            ),
             ArgumentException => (
                 StatusCodes.Status400BadRequest,
                 "https://propertymanager.app/errors/bad-request",
