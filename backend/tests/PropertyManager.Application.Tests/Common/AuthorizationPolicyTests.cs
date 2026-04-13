@@ -26,7 +26,8 @@ public class AuthorizationPolicyTests
         "CanManageWorkOrders",
         "CanViewWorkOrders",
         "CanAccessReports",
-        "CanManageUsers"
+        "CanManageUsers",
+        "CanCreateMaintenanceRequests"
     };
 
     [Fact]

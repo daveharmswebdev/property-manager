@@ -171,6 +171,7 @@ builder.Services.AddAuthorization(options =>
     AddPermissionPolicy(options, "CanViewWorkOrders", Permissions.WorkOrders.View);
     AddPermissionPolicy(options, "CanAccessReports", Permissions.Reports.View);
     AddPermissionPolicy(options, "CanManageUsers", Permissions.Users.View);
+    AddPermissionPolicy(options, "CanCreateMaintenanceRequests", Permissions.MaintenanceRequests.Create);
 });
 
 // Helper method to create permission-based policies

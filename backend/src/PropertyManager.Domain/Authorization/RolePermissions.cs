@@ -68,6 +68,7 @@ public static class RolePermissions
                 // Maintenance Requests (Owner has all permissions)
                 Permissions.MaintenanceRequests.Create,
                 Permissions.MaintenanceRequests.ViewOwn,
+                Permissions.MaintenanceRequests.ViewAll,
 
                 // Properties - ViewAssigned (Owner has all property permissions)
                 Permissions.Properties.ViewAssigned,
