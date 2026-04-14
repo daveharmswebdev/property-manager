@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Application.MaintenanceRequestPhotos;
 using PropertyManager.Domain.Exceptions;
 
 namespace PropertyManager.Application.MaintenanceRequests;
@@ -20,15 +21,18 @@ public class GetMaintenanceRequestByIdQueryHandler : IRequestHandler<GetMaintena
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
     private readonly IIdentityService _identityService;
+    private readonly IPhotoService _photoService;
 
     public GetMaintenanceRequestByIdQueryHandler(
         IAppDbContext dbContext,
         ICurrentUser currentUser,
-        IIdentityService identityService)
+        IIdentityService identityService,
+        IPhotoService photoService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _identityService = identityService;
+        _photoService = photoService;
     }
 
     public async Task<MaintenanceRequestDto> Handle(GetMaintenanceRequestByIdQuery request, CancellationToken cancellationToken)
@@ -38,6 +42,7 @@ public class GetMaintenanceRequestByIdQueryHandler : IRequestHandler<GetMaintena
                 && mr.AccountId == _currentUser.AccountId
                 && mr.DeletedAt == null)
             .Include(mr => mr.Property)
+            .Include(mr => mr.Photos)
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -57,6 +62,43 @@ public class GetMaintenanceRequestByIdQueryHandler : IRequestHandler<GetMaintena
         var displayNames = await _identityService.GetUserDisplayNamesAsync(
             new[] { maintenanceRequest.SubmittedByUserId }, cancellationToken);
 
+        // Generate presigned URLs for photos in parallel
+        var photos = maintenanceRequest.Photos
+            .OrderBy(p => p.DisplayOrder)
+            .ToList();
+
+        var photoDtos = new List<MaintenanceRequestPhotoDto>();
+        if (photos.Count > 0)
+        {
+            var urlTasks = photos.Select(async photo =>
+            {
+                string? thumbnailUrl = null;
+                string? viewUrl = null;
+
+                if (!string.IsNullOrEmpty(photo.ThumbnailStorageKey))
+                {
+                    thumbnailUrl = await _photoService.GetThumbnailUrlAsync(photo.ThumbnailStorageKey, cancellationToken);
+                }
+
+                if (!string.IsNullOrEmpty(photo.StorageKey))
+                {
+                    viewUrl = await _photoService.GetPhotoUrlAsync(photo.StorageKey, cancellationToken);
+                }
+
+                return new MaintenanceRequestPhotoDto(
+                    Id: photo.Id,
+                    ThumbnailUrl: thumbnailUrl,
+                    ViewUrl: viewUrl,
+                    IsPrimary: photo.IsPrimary,
+                    DisplayOrder: photo.DisplayOrder,
+                    OriginalFileName: photo.OriginalFileName,
+                    FileSizeBytes: photo.FileSizeBytes,
+                    CreatedAt: photo.CreatedAt);
+            }).ToList();
+
+            photoDtos.AddRange(await Task.WhenAll(urlTasks));
+        }
+
         return new MaintenanceRequestDto(
             maintenanceRequest.Id,
             maintenanceRequest.PropertyId,
@@ -69,7 +111,8 @@ public class GetMaintenanceRequestByIdQueryHandler : IRequestHandler<GetMaintena
             displayNames.GetValueOrDefault(maintenanceRequest.SubmittedByUserId),
             maintenanceRequest.WorkOrderId,
             maintenanceRequest.CreatedAt,
-            maintenanceRequest.UpdatedAt
+            maintenanceRequest.UpdatedAt,
+            Photos: photoDtos
         );
     }
 }

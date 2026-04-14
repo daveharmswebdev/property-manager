@@ -25,6 +25,7 @@ public class MaintenanceRequest : AuditableEntity, ITenantEntity, ISoftDeletable
     public Account Account { get; set; } = null!;
     public Property Property { get; set; } = null!;
     public WorkOrder? WorkOrder { get; set; }
+    public ICollection<MaintenanceRequestPhoto> Photos { get; set; } = new List<MaintenanceRequestPhoto>();
 
     /// <summary>
     /// Transitions the maintenance request to a new status.

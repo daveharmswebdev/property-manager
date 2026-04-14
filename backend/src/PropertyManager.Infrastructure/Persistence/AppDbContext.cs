@@ -52,6 +52,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<VendorPhoto> VendorPhotos => Set<VendorPhoto>();
     public DbSet<MaintenanceRequest> MaintenanceRequests => Set<MaintenanceRequest>();
+    public DbSet<MaintenanceRequestPhoto> MaintenanceRequestPhotos => Set<MaintenanceRequestPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -154,6 +155,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         modelBuilder.Entity<MaintenanceRequest>()
             .HasQueryFilter(e => (CurrentAccountId == null || e.AccountId == CurrentAccountId)
                                  && e.DeletedAt == null);
+
+        // Apply tenant filter to MaintenanceRequestPhoto (no soft delete)
+        modelBuilder.Entity<MaintenanceRequestPhoto>()
+            .HasQueryFilter(e => CurrentAccountId == null || e.AccountId == CurrentAccountId);
     }
 
     private void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)
