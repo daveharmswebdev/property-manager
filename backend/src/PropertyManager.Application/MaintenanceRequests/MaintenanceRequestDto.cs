@@ -1,3 +1,5 @@
+using PropertyManager.Application.MaintenanceRequestPhotos;
+
 namespace PropertyManager.Application.MaintenanceRequests;
 
 /// <summary>
@@ -15,5 +17,6 @@ public record MaintenanceRequestDto(
     string? SubmittedByUserName,
     Guid? WorkOrderId,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    IReadOnlyList<MaintenanceRequestPhotoDto>? Photos = null
 );

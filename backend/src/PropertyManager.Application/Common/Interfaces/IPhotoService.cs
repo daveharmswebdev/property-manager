@@ -9,7 +9,8 @@ public enum PhotoEntityType
     Properties,
     Vendors,
     Users,
-    WorkOrders
+    WorkOrders,
+    MaintenanceRequests
 }
 
 /// <summary>
