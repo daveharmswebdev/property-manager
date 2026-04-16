@@ -3,21 +3,24 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError, Subject } from 'rxjs';
+import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { LoginComponent } from './login.component';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService, User } from '../../../core/services/auth.service';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let mockAuthService: {
     login: ReturnType<typeof vi.fn>;
+    currentUser: ReturnType<typeof signal<User | null>>;
   };
   let router: Router;
 
   beforeEach(async () => {
     mockAuthService = {
       login: vi.fn(),
+      currentUser: signal<User | null>(null),
     };
 
     await TestBed.configureTestingModule({
@@ -278,7 +281,7 @@ describe('LoginComponent', () => {
     async function setupWithReturnUrl(returnUrl: string | null) {
       TestBed.resetTestingModule();
 
-      const authService = { login: vi.fn() };
+      const authService = { login: vi.fn(), currentUser: signal<User | null>(null) };
 
       await TestBed.configureTestingModule({
         imports: [LoginComponent],
@@ -355,6 +358,89 @@ describe('LoginComponent', () => {
 
       ctx.component['form'].patchValue({
         email: 'test@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  // Task 17: LoginComponent tenant redirect (Story 20.5, AC #1, #7)
+  describe('role-based redirect after login', () => {
+    async function setupWithRoleAndReturnUrl(role: string, returnUrl: string | null) {
+      TestBed.resetTestingModule();
+
+      const mockUser: User = {
+        userId: 'test-user-id',
+        accountId: 'test-account-id',
+        role,
+        email: 'test@example.com',
+        displayName: 'Test User',
+        propertyId: role === 'Tenant' ? 'prop-1' : null,
+      };
+
+      const currentUserSignal = signal<User | null>(null);
+      // Login observable that sets the currentUser signal before emitting
+      const loginObservable = new Subject<object>();
+      const authService = {
+        login: vi.fn().mockImplementation(() => {
+          // Set currentUser before the subscriber gets the response
+          currentUserSignal.set(mockUser);
+          return of({ accessToken: 'token', expiresIn: 3600 });
+        }),
+        currentUser: currentUserSignal,
+      };
+
+      await TestBed.configureTestingModule({
+        imports: [LoginComponent],
+        providers: [
+          provideNoopAnimations(),
+          provideRouter([]),
+          { provide: AuthService, useValue: authService },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                queryParamMap: {
+                  get: (key: string) => (key === 'returnUrl' ? returnUrl : null),
+                },
+              },
+            },
+          },
+        ],
+      }).compileComponents();
+
+      const testRouter = TestBed.inject(Router);
+      vi.spyOn(testRouter, 'navigate').mockImplementation(() => Promise.resolve(true));
+      vi.spyOn(testRouter, 'navigateByUrl').mockImplementation(() => Promise.resolve(true));
+
+      const testFixture = TestBed.createComponent(LoginComponent);
+      const testComponent = testFixture.componentInstance;
+      testFixture.detectChanges();
+
+      return { component: testComponent, router: testRouter, authService };
+    }
+
+    // Task 17.1: Tenant user redirected to /tenant after login (no returnUrl)
+    it('should redirect Tenant to /tenant after login when no returnUrl', async () => {
+      const ctx = await setupWithRoleAndReturnUrl('Tenant', null);
+
+      ctx.component['form'].patchValue({
+        email: 'tenant@example.com',
+        password: 'password123',
+      });
+      ctx.component['onSubmit']();
+
+      expect(ctx.router.navigateByUrl).toHaveBeenCalledWith('/tenant');
+    });
+
+    // Task 17.2: Owner user redirected to /dashboard after login (regression check)
+    it('should redirect Owner to /dashboard after login when no returnUrl', async () => {
+      const ctx = await setupWithRoleAndReturnUrl('Owner', null);
+
+      ctx.component['form'].patchValue({
+        email: 'owner@example.com',
         password: 'password123',
       });
       ctx.component['onSubmit']();

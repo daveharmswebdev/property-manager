@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
 import { ownerGuard } from './core/auth/owner.guard';
+import { tenantGuard } from './core/auth/tenant.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
@@ -248,6 +249,24 @@ export const routes: Routes = [
           ),
         canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
+      },
+      // Tenant Dashboard (Story 20.5, AC #1, #2, #3)
+      {
+        path: 'tenant',
+        loadComponent: () =>
+          import('./features/tenant-dashboard/tenant-dashboard.component').then(
+            (m) => m.TenantDashboardComponent,
+          ),
+        canActivate: [tenantGuard],
+      },
+      // Tenant Request Detail (Story 20.5, AC #4)
+      {
+        path: 'tenant/requests/:id',
+        loadComponent: () =>
+          import(
+            './features/tenant-dashboard/components/request-detail/request-detail.component'
+          ).then((m) => m.RequestDetailComponent),
+        canActivate: [tenantGuard],
       },
       // Default child redirect to dashboard
       {

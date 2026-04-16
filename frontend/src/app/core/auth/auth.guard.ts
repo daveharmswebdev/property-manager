@@ -61,8 +61,12 @@ export const guestGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect based on role (Story 20.5, AC #1, #7)
   if (authService.isAuthenticated()) {
+    const user = authService.currentUser();
+    if (user?.role === 'Tenant') {
+      return router.createUrlTree(['/tenant']);
+    }
     return router.createUrlTree(['/dashboard']);
   }
 
@@ -73,7 +77,11 @@ export const guestGuard: CanActivateFn = () => {
       take(1),
       map(response => {
         if (response) {
-          // User is authenticated - redirect to dashboard
+          // User is authenticated - redirect based on role (Story 20.5)
+          const user = authService.currentUser();
+          if (user?.role === 'Tenant') {
+            return router.createUrlTree(['/tenant']);
+          }
           return router.createUrlTree(['/dashboard']);
         }
         // User is not authenticated - allow access to guest route

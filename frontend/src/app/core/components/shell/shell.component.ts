@@ -124,12 +124,18 @@ export class ShellComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {
-    // Initialize SignalR for real-time receipt updates (AC-5.6.1)
-    this.receiptSignalR.initialize();
+  /** Whether the current user is a tenant (Story 20.5, AC #5) */
+  readonly isTenant = computed(() => this.authService.currentUser()?.role === 'Tenant');
 
-    // Load initial receipt count for badge
-    this.receiptStore.loadUnprocessedReceipts();
+  ngOnInit(): void {
+    // Skip receipt features for Tenant users (Story 20.5, AC #5)
+    if (!this.isTenant()) {
+      // Initialize SignalR for real-time receipt updates (AC-5.6.1)
+      this.receiptSignalR.initialize();
+
+      // Load initial receipt count for badge
+      this.receiptStore.loadUnprocessedReceipts();
+    }
   }
 
   ngOnDestroy(): void {

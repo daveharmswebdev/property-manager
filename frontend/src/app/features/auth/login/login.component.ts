@@ -43,7 +43,12 @@ export class LoginComponent {
 
   private getSafeReturnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    if (!returnUrl) return '/dashboard';
+    if (!returnUrl) {
+      // Role-based default redirect (Story 20.5, AC #1, #7)
+      const user = this.authService.currentUser();
+      if (user?.role === 'Tenant') return '/tenant';
+      return '/dashboard';
+    }
     if (returnUrl.startsWith('/') && !returnUrl.startsWith('//') && !returnUrl.includes('://')) {
       return returnUrl;
     }

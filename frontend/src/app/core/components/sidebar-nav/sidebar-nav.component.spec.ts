@@ -176,6 +176,28 @@ describe('SidebarNavComponent', () => {
     });
   });
 
+  // Task 16.5: SidebarNavComponent shows only Dashboard for Tenant role (Story 20.5, AC #5)
+  describe('Tenant role (Story 20.5)', () => {
+    beforeEach(async () => {
+      await setupWithRole('Tenant');
+    });
+
+    it('should have 1 navigation item for Tenant', () => {
+      expect(component.navItems().length).toBe(1);
+    });
+
+    it('should show only Dashboard for Tenant with /tenant route', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).toEqual(['Dashboard']);
+      expect(component.navItems()[0].route).toBe('/tenant');
+    });
+
+    it('should render 1 nav item in the DOM', () => {
+      const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
+      expect(navItems.length).toBe(1);
+    });
+  });
+
   describe('userDisplayName fallback logic (AC-7.2.2)', () => {
     it('should fall back to email when displayName is null', async () => {
       const userWithoutDisplayName: User = {

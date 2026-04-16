@@ -75,6 +75,11 @@ export class SidebarNavComponent implements OnInit {
       return allItems;
     }
 
+    // Tenant sees only Dashboard (Story 20.5, AC #5)
+    if (this.authService.currentUser()?.role === 'Tenant') {
+      return [{ label: 'Dashboard', route: '/tenant', icon: 'dashboard' }];
+    }
+
     // Contributor sees only these routes
     const contributorRoutes = ['/dashboard', '/receipts', '/work-orders'];
     return allItems.filter((item) => contributorRoutes.includes(item.route));
@@ -82,7 +87,10 @@ export class SidebarNavComponent implements OnInit {
 
   ngOnInit(): void {
     // Load unprocessed receipts on init to populate badge count
-    this.receiptStore.loadUnprocessedReceipts();
+    // Skip for Tenant users who don't use receipts (Story 20.5)
+    if (this.authService.currentUser()?.role !== 'Tenant') {
+      this.receiptStore.loadUnprocessedReceipts();
+    }
   }
 
   /**

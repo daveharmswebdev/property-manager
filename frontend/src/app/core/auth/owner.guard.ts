@@ -21,6 +21,11 @@ export const ownerGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
+  // Tenant role — redirect to tenant dashboard (Story 20.5, AC #6)
+  if (user?.role === 'Tenant') {
+    return router.createUrlTree(['/tenant']);
+  }
+
   // Contributor or unknown role — redirect to dashboard
   return router.createUrlTree(['/dashboard']);
 };

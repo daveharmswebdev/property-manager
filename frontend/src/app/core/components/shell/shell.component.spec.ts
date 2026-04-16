@@ -300,6 +300,123 @@ describe('ShellComponent', () => {
     });
   });
 
+  // Task 18: ShellComponent tenant handling (Story 20.5, AC #5)
+  describe('tenant user handling (Story 20.5)', () => {
+    let tenantFixture: ComponentFixture<ShellComponent>;
+    let tenantComponent: ShellComponent;
+    let tenantReceiptSignalR: any;
+    let tenantReceiptStore: any;
+
+    beforeEach(async () => {
+      const mockBreakpointObserver = createMockBreakpointObserver(false, false, true);
+      const tenantAuthService = {
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+        accessToken: vi.fn().mockReturnValue('token'),
+        currentUser: vi.fn().mockReturnValue({
+          userId: 'tenant-id',
+          accountId: 'account-id',
+          role: 'Tenant',
+          email: 'tenant@example.com',
+          displayName: 'Jane Tenant',
+          propertyId: 'prop-1',
+        }),
+        isAuthenticated: vi.fn().mockReturnValue(true),
+        isInitializing: vi.fn().mockReturnValue(false),
+      };
+      tenantReceiptStore = {
+        loadUnprocessedReceipts: vi.fn(),
+        unprocessedCount: signal(0),
+      };
+      tenantReceiptSignalR = {
+        initialize: vi.fn(),
+        handleReconnection: vi.fn(),
+      };
+
+      await TestBed.configureTestingModule({
+        imports: [ShellComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: tenantAuthService },
+          { provide: ReceiptStore, useValue: tenantReceiptStore },
+          { provide: ReceiptSignalRService, useValue: tenantReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
+        ],
+      }).compileComponents();
+
+      tenantFixture = TestBed.createComponent(ShellComponent);
+      tenantComponent = tenantFixture.componentInstance;
+      tenantFixture.detectChanges();
+    });
+
+    // Task 18.1: ShellComponent does NOT call receiptSignalR.initialize() for Tenant users
+    it('should NOT call receiptSignalR.initialize() for Tenant users', () => {
+      expect(tenantReceiptSignalR.initialize).not.toHaveBeenCalled();
+    });
+
+    // Note: receiptStore.loadUnprocessedReceipts may still be called by SidebarNavComponent.ngOnInit()
+    // The shell skips its own call, but the sidebar also triggers it. This is acceptable behavior.
+
+    // Task 18.2: ShellComponent hides MobileCaptureFab for Tenant users
+    it('should hide MobileCaptureFab for Tenant users', () => {
+      const fab = tenantFixture.debugElement.query(By.css('app-mobile-capture-fab'));
+      expect(fab).toBeFalsy();
+    });
+  });
+
+  // Task 18.3: ShellComponent initializes receipts for Owner users (regression)
+  describe('owner user receipts (regression)', () => {
+    it('should call receiptSignalR.initialize() for Owner users', async () => {
+      const mockBreakpointObserver = createMockBreakpointObserver(true, false, false);
+      const ownerAuthService = {
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+        accessToken: vi.fn().mockReturnValue('token'),
+        currentUser: vi.fn().mockReturnValue({
+          userId: 'owner-id',
+          accountId: 'account-id',
+          role: 'Owner',
+          email: 'owner@example.com',
+          displayName: 'Owner User',
+          propertyId: null,
+        }),
+        isAuthenticated: vi.fn().mockReturnValue(true),
+        isInitializing: vi.fn().mockReturnValue(false),
+      };
+      const ownerReceiptSignalR = {
+        initialize: vi.fn(),
+        handleReconnection: vi.fn(),
+      };
+      const ownerReceiptStore = {
+        loadUnprocessedReceipts: vi.fn(),
+        unprocessedCount: signal(0),
+      };
+
+      await TestBed.configureTestingModule({
+        imports: [ShellComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: BreakpointObserver, useValue: mockBreakpointObserver },
+          { provide: AuthService, useValue: ownerAuthService },
+          { provide: ReceiptStore, useValue: ownerReceiptStore },
+          { provide: ReceiptSignalRService, useValue: ownerReceiptSignalR },
+          { provide: SignalRService, useValue: mockSignalR },
+        ],
+      }).compileComponents();
+
+      const ownerFixture = TestBed.createComponent(ShellComponent);
+      ownerFixture.detectChanges();
+
+      expect(ownerReceiptSignalR.initialize).toHaveBeenCalled();
+      expect(ownerReceiptStore.loadUnprocessedReceipts).toHaveBeenCalled();
+    });
+  });
+
   describe('userDisplayName in header (AC-7.2.3)', () => {
     beforeEach(async () => {
       // Mock mobile view to test mobile header

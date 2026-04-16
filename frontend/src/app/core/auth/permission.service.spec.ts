@@ -202,6 +202,18 @@ describe('PermissionService', () => {
       expect(service.canAccess('/work-orders')).toBe(false);
     });
 
+    // Task 16.7: Tenant can access /tenant (Story 20.5)
+    it('should allow Tenant to access /tenant', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/tenant')).toBe(true);
+    });
+
+    // Task 16.8: Tenant can access tenant subroutes
+    it('should allow Tenant to access /tenant/requests/123', () => {
+      currentUserSignal.set(createUser('Tenant'));
+      expect(service.canAccess('/tenant/requests/123')).toBe(true);
+    });
+
     // Null user
     it('should deny null user access to any route', () => {
       currentUserSignal.set(null);

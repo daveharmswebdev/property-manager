@@ -101,6 +101,31 @@ describe('BottomNavComponent', () => {
     });
   });
 
+  // Task 16.6: BottomNavComponent shows only Dashboard for Tenant role (Story 20.5, AC #5)
+  describe('Tenant role (Story 20.5)', () => {
+    let component: BottomNavComponent;
+    let fixture: ComponentFixture<BottomNavComponent>;
+
+    beforeEach(async () => {
+      ({ fixture, component } = await setupWithRole('Tenant'));
+    });
+
+    it('should have 1 navigation item for Tenant', () => {
+      expect(component.navItems().length).toBe(1);
+    });
+
+    it('should show only Dashboard for Tenant with /tenant route', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).toEqual(['Dashboard']);
+      expect(component.navItems()[0].route).toBe('/tenant');
+    });
+
+    it('should render 1 nav tab in the DOM for Tenant', () => {
+      const navTabs = fixture.debugElement.queryAll(By.css('.nav-tab'));
+      expect(navTabs.length).toBe(1);
+    });
+  });
+
   describe('Contributor role (AC: #6)', () => {
     let component: BottomNavComponent;
     let fixture: ComponentFixture<BottomNavComponent>;
