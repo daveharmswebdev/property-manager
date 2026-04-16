@@ -102,6 +102,29 @@ public class MaintenanceRequestsController : ControllerBase
     }
 
     /// <summary>
+    /// Get the current tenant's assigned property info (Story 20.5, AC #2).
+    /// Returns read-only property data (name, address) — no financial data.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Tenant property info</returns>
+    /// <response code="200">Returns the tenant's property info</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="404">If property not found</response>
+    [HttpGet("tenant-property")]
+    [ProducesResponseType(typeof(TenantPropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTenantProperty(CancellationToken cancellationToken)
+    {
+        var query = new GetTenantPropertyQuery();
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Retrieved tenant property {PropertyId}", result.Id);
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get a single maintenance request by ID (AC #7).
     /// </summary>
     /// <param name="id">Maintenance request GUID</param>

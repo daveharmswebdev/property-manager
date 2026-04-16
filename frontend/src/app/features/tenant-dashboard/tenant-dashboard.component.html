@@ -1,0 +1,94 @@
+<div class="tenant-dashboard">
+  <!-- Loading State -->
+  @if (store.isLoading() && !store.isPropertyLoaded()) {
+    <app-loading-spinner />
+  }
+
+  <!-- Error State -->
+  @if (store.error()) {
+    <app-error-card
+      [message]="store.error()!"
+      [showRetry]="true"
+      (retry)="retry()"
+    />
+  }
+
+  <!-- Content -->
+  @if (!store.error()) {
+    <!-- Property Info Card (AC #2) -->
+    @if (store.isPropertyLoaded()) {
+      <mat-card class="property-card" data-testid="property-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="property-icon">home</mat-icon>
+          <mat-card-title>{{ store.property()!.name }}</mat-card-title>
+          <mat-card-subtitle>{{ store.propertyAddress() }}</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    }
+
+    <!-- Maintenance Request List (AC #3, #4) -->
+    @if (!store.isLoading()) {
+      @if (store.isEmpty()) {
+        <app-empty-state
+          icon="build"
+          title="No maintenance requests yet"
+          message="When maintenance requests are submitted for your property, they will appear here."
+        />
+      } @else {
+        <div class="request-list" data-testid="request-list">
+          <h2 class="section-title">Maintenance Requests</h2>
+
+          @for (request of store.requests(); track request.id) {
+            <mat-card
+              class="request-card"
+              (click)="viewRequest(request.id)"
+              (keydown.enter)="viewRequest(request.id)"
+              tabindex="0"
+              role="button"
+              [attr.data-testid]="'request-' + request.id"
+            >
+              <mat-card-content>
+                <div class="request-header">
+                  <mat-chip-set>
+                    <mat-chip [highlighted]="getStatusColor(request.status) === 'primary'"
+                              [class.status-submitted]="request.status === 'Submitted'"
+                              [class.status-in-progress]="request.status === 'InProgress'"
+                              [class.status-resolved]="request.status === 'Resolved'"
+                              [class.status-dismissed]="request.status === 'Dismissed'">
+                      {{ getStatusLabel(request.status) }}
+                    </mat-chip>
+                  </mat-chip-set>
+                  <span class="request-date">{{ request.createdAt | date: 'mediumDate' }}</span>
+                </div>
+                <p class="request-description">{{ truncateDescription(request.description) }}</p>
+                @if (request.status === 'Dismissed' && request.dismissalReason) {
+                  <p class="dismissal-reason">
+                    <mat-icon class="dismissal-icon">info</mat-icon>
+                    {{ request.dismissalReason }}
+                  </p>
+                }
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <!-- Pagination -->
+          @if (store.totalCount() > store.pageSize()) {
+            <mat-paginator
+              [length]="store.totalCount()"
+              [pageSize]="store.pageSize()"
+              [pageIndex]="store.page() - 1"
+              [pageSizeOptions]="[10, 20, 50]"
+              (page)="onPageChange($event)"
+              data-testid="request-paginator"
+            />
+          }
+        </div>
+      }
+    }
+
+    <!-- Loading requests while property is loaded -->
+    @if (store.isLoading() && store.isPropertyLoaded()) {
+      <app-loading-spinner />
+    }
+  }
+</div>

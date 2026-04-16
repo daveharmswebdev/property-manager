@@ -31,9 +31,9 @@ export class PermissionService {
     if (this.isOwner()) return true;
     if (!this.authService.currentUser()) return false;
 
-    // Tenant-accessible routes (empty for now, will be populated in Story 20.5)
+    // Tenant-accessible routes (Story 20.5)
     if (this.isTenant()) {
-      const tenantRoutes: string[] = [];
+      const tenantRoutes: string[] = ['/tenant'];
       return tenantRoutes.some((r) => route === r || route.startsWith(r + '/'));
     }
 

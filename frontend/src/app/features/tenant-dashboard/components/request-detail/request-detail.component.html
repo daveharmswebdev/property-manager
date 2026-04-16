@@ -1,0 +1,82 @@
+<div class="request-detail">
+  <!-- Back Button -->
+  <button mat-button (click)="goBack()" class="back-button" data-testid="back-to-list">
+    <mat-icon>arrow_back</mat-icon>
+    Back to Dashboard
+  </button>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <app-loading-spinner />
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <app-error-card
+      [message]="error()!"
+      [showRetry]="true"
+      (retry)="loadRequest()"
+    />
+  }
+
+  <!-- Request Detail -->
+  @if (request(); as req) {
+    <mat-card class="detail-card" data-testid="request-detail-card">
+      <mat-card-header>
+        <mat-card-title>Maintenance Request</mat-card-title>
+        <mat-card-subtitle>Submitted {{ req.createdAt | date: 'medium' }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Status Badge -->
+        <div class="status-section">
+          <mat-chip-set>
+            <mat-chip
+              [class.status-submitted]="req.status === 'Submitted'"
+              [class.status-in-progress]="req.status === 'InProgress'"
+              [class.status-resolved]="req.status === 'Resolved'"
+              [class.status-dismissed]="req.status === 'Dismissed'"
+            >
+              {{ getStatusLabel(req.status) }}
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+
+        <!-- Description -->
+        <div class="description-section" data-testid="request-description">
+          <h3>Description</h3>
+          <p>{{ req.description }}</p>
+        </div>
+
+        <!-- Dismissal Reason (AC #4) -->
+        @if (req.status === 'Dismissed' && req.dismissalReason) {
+          <div class="dismissal-section" data-testid="dismissal-reason">
+            <h3>Dismissal Reason</h3>
+            <div class="dismissal-reason">
+              <mat-icon>info</mat-icon>
+              <p>{{ req.dismissalReason }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Photos -->
+        @if (req.photos && req.photos.length > 0) {
+          <div class="photos-section" data-testid="request-photos">
+            <h3>Photos</h3>
+            <div class="photo-grid">
+              @for (photo of req.photos; track photo.id) {
+                <div class="photo-thumbnail">
+                  <img
+                    [src]="photo.thumbnailUrl || photo.viewUrl"
+                    [alt]="photo.originalFileName"
+                    loading="lazy"
+                  />
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

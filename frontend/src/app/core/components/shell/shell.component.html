@@ -80,5 +80,7 @@
   <app-bottom-nav />
 }
 
-<!-- Mobile Receipt Capture FAB (AC-5.2.1) -->
-<app-mobile-capture-fab />
+<!-- Mobile Receipt Capture FAB (AC-5.2.1) — hidden for Tenant users (Story 20.5) -->
+@if (!isTenant()) {
+  <app-mobile-capture-fab />
+}

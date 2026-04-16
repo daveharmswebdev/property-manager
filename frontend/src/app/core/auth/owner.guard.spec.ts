@@ -56,6 +56,19 @@ describe('ownerGuard', () => {
     });
   });
 
+  // Task 16.3: ownerGuard redirects Tenant to /tenant (Story 20.5, AC #6)
+  it('should redirect Tenant to /tenant', () => {
+    currentUserSignal.set(createUser('Tenant'));
+    const mockUrlTree = {} as UrlTree;
+    vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
+
+    TestBed.runInInjectionContext(() => {
+      const result = ownerGuard(null as any, { url: '/expenses' } as any);
+      expect(result).toBe(mockUrlTree);
+      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/tenant']);
+    });
+  });
+
   it('should redirect null user to /dashboard', () => {
     currentUserSignal.set(null);
     const mockUrlTree = {} as UrlTree;

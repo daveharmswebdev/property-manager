@@ -51,7 +51,10 @@ export class BottomNavComponent implements OnInit {
 
   ngOnInit(): void {
     // Load unprocessed receipts on init to populate badge count for mobile-only viewports
-    this.receiptStore.loadUnprocessedReceipts();
+    // Skip for Tenant users who don't use receipts (Story 20.5)
+    if (this.authService.currentUser()?.role !== 'Tenant') {
+      this.receiptStore.loadUnprocessedReceipts();
+    }
   }
 
   // Bottom nav items filtered by role (AC7.5, AC-19.5 #6)
@@ -66,6 +69,11 @@ export class BottomNavComponent implements OnInit {
 
     if (this.authService.currentUser()?.role === 'Owner') {
       return ownerItems;
+    }
+
+    // Tenant sees only Dashboard (Story 20.5, AC #5)
+    if (this.authService.currentUser()?.role === 'Tenant') {
+      return [{ label: 'Dashboard', route: '/tenant', icon: 'dashboard' }];
     }
 
     // Contributor sees Dashboard, Receipts, Work Orders

@@ -4,22 +4,36 @@ import { Router, UrlTree } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { authGuard, guestGuard, publicGuard } from './auth.guard';
-import { AuthService, LoginResponse } from '../services/auth.service';
+import { AuthService, LoginResponse, User } from '../services/auth.service';
 
 describe('Auth Guards', () => {
   let mockAuthService: Partial<AuthService>;
   let mockRouter: Partial<Router>;
   let isAuthenticatedSignal: ReturnType<typeof signal<boolean>>;
   let isInitializingSignal: ReturnType<typeof signal<boolean>>;
+  let currentUserSignal: ReturnType<typeof signal<User | null>>;
+
+  function createUser(role: string): User {
+    return {
+      userId: 'test-user-id',
+      accountId: 'test-account-id',
+      role,
+      email: 'test@example.com',
+      displayName: 'Test User',
+      propertyId: role === 'Tenant' ? 'prop-1' : null,
+    };
+  }
 
   beforeEach(() => {
     isAuthenticatedSignal = signal(false);
     isInitializingSignal = signal(false);
+    currentUserSignal = signal<User | null>(null);
 
     mockAuthService = {
       isAuthenticated: isAuthenticatedSignal,
       isInitializing: isInitializingSignal,
       initializeAuth: vi.fn(),
+      currentUser: currentUserSignal,
     };
     mockRouter = {
       createUrlTree: vi.fn(),
@@ -111,8 +125,9 @@ describe('Auth Guards', () => {
   });
 
   describe('guestGuard', () => {
-    it('should redirect to dashboard if user is already authenticated', () => {
+    it('should redirect to dashboard if user is already authenticated (Owner)', () => {
       isAuthenticatedSignal.set(true);
+      currentUserSignal.set(createUser('Owner'));
       const mockUrlTree = {} as UrlTree;
       vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
 
@@ -120,6 +135,20 @@ describe('Auth Guards', () => {
         const result = guestGuard(null as any, null as any);
         expect(result).toBe(mockUrlTree);
         expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
+      });
+    });
+
+    // Task 16.4: guestGuard redirects authenticated Tenant to /tenant (Story 20.5)
+    it('should redirect to /tenant if user is already authenticated Tenant', () => {
+      isAuthenticatedSignal.set(true);
+      currentUserSignal.set(createUser('Tenant'));
+      const mockUrlTree = {} as UrlTree;
+      vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
+
+      TestBed.runInInjectionContext(() => {
+        const result = guestGuard(null as any, null as any);
+        expect(result).toBe(mockUrlTree);
+        expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/tenant']);
       });
     });
 
