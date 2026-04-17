@@ -176,25 +176,35 @@ describe('SidebarNavComponent', () => {
     });
   });
 
-  // Task 16.5: SidebarNavComponent shows only Dashboard for Tenant role (Story 20.5, AC #5)
-  describe('Tenant role (Story 20.5)', () => {
+  // Task 16.5: SidebarNavComponent shows Dashboard + Submit Request for Tenant role
+  // (Story 20.5, AC #5; Story 20.6, AC #1)
+  describe('Tenant role (Story 20.5, 20.6)', () => {
     beforeEach(async () => {
       await setupWithRole('Tenant');
     });
 
-    it('should have 1 navigation item for Tenant', () => {
-      expect(component.navItems().length).toBe(1);
+    it('should have 2 navigation items for Tenant', () => {
+      expect(component.navItems().length).toBe(2);
     });
 
-    it('should show only Dashboard for Tenant with /tenant route', () => {
+    it('should show Dashboard and Submit Request for Tenant', () => {
       const labels = component.navItems().map((item) => item.label);
-      expect(labels).toEqual(['Dashboard']);
+      expect(labels).toEqual(['Dashboard', 'Submit Request']);
       expect(component.navItems()[0].route).toBe('/tenant');
+      expect(component.navItems()[1].route).toBe('/tenant/submit-request');
     });
 
-    it('should render 1 nav item in the DOM', () => {
+    // Task 10.1: SidebarNavComponent shows "Submit Request" nav item for Tenant role (AC #1)
+    it('should show Submit Request nav item with add_circle icon for Tenant', () => {
+      const submitItem = component.navItems().find((item) => item.label === 'Submit Request');
+      expect(submitItem).toBeTruthy();
+      expect(submitItem?.route).toBe('/tenant/submit-request');
+      expect(submitItem?.icon).toBe('add_circle');
+    });
+
+    it('should render 2 nav items in the DOM', () => {
       const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
-      expect(navItems.length).toBe(1);
+      expect(navItems.length).toBe(2);
     });
   });
 

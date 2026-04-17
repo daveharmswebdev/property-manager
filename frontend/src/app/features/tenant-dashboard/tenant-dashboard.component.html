@@ -26,6 +26,22 @@
       </mat-card>
     }
 
+    <!-- Submit Request Button (Story 20.6, AC #1, Task 5) -->
+    @if (store.isPropertyLoaded()) {
+      <div class="submit-request-action" data-testid="submit-request-action">
+        <button
+          mat-raised-button
+          color="primary"
+          class="submit-request-btn desktop-only"
+          (click)="submitRequest()"
+          data-testid="submit-request-btn"
+        >
+          <mat-icon>add_circle</mat-icon>
+          Submit Request
+        </button>
+      </div>
+    }
+
     <!-- Maintenance Request List (AC #3, #4) -->
     @if (!store.isLoading()) {
       @if (store.isEmpty()) {
@@ -90,5 +106,19 @@
     @if (store.isLoading() && store.isPropertyLoaded()) {
       <app-loading-spinner />
     }
+  }
+
+  <!-- Mobile FAB (Story 20.6, Task 5.2, 5.3) -->
+  @if (store.isPropertyLoaded()) {
+    <button
+      mat-fab
+      color="primary"
+      class="submit-fab mobile-only"
+      (click)="submitRequest()"
+      aria-label="Submit maintenance request"
+      data-testid="submit-fab"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
   }
 </div>

@@ -1,7 +1,8 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, firstValueFrom } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   TenantService,
   TenantPropertyDto,
@@ -19,6 +20,8 @@ interface TenantDashboardState {
   totalCount: number;
   page: number;
   pageSize: number;
+  isSubmitting: boolean;
+  submitError: string | null;
 }
 
 const initialState: TenantDashboardState = {
@@ -29,6 +32,8 @@ const initialState: TenantDashboardState = {
   totalCount: 0,
   page: 1,
   pageSize: 20,
+  isSubmitting: false,
+  submitError: null,
 };
 
 /**
@@ -56,7 +61,8 @@ export const TenantDashboardStore = signalStore(
     }),
     isPropertyLoaded: computed(() => store.property() !== null),
   })),
-  withMethods((store, tenantService = inject(TenantService)) => ({
+  withMethods(
+    (store, tenantService = inject(TenantService), snackBar = inject(MatSnackBar)) => ({
     loadProperty: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
@@ -80,8 +86,14 @@ export const TenantDashboardStore = signalStore(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
         switchMap((params) => {
-          const page = (params && typeof params === 'object' && 'page' in params) ? params.page ?? store.page() : store.page();
-          const pageSize = (params && typeof params === 'object' && 'pageSize' in params) ? params.pageSize ?? store.pageSize() : store.pageSize();
+          const page =
+            params && typeof params === 'object' && 'page' in params
+              ? (params.page ?? store.page())
+              : store.page();
+          const pageSize =
+            params && typeof params === 'object' && 'pageSize' in params
+              ? (params.pageSize ?? store.pageSize())
+              : store.pageSize();
           return tenantService.getMaintenanceRequests(page, pageSize).pipe(
             tap((response) =>
               patchState(store, {
@@ -104,5 +116,99 @@ export const TenantDashboardStore = signalStore(
         }),
       ),
     ),
-  })),
+
+    /**
+     * Submit a maintenance request (Story 20.6, Task 2.2).
+     * Returns the new request ID on success, null on error.
+     */
+    async submitRequest(description: string): Promise<string | null> {
+      patchState(store, { isSubmitting: true, submitError: null });
+
+      try {
+        const response = await firstValueFrom(
+          tenantService.createMaintenanceRequest(description),
+        );
+
+        patchState(store, { isSubmitting: false });
+
+        snackBar.open('Maintenance request submitted', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+        });
+
+        return response.id;
+      } catch (error) {
+        patchState(store, {
+          isSubmitting: false,
+          submitError: 'Failed to submit request. Please try again.',
+        });
+
+        snackBar.open('Failed to submit request. Please try again.', 'Close', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+        });
+
+        console.error('Error submitting maintenance request:', error);
+        return null;
+      }
+    },
+
+    /**
+     * Upload a photo for a maintenance request (Story 20.6, Task 2.3).
+     * 3-step presigned URL flow: generate URL -> upload to S3 -> confirm upload.
+     * Returns true on success, false on failure.
+     */
+    async uploadPhoto(requestId: string, file: File): Promise<boolean> {
+      try {
+        // Step 1: Get presigned URL
+        const uploadUrlResponse = await firstValueFrom(
+          tenantService.generatePhotoUploadUrl(
+            requestId,
+            file.type,
+            file.size,
+            file.name,
+          ),
+        );
+
+        // Step 2: Upload to S3 via fetch (not HttpClient — avoids JWT header)
+        const s3Response = await fetch(uploadUrlResponse.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+
+        if (!s3Response.ok) {
+          throw new Error(
+            `S3 upload failed: ${s3Response.status} ${s3Response.statusText}`,
+          );
+        }
+
+        // Step 3: Confirm upload
+        await firstValueFrom(
+          tenantService.confirmPhotoUpload(requestId, {
+            storageKey: uploadUrlResponse.storageKey,
+            thumbnailStorageKey: uploadUrlResponse.thumbnailStorageKey,
+            contentType: file.type,
+            fileSizeBytes: file.size,
+            originalFileName: file.name,
+          }),
+        );
+
+        return true;
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        return false;
+      }
+    },
+
+    /**
+     * Clear submit error (Story 20.6, Task 2.4).
+     */
+    clearSubmitError(): void {
+      patchState(store, { submitError: null });
+    },
+  }),
+  ),
 );

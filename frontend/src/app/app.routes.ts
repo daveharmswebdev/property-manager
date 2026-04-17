@@ -259,6 +259,15 @@ export const routes: Routes = [
           ),
         canActivate: [tenantGuard],
       },
+      // Tenant Submit Request (Story 20.6, AC #1)
+      {
+        path: 'tenant/submit-request',
+        loadComponent: () =>
+          import(
+            './features/tenant-dashboard/components/submit-request/submit-request.component'
+          ).then((m) => m.SubmitRequestComponent),
+        canActivate: [tenantGuard],
+      },
       // Tenant Request Detail (Story 20.5, AC #4)
       {
         path: 'tenant/requests/:id',
