@@ -101,8 +101,9 @@ describe('BottomNavComponent', () => {
     });
   });
 
-  // Task 16.6: BottomNavComponent shows only Dashboard for Tenant role (Story 20.5, AC #5)
-  describe('Tenant role (Story 20.5)', () => {
+  // Task 16.6: BottomNavComponent shows Dashboard + Submit for Tenant role
+  // (Story 20.5, AC #5; Story 20.6, AC #1)
+  describe('Tenant role (Story 20.5, 20.6)', () => {
     let component: BottomNavComponent;
     let fixture: ComponentFixture<BottomNavComponent>;
 
@@ -110,19 +111,28 @@ describe('BottomNavComponent', () => {
       ({ fixture, component } = await setupWithRole('Tenant'));
     });
 
-    it('should have 1 navigation item for Tenant', () => {
-      expect(component.navItems().length).toBe(1);
+    it('should have 2 navigation items for Tenant', () => {
+      expect(component.navItems().length).toBe(2);
     });
 
-    it('should show only Dashboard for Tenant with /tenant route', () => {
+    it('should show Dashboard and Submit for Tenant', () => {
       const labels = component.navItems().map((item) => item.label);
-      expect(labels).toEqual(['Dashboard']);
+      expect(labels).toEqual(['Dashboard', 'Submit']);
       expect(component.navItems()[0].route).toBe('/tenant');
+      expect(component.navItems()[1].route).toBe('/tenant/submit-request');
     });
 
-    it('should render 1 nav tab in the DOM for Tenant', () => {
+    // Task 10.2: BottomNavComponent shows "Submit" nav item for Tenant role (AC #1)
+    it('should show Submit nav item with add_circle icon for Tenant', () => {
+      const submitItem = component.navItems().find((item) => item.label === 'Submit');
+      expect(submitItem).toBeTruthy();
+      expect(submitItem?.route).toBe('/tenant/submit-request');
+      expect(submitItem?.icon).toBe('add_circle');
+    });
+
+    it('should render 2 nav tabs in the DOM for Tenant', () => {
       const navTabs = fixture.debugElement.queryAll(By.css('.nav-tab'));
-      expect(navTabs.length).toBe(1);
+      expect(navTabs.length).toBe(2);
     });
   });
 

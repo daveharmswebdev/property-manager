@@ -135,6 +135,47 @@
   }
 }
 
+// Submit Request Action (Story 20.6, Task 5)
+.submit-request-action {
+  margin-bottom: 16px;
+}
+
+.submit-request-btn {
+  min-height: 48px;
+  font-size: 16px;
+
+  mat-icon {
+    margin-right: 8px;
+  }
+}
+
+// Mobile FAB (Task 5.2, 5.3)
+.submit-fab {
+  position: fixed;
+  bottom: 80px; // Above bottom nav
+  right: 16px;
+  z-index: 100;
+}
+
+// Responsive visibility
+.desktop-only {
+  display: inline-flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: inline-flex;
+  }
+}
+
 // Paginator
 mat-paginator {
   margin-top: 8px;

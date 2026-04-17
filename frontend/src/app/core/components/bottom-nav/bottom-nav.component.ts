@@ -71,9 +71,12 @@ export class BottomNavComponent implements OnInit {
       return ownerItems;
     }
 
-    // Tenant sees only Dashboard (Story 20.5, AC #5)
+    // Tenant sees Dashboard + Submit (Story 20.5, AC #5; Story 20.6, AC #1)
     if (this.authService.currentUser()?.role === 'Tenant') {
-      return [{ label: 'Dashboard', route: '/tenant', icon: 'dashboard' }];
+      return [
+        { label: 'Dashboard', route: '/tenant', icon: 'dashboard' },
+        { label: 'Submit', route: '/tenant/submit-request', icon: 'add_circle' },
+      ];
     }
 
     // Contributor sees Dashboard, Receipts, Work Orders

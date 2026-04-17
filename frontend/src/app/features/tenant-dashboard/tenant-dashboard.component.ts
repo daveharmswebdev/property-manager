@@ -54,6 +54,10 @@ export class TenantDashboardComponent implements OnInit {
     this.router.navigate(['/tenant/requests', id]);
   }
 
+  submitRequest(): void {
+    this.router.navigate(['/tenant/submit-request']);
+  }
+
   retry(): void {
     this.store.loadProperty();
     this.store.loadRequests();

@@ -328,3 +328,4 @@ development_status:
   20-3-maintenance-request-entity-api: done    # FR-TP18, FR-TP19, FR-TP20, NFR-TP6 - Size 5
   20-4-maintenance-request-photos: done    # FR-TP21 - Size 5
   20-5-tenant-dashboard-role-routing: done    # FR-TP6, FR-TP8, FR-TP9, FR-TP11, NFR-TP5, NFR-TP7 - Size 5
+  20-6-submit-maintenance-request-tenant-ui: done    # FR-TP7, NFR-TP7, NFR-TP8 - Size 5

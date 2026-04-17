@@ -59,7 +59,37 @@ export interface PaginatedMaintenanceRequests {
 }
 
 /**
- * Tenant Service (Story 20.5, AC #2, #3, #4)
+ * Photo upload URL response from presigned URL endpoint (Story 20.6, Task 1.4).
+ */
+export interface PhotoUploadUrlResponse {
+  uploadUrl: string;
+  storageKey: string;
+  thumbnailStorageKey: string;
+  expiresAt: string;
+}
+
+/**
+ * Photo confirm request body (Story 20.6, Task 1.4).
+ */
+export interface PhotoConfirmRequest {
+  storageKey: string;
+  thumbnailStorageKey: string;
+  contentType: string;
+  fileSizeBytes: number;
+  originalFileName: string;
+}
+
+/**
+ * Photo confirm response (Story 20.6, Task 1.4).
+ */
+export interface PhotoConfirmResponse {
+  id: string;
+  thumbnailUrl: string | null;
+  viewUrl: string | null;
+}
+
+/**
+ * Tenant Service (Story 20.5, AC #2, #3, #4; Story 20.6, AC #2, #3)
  *
  * HTTP service for tenant-specific API calls.
  * Uses manual HttpClient calls (no NSwag generation).
@@ -80,7 +110,9 @@ export class TenantService {
    * Get maintenance requests with pagination.
    */
   getMaintenanceRequests(page = 1, pageSize = 20): Observable<PaginatedMaintenanceRequests> {
-    const params = new HttpParams().set('page', page.toString()).set('pageSize', pageSize.toString());
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
     return this.http.get<PaginatedMaintenanceRequests>(this.baseUrl, { params });
   }
 
@@ -89,5 +121,40 @@ export class TenantService {
    */
   getMaintenanceRequestById(id: string): Observable<MaintenanceRequestDto> {
     return this.http.get<MaintenanceRequestDto>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Create a maintenance request (Story 20.6, Task 1.1).
+   */
+  createMaintenanceRequest(description: string): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(this.baseUrl, { description });
+  }
+
+  /**
+   * Generate a presigned URL for photo upload (Story 20.6, Task 1.2).
+   */
+  generatePhotoUploadUrl(
+    requestId: string,
+    contentType: string,
+    fileSizeBytes: number,
+    originalFileName: string,
+  ): Observable<PhotoUploadUrlResponse> {
+    return this.http.post<PhotoUploadUrlResponse>(
+      `${this.baseUrl}/${requestId}/photos/upload-url`,
+      { contentType, fileSizeBytes, originalFileName },
+    );
+  }
+
+  /**
+   * Confirm a photo upload (Story 20.6, Task 1.3).
+   */
+  confirmPhotoUpload(
+    requestId: string,
+    body: PhotoConfirmRequest,
+  ): Observable<PhotoConfirmResponse> {
+    return this.http.post<PhotoConfirmResponse>(
+      `${this.baseUrl}/${requestId}/photos`,
+      body,
+    );
   }
 }
