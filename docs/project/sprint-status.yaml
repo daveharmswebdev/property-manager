@@ -344,7 +344,7 @@ development_status:
   # User Outcome: "The test pyramid matches the feature surface — newer features have the same depth as older ones"
   epic-21: in-progress
   21-1-maintenance-requests-controller-integration-tests: done    # P1 - M - Issue #371
-  21-2-maintenance-request-photos-controller-integration-tests: backlog    # P1 - M - Issue #371
+  21-2-maintenance-request-photos-controller-integration-tests: done    # P1 - M - Issue #371
   21-3-expenses-controller-integration-consolidation: backlog    # P1 - L - Issue #371
   21-4-tenant-dashboard-e2e: backlog    # P1 - M - Issue #371
   21-5-work-order-photos-controller-integration-tests: backlog    # P2 - M - Issue #371
