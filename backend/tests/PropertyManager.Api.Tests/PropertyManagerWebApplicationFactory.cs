@@ -211,6 +211,74 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
         return user.Id;
     }
+
+    /// <summary>
+    /// Creates a Tenant user within an existing account, linked to an existing property.
+    /// Sets the Tenant role and the PropertyId — required for tenant-scoped endpoints
+    /// (maintenance requests, tenant dashboard) because JWT issuance reads user.PropertyId.
+    /// </summary>
+    public async Task<Guid> CreateTenantUserInAccountAsync(
+        Guid accountId,
+        Guid propertyId,
+        string email,
+        string password = "Test@123456")
+    {
+        using var scope = Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var user = new ApplicationUser
+        {
+            Email = email,
+            UserName = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            AccountId = accountId,
+            Role = "Tenant",
+            PropertyId = propertyId
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create tenant user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+        }
+
+        return user.Id;
+    }
+
+    /// <summary>
+    /// Creates a Property row directly in the database for the given account.
+    /// Bypasses the API so tests don't need an Owner token just to seed data.
+    /// </summary>
+    public async Task<Guid> CreatePropertyInAccountAsync(
+        Guid accountId,
+        string name = "Test Property",
+        string street = "123 Test St",
+        string city = "Austin",
+        string state = "TX",
+        string zipCode = "78701")
+    {
+        using var scope = Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var property = new Property
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            Name = name,
+            Street = street,
+            City = city,
+            State = state,
+            ZipCode = zipCode
+        };
+
+        dbContext.Properties.Add(property);
+        await dbContext.SaveChangesAsync();
+
+        return property.Id;
+    }
 }
 
 public class FakeEmailService : IEmailService

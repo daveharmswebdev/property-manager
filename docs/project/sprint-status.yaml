@@ -322,10 +322,37 @@ development_status:
 
   # Epic 20: Tenant Portal
   # User Outcome: "Tenants can submit maintenance requests and I can triage them into work orders"
-  epic-20: in-progress
+  # PAUSED 2026-04-17 — interrupted by Epic 21 (test coverage backfill, issue #371). Resume after 21 is done.
+  epic-20: paused
   20-1-tenant-role-property-association: done    # FR-TP2, FR-TP3, FR-TP10, NFR-TP3 - Size 5
   20-2-tenant-invitation-flow: done    # FR-TP1, FR-TP4, FR-TP5, NFR-TP4 - Size 5
   20-3-maintenance-request-entity-api: done    # FR-TP18, FR-TP19, FR-TP20, NFR-TP6 - Size 5
   20-4-maintenance-request-photos: done    # FR-TP21 - Size 5
   20-5-tenant-dashboard-role-routing: done    # FR-TP6, FR-TP8, FR-TP9, FR-TP11, NFR-TP5, NFR-TP7 - Size 5
   20-6-submit-maintenance-request-tenant-ui: done    # FR-TP7, NFR-TP7, NFR-TP8 - Size 5
+
+  # ============================================================
+  # INTERJECTION: TEST COVERAGE BACKFILL
+  # Source: epics-test-coverage.md
+  # GitHub Issue: #371
+  # Added: 2026-04-17
+  # Interrupts Epic 20 — full testing pyramid audit backfill before resuming tenant portal
+  # Stories are independent; execute in priority order (P1 → P2 → P3)
+  # ============================================================
+
+  # Epic 21: Test Coverage Backfill
+  # User Outcome: "The test pyramid matches the feature surface — newer features have the same depth as older ones"
+  epic-21: in-progress
+  21-1-maintenance-requests-controller-integration-tests: done    # P1 - M - Issue #371
+  21-2-maintenance-request-photos-controller-integration-tests: backlog    # P1 - M - Issue #371
+  21-3-expenses-controller-integration-consolidation: backlog    # P1 - L - Issue #371
+  21-4-tenant-dashboard-e2e: backlog    # P1 - M - Issue #371
+  21-5-work-order-photos-controller-integration-tests: backlog    # P2 - M - Issue #371
+  21-6-vendors-controller-integration-tests: backlog    # P2 - S - Issue #371
+  21-7-core-frontend-service-unit-tests: backlog    # P2 - M - Issue #371
+  21-8-work-orders-e2e: backlog    # P2 - L - Issue #371
+  21-9-auth-handler-unit-tests: backlog    # P3 - M - Issue #371
+  21-10-dashboard-unit-and-e2e-tests: backlog    # P3 - M - Issue #371
+  21-11-validation-message-assertion-improvements: backlog    # P3 - S - Issue #371
+  21-12-pagination-edge-case-tests: backlog    # P3 - S - Issue #371
+  epic-21-retrospective: optional
