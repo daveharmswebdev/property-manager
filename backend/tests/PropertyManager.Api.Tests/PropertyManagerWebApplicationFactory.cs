@@ -13,6 +13,7 @@ using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
+using PropertyManager.Infrastructure.Storage;
 using Testcontainers.PostgreSql;
 
 // UploadUrlResult is in Application.Common.Interfaces
@@ -111,22 +112,27 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<FakeReportStorageService>();
             services.AddSingleton<IReportStorageService>(sp => sp.GetRequiredService<FakeReportStorageService>());
+
+            // Force the real PhotoService so URL generation routes through IStorageService
+            // (replaced with FakeStorageService above). Program.cs registers NoOpPhotoService
+            // when AWS credentials aren't configured (the CI case) — that bypasses
+            // IStorageService and hardcodes a different URL format, which makes controller
+            // tests environment-dependent.
+            var photoServiceDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IPhotoService));
+            if (photoServiceDescriptor != null)
+            {
+                services.Remove(photoServiceDescriptor);
+            }
+            services.AddHttpClient<IPhotoService, PhotoService>();
         });
 
         // Provide explicit CORS origins so tests don't depend on appsettings.Development.json.
-        // Set dummy S3 credentials so Program.cs registers the real PhotoService (which routes
-        // URL generation through IStorageService — replaced with FakeStorageService above).
-        // Without this, CI (no user-secrets) falls back to NoOpPhotoService and produces
-        // different URL formats than local runs.
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Cors:AllowedOrigins:0"] = "http://localhost:4200",
-                ["AWS:AccessKeyId"] = "test-access-key",
-                ["AWS:SecretAccessKey"] = "test-secret-key",
-                ["AWS:BucketName"] = "test-bucket",
-                ["AWS:Region"] = "us-east-1"
+                ["Cors:AllowedOrigins:0"] = "http://localhost:4200"
             });
         });
 
