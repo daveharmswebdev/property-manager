@@ -13,6 +13,7 @@ using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
+using PropertyManager.Infrastructure.Storage;
 using Testcontainers.PostgreSql;
 
 // UploadUrlResult is in Application.Common.Interfaces
@@ -111,9 +112,22 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<FakeReportStorageService>();
             services.AddSingleton<IReportStorageService>(sp => sp.GetRequiredService<FakeReportStorageService>());
+
+            // Force the real PhotoService so URL generation routes through IStorageService
+            // (replaced with FakeStorageService above). Program.cs registers NoOpPhotoService
+            // when AWS credentials aren't configured (the CI case) — that bypasses
+            // IStorageService and hardcodes a different URL format, which makes controller
+            // tests environment-dependent.
+            var photoServiceDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IPhotoService));
+            if (photoServiceDescriptor != null)
+            {
+                services.Remove(photoServiceDescriptor);
+            }
+            services.AddHttpClient<IPhotoService, PhotoService>();
         });
 
-        // Provide explicit CORS origins so tests don't depend on appsettings.Development.json
+        // Provide explicit CORS origins so tests don't depend on appsettings.Development.json.
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
