@@ -113,12 +113,20 @@ public class PropertyManagerWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<IReportStorageService>(sp => sp.GetRequiredService<FakeReportStorageService>());
         });
 
-        // Provide explicit CORS origins so tests don't depend on appsettings.Development.json
+        // Provide explicit CORS origins so tests don't depend on appsettings.Development.json.
+        // Set dummy S3 credentials so Program.cs registers the real PhotoService (which routes
+        // URL generation through IStorageService — replaced with FakeStorageService above).
+        // Without this, CI (no user-secrets) falls back to NoOpPhotoService and produces
+        // different URL formats than local runs.
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Cors:AllowedOrigins:0"] = "http://localhost:4200"
+                ["Cors:AllowedOrigins:0"] = "http://localhost:4200",
+                ["AWS:AccessKeyId"] = "test-access-key",
+                ["AWS:SecretAccessKey"] = "test-secret-key",
+                ["AWS:BucketName"] = "test-bucket",
+                ["AWS:Region"] = "us-east-1"
             });
         });
 
