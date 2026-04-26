@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.21.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.6" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
     <PackageReference Include="QuestPDF" Version="2026.2.4" />
