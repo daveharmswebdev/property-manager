@@ -31,6 +31,8 @@ import { VendorPage } from '../pages/vendor.page';
 import { ExpenseDetailPage } from '../pages/expense-detail.page';
 import { IncomeDetailPage } from '../pages/income-detail.page';
 import { WorkOrderListPage } from '../pages/work-order-list.page';
+import { TenantDashboardPage } from '../pages/tenant-dashboard.page';
+import { SubmitRequestPage } from '../pages/submit-request.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 
@@ -66,6 +68,10 @@ type Fixtures = {
   incomeDetailPage: IncomeDetailPage;
   /** Work order list page object */
   workOrderListPage: WorkOrderListPage;
+  /** Tenant dashboard page object (Story 21.4) */
+  tenantDashboardPage: TenantDashboardPage;
+  /** Submit maintenance request page object (Story 21.4) */
+  submitRequestPage: SubmitRequestPage;
   /** Authentication helper for login flows */
   authHelper: AuthHelper;
   /** MailHog helper for email verification (invitation flow) */
@@ -123,6 +129,14 @@ export const test = base.extend<Fixtures>({
 
   workOrderListPage: async ({ page }, use) => {
     await use(new WorkOrderListPage(page));
+  },
+
+  tenantDashboardPage: async ({ page }, use) => {
+    await use(new TenantDashboardPage(page));
+  },
+
+  submitRequestPage: async ({ page }, use) => {
+    await use(new SubmitRequestPage(page));
   },
 
   authHelper: async ({ page }, use) => {
