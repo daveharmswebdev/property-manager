@@ -349,7 +349,7 @@ development_status:
   21-4-tenant-dashboard-e2e: done    # P1 - M - Issue #371
   21-5-work-order-photos-controller-integration-tests: done    # P2 - M - Issue #371
   21-6-vendors-controller-integration-tests: done    # P2 - S - Issue #371
-  21-7-core-frontend-service-unit-tests: backlog    # P2 - M - Issue #371
+  21-7-core-frontend-service-unit-tests: done    # P2 - M - Issue #371
   21-8-work-orders-e2e: backlog    # P2 - L - Issue #371
   21-9-auth-handler-unit-tests: backlog    # P3 - M - Issue #371
   21-10-dashboard-unit-and-e2e-tests: backlog    # P3 - M - Issue #371
