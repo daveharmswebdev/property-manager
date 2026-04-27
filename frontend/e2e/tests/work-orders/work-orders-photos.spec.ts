@@ -55,7 +55,7 @@ test.describe('Work Orders Photos E2E (Story 21.8)', () => {
     // NoOp hosts so the test works whether or not S3 creds are configured.
     await page.route(
       (url) =>
-        url.hostname.endsWith('amazonaws.com') ||
+        url.hostname.endsWith('.amazonaws.com') ||
         url.hostname === 'noop-storage.local',
       (route) => route.fulfill({ status: 200 }),
     );
