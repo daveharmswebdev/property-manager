@@ -158,11 +158,11 @@ This is the critical step that distinguishes Evaluate from a static code review.
 4. Architecture — clean architecture violations, wrong layer dependencies
 5. Naming/Style — violations of project-context.md conventions
 
-**Testing Pyramid Audit**: For full-stack stories, verify all three levels:
-- Unit tests in `PropertyManager.Application.Tests/` and frontend `.spec.ts` files
-- Integration tests in `PropertyManager.Api.Tests/` (WebApplicationFactory-based)
-- E2E tests in `frontend/e2e/tests/` (Playwright)
-- Missing a level → HIGH finding
+**Testing Pyramid Audit**: Determine which levels are required, then verify each exists:
+- **Unit tests** (always required): Check `PropertyManager.Application.Tests/` and frontend `.spec.ts` files for new test coverage matching the story's changes
+- **Integration tests** (required if backend endpoints were added/changed): Check `PropertyManager.Api.Tests/` for WebApplicationFactory-based tests covering the story's endpoints. If the story is frontend-only with no backend changes, note this and skip.
+- **E2E tests** (required if new user-facing pages/flows were added): Check `frontend/e2e/tests/` for Playwright tests covering the story's user flows. If the story adds a new route, form, or interactive UI, E2E tests ARE required.
+- **Missing a required level → automatic FAIL on Test Quality dimension.** This is not negotiable. "All unit tests pass" does not compensate for missing E2E tests when the story adds a new page.
 - Tests that only assert `true == true` or never fail → HIGH finding (fake tests)
 
 **If fewer than 3 issues found**: Look harder — edge cases, null handling, architecture violations, documentation gaps, integration issues, dependency problems.
@@ -183,8 +183,8 @@ Score each dimension. Each has specific pass/fail criteria.
 
 #### Dimension 3: Test Quality (weight: HIGH)
 - **PASS**: Testing pyramid is complete for the story scope. Tests assert meaningful behavior (not just "it doesn't throw"). New code has corresponding new tests.
-- **FAIL**: Missing pyramid level. Placeholder assertions. Significant untested code paths.
-- Evidence: test file review, assertion analysis.
+- **FAIL**: A required pyramid level is missing (e.g., story adds a new page but has no E2E tests; story adds endpoints but has no integration tests). Placeholder assertions. Significant untested code paths. A missing required level is an **automatic FAIL** — do not rationalize it away.
+- Evidence: test file review, assertion analysis, pyramid level justification.
 
 #### Dimension 4: Code Quality (weight: MEDIUM)
 - **PASS**: No security issues. No architecture violations. Follows project-context.md conventions. Error handling is appropriate.

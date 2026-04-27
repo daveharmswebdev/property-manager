@@ -110,6 +110,26 @@ so that {benefit}.
 ### File List
 ```
 
+### Step 4.5: Test scope assessment
+
+Before finalizing the story, explicitly evaluate which levels of the testing pyramid apply and create corresponding tasks:
+
+**Unit tests** (always required): Identify what new handlers, validators, stores, components, or services need unit tests. Add a dedicated task for each group of unit tests.
+
+**Integration tests** (required when backend endpoints are new or changed): Check if this story adds or modifies any API endpoints. If yes, add a task for WebApplicationFactory-based integration tests in `PropertyManager.Api.Tests/`. If the story is frontend-only and all backend endpoints already have integration test coverage, note this explicitly and skip.
+
+**E2E tests** (required when UI features are new or changed): Check if this story adds new user-facing flows, pages, or significant UI changes. If yes, add a task for Playwright E2E tests in `frontend/e2e/tests/`. The E2E test should cover the critical happy-path user flow introduced by this story.
+
+Include the test scope decision in the Dev Notes section with explicit justification:
+```
+### Test Scope
+- Unit tests: Required — [list what needs unit tests]
+- Integration tests: Required/Not required — [justification]
+- E2E tests: Required/Not required — [justification]
+```
+
+**If a level is marked "Not required", state why.** "Frontend-only story, no new endpoints" is valid for skipping integration tests. "No new user-facing flows" is valid for skipping E2E. "It's hard" or "time constraints" are NOT valid reasons to skip any level.
+
 ### Step 5: Update sprint status
 
 - Update `docs/project/sprint-status.yaml`: set story status to "ready-for-dev"
@@ -125,5 +145,7 @@ Report the story file path and suggest running `/dev-story` next.
 - [ ] Technology research completed — no hallucinated APIs
 - [ ] Previous story intelligence extracted (if applicable)
 - [ ] Tasks/subtasks map to acceptance criteria
+- [ ] Test scope assessed — each pyramid level explicitly required or justified as not needed
+- [ ] Story includes dedicated test tasks for every required pyramid level
 - [ ] Sprint status updated
 - [ ] Story status set to "ready-for-dev"

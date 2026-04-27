@@ -64,6 +64,16 @@ docker ps --format '{{.Names}}' 2>&1
 - Research key technologies, APIs, and patterns involved in the current task using documentation lookup or web search
 - Record key findings in Dev Agent Record
 
+### Step 2.5: Test scope assessment
+
+Before writing any code, read the story's Test Scope section (in Dev Notes) and verify which testing pyramid levels are required. If the story lacks a Test Scope section, determine it yourself:
+
+- **Unit tests**: Always required. Identify what needs unit tests (handlers, validators, stores, components, services).
+- **Integration tests**: Required if the story adds or modifies backend API endpoints. Check the story tasks — if any task touches a controller, command, or query, integration tests are needed in `PropertyManager.Api.Tests/`.
+- **E2E tests**: Required if the story adds new user-facing pages, flows, or significant UI changes. Check the story tasks — if any task creates new routes, forms, or interactive UI, E2E tests are needed in `frontend/e2e/tests/`.
+
+**Write down your test plan now** — which test files you will create, at which pyramid levels. Add this to the Dev Agent Record. Do NOT defer test creation to "later" — each task's TDD cycle must include tests at the appropriate level. E2E tests should be written as a dedicated task, not skipped because "all unit tests pass."
+
 ### Step 3: Update sprint status
 
 Read `docs/project/sprint-status.yaml`. Update the story status to "in-progress" if currently "ready-for-dev". Save the file preserving all comments and structure.
