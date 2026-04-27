@@ -3,15 +3,14 @@
  *
  * Real-backend coverage for the photo upload flow. The API calls
  * (`generate-upload-url` and `confirm-upload`) hit the real backend, but the
- * S3 PUT itself is mocked because the dev environment uses real AWS S3
- * (verified `S3StorageService.cs`) and Playwright cannot reach it.
+ * upload PUT itself is mocked because the presigned URL points to an
+ * external host that Playwright cannot reach.
  *
- * Network strategy:
- * 1. Register `page.route('**\/*.amazonaws.com/**')` BEFORE the upload click
- *    so the S3 PUT is stubbed regardless of the dynamic presigned URL.
- * 2. Let `/upload-url`, `/confirm`, and `/photos` (GET) hit the real backend.
- * 3. The `ConfirmUpload` endpoint doesn't verify object existence in S3, so
- *    the mocked S3 PUT is sufficient to drive the chain to completion.
+ * Two presigned-URL hosts must be intercepted:
+ *  - `*.amazonaws.com` — when real S3 is configured (local dev with creds)
+ *  - `noop-storage.local` — when `NoOpStorageService` is used (CI, no creds)
+ *
+ * Verified in `Program.cs:79-98` and `NoOpStorageService.cs:34`.
  *
  * @see docs/project/stories/epic-21/21-8-work-orders-e2e.md
  */
@@ -52,11 +51,13 @@ test.describe('Work Orders Photos E2E (Story 21.8)', () => {
   }) => {
     expect(authenticatedUser.email).toBe('claude@claude.com');
 
-    // Register S3 PUT mock BEFORE the upload click. The presigned URL points
-    // at a real *.amazonaws.com host; we intercept and return 200 so the
-    // chain progresses to the confirm step.
-    await page.route('**/*.amazonaws.com/**', (route) =>
-      route.fulfill({ status: 200 }),
+    // Register upload PUT mock BEFORE the click. Match both real-S3 and
+    // NoOp hosts so the test works whether or not S3 creds are configured.
+    await page.route(
+      (url) =>
+        url.hostname.endsWith('amazonaws.com') ||
+        url.hostname === 'noop-storage.local',
+      (route) => route.fulfill({ status: 200 }),
     );
 
     await workOrderDetailPage.gotoWorkOrder(seedWO.id);
