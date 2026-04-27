@@ -210,4 +210,25 @@ export class WorkOrderListPage extends BasePage {
   async expectFilteredEmptyState(): Promise<void> {
     await expect(this.page.locator('.filtered-empty')).toBeVisible();
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Story 21.8 Additions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assert no row matching this description is visible in the list (Story 21.8).
+   */
+  async expectRowNotInList(description: string): Promise<void> {
+    await expect(this.getRowByDescription(description)).toHaveCount(0);
+  }
+
+  /**
+   * Assert a row's `.wo-vendor` text matches the given vendor name (Story 21.8).
+   * The `.wo-vendor` element is rendered on line-2 only when the work order
+   * has a vendor assigned (not DIY).
+   */
+  async expectRowVendor(description: string, vendorName: string): Promise<void> {
+    const row = this.getRowByDescription(description);
+    await expect(row.locator('.wo-vendor')).toContainText(vendorName);
+  }
 }

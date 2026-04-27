@@ -31,6 +31,8 @@ import { VendorPage } from '../pages/vendor.page';
 import { ExpenseDetailPage } from '../pages/expense-detail.page';
 import { IncomeDetailPage } from '../pages/income-detail.page';
 import { WorkOrderListPage } from '../pages/work-order-list.page';
+import { WorkOrderFormPage } from '../pages/work-order-form.page';
+import { WorkOrderDetailPage } from '../pages/work-order-detail.page';
 import { TenantDashboardPage } from '../pages/tenant-dashboard.page';
 import { SubmitRequestPage } from '../pages/submit-request.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
@@ -68,6 +70,10 @@ type Fixtures = {
   incomeDetailPage: IncomeDetailPage;
   /** Work order list page object */
   workOrderListPage: WorkOrderListPage;
+  /** Work order create/edit form page object (Story 21.8) */
+  workOrderFormPage: WorkOrderFormPage;
+  /** Work order detail page object (Story 21.8) */
+  workOrderDetailPage: WorkOrderDetailPage;
   /** Tenant dashboard page object (Story 21.4) */
   tenantDashboardPage: TenantDashboardPage;
   /** Submit maintenance request page object (Story 21.4) */
@@ -129,6 +135,14 @@ export const test = base.extend<Fixtures>({
 
   workOrderListPage: async ({ page }, use) => {
     await use(new WorkOrderListPage(page));
+  },
+
+  workOrderFormPage: async ({ page }, use) => {
+    await use(new WorkOrderFormPage(page));
+  },
+
+  workOrderDetailPage: async ({ page }, use) => {
+    await use(new WorkOrderDetailPage(page));
   },
 
   tenantDashboardPage: async ({ page }, use) => {
