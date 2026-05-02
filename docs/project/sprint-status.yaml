@@ -352,7 +352,7 @@ development_status:
   21-7-core-frontend-service-unit-tests: done    # P2 - M - Issue #371
   21-8-work-orders-e2e: done    # P2 - L - Issue #371
   21-9-auth-handler-unit-tests: done    # P3 - M - Issue #371
-  21-10-dashboard-unit-and-e2e-tests: backlog    # P3 - M - Issue #371
+  21-10-dashboard-unit-and-e2e-tests: done    # P3 - M - Issue #371
   21-11-validation-message-assertion-improvements: backlog    # P3 - S - Issue #371
   21-12-pagination-edge-case-tests: backlog    # P3 - S - Issue #371
   epic-21-retrospective: optional
