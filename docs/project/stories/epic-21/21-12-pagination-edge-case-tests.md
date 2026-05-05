@@ -1,6 +1,6 @@
 # Story 21.12: Pagination Edge Case Tests
 
-Status: review
+Status: done
 
 ## Story
 
@@ -453,7 +453,7 @@ This is a real bug surfaced by the probe — captured exactly per the story's "I
 
 **Process docs:**
 - `docs/project/sprint-status.yaml` — `21-12-pagination-edge-case-tests: review`.
-- `docs/project/stories/epic-21/21-12-pagination-edge-case-tests.md` — `Status: review`; Dev Agent Record completed.
+- `docs/project/stories/epic-21/21-12-pagination-edge-case-tests.md` — `Status: done`; Dev Agent Record completed.
 
 **GitHub artifacts:**
 - Follow-up issue: **#402** — https://github.com/daveharmswebdev/property-manager/issues/402 ("Pagination handler inconsistencies across paginated list endpoints"). Labeled `bug`. Includes captured probe values (`totalPages == int.MaxValue`, `OFFSET must not be negative` 500), divergence table, three source-file paths, references to Story 21.12 and epic #371, proposed unified contract.

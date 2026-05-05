@@ -354,5 +354,5 @@ development_status:
   21-9-auth-handler-unit-tests: done    # P3 - M - Issue #371
   21-10-dashboard-unit-and-e2e-tests: done    # P3 - M - Issue #371
   21-11-validation-message-assertion-improvements: done    # P3 - S - Issue #371
-  21-12-pagination-edge-case-tests: review    # P3 - S - Issue #371
+  21-12-pagination-edge-case-tests: done    # P3 - S - Issue #371
   epic-21-retrospective: optional
