@@ -430,6 +430,156 @@ public class MaintenanceRequestsControllerTests : IClassFixture<PropertyManagerW
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content!.TotalCount.Should().Be(0);
         content.Items.Should().BeEmpty();
+        // AC-3.7 (Story 21.12): empty account → TotalPages == 0 (Math.Ceiling(0/20.0)==0).
+        // Pins the divergence vs. GetExpensesByProperty (which returns 1 for empty).
+        content.TotalPages.Should().Be(0);
+    }
+
+    // =====================================================
+    // Story 21.12 — Pagination edge cases (AC-3.*)
+    // The MaintenanceRequests handler does NOT clamp Page or PageSize. These tests
+    // assert the SHIPPED (un-clamped, partly broken) behavior. A follow-up issue
+    // is filed per AC-4 to track unification with the Expenses handlers.
+    // =====================================================
+
+    [Fact]
+    public async Task GetMaintenanceRequests_Page1WithFewerResultsThanPageSize_ReturnsAllAndTotalPages1()
+    {
+        // AC-3.1 (Story 21.12): page=1 with results < pageSize returns all, TotalPages=1, Page=1.
+        var ownerEmail = $"owner-mr-page1-fewer-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        for (var i = 0; i < 3; i++)
+        {
+            await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await GetWithAuthAsync(
+            "/api/v1/maintenance-requests?page=1&pageSize=20", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetMaintenanceRequestsResponseDto>();
+        content!.Items.Should().HaveCount(3);
+        content.TotalCount.Should().Be(3);
+        content.Page.Should().Be(1);
+        content.PageSize.Should().Be(20);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetMaintenanceRequests_PageBeyondLast_ReturnsEmptyItems()
+    {
+        // AC-3.2 (Story 21.12): page beyond last returns empty items but echoes Page/TotalCount/TotalPages.
+        var ownerEmail = $"owner-mr-beyond-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        for (var i = 0; i < 5; i++)
+        {
+            await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await GetWithAuthAsync(
+            "/api/v1/maintenance-requests?page=10&pageSize=20", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetMaintenanceRequestsResponseDto>();
+        content!.Items.Should().BeEmpty();
+        content.Page.Should().Be(10); // echoed verbatim
+        content.TotalCount.Should().Be(5);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetMaintenanceRequests_PageSizeZero_ReturnsEmptyAndUnclampedTotalPages()
+    {
+        // AC-3.3 (Story 21.12): pageSize=0 — handler does NOT clamp.
+        // Math.Ceiling(N/0.0) → +Infinity → cast to int via .NET overflow semantics.
+        // Take(0) returns empty list. AC-FOLLOWUP-1 file-issue trigger.
+        // Captured behavior (probe): see Dev Agent Record. PageSize is echoed verbatim as 0.
+        var ownerEmail = $"owner-mr-pszero-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        for (var i = 0; i < 5; i++)
+        {
+            await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await GetWithAuthAsync(
+            "/api/v1/maintenance-requests?pageSize=0", accessToken);
+
+        // PROBE ASSERTIONS — tightened after Task 1 capture run (see Dev Agent Record).
+        // Captured: TotalPages == int.MaxValue (2147483647). The story's Anti-pitfall #4
+        // predicted int.MinValue per `Convert.ToInt32(double)` semantics, but `(int)+Infinity`
+        // — the operation actually used by `(int)Math.Ceiling((double)totalCount / 0)` — yields
+        // int.MaxValue in .NET (saturating cast, not the overflow-throwing Convert.ToInt32 path).
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetMaintenanceRequestsResponseDto>();
+        content.Should().NotBeNull();
+        content!.Items.Should().BeEmpty(); // Take(0) returns empty
+        content.PageSize.Should().Be(0); // echoed verbatim (no clamp)
+        content.TotalCount.Should().Be(5);
+        content.TotalPages.Should().Be(int.MaxValue); // (int)Math.Ceiling(5/0.0) == (int)+Infinity == int.MaxValue
+    }
+
+    [Fact]
+    public async Task GetMaintenanceRequests_PageSize500_ReturnsAllUnclamped()
+    {
+        // AC-3.4 (Story 21.12): pageSize=500 is NOT clamped — divergent from Expenses (clamped to 100).
+        // AC-FOLLOWUP-1 file-issue trigger.
+        var ownerEmail = $"owner-mr-ps500-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        for (var i = 0; i < 30; i++)
+        {
+            await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await GetWithAuthAsync(
+            "/api/v1/maintenance-requests?pageSize=500", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<GetMaintenanceRequestsResponseDto>();
+        content!.Items.Should().HaveCount(30); // all of them — no clamping
+        content.PageSize.Should().Be(500); // echoed verbatim
+        content.TotalCount.Should().Be(30);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public async Task GetMaintenanceRequests_PageZeroOrNegative_Returns500(int requestedPage)
+    {
+        // AC-3.5/AC-3.6 (Story 21.12): page=0 / negative — handler does NOT clamp.
+        // Skip((0-1)*PageSize) = Skip(-PageSize) → either ArgumentOutOfRangeException at LINQ
+        // OR PostgreSQL "OFFSET must not be negative" → 500 from EF Core.
+        // AC-FOLLOWUP-1 file-issue trigger: returning 500 for client-side input is a server bug.
+        // PROBE ASSERTIONS — tightened after Task 1 capture run (see Dev Agent Record).
+        var ownerEmail = $"owner-mr-pageneg-{requestedPage}-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        for (var i = 0; i < 5; i++)
+        {
+            await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await GetWithAuthAsync(
+            $"/api/v1/maintenance-requests?page={requestedPage}&pageSize=20", accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
 
     // =====================================================

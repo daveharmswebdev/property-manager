@@ -1592,6 +1592,77 @@ public class ExpensesControllerTests : IClassFixture<PropertyManagerWebApplicati
         content!.TotalAmount.Should().Be(600.00m);
     }
 
+    // =====================================================
+    // Story 21.12 — Pagination edge cases (AC-1.*)
+    // =====================================================
+
+    [Fact]
+    public async Task GetAllExpenses_Page1WithFewerResultsThanPageSize_ReturnsAllAndTotalPages1()
+    {
+        // AC-1.1 (Story 21.12): page=1 with results < pageSize returns all, TotalPages=1, Page=1.
+        var email = $"page1-fewer-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync("/api/v1/expenses?page=1&pageSize=50", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListResponse>();
+        content.Should().NotBeNull();
+        content!.Items.Should().HaveCount(3);
+        content.TotalCount.Should().Be(3);
+        content.Page.Should().Be(1);
+        content.PageSize.Should().Be(50);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetAllExpenses_PageSizeZero_ClampedToOne()
+    {
+        // AC-1.3 (Story 21.12): pageSize=0 clamped to 1 by Math.Clamp(PageSize, 1, 100).
+        // Mirrors GetExpensesByProperty_PageSizeZero_Clamped pattern but for the all-expenses endpoint.
+        var email = $"all-zero-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync("/api/v1/expenses?pageSize=0", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListResponse>();
+        content!.PageSize.Should().Be(1); // Math.Clamp(0, 1, 100) == 1
+        content.Items.Should().HaveCount(1);
+        content.TotalCount.Should().Be(3);
+        content.TotalPages.Should().Be(3);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public async Task GetAllExpenses_PageZeroOrNegative_ClampedToOne(int requestedPage)
+    {
+        // AC-1.5 (Story 21.12): page=0 / negative is clamped to 1 by Math.Max(1, Page).
+        var email = $"all-pageclamp-{requestedPage}-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync($"/api/v1/expenses?page={requestedPage}&pageSize=50", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListResponse>();
+        content!.Page.Should().Be(1); // Math.Max(1, page) == 1 for page <= 1
+        content.Items.Should().HaveCount(3);
+    }
+
     #endregion
 
     // =====================================================
@@ -1794,16 +1865,97 @@ public class ExpensesControllerTests : IClassFixture<PropertyManagerWebApplicati
         content!.PageSize.Should().Be(100);
     }
 
+    // =====================================================
+    // Story 21.12 — Pagination edge cases (AC-2.*)
+    // =====================================================
+
+    [Fact]
+    public async Task GetExpensesByProperty_Page1WithFewerResultsThanPageSize_ReturnsAllAndTotalPages1()
+    {
+        // AC-2.1 (Story 21.12): page=1 with results < pageSize returns all, TotalPages=1, Page=1.
+        var email = $"byprop-page1-fewer-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync($"/api/v1/properties/{propertyId}/expenses?page=1&pageSize=25", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListDto>();
+        content.Should().NotBeNull();
+        content!.Items.Should().HaveCount(3);
+        content.TotalCount.Should().Be(3);
+        content.Page.Should().Be(1);
+        content.PageSize.Should().Be(25);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetExpensesByProperty_PageBeyondLast_ReturnsEmptyItems()
+    {
+        // AC-2.2 (Story 21.12): page beyond last returns empty items but echoes Page verbatim.
+        // Mirrors GetAllExpenses_PageBeyondLast_ReturnsEmptyItems.
+        var email = $"byprop-page-beyond-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync($"/api/v1/properties/{propertyId}/expenses?page=10&pageSize=25", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListDto>();
+        content!.Items.Should().BeEmpty();
+        content.Page.Should().Be(10); // echoed verbatim — handler does NOT round-trip-correct
+        content.TotalCount.Should().Be(3);
+        content.TotalPages.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public async Task GetExpensesByProperty_PageZeroOrNegative_ClampedToOne(int requestedPage)
+    {
+        // AC-2.5 (Story 21.12): page=0 / negative clamped to 1 by Math.Max(1, Page).
+        var email = $"byprop-pageclamp-{requestedPage}-{Guid.NewGuid():N}@example.com";
+        var (accessToken, _) = await RegisterAndLoginAsync(email);
+        var propertyId = await CreatePropertyAsync(accessToken);
+
+        await CreateExpenseAsync(propertyId, accessToken, 1m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 2m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 3m, "c");
+
+        var response = await GetWithAuthAsync(
+            $"/api/v1/properties/{propertyId}/expenses?page={requestedPage}&pageSize=25", accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<PagedExpenseListDto>();
+        content!.Page.Should().Be(1);
+        content.Items.Should().HaveCount(3);
+    }
+
     [Fact]
     public async Task GetExpensesByProperty_PageSizeZero_Clamped()
     {
+        // AC-2.3 (Story 21.12): pageSize=0 is clamped to 1 (Math.Clamp(0,1,100)==1).
+        // Augmented to assert items.Count == 1 alongside the original PageSize == 1 assertion
+        // so the clamp is visible end-to-end (clamped pageSize actually limits results).
         var email = $"byprop-zero-{Guid.NewGuid():N}@example.com";
         var (accessToken, _) = await RegisterAndLoginAsync(email);
         var propertyId = await CreatePropertyAsync(accessToken);
 
+        // Seed 3 expenses so the clamped pageSize=1 is visible (Take(1) returns 1 of 3).
+        await CreateExpenseAsync(propertyId, accessToken, 10m, "a");
+        await CreateExpenseAsync(propertyId, accessToken, 20m, "b");
+        await CreateExpenseAsync(propertyId, accessToken, 30m, "c");
+
         var response = await GetWithAuthAsync($"/api/v1/properties/{propertyId}/expenses?pageSize=0", accessToken);
         var content = await response.Content.ReadFromJsonAsync<PagedExpenseListDto>();
         content!.PageSize.Should().Be(1); // Math.Clamp(0, 1, 100) == 1
+        content.Items.Should().HaveCount(1); // AC-2.3: clamped pageSize actually limits results
+        content.TotalCount.Should().Be(3);
     }
 
     #endregion
