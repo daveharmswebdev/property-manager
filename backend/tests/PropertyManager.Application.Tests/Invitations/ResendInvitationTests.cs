@@ -337,6 +337,6 @@ public class ResendInvitationValidatorTests
         var command = new ResendInvitationCommand(Guid.Empty);
         var result = validator.Validate(command);
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "InvitationId");
+        result.Errors.Should().Contain(e => e.PropertyName == "InvitationId" && e.ErrorMessage == "Invitation ID is required");
     }
 }

@@ -217,8 +217,17 @@ describe('VendorEditComponent', () => {
     it('should validate email format (AC #6)', () => {
       component['addEmail']();
       const lastIndex = component['emailsArray'].length - 1;
-      component['emailsArray'].at(lastIndex).setValue('invalid-email');
-      expect(component['emailsArray'].at(lastIndex).hasError('email')).toBe(true);
+      const emailControl = component['emailsArray'].at(lastIndex);
+      emailControl.setValue('invalid-email');
+      emailControl.markAsTouched();
+      fixture.detectChanges();
+      expect(emailControl.hasError('email')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const emailError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Invalid email format'),
+      );
+      expect(emailError).toBeTruthy();
     });
   });
 
@@ -328,13 +337,31 @@ describe('VendorEditComponent', () => {
     });
 
     it('should require first name', () => {
-      component['form'].get('firstName')?.setValue('');
-      expect(component['form'].get('firstName')?.hasError('required')).toBe(true);
+      const firstNameControl = component['form'].get('firstName');
+      firstNameControl?.setValue('');
+      firstNameControl?.markAsTouched();
+      fixture.detectChanges();
+      expect(firstNameControl?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('First name is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should require last name', () => {
-      component['form'].get('lastName')?.setValue('');
-      expect(component['form'].get('lastName')?.hasError('required')).toBe(true);
+      const lastNameControl = component['form'].get('lastName');
+      lastNameControl?.setValue('');
+      lastNameControl?.markAsTouched();
+      fixture.detectChanges();
+      expect(lastNameControl?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Last name is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should not require middle name', () => {

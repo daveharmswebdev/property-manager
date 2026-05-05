@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
 import { formatLocalDate } from '../../../../shared/utils/date.utils';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -116,13 +117,27 @@ describe('CreateExpenseFromWoDialogComponent', () => {
     it('should mark amount as required', () => {
       component.form.controls.amount.setValue(null);
       component.form.controls.amount.markAsTouched();
+      fixture.detectChanges();
       expect(component.form.controls.amount.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Amount is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should validate amount min 0.01', () => {
       component.form.controls.amount.setValue(0);
       component.form.controls.amount.markAsTouched();
+      fixture.detectChanges();
       expect(component.form.controls.amount.hasError('min')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const minError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Amount must be greater than 0'),
+      );
+      expect(minError).toBeTruthy();
     });
 
     it('should accept valid amount', () => {
@@ -133,13 +148,27 @@ describe('CreateExpenseFromWoDialogComponent', () => {
     it('should mark category as required', () => {
       component.form.controls.categoryId.setValue('');
       component.form.controls.categoryId.markAsTouched();
+      fixture.detectChanges();
       expect(component.form.controls.categoryId.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Category is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should mark date as required', () => {
       component.form.controls.date.setValue('');
       component.form.controls.date.markAsTouched();
+      fixture.detectChanges();
       expect(component.form.controls.date.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Date is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should have Create button disabled when form invalid', () => {

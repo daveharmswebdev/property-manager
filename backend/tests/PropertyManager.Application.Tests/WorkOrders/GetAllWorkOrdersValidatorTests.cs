@@ -105,9 +105,7 @@ public class GetAllWorkOrdersValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().ContainSingle();
         result.Errors[0].PropertyName.Should().Be("Status");
-        result.Errors[0].ErrorMessage.Should().Contain("Reported");
-        result.Errors[0].ErrorMessage.Should().Contain("Assigned");
-        result.Errors[0].ErrorMessage.Should().Contain("Completed");
+        result.Errors[0].ErrorMessage.Should().Be("Status must be one of: Reported, Assigned, Completed");
     }
 
     [Fact]

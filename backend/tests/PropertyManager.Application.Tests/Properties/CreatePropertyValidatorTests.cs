@@ -145,7 +145,7 @@ public class CreatePropertyValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "State");
+        result.Errors.Should().Contain(e => e.PropertyName == "State" && e.ErrorMessage == "State is required");
     }
 
     [Theory]
@@ -186,7 +186,7 @@ public class CreatePropertyValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ZipCode");
+        result.Errors.Should().Contain(e => e.PropertyName == "ZipCode" && e.ErrorMessage == "ZIP Code is required");
     }
 
     [Theory]

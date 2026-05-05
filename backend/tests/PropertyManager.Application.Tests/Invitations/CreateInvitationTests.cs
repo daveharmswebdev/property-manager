@@ -220,7 +220,7 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Email");
+        result.Errors.Should().Contain(e => e.PropertyName == "Email" && e.ErrorMessage == "Email is required");
     }
 
     [Fact]
@@ -235,7 +235,7 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Email" && e.ErrorMessage.Contains("Invalid email"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Email" && e.ErrorMessage == "Invalid email format");
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Role");
+        result.Errors.Should().Contain(e => e.PropertyName == "Role" && e.ErrorMessage == "Role must be 'Owner', 'Contributor', or 'Tenant'");
     }
 
     [Theory]
@@ -281,7 +281,7 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Role");
+        result.Errors.Should().Contain(e => e.PropertyName == "Role" && e.ErrorMessage == "Role is required");
     }
 
     [Theory]
@@ -477,7 +477,7 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage.Contains("required"));
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "PropertyId is required for Tenant invitations");
     }
 
     [Fact]
@@ -492,6 +492,6 @@ public class CreateInvitationTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage.Contains("only be set for Tenant"));
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "PropertyId should only be set for Tenant invitations");
     }
 }

@@ -230,7 +230,15 @@ describe('PropertyEditComponent', () => {
 
     const nameControl = component.form.get('name');
     nameControl?.setValue('');
+    nameControl?.markAsTouched();
+    fixture.detectChanges();
     expect(nameControl?.hasError('required')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Property name is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should validate ZIP code format (AC-2.4.4)', async () => {
@@ -240,9 +248,18 @@ describe('PropertyEditComponent', () => {
     const zipControl = component.form.get('zipCode');
 
     zipControl?.setValue('1234');
+    zipControl?.markAsTouched();
+    fixture.detectChanges();
     expect(zipControl?.hasError('pattern')).toBe(true);
 
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const patternError = errors.find((el) =>
+      el.nativeElement.textContent.includes('ZIP Code must be exactly 5 digits'),
+    );
+    expect(patternError).toBeTruthy();
+
     zipControl?.setValue('ABCDE');
+    fixture.detectChanges();
     expect(zipControl?.hasError('pattern')).toBe(true);
 
     zipControl?.setValue('78701');
@@ -255,7 +272,15 @@ describe('PropertyEditComponent', () => {
 
     const stateControl = component.form.get('state');
     stateControl?.setValue('');
+    stateControl?.markAsTouched();
+    fixture.detectChanges();
     expect(stateControl?.hasError('required')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('State is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should disable Save button when form is invalid (AC-2.4.4)', async () => {

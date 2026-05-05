@@ -44,7 +44,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId");
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "Property ID is required");
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ContentType");
+        result.Errors.Should().Contain(e => e.PropertyName == "ContentType" && e.ErrorMessage == "Content type must be one of: image/jpeg, image/png, image/gif, image/webp, image/bmp, image/tiff");
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "FileSizeBytes");
+        result.Errors.Should().Contain(e => e.PropertyName == "FileSizeBytes" && e.ErrorMessage == "File size must not exceed 10MB");
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "OriginalFileName");
+        result.Errors.Should().Contain(e => e.PropertyName == "OriginalFileName" && e.ErrorMessage == "Original file name is required");
     }
 
     #endregion
@@ -146,7 +146,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "StorageKey");
+        result.Errors.Should().Contain(e => e.PropertyName == "StorageKey" && e.ErrorMessage == "Storage key is required");
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ThumbnailStorageKey");
+        result.Errors.Should().Contain(e => e.PropertyName == "ThumbnailStorageKey" && e.ErrorMessage == "Thumbnail storage key is required");
     }
 
     #endregion
@@ -204,7 +204,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId");
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "Property ID is required");
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PhotoId");
+        result.Errors.Should().Contain(e => e.PropertyName == "PhotoId" && e.ErrorMessage == "Photo ID is required");
     }
 
     #endregion
@@ -258,7 +258,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId");
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "Property ID is required");
     }
 
     #endregion
@@ -295,7 +295,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PhotoIds");
+        result.Errors.Should().Contain(e => e.PropertyName == "PhotoIds" && e.ErrorMessage == "Photo IDs cannot be empty");
     }
 
     [Fact]
@@ -312,7 +312,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PhotoIds");
+        result.Errors.Should().Contain(e => e.PropertyName == "PhotoIds" && e.ErrorMessage == "Photo IDs are required");
     }
 
     [Fact]
@@ -329,6 +329,7 @@ public class ValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage == "Photo ID cannot be empty");
     }
 
     #endregion

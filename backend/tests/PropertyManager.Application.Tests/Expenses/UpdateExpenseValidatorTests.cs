@@ -51,7 +51,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Id");
+        result.Errors.Should().Contain(e => e.PropertyName == "Id" && e.ErrorMessage == "Expense ID is required");
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "CategoryId");
+        result.Errors.Should().Contain(e => e.PropertyName == "CategoryId" && e.ErrorMessage == "Category is required");
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage.Contains("greater than"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage == "Amount must be greater than $0");
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Amount");
+        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage == "Amount must be greater than $0");
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage.Contains("maximum"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage == "Amount exceeds maximum of $9,999,999.99");
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage.Contains("decimal"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Amount" && e.ErrorMessage == "Amount can have at most 2 decimal places");
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Date" && e.ErrorMessage.Contains("future"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Date" && e.ErrorMessage == "Date cannot be in the future");
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage.Contains("500"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage == "Description must be 500 characters or less");
     }
 
     [Fact]
@@ -259,7 +259,7 @@ public class UpdateExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage.Contains("HTML"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage == "Description cannot contain HTML");
     }
 
     [Fact]

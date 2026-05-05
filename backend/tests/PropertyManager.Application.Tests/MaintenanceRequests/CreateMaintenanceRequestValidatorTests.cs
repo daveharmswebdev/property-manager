@@ -18,7 +18,7 @@ public class CreateMaintenanceRequestValidatorTests
         var result = await _validator.ValidateAsync(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage == "Description is required");
+        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage == "Description is required");
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class CreateMaintenanceRequestValidatorTests
         var result = await _validator.ValidateAsync(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage == "Description must be 5000 characters or less");
+        result.Errors.Should().Contain(e => e.PropertyName == "Description" && e.ErrorMessage == "Description must be 5000 characters or less");
     }
 
     [Fact]

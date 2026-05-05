@@ -40,7 +40,7 @@ public class CreateNoteCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Content" && e.ErrorMessage.Contains("required"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Content" && e.ErrorMessage == "Content is required");
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class CreateNoteCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Content");
+        result.Errors.Should().Contain(e => e.PropertyName == "Content" && e.ErrorMessage == "Content is required");
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class CreateNoteCommandValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
             e.PropertyName == "EntityType" &&
-            e.ErrorMessage.Contains("must be one of"));
+            e.ErrorMessage == "EntityType must be one of: WorkOrder, Vendor, Property");
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class CreateNoteCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "EntityType");
+        result.Errors.Should().Contain(e => e.PropertyName == "EntityType" && e.ErrorMessage == "EntityType is required");
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class CreateNoteCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "EntityId");
+        result.Errors.Should().Contain(e => e.PropertyName == "EntityId" && e.ErrorMessage == "EntityId is required");
     }
 
     [Theory]
@@ -131,6 +131,6 @@ public class CreateNoteCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "EntityType");
+        result.Errors.Should().Contain(e => e.PropertyName == "EntityType" && e.ErrorMessage == "EntityType must be one of: WorkOrder, Vendor, Property");
     }
 }
