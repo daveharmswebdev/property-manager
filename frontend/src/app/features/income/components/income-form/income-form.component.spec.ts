@@ -133,13 +133,29 @@ describe('IncomeFormComponent validation', () => {
 
   it('should require amount', () => {
     const amountControl = component['form'].get('amount');
+    amountControl?.markAsTouched();
+    fixture.detectChanges();
     expect(amountControl?.hasError('required')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Amount is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should require amount greater than 0', () => {
     const amountControl = component['form'].get('amount');
     amountControl?.setValue(0);
+    amountControl?.markAsTouched();
+    fixture.detectChanges();
     expect(amountControl?.hasError('min')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const minError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Amount must be greater than $0'),
+    );
+    expect(minError).toBeTruthy();
   });
 
   it('should accept valid amount', () => {
@@ -151,19 +167,43 @@ describe('IncomeFormComponent validation', () => {
   it('should require date', () => {
     const dateControl = component['form'].get('date');
     dateControl?.setValue(null);
+    dateControl?.markAsTouched();
+    fixture.detectChanges();
     expect(dateControl?.hasError('required')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Date is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should limit source to 255 characters', () => {
     const sourceControl = component['form'].get('source');
     sourceControl?.setValue('a'.repeat(256));
+    sourceControl?.markAsTouched();
+    fixture.detectChanges();
     expect(sourceControl?.hasError('maxlength')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const maxlengthError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Source must be 255 characters or less'),
+    );
+    expect(maxlengthError).toBeTruthy();
   });
 
   it('should limit description to 500 characters', () => {
     const descControl = component['form'].get('description');
     descControl?.setValue('a'.repeat(501));
+    descControl?.markAsTouched();
+    fixture.detectChanges();
     expect(descControl?.hasError('maxlength')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const maxlengthError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Description must be 500 characters or less'),
+    );
+    expect(maxlengthError).toBeTruthy();
   });
 
   it('should be invalid when amount is missing', () => {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { of, throwError, Subject } from 'rxjs';
 import { ForgotPasswordComponent } from './forgot-password.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -43,10 +44,23 @@ describe('ForgotPasswordComponent', () => {
       expect(emailControl).toBeTruthy();
 
       emailControl?.setValue('');
+      emailControl?.markAsTouched();
+      fixture.detectChanges();
       expect(emailControl?.hasError('required')).toBe(true);
+      const requiredErrors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = requiredErrors.find((el) =>
+        el.nativeElement.textContent.includes('Email is required'),
+      );
+      expect(requiredError).toBeTruthy();
 
       emailControl?.setValue('invalid-email');
+      fixture.detectChanges();
       expect(emailControl?.hasError('email')).toBe(true);
+      const emailErrors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const emailError = emailErrors.find((el) =>
+        el.nativeElement.textContent.includes('Please enter a valid email address'),
+      );
+      expect(emailError).toBeTruthy();
 
       emailControl?.setValue('valid@email.com');
       expect(emailControl?.valid).toBe(true);

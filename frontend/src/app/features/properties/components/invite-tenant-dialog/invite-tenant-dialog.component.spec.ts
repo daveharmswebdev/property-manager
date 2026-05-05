@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {
   InviteTenantDialogComponent,
@@ -44,13 +45,28 @@ describe('InviteTenantDialogComponent', () => {
     const emailControl = component.form.get('email');
     emailControl?.setValue('');
     emailControl?.markAsTouched();
+    fixture.detectChanges();
     expect(emailControl?.hasError('required')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Email is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should validate email format', () => {
     const emailControl = component.form.get('email');
     emailControl?.setValue('not-an-email');
+    emailControl?.markAsTouched();
+    fixture.detectChanges();
     expect(emailControl?.hasError('email')).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const emailError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Invalid email format'),
+    );
+    expect(emailError).toBeTruthy();
   });
 
   // AC: 20.2 Task 12.3

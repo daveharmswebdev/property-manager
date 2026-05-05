@@ -37,7 +37,7 @@ public class CreateWorkOrderTagValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Name");
+        result.Errors.Should().Contain(e => e.PropertyName == "Name" && e.ErrorMessage == "Name is required");
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class CreateWorkOrderTagValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Name" && e.ErrorMessage.Contains("100"));
+        result.Errors.Should().Contain(e => e.PropertyName == "Name" && e.ErrorMessage == "Name must be 100 characters or less");
     }
 
     [Fact]

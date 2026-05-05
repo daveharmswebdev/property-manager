@@ -153,7 +153,14 @@ describe('VendorFormComponent', () => {
       const phoneControl = component['phonesArray'].at(0).get('number');
       phoneControl?.markAsTouched();
       phoneControl?.setValue('');
+      fixture.detectChanges();
       expect(phoneControl?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Phone number is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
   });
 
@@ -187,7 +194,15 @@ describe('VendorFormComponent', () => {
       component['addEmail']();
       const emailControl = component['emailsArray'].at(0);
       emailControl.setValue('not-an-email');
+      emailControl.markAsTouched();
+      fixture.detectChanges();
       expect(emailControl.hasError('email')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const emailError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Invalid email format'),
+      );
+      expect(emailError).toBeTruthy();
     });
   });
 
@@ -236,20 +251,47 @@ describe('VendorFormComponent', () => {
 
     it('should enforce maxLength on firstName (100 chars)', () => {
       const longName = 'A'.repeat(101);
-      component['form'].get('firstName')?.setValue(longName);
-      expect(component['form'].get('firstName')?.hasError('maxlength')).toBe(true);
+      const control = component['form'].get('firstName');
+      control?.setValue(longName);
+      control?.markAsTouched();
+      fixture.detectChanges();
+      expect(control?.hasError('maxlength')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const maxlengthError = errors.find((el) =>
+        el.nativeElement.textContent.includes('First name must be 100 characters or less'),
+      );
+      expect(maxlengthError).toBeTruthy();
     });
 
     it('should enforce maxLength on lastName (100 chars)', () => {
       const longName = 'A'.repeat(101);
-      component['form'].get('lastName')?.setValue(longName);
-      expect(component['form'].get('lastName')?.hasError('maxlength')).toBe(true);
+      const control = component['form'].get('lastName');
+      control?.setValue(longName);
+      control?.markAsTouched();
+      fixture.detectChanges();
+      expect(control?.hasError('maxlength')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const maxlengthError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Last name must be 100 characters or less'),
+      );
+      expect(maxlengthError).toBeTruthy();
     });
 
     it('should enforce maxLength on middleName (100 chars)', () => {
       const longName = 'A'.repeat(101);
-      component['form'].get('middleName')?.setValue(longName);
-      expect(component['form'].get('middleName')?.hasError('maxlength')).toBe(true);
+      const control = component['form'].get('middleName');
+      control?.setValue(longName);
+      control?.markAsTouched();
+      fixture.detectChanges();
+      expect(control?.hasError('maxlength')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const maxlengthError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Middle name must be 100 characters or less'),
+      );
+      expect(maxlengthError).toBeTruthy();
     });
   });
 

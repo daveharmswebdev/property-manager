@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AcceptInvitationComponent } from './accept-invitation.component';
@@ -131,19 +132,43 @@ describe('AcceptInvitationComponent', () => {
     it('should have password field with required validator', () => {
       const passwordControl = component['form'].get('password');
       passwordControl?.setValue('');
+      passwordControl?.markAsTouched();
+      fixture.detectChanges();
       expect(passwordControl?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Password is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should require minimum 8 characters for password', () => {
       const passwordControl = component['form'].get('password');
       passwordControl?.setValue('Short1!');
+      passwordControl?.markAsTouched();
+      fixture.detectChanges();
       expect(passwordControl?.hasError('minlength')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const minlengthError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Password must be at least 8 characters'),
+      );
+      expect(minlengthError).toBeTruthy();
     });
 
     it('should have confirmPassword field with required validator', () => {
       const confirmControl = component['form'].get('confirmPassword');
       confirmControl?.setValue('');
+      confirmControl?.markAsTouched();
+      fixture.detectChanges();
       expect(confirmControl?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Please confirm your password'),
+      );
+      expect(requiredError).toBeTruthy();
     });
   });
 

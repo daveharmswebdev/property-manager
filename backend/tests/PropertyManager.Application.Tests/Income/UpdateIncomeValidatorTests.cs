@@ -50,7 +50,7 @@ public class UpdateIncomeValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Id");
+        result.Errors.Should().Contain(e => e.PropertyName == "Id" && e.ErrorMessage == "Income ID is required.");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class UpdateIncomeValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
             e.PropertyName == "Amount" &&
-            e.ErrorMessage.Contains("greater than"));
+            e.ErrorMessage == "Amount must be greater than $0");
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class UpdateIncomeValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
             e.PropertyName == "Amount" &&
-            e.ErrorMessage.Contains("greater than"));
+            e.ErrorMessage == "Amount must be greater than $0");
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class UpdateIncomeValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Date");
+        result.Errors.Should().Contain(e => e.PropertyName == "Date" && e.ErrorMessage == "Date is required.");
     }
 
     [Fact]
@@ -224,6 +224,6 @@ public class UpdateIncomeValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId");
+        result.Errors.Should().Contain(e => e.PropertyName == "PropertyId" && e.ErrorMessage == "Property ID must be a valid GUID when provided.");
     }
 }

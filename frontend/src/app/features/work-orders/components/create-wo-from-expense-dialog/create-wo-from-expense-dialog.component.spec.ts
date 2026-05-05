@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -117,8 +118,15 @@ describe('CreateWoFromExpenseDialogComponent', () => {
   it('should validate description as required (AC #5)', () => {
     component.form.controls.description.setValue('');
     component.form.controls.description.markAsTouched();
+    fixture.detectChanges();
     expect(component.form.controls.description.hasError('required')).toBe(true);
     expect(component.form.invalid).toBe(true);
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+    const requiredError = errors.find((el) =>
+      el.nativeElement.textContent.includes('Description is required'),
+    );
+    expect(requiredError).toBeTruthy();
   });
 
   it('should disable "Create & Link" when form invalid (AC #5)', () => {

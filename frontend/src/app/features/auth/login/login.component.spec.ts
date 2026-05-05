@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { of, throwError, Subject } from 'rxjs';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -52,10 +53,23 @@ describe('LoginComponent', () => {
       expect(emailControl).toBeTruthy();
 
       emailControl?.setValue('');
+      emailControl?.markAsTouched();
+      fixture.detectChanges();
       expect(emailControl?.hasError('required')).toBe(true);
+      const requiredErrors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = requiredErrors.find((el) =>
+        el.nativeElement.textContent.includes('Email is required'),
+      );
+      expect(requiredError).toBeTruthy();
 
       emailControl?.setValue('invalid-email');
+      fixture.detectChanges();
       expect(emailControl?.hasError('email')).toBe(true);
+      const emailErrors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const emailError = emailErrors.find((el) =>
+        el.nativeElement.textContent.includes('Please enter a valid email address'),
+      );
+      expect(emailError).toBeTruthy();
 
       emailControl?.setValue('valid@email.com');
       expect(emailControl?.valid).toBe(true);
@@ -66,7 +80,14 @@ describe('LoginComponent', () => {
       expect(passwordControl).toBeTruthy();
 
       passwordControl?.setValue('');
+      passwordControl?.markAsTouched();
+      fixture.detectChanges();
       expect(passwordControl?.hasError('required')).toBe(true);
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const passwordError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Password is required'),
+      );
+      expect(passwordError).toBeTruthy();
 
       passwordControl?.setValue('anypassword');
       expect(passwordControl?.valid).toBe(true);
@@ -260,16 +281,32 @@ describe('LoginComponent', () => {
     it('should reject email without TLD (user@g) with pattern error', () => {
       const emailControl = component['form'].get('email');
       emailControl?.setValue('user@g');
+      emailControl?.markAsTouched();
+      fixture.detectChanges();
 
       expect(emailControl?.hasError('pattern')).toBe(true);
       expect(emailControl?.valid).toBe(false);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const patternError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Please enter a valid email address'),
+      );
+      expect(patternError).toBeTruthy();
     });
 
     it('should reject email with single-char TLD (user@domain.c) with pattern error', () => {
       const emailControl = component['form'].get('email');
       emailControl?.setValue('user@domain.c');
+      emailControl?.markAsTouched();
+      fixture.detectChanges();
 
       expect(emailControl?.hasError('pattern')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const patternError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Please enter a valid email address'),
+      );
+      expect(patternError).toBeTruthy();
     });
   });
 

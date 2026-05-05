@@ -27,7 +27,7 @@ public class LinkReceiptToExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ExpenseId");
+        result.Errors.Should().Contain(e => e.PropertyName == "ExpenseId" && e.ErrorMessage == "'Expense Id' must not be empty.");
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class LinkReceiptToExpenseValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ReceiptId");
+        result.Errors.Should().Contain(e => e.PropertyName == "ReceiptId" && e.ErrorMessage == "'Receipt Id' must not be empty.");
     }
 
     [Fact]

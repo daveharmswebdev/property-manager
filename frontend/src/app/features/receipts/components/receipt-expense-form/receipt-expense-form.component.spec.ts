@@ -201,18 +201,42 @@ describe('ReceiptExpenseFormComponent', () => {
   describe('form validation', () => {
     it('should require property', () => {
       const control = component['form'].get('propertyId');
+      control?.markAsTouched();
+      fixture.detectChanges();
       expect(control?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Property is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should require amount', () => {
       const control = component['form'].get('amount');
+      control?.markAsTouched();
+      fixture.detectChanges();
       expect(control?.hasError('required')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const requiredError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Amount is required'),
+      );
+      expect(requiredError).toBeTruthy();
     });
 
     it('should require amount greater than 0', () => {
       const control = component['form'].get('amount');
       control?.setValue(0);
+      control?.markAsTouched();
+      fixture.detectChanges();
       expect(control?.hasError('min')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const minError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Amount must be greater than $0'),
+      );
+      expect(minError).toBeTruthy();
     });
 
     it('should require category', () => {
@@ -223,7 +247,15 @@ describe('ReceiptExpenseFormComponent', () => {
     it('should enforce max description length', () => {
       const control = component['form'].get('description');
       control?.setValue('a'.repeat(501));
+      control?.markAsTouched();
+      fixture.detectChanges();
       expect(control?.hasError('maxlength')).toBe(true);
+
+      const errors = fixture.debugElement.queryAll(By.css('mat-error'));
+      const maxlengthError = errors.find((el) =>
+        el.nativeElement.textContent.includes('Description must be 500 characters or less'),
+      );
+      expect(maxlengthError).toBeTruthy();
     });
   });
 
