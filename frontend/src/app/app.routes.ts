@@ -250,6 +250,24 @@ export const routes: Routes = [
         canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
+      // Maintenance Requests Inbox (Story 20.7, AC #1, #11)
+      {
+        path: 'maintenance-requests',
+        loadComponent: () =>
+          import('./features/maintenance-requests/maintenance-requests.component').then(
+            (m) => m.MaintenanceRequestsComponent,
+          ),
+        canActivate: [ownerGuard],
+      },
+      // Maintenance Request Detail (Story 20.7, AC #3)
+      {
+        path: 'maintenance-requests/:id',
+        loadComponent: () =>
+          import(
+            './features/maintenance-requests/components/maintenance-request-detail/maintenance-request-detail.component'
+          ).then((m) => m.MaintenanceRequestDetailComponent),
+        canActivate: [ownerGuard],
+      },
       // Tenant Dashboard (Story 20.5, AC #1, #2, #3)
       {
         path: 'tenant',

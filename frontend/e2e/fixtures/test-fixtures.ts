@@ -35,6 +35,8 @@ import { WorkOrderFormPage } from '../pages/work-order-form.page';
 import { WorkOrderDetailPage } from '../pages/work-order-detail.page';
 import { TenantDashboardPage } from '../pages/tenant-dashboard.page';
 import { SubmitRequestPage } from '../pages/submit-request.page';
+import { MaintenanceRequestsListPage } from '../pages/maintenance-requests-list.page';
+import { MaintenanceRequestDetailPage } from '../pages/maintenance-request-detail.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 
@@ -78,6 +80,10 @@ type Fixtures = {
   tenantDashboardPage: TenantDashboardPage;
   /** Submit maintenance request page object (Story 21.4) */
   submitRequestPage: SubmitRequestPage;
+  /** Landlord maintenance request inbox list page object (Story 20.7) */
+  maintenanceRequestsListPage: MaintenanceRequestsListPage;
+  /** Landlord maintenance request detail page object (Story 20.7) */
+  maintenanceRequestDetailPage: MaintenanceRequestDetailPage;
   /** Authentication helper for login flows */
   authHelper: AuthHelper;
   /** MailHog helper for email verification (invitation flow) */
@@ -151,6 +157,14 @@ export const test = base.extend<Fixtures>({
 
   submitRequestPage: async ({ page }, use) => {
     await use(new SubmitRequestPage(page));
+  },
+
+  maintenanceRequestsListPage: async ({ page }, use) => {
+    await use(new MaintenanceRequestsListPage(page));
+  },
+
+  maintenanceRequestDetailPage: async ({ page }, use) => {
+    await use(new MaintenanceRequestDetailPage(page));
   },
 
   authHelper: async ({ page }, use) => {
