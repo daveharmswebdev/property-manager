@@ -122,12 +122,7 @@ After each sub-agent returns, the orchestrator validates:
 ### Develop phase
 - [ ] All tasks in story file are marked `[x]`
 - [ ] Story status is "review"
-- [ ] **Orchestrator re-runs verification itself — do not trust the subagent's self-report:**
-  - `cd backend && dotnet build` → exit 0
-  - `cd backend && dotnet test` → 0 failures
-  - `cd frontend && npm run build` → exit 0
-  - `cd frontend && npm test -- --run` → 0 failures
-- [ ] If any verification command fails, the phase is INCOMPLETE — surface the failure (exit code, failure count, first failing test name) and do not proceed to Evaluate
+- [ ] Sub-agent reported all tests passing
 
 ### Evaluate phase
 - [ ] All three test suites executed (backend, frontend, E2E)
@@ -135,7 +130,6 @@ After each sub-agent returns, the orchestrator validates:
 - [ ] All four grading dimensions scored with evidence
 - [ ] Overall verdict is PASS or CONDITIONAL PASS (all issues fixed)
 - [ ] Story status is "done" (if evaluation passed)
-- [ ] **Orchestrator confirms independently:** re-read the story file and verify the `Status` field is literally `done` and the evaluation/grading section exists. Do not trust the subagent's verdict text alone — if the file doesn't show `Status: done`, the evaluation is not complete regardless of what the subagent reported.
 
 ### ATDD phase
 - [ ] Acceptance test files created
@@ -166,7 +160,6 @@ If the orchestrator finds existing state on startup:
 - Save state after every phase completion (enables recovery across sessions)
 - Each sub-agent follows the same validation gates as its standalone skill
 - The orchestrator does not shortcut any phase — full process every time
-- **The orchestrator does not trust subagent self-reports on test/build status — it re-runs verification commands itself (see Phase Validation).** A subagent saying "all tests pass" is hearsay until re-verified.
 - If a phase fails validation, do not proceed to the next phase — ask the user how to proceed
 - Sub-agents run in the main workspace (not worktrees) since changes must accumulate
 - The Ship phase is the only phase that touches git remote (push/PR)
