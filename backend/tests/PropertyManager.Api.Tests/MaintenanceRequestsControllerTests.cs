@@ -776,6 +776,375 @@ public class MaintenanceRequestsControllerTests : IClassFixture<PropertyManagerW
     }
 
     // =====================================================
+    // POST /api/v1/maintenance-requests/{id}/convert — Story 20.8 (AC #5, #6, #7, #10, #11, #12, #13, #14)
+    // =====================================================
+
+    [Fact]
+    public async Task Convert_WithoutAuth_Returns401()
+    {
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/maintenance-requests/{Guid.NewGuid()}/convert",
+            new { description = "Fix it" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_ValidSubmittedRequest_Returns201WithBody()
+    {
+        var ownerEmail = $"owner-conv-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix the heater" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.Should().NotBeNull();
+        response.Headers.Location!.ToString().Should().Contain("/api/v1/work-orders/");
+
+        var body = await response.Content.ReadFromJsonAsync<ConvertResponseDto>();
+        body.Should().NotBeNull();
+        body!.WorkOrderId.Should().NotBeEmpty();
+        body.MaintenanceRequestId.Should().Be(requestId);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_PersistsWorkOrderAndUpdatesRequest()
+    {
+        var ownerEmail = $"owner-conv-persist-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "  Fix the heater  " },
+            accessToken);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<ConvertResponseDto>();
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var workOrder = await dbContext.WorkOrders
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(wo => wo.Id == body!.WorkOrderId);
+        workOrder.Should().NotBeNull();
+        workOrder!.PropertyId.Should().Be(propertyId);
+        workOrder.AccountId.Should().Be(accountId);
+        workOrder.Description.Should().Be("Fix the heater"); // trimmed
+        workOrder.Status.Should().Be(WorkOrderStatus.Reported);
+        workOrder.CreatedByUserId.Should().Be(ownerUserId);
+
+        var mr = await dbContext.MaintenanceRequests
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.Id == requestId);
+        mr.Should().NotBeNull();
+        mr!.WorkOrderId.Should().Be(workOrder.Id);
+        mr.Status.Should().Be(MaintenanceRequestStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_WithSourcePhotos_CopiesPhotoRowsSharedKeys()
+    {
+        var ownerEmail = $"owner-conv-photos-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+
+        // Seed two photos directly via DbContext.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.MaintenanceRequestPhotos.AddRange(
+                new MaintenanceRequestPhoto
+                {
+                    Id = Guid.NewGuid(),
+                    AccountId = accountId,
+                    MaintenanceRequestId = requestId,
+                    StorageKey = "shared/key/photo1.jpg",
+                    ThumbnailStorageKey = "shared/key/photo1-thumb.jpg",
+                    OriginalFileName = "photo1.jpg",
+                    ContentType = "image/jpeg",
+                    FileSizeBytes = 1234,
+                    DisplayOrder = 0,
+                    IsPrimary = true,
+                    CreatedByUserId = ownerUserId,
+                },
+                new MaintenanceRequestPhoto
+                {
+                    Id = Guid.NewGuid(),
+                    AccountId = accountId,
+                    MaintenanceRequestId = requestId,
+                    StorageKey = "shared/key/photo2.jpg",
+                    ThumbnailStorageKey = null,
+                    OriginalFileName = "photo2.jpg",
+                    ContentType = "image/jpeg",
+                    FileSizeBytes = 5678,
+                    DisplayOrder = 1,
+                    IsPrimary = false,
+                    CreatedByUserId = ownerUserId,
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<ConvertResponseDto>();
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var mirrored = await verifyDb.WorkOrderPhotos
+            .IgnoreQueryFilters()
+            .Where(p => p.WorkOrderId == body!.WorkOrderId)
+            .OrderBy(p => p.DisplayOrder)
+            .ToListAsync();
+
+        mirrored.Should().HaveCount(2);
+        mirrored[0].StorageKey.Should().Be("shared/key/photo1.jpg");
+        mirrored[0].ThumbnailStorageKey.Should().Be("shared/key/photo1-thumb.jpg");
+        mirrored[0].DisplayOrder.Should().Be(0);
+        mirrored[0].IsPrimary.Should().BeTrue();
+        mirrored[1].StorageKey.Should().Be("shared/key/photo2.jpg");
+        mirrored[1].DisplayOrder.Should().Be(1);
+        mirrored[1].IsPrimary.Should().BeFalse();
+
+        // Source rows must still exist (request keeps its gallery).
+        var sourceCount = await verifyDb.MaintenanceRequestPhotos
+            .IgnoreQueryFilters()
+            .CountAsync(p => p.MaintenanceRequestId == requestId);
+        sourceCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_RequestInProgress_Returns400BusinessRule()
+    {
+        var ownerEmail = $"owner-conv-inprog-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.InProgress);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("InProgress");
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_RequestResolved_Returns400()
+    {
+        var ownerEmail = $"owner-conv-resolved-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.Resolved);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_RequestDismissed_Returns400()
+    {
+        var ownerEmail = $"owner-conv-dismissed-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.Dismissed);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_EmptyDescription_Returns400Validation()
+    {
+        var ownerEmail = $"owner-conv-empty-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Description");
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_NonexistentRequest_Returns404()
+    {
+        var ownerEmail = $"owner-conv-nf-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{Guid.NewGuid()}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_RequestFromDifferentAccount_Returns404()
+    {
+        // Account A owns the request; Owner B tries to convert it.
+        var ownerAEmail = $"owner-a-conv-{Guid.NewGuid():N}@example.com";
+        var (ownerAUserId, accountA) = await _factory.CreateTestUserAsync(ownerAEmail);
+        var propertyA = await _factory.CreatePropertyInAccountAsync(accountA);
+        var requestId = await SeedMaintenanceRequestAsync(accountA, propertyA, ownerAUserId);
+
+        var ownerBEmail = $"owner-b-conv-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerBEmail);
+        var (accessToken, _) = await LoginAsync(ownerBEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_InvalidCategoryId_Returns404()
+    {
+        var ownerEmail = $"owner-conv-badcat-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it", categoryId = Guid.NewGuid() },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Convert_AsOwner_InvalidVendorId_Returns404()
+    {
+        var ownerEmail = $"owner-conv-badvend-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it", vendorId = Guid.NewGuid() },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Convert_AsTenant_Returns403()
+    {
+        // Seed tenant + request, then have the tenant try to convert it (no WorkOrders.Create permission).
+        var ctx = await CreateTenantContextAsync();
+        var requestId = await SeedMaintenanceRequestAsync(ctx.AccountId, ctx.PropertyId, ctx.UserId);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            ctx.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Convert_AsContributor_Returns403()
+    {
+        // Contributor seeded into Owner's account. Contributor lacks WorkOrders.Create.
+        var ownerEmail = $"owner-conv-ctrb-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+
+        var contributorEmail = $"contrib-conv-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserInAccountAsync(accountId, contributorEmail, role: "Contributor");
+        var (accessToken, _) = await LoginAsync(contributorEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Convert_BusinessRuleViolation_DoesNotCreateWorkOrder()
+    {
+        // AC #14: rollback verification. Seed an InProgress request and attempt convert; assert no WO created.
+        var ownerEmail = $"owner-conv-rollback-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.InProgress);
+
+        int workOrderCountBefore;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            workOrderCountBefore = await dbContext.WorkOrders
+                .IgnoreQueryFilters()
+                .CountAsync(wo => wo.AccountId == accountId);
+        }
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/convert",
+            new { description = "Fix it" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var workOrderCountAfter = await verifyDb.WorkOrders
+            .IgnoreQueryFilters()
+            .CountAsync(wo => wo.AccountId == accountId);
+        workOrderCountAfter.Should().Be(workOrderCountBefore);
+    }
+
+    // =====================================================
     // Helper methods
     // =====================================================
 
@@ -930,3 +1299,5 @@ file record TenantPropertyResponseDto(
     string ZipCode);
 
 file record MrLoginResponse(string AccessToken, int ExpiresIn);
+
+file record ConvertResponseDto(Guid WorkOrderId, Guid MaintenanceRequestId);
