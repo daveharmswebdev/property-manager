@@ -144,24 +144,6 @@ await page.route('*/**/api/v1/properties', async (route) => {
 - **Playwright MCP** — Use the browser during frontend development for visual verification, not just E2E test runs. Navigate to pages and confirm UI behavior during implementation.
 - **Ref MCP** — Look up documentation BEFORE writing code, not after hitting errors. Use `mcp__Ref__ref_search_documentation` to verify API signatures, configuration patterns, and library usage. The LLM's training data is ~1 year behind current package versions.
 
-## Verification Before Completion
-
-**Iron law:** No claim of "done", "passing", "fixed", or "works" without running the verification command **in this turn** and reading the full output. Previous runs don't count. Subagent self-reports don't count — re-run independently.
-
-Before any completion claim, the gate is:
-1. **Identify** the command that proves it (`dotnet test`, `npm test`, build commands, etc.)
-2. **Run** it (fresh, full, this turn)
-3. **Read** exit code + failure count
-4. **Cite** the evidence in the claim (e.g., "423/423 passing, exit 0")
-
-**Verification commands for this project:**
-- Backend: `cd backend && dotnet build && dotnet test`
-- Frontend: `cd frontend && npm run build && npm test -- --run`
-- E2E: `cd frontend && npm run e2e -- --workers=1`
-- Migrations applied: `dotnet ef database update --project src/PropertyManager.Infrastructure --startup-project src/PropertyManager.Api` (verify schema before claiming a feature works against the DB)
-
-**Red flags — stop and verify:** "should work", "looks correct", "probably passing", saying "done" before running anything, "build passed so tests probably will too" (linter ≠ compiler, build ≠ test), forwarding a subagent's "all tests pass" without re-running it.
-
 ## Project Artifacts
 
 Planning and implementation artifacts live in `docs/project/`:
