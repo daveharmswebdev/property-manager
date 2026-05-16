@@ -69,6 +69,19 @@ describe('ownerGuard', () => {
     });
   });
 
+  // Story 20.7, AC #11: Tenant accessing /maintenance-requests redirects to /tenant
+  it('should redirect Tenant accessing /maintenance-requests to /tenant', () => {
+    currentUserSignal.set(createUser('Tenant'));
+    const mockUrlTree = {} as UrlTree;
+    vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
+
+    TestBed.runInInjectionContext(() => {
+      const result = ownerGuard(null as any, { url: '/maintenance-requests' } as any);
+      expect(result).toBe(mockUrlTree);
+      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/tenant']);
+    });
+  });
+
   it('should redirect null user to /dashboard', () => {
     currentUserSignal.set(null);
     const mockUrlTree = {} as UrlTree;

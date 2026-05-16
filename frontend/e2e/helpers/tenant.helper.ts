@@ -214,6 +214,26 @@ export async function loginAsTenant(page: Page, email: string, password: string)
 }
 
 /**
+ * Log in as a landlord (Owner role). Mirrors `AuthHelper.login` but accepts
+ * arbitrary credentials so a throwaway landlord created via the invitation
+ * flow can drive the UI. Waits for `/dashboard` since Owner is redirected
+ * there by `LoginComponent.getSafeReturnUrl()`.
+ *
+ * Used by the landlord-inbox E2E specs (Story 20.7).
+ */
+export async function loginAsLandlord(
+  page: Page,
+  email: string,
+  password: string,
+): Promise<void> {
+  await page.goto('/login');
+  await page.locator('input[formControlName="email"]').fill(email);
+  await page.locator('input[formControlName="password"]').fill(password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL('/dashboard', { timeout: 10000 });
+}
+
+/**
  * Submit a maintenance request via API as the supplied tenant. Used to seed
  * requests for AC-2 (cross-property isolation) without exercising the UI.
  *

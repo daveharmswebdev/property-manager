@@ -322,14 +322,20 @@ development_status:
 
   # Epic 20: Tenant Portal
   # User Outcome: "Tenants can submit maintenance requests and I can triage them into work orders"
-  # PAUSED 2026-04-17 — interrupted by Epic 21 (test coverage backfill, issue #371). Resume after 21 is done.
-  epic-20: paused
+  # PAUSED 2026-04-17 — interrupted by Epic 21 (test coverage backfill, issue #371).
+  # RESUMED 2026-05-06 after Epic 21 completed.
+  epic-20: in-progress
   20-1-tenant-role-property-association: done    # FR-TP2, FR-TP3, FR-TP10, NFR-TP3 - Size 5
   20-2-tenant-invitation-flow: done    # FR-TP1, FR-TP4, FR-TP5, NFR-TP4 - Size 5
   20-3-maintenance-request-entity-api: done    # FR-TP18, FR-TP19, FR-TP20, NFR-TP6 - Size 5
   20-4-maintenance-request-photos: done    # FR-TP21 - Size 5
   20-5-tenant-dashboard-role-routing: done    # FR-TP6, FR-TP8, FR-TP9, FR-TP11, NFR-TP5, NFR-TP7 - Size 5
   20-6-submit-maintenance-request-tenant-ui: done    # FR-TP7, NFR-TP7, NFR-TP8 - Size 5
+  20-7-landlord-maintenance-request-inbox: done    # FR-TP12 - Size 5
+  20-8-convert-request-to-work-order: backlog    # FR-TP13, FR-TP14, FR-TP16 - Size 5
+  20-9-dismiss-maintenance-request: backlog    # FR-TP15, FR-TP16 - Size 5
+  20-10-request-resolution-sync: backlog    # FR-TP17 - Size 3
+  20-11-tenant-authorization-lockdown: backlog    # NFR-TP1, NFR-TP2, NFR-TP3 - Size 5
 
   # ============================================================
   # INTERJECTION: TEST COVERAGE BACKFILL
@@ -342,7 +348,7 @@ development_status:
 
   # Epic 21: Test Coverage Backfill
   # User Outcome: "The test pyramid matches the feature surface — newer features have the same depth as older ones"
-  epic-21: in-progress
+  epic-21: done
   21-1-maintenance-requests-controller-integration-tests: done    # P1 - M - Issue #371
   21-2-maintenance-request-photos-controller-integration-tests: done    # P1 - M - Issue #371
   21-3-expenses-controller-integration-consolidation: done    # P1 - L - Issue #371
@@ -355,4 +361,4 @@ development_status:
   21-10-dashboard-unit-and-e2e-tests: done    # P3 - M - Issue #371
   21-11-validation-message-assertion-improvements: done    # P3 - S - Issue #371
   21-12-pagination-edge-case-tests: done    # P3 - S - Issue #371
-  epic-21-retrospective: optional
+  epic-21-retrospective: skipped    # Solo-dev — retro skipped per usual workflow

@@ -67,6 +67,7 @@ export class SidebarNavComponent implements OnInit {
       { label: 'Receipts', route: '/receipts', icon: 'document_scanner' },
       { label: 'Vendors', route: '/vendors', icon: 'business' },
       { label: 'Work Orders', route: '/work-orders', icon: 'assignment' },
+      { label: 'Maintenance Requests', route: '/maintenance-requests', icon: 'inbox' },
       { label: 'Reports', route: '/reports', icon: 'assessment' },
       { label: 'Settings', route: '/settings', icon: 'settings' },
     ];

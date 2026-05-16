@@ -81,8 +81,8 @@ describe('SidebarNavComponent', () => {
       expect(component).toBeTruthy();
     });
 
-    it('should have 9 navigation items for Owner', () => {
-      expect(component.navItems().length).toBe(9);
+    it('should have 10 navigation items for Owner', () => {
+      expect(component.navItems().length).toBe(10);
     });
 
     it('should have correct navigation items in order for Owner', () => {
@@ -94,11 +94,24 @@ describe('SidebarNavComponent', () => {
         'Receipts',
         'Vendors',
         'Work Orders',
+        'Maintenance Requests',
         'Reports',
         'Settings',
       ];
       const actualLabels = component.navItems().map((item) => item.label);
       expect(actualLabels).toEqual(expectedLabels);
+    });
+
+    // Story 20.7, AC #10: "Maintenance Requests" appears between Work Orders and Reports
+    it('should include Maintenance Requests with inbox icon between Work Orders and Reports', () => {
+      const items = component.navItems();
+      const woIdx = items.findIndex((i) => i.label === 'Work Orders');
+      const mrIdx = items.findIndex((i) => i.label === 'Maintenance Requests');
+      const rIdx = items.findIndex((i) => i.label === 'Reports');
+      expect(mrIdx).toBe(woIdx + 1);
+      expect(rIdx).toBe(mrIdx + 1);
+      expect(items[mrIdx].route).toBe('/maintenance-requests');
+      expect(items[mrIdx].icon).toBe('inbox');
     });
 
     it('should have Dashboard as first item', () => {
@@ -135,9 +148,9 @@ describe('SidebarNavComponent', () => {
       expect(mockLogoutAndRedirect).toHaveBeenCalledWith(component.isLoggingOut);
     });
 
-    it('should render all 9 nav items in the DOM', () => {
+    it('should render all 10 nav items in the DOM', () => {
       const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
-      expect(navItems.length).toBe(9);
+      expect(navItems.length).toBe(10);
     });
   });
 
@@ -168,6 +181,12 @@ describe('SidebarNavComponent', () => {
     it('should NOT show Settings for Contributor', () => {
       const labels = component.navItems().map((item) => item.label);
       expect(labels).not.toContain('Settings');
+    });
+
+    // Story 20.7, AC #10: Contributor must NOT see Maintenance Requests
+    it('should NOT show Maintenance Requests for Contributor', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).not.toContain('Maintenance Requests');
     });
 
     it('should render 3 nav items in the DOM', () => {
@@ -205,6 +224,12 @@ describe('SidebarNavComponent', () => {
     it('should render 2 nav items in the DOM', () => {
       const navItems = fixture.debugElement.queryAll(By.css('.nav-item'));
       expect(navItems.length).toBe(2);
+    });
+
+    // Story 20.7, AC #10/#11: Tenant must NOT see Maintenance Requests landlord inbox
+    it('should NOT show Maintenance Requests for Tenant', () => {
+      const labels = component.navItems().map((item) => item.label);
+      expect(labels).not.toContain('Maintenance Requests');
     });
   });
 
