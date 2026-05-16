@@ -69,6 +69,7 @@ public static class RolePermissions
                 Permissions.MaintenanceRequests.Create,
                 Permissions.MaintenanceRequests.ViewOwn,
                 Permissions.MaintenanceRequests.ViewAll,
+                Permissions.MaintenanceRequests.Dismiss,
 
                 // Properties - ViewAssigned (Owner has all property permissions)
                 Permissions.Properties.ViewAssigned,

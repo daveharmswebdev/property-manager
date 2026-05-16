@@ -1145,6 +1145,282 @@ public class MaintenanceRequestsControllerTests : IClassFixture<PropertyManagerW
     }
 
     // =====================================================
+    // POST /api/v1/maintenance-requests/{id}/dismiss — Story 20.9 (AC #6, #7, #10–#16)
+    //
+    // Rationale: dismiss uses a single SaveChangesAsync without an explicit transaction.
+    // The "rollback" proof is therefore "DB unchanged after a non-Submitted source status"
+    // — see Dismiss_BusinessRuleViolation_DoesNotChangeRequest at the bottom of this region.
+    // =====================================================
+
+    [Fact]
+    public async Task Dismiss_WithoutAuth_Returns401()
+    {
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/maintenance-requests/{Guid.NewGuid()}/dismiss",
+            new { reason = "Some reason" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_ValidSubmittedRequest_Returns204()
+    {
+        var ownerEmail = $"owner-dis-204-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Tenant moved out" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_PersistsReasonAndStatus()
+    {
+        var ownerEmail = $"owner-dis-persist-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "  Tenant moved out  " },
+            accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var mr = await dbContext.MaintenanceRequests
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.Id == requestId);
+
+        mr.Should().NotBeNull();
+        mr!.Status.Should().Be(MaintenanceRequestStatus.Dismissed);
+        mr.DismissalReason.Should().Be("Tenant moved out"); // trimmed
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_RequestInProgress_Returns400BusinessRule()
+    {
+        var ownerEmail = $"owner-dis-inprog-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.InProgress);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("InProgress");
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_RequestResolved_Returns400()
+    {
+        var ownerEmail = $"owner-dis-resolved-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.Resolved);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_RequestDismissed_Returns400()
+    {
+        var ownerEmail = $"owner-dis-already-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.Dismissed);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_EmptyReason_Returns400Validation()
+    {
+        var ownerEmail = $"owner-dis-empty-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Reason");
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_WhitespaceReason_Returns400Validation()
+    {
+        var ownerEmail = $"owner-dis-ws-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "   " },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_ReasonOver2000_Returns400Validation()
+    {
+        var ownerEmail = $"owner-dis-long-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = new string('x', 2001) },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("2000");
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_NonexistentRequest_Returns404()
+    {
+        var ownerEmail = $"owner-dis-nf-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail);
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{Guid.NewGuid()}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsOwner_RequestFromDifferentAccount_Returns404()
+    {
+        // Account A owns the request; Owner B tries to dismiss it.
+        var ownerAEmail = $"owner-a-dis-{Guid.NewGuid():N}@example.com";
+        var (ownerAUserId, accountA) = await _factory.CreateTestUserAsync(ownerAEmail);
+        var propertyA = await _factory.CreatePropertyInAccountAsync(accountA);
+        var requestId = await SeedMaintenanceRequestAsync(accountA, propertyA, ownerAUserId);
+
+        var ownerBEmail = $"owner-b-dis-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerBEmail);
+        var (accessToken, _) = await LoginAsync(ownerBEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsTenant_Returns403()
+    {
+        // Tenant seeded into landlord's account. Tenant lacks MaintenanceRequests.Dismiss.
+        var ctx = await CreateTenantContextAsync();
+        var requestId = await SeedMaintenanceRequestAsync(ctx.AccountId, ctx.PropertyId, ctx.UserId);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            ctx.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Dismiss_AsContributor_Returns403()
+    {
+        var ownerEmail = $"owner-dis-ctrb-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(accountId, propertyId, ownerUserId);
+
+        var contributorEmail = $"contrib-dis-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserInAccountAsync(accountId, contributorEmail, role: "Contributor");
+        var (accessToken, _) = await LoginAsync(contributorEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Dismiss_BusinessRuleViolation_DoesNotChangeRequest()
+    {
+        // AC #10: a non-Submitted request stays untouched. Single-SaveChanges path
+        // means no rollback needed — we just never call SaveChanges.
+        var ownerEmail = $"owner-dis-rollback-{Guid.NewGuid():N}@example.com";
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+        var requestId = await SeedMaintenanceRequestAsync(
+            accountId, propertyId, ownerUserId, status: MaintenanceRequestStatus.InProgress);
+
+        var (accessToken, _) = await LoginAsync(ownerEmail);
+
+        var response = await PostAsJsonWithAuthAsync(
+            $"/api/v1/maintenance-requests/{requestId}/dismiss",
+            new { reason = "Some reason" },
+            accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var mr = await verifyDb.MaintenanceRequests
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.Id == requestId);
+
+        mr.Should().NotBeNull();
+        mr!.Status.Should().Be(MaintenanceRequestStatus.InProgress);
+        mr.DismissalReason.Should().BeNull();
+    }
+
+    // =====================================================
     // Helper methods
     // =====================================================
 

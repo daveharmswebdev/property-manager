@@ -19,17 +19,20 @@ public class MaintenanceRequestsController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateMaintenanceRequestCommand> _createValidator;
     private readonly IValidator<ConvertMaintenanceRequestToWorkOrderCommand> _convertValidator;
+    private readonly IValidator<DismissMaintenanceRequestCommand> _dismissValidator;
     private readonly ILogger<MaintenanceRequestsController> _logger;
 
     public MaintenanceRequestsController(
         IMediator mediator,
         IValidator<CreateMaintenanceRequestCommand> createValidator,
         IValidator<ConvertMaintenanceRequestToWorkOrderCommand> convertValidator,
+        IValidator<DismissMaintenanceRequestCommand> dismissValidator,
         ILogger<MaintenanceRequestsController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _convertValidator = convertValidator;
+        _dismissValidator = dismissValidator;
         _logger = logger;
     }
 
@@ -204,6 +207,48 @@ public class MaintenanceRequestsController : ControllerBase
             new { id = response.WorkOrderId },
             response);
     }
+
+    /// <summary>
+    /// Dismiss a maintenance request with a landlord-provided reason (Story 20.9, AC #6, #7).
+    /// Sets <c>DismissalReason</c> and transitions status from <c>Submitted</c> to <c>Dismissed</c>.
+    /// </summary>
+    /// <param name="id">Maintenance request GUID</param>
+    /// <param name="request">Dismiss request body — reason text (required, max 2000 chars)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Dismissal succeeded; reload the request to see updated status</response>
+    /// <response code="400">If validation fails or source status is not Submitted</response>
+    /// <response code="401">If user is not authenticated</response>
+    /// <response code="403">If user lacks the MaintenanceRequests.Dismiss permission (Tenant/Contributor)</response>
+    /// <response code="404">If the maintenance request is not found (including cross-account)</response>
+    [HttpPost("{id:guid}/dismiss")]
+    [Authorize(Policy = "CanDismissMaintenanceRequests")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DismissMaintenanceRequest(
+        Guid id,
+        [FromBody] DismissMaintenanceRequestRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new DismissMaintenanceRequestCommand(id, request.Reason);
+
+        var validationResult = await _dismissValidator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                validationResult.Errors.GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())));
+        }
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Maintenance request {MaintenanceRequestId} dismissed", id);
+
+        return NoContent();
+    }
 }
 
 /// <summary>
@@ -223,3 +268,8 @@ public record ConvertMaintenanceRequestRequest(
     string Description,
     Guid? CategoryId,
     Guid? VendorId);
+
+/// <summary>
+/// Request model for the dismiss endpoint (Story 20.9).
+/// </summary>
+public record DismissMaintenanceRequestRequest(string Reason);

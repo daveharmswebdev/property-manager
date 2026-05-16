@@ -38,6 +38,7 @@ import { SubmitRequestPage } from '../pages/submit-request.page';
 import { MaintenanceRequestsListPage } from '../pages/maintenance-requests-list.page';
 import { MaintenanceRequestDetailPage } from '../pages/maintenance-request-detail.page';
 import { ConvertRequestDialogPage } from '../pages/convert-request-dialog.page';
+import { DismissRequestDialogPage } from '../pages/dismiss-request-dialog.page';
 import { AuthHelper, DEFAULT_TEST_USER } from '../helpers/auth.helper';
 import { MailHogHelper } from '../helpers/mailhog.helper';
 
@@ -87,6 +88,8 @@ type Fixtures = {
   maintenanceRequestDetailPage: MaintenanceRequestDetailPage;
   /** Landlord convert-to-work-order dialog page object (Story 20.8) */
   convertRequestDialogPage: ConvertRequestDialogPage;
+  /** Landlord dismiss dialog page object (Story 20.9) */
+  dismissRequestDialogPage: DismissRequestDialogPage;
   /** Authentication helper for login flows */
   authHelper: AuthHelper;
   /** MailHog helper for email verification (invitation flow) */
@@ -172,6 +175,10 @@ export const test = base.extend<Fixtures>({
 
   convertRequestDialogPage: async ({ page }, use) => {
     await use(new ConvertRequestDialogPage(page));
+  },
+
+  dismissRequestDialogPage: async ({ page }, use) => {
+    await use(new DismissRequestDialogPage(page));
   },
 
   authHelper: async ({ page }, use) => {

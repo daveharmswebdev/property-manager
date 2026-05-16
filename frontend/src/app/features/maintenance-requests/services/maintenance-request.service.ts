@@ -73,6 +73,16 @@ export interface ConvertMaintenanceRequestResponse {
 }
 
 /**
+ * Request body for the dismiss endpoint (Story 20.9, AC #6).
+ *
+ * The dialog trims the reason before submitting; the backend trims again
+ * server-side as the source of truth.
+ */
+export interface DismissMaintenanceRequestBody {
+  reason: string;
+}
+
+/**
  * Query parameters for the landlord maintenance requests inbox.
  *
  * Backend's `GetMaintenanceRequestsQuery.Status` is parsed via a single
@@ -144,5 +154,19 @@ export class MaintenanceRequestService {
       `${this.baseUrl}/${id}/convert`,
       body,
     );
+  }
+
+  /**
+   * Dismiss a maintenance request with a landlord-provided reason (Story 20.9, AC #6, #7).
+   *
+   * The backend responds `204 No Content` on success — the Observable completes
+   * with `void`. Callers should refresh the request via the store afterwards
+   * to pick up the new `Dismissed` status and persisted reason.
+   */
+  dismissMaintenanceRequest(
+    id: string,
+    body: DismissMaintenanceRequestBody,
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/dismiss`, body);
   }
 }

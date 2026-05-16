@@ -333,7 +333,7 @@ development_status:
   20-6-submit-maintenance-request-tenant-ui: done    # FR-TP7, NFR-TP7, NFR-TP8 - Size 5
   20-7-landlord-maintenance-request-inbox: done    # FR-TP12 - Size 5
   20-8-convert-request-to-work-order: done    # FR-TP13, FR-TP14, FR-TP16 - Size 5
-  20-9-dismiss-maintenance-request: backlog    # FR-TP15, FR-TP16 - Size 5
+  20-9-dismiss-maintenance-request: done    # FR-TP15, FR-TP16 - Size 5
   20-10-request-resolution-sync: backlog    # FR-TP17 - Size 3
   20-11-tenant-authorization-lockdown: backlog    # NFR-TP1, NFR-TP2, NFR-TP3 - Size 5
 
