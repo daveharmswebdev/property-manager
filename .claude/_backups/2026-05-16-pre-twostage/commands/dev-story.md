@@ -90,32 +90,25 @@ For each incomplete task/subtask, follow this cycle:
 
 **MIGRATION**: If the task creates an EF Core migration, always run `dotnet ef database update` to apply it to the local database. The app cannot be verified against the real database otherwise.
 
-**Verify locally** (before review):
+**Validate and mark complete**:
 - Verify ALL tests for this task actually exist and pass
-- Run full test suite to ensure no regressions
-
-**Two-stage review**: Dispatch a spec-compliance subagent, then a code-quality subagent. Each gets fresh context — they judge the diff on its merits, not on your narrative. You (the implementer) stay in-context throughout. See the **Two-Stage Review Protocol** section below for the skip rule, dispatch templates, and iteration caps. Skip both only if the task qualifies as trivial under the skip rule.
-
-**Mark complete**:
 - Confirm implementation matches exactly what the task specifies — no extra features
 - Validate related acceptance criteria are satisfied
-- Confirm both review stages either PASSED/APPROVED or were skipped per the trivial rule
+- Run full test suite to ensure no regressions
 - ONLY THEN mark the task `[x]`
 - Update File List with new/modified/deleted files
-- Append the review-log entry for this task to Dev Agent Record
+- Add completion notes to Dev Agent Record
 
 **HALT conditions**:
 - New dependencies required beyond story specifications → ask user
 - 3 consecutive implementation failures → request guidance
 - Required configuration is missing
-- Spec review still `FAIL` after 2 iterations → surface gaps, ask user how to proceed (accept and file follow-up, amend the story, or keep iterating)
-- Quality review still `ISSUES_FOUND` after 2 iterations → present remaining issues with options (merge with known issues + file follow-ups in the story, or keep iterating once more then HALT)
 
 **Rules**:
 - NEVER implement anything not mapped to a specific task/subtask
-- NEVER proceed to next task until current task is complete AND tests pass AND reviews are settled
-- NEVER mark a task complete unless ALL validation gates pass (including the two-stage review or its skip justification)
-- Execute continuously — do NOT pause for user check-in between tasks unless a HALT condition fires
+- NEVER proceed to next task until current task is complete AND tests pass
+- NEVER mark a task complete unless ALL validation gates pass
+- Execute continuously — do NOT pause for review until all tasks are done
 
 If more tasks remain, repeat Step 4. If all tasks done, continue to Step 5.
 
@@ -153,152 +146,6 @@ Report to the user:
 
 Suggest running `/code-review` next. Tip: for best results, clear context first.
 
-## Two-Stage Review Protocol
-
-After each task's tests pass locally, dispatch two fresh subagents — spec compliance first, then code quality. Each starts with a clean context window so it judges the diff on its merits, not on your narrative as implementer. You stay in-context throughout; only the reviewers are subagents.
-
-### Skip Rule (trivial tasks)
-
-Skip both reviews if **all** of these are true:
-- `git diff --stat HEAD` shows ≤10 lines changed in source files (excluding generated code such as `frontend/src/app/core/api/generated/*`)
-- No new files created under `backend/src/` or `frontend/src/`
-- No test files touched beyond the obvious unit test for this task
-
-When skipping, the Review Log entry must be: `Task N: SKIPPED (trivial — <reason>)`. If even one condition fails, run both reviews.
-
-### Stage 1: Spec Compliance Review
-
-Dispatch with the `Agent` tool, `subagent_type: "general-purpose"`. Prompt the subagent with:
-
-```
-You are reviewing ONE task's implementation for SPEC COMPLIANCE only.
-You are not evaluating code quality — only whether the code matches
-the spec and the ACs it touches.
-
-## Inputs
-
-- Story file: <absolute path>
-- Task being reviewed: Task N — "<verbatim task text from story file>"
-- Acceptance criteria touched by this task: <list AC numbers, e.g. AC1, AC3>
-- Files changed for this task: <list of file paths>
-- Run yourself: `git diff HEAD -- <those files>` to see the actual diff
-- Test output excerpt: <relevant test output for the task>
-
-## Your job
-
-Answer two questions:
-
-1. Does the implementation match what the task SAYS to build?
-   - Scope drift (built more than specified)
-   - Scope gap (built less than specified)
-   - Misinterpretation (built a different thing)
-
-2. Does the implementation satisfy the acceptance criteria it touches?
-   - Read each AC literally from the story file
-   - Check whether the diff makes the AC true
-   - Note any AC the diff does NOT cover
-
-## Response format
-
-If everything matches:
-PASS
-<one-sentence summary of what was verified>
-
-If anything is off:
-FAIL
-- Gap 1: <specific gap, citing AC number or task line>
-- Gap 2: ...
-
-Cite file paths and line numbers from the diff. Do NOT comment on
-naming, code style, or other quality concerns — those are a separate
-review.
-```
-
-**If `PASS`:** proceed to Stage 2.
-
-**If `FAIL`:**
-1. You (in main context) address each gap
-2. Re-dispatch a fresh spec-review subagent with the updated diff
-3. Max 2 iterations. If still `FAIL` after iteration 2 → HALT, surface gaps to user.
-
-### Stage 2: Code Quality Review
-
-Only after Stage 1 passes. Dispatch a fresh subagent (do not reuse the spec reviewer):
-
-```
-You are doing an ADVERSARIAL code quality review on ONE task's
-implementation. Your job is to find real problems. If you genuinely
-cannot find at least 2 substantive issues, the review is APPROVE.
-Do not stretch to invent issues, but do not soften criticism either.
-
-## Inputs
-
-- Files changed for this task: <list>
-- Run yourself: `git diff HEAD -- <those files>` for the diff
-- Test output excerpt: <results>
-- READ FIRST: `docs/project/project-context.md` (project-wide rules)
-- READ IF RELEVANT: `docs/project/architecture.md` (architecture patterns)
-
-## What to look for
-
-- **Naming:** are variables/functions/files named for what they ARE,
-  not how they got there or who happens to use them?
-- **DRY:** any duplication that warrants extraction? Or premature
-  abstraction that should be inlined?
-- **Error handling:** errors handled where they happen vs. validated
-  at boundaries? Over-defensive try/catch around impossible cases?
-  Any swallowed errors?
-- **Tests:** do tests verify BEHAVIOR or just IMPLEMENTATION DETAILS?
-  Obvious edge cases that would catch real bugs but aren't covered?
-  Mocks hiding integration risk?
-- **Security:** input validation at trust boundaries, authorization
-  checks present, no secrets in code, no SQL injection or XSS exposure?
-- **Patterns:** does the code follow conventions from
-  project-context.md? Any unjustified deviations?
-- **Comments:** comments that just describe WHAT the code does (when
-  a good name would suffice)? "Added for ticket X" / "used by Y"
-  comments that belong in a PR description?
-
-## Response format
-
-If you find ≥2 real issues:
-ISSUES_FOUND
-1. <file:line> — <issue> — <recommended fix>
-2. <file:line> — <issue> — <recommended fix>
-...
-
-If you genuinely cannot find 2 real issues:
-APPROVE
-<one-sentence note on what was strongest about the implementation>
-
-Trivial nits (whitespace, single-word comment tweaks, "could be more
-idiomatic") do not count. If you have to stretch, just APPROVE.
-```
-
-**If `APPROVE`:** mark the task complete.
-
-**If `ISSUES_FOUND`:**
-1. You address each issue in main context
-2. Re-dispatch a fresh quality-review subagent with the updated diff
-3. Max 2 iterations. If still `ISSUES_FOUND` after iteration 2 → present
-   remaining issues to the user with options (merge with known issues
-   and file follow-ups in the story, or one more override iteration then HALT).
-
-### Recording Reviews
-
-Append a "Review Log" subsection to Dev Agent Record after each task:
-
-```
-### Review Log
-
-- Task 1: Spec PASS (1 iter); Quality APPROVE (1 iter)
-- Task 2: Spec PASS (2 iters — fixed AC3 coverage gap); Quality APPROVE (1 iter)
-- Task 3: SKIPPED (trivial — renamed config key, 4 lines)
-- Task 4: Spec PASS (1 iter); Quality APPROVE (2 iters — fixed naming + missing null check)
-```
-
-This is evidence for `/evaluate` and for the orchestrator's Develop-phase validation. A task without a Review Log entry has unknown review status — treat that as a validation-gate failure.
-
 ## Validation Gates
 
 - [ ] Every task marked `[x]` has passing tests proving it works
@@ -306,4 +153,3 @@ This is evidence for `/evaluate` and for the orchestrator's Develop-phase valida
 - [ ] Full test suite passes with zero regressions
 - [ ] File List is complete and accurate
 - [ ] Story status and sprint-status.yaml are in sync
-- [ ] Dev Agent Record contains a Review Log entry for every task (Spec PASS + Quality APPROVE, or explicit SKIPPED with reason per the trivial rule)
