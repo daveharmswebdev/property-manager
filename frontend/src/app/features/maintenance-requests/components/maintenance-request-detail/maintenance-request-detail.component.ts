@@ -15,6 +15,11 @@ import {
   ConvertRequestDialogData,
   ConvertRequestDialogResult,
 } from '../convert-request-dialog/convert-request-dialog.component';
+import {
+  DismissRequestDialogComponent,
+  DismissRequestDialogData,
+  DismissRequestDialogResult,
+} from '../dismiss-request-dialog/dismiss-request-dialog.component';
 
 /**
  * MaintenanceRequestDetailComponent (Story 20.7, AC #3, #5, #12).
@@ -54,6 +59,16 @@ import {
             >
               <mat-icon>build</mat-icon>
               Convert to Work Order
+            </button>
+            <button
+              mat-stroked-button
+              color="warn"
+              (click)="openDismissDialog(req)"
+              class="dismiss-button"
+              data-testid="dismiss-button"
+            >
+              <mat-icon>cancel</mat-icon>
+              Dismiss
             </button>
           }
         }
@@ -193,7 +208,8 @@ import {
       }
 
       .back-button mat-icon,
-      .convert-button mat-icon {
+      .convert-button mat-icon,
+      .dismiss-button mat-icon {
         margin-right: 4px;
       }
 
@@ -406,6 +422,40 @@ export class MaintenanceRequestDetailComponent implements OnInit, OnDestroy {
         { duration: 4000 },
       );
       this.router.navigate(['/work-orders', result.workOrderId]);
+    });
+  }
+
+  /**
+   * Open the dismiss dialog (Story 20.9, AC #4, #8). On success show a
+   * snackbar and reload the request so the page re-renders with the
+   * Dismissed status + persisted reason. On cancel (no result), do nothing
+   * (AC #17). The landlord stays on this detail page either way.
+   */
+  openDismissDialog(req: MaintenanceRequestDto): void {
+    const dialogRef = this.dialog.open<
+      DismissRequestDialogComponent,
+      DismissRequestDialogData,
+      DismissRequestDialogResult
+    >(DismissRequestDialogComponent, {
+      data: {
+        maintenanceRequestId: req.id,
+        propertyName: req.propertyName,
+        description: req.description,
+      },
+      width: '500px',
+      maxWidth: '95vw',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+      this.snackBar.open('Maintenance request dismissed', 'Close', {
+        duration: 4000,
+      });
+      if (this.requestId) {
+        this.store.loadRequestById(this.requestId);
+      }
     });
   }
 }

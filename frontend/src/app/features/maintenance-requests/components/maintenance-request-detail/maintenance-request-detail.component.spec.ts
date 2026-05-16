@@ -57,7 +57,11 @@ describe('MaintenanceRequestDetailComponent', () => {
       request?: MaintenanceRequestDto | null;
       detailError?: string | null;
       isLoading?: boolean;
-      dialogResult?: { workOrderId: string; maintenanceRequestId: string } | null | undefined;
+      dialogResult?:
+        | { workOrderId: string; maintenanceRequestId: string }
+        | true
+        | null
+        | undefined;
     },
   ) {
     storeMock = {
@@ -278,5 +282,73 @@ describe('MaintenanceRequestDetailComponent', () => {
     component.openConvertDialog(mockRequest);
     expect(snackBarMock.open).not.toHaveBeenCalled();
     expect(routerMock.navigate).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────
+  // Story 20.9: Dismiss button + dialog
+  // ───────────────────────────────────────────────────────────────────
+
+  it('renders Dismiss button when status is Submitted (AC #1)', () => {
+    setupTest();
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="dismiss-button"]'));
+    expect(btn).toBeTruthy();
+    expect(btn.nativeElement.textContent).toContain('Dismiss');
+  });
+
+  it('hides Dismiss button when status is InProgress (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'InProgress' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="dismiss-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('hides Dismiss button when status is Resolved (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'Resolved' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="dismiss-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('hides Dismiss button when status is Dismissed (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'Dismissed' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="dismiss-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('openDismissDialog opens the dialog with the request data', () => {
+    setupTest({ dialogResult: undefined });
+    fixture.detectChanges();
+    component.openDismissDialog(mockRequest);
+    expect(dialogMock.open).toHaveBeenCalled();
+    const callArgs = dialogMock.open.mock.calls[0];
+    expect(callArgs[1].data).toEqual({
+      maintenanceRequestId: 'req-1',
+      propertyName: 'Test Property',
+      description: 'Leaky faucet in the kitchen',
+    });
+  });
+
+  it('on dismiss success: shows snackbar AND refreshes the request', () => {
+    setupTest({ dialogResult: true });
+    fixture.detectChanges();
+    storeMock.loadRequestById.mockClear(); // ignore the ngOnInit call
+    component.openDismissDialog(mockRequest);
+    expect(snackBarMock.open).toHaveBeenCalledWith(
+      'Maintenance request dismissed',
+      'Close',
+      { duration: 4000 },
+    );
+    expect(storeMock.loadRequestById).toHaveBeenCalledWith('req-1');
+  });
+
+  it('on dismiss cancel (no result): does NOT show snackbar or refresh (AC #17)', () => {
+    setupTest({ dialogResult: undefined });
+    fixture.detectChanges();
+    storeMock.loadRequestById.mockClear(); // ignore the ngOnInit call
+    component.openDismissDialog(mockRequest);
+    expect(snackBarMock.open).not.toHaveBeenCalled();
+    expect(storeMock.loadRequestById).not.toHaveBeenCalled();
   });
 });

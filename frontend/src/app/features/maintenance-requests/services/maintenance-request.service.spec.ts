@@ -156,4 +156,29 @@ describe('MaintenanceRequestService', () => {
       req.flush({ workOrderId: 'wo-1', maintenanceRequestId: 'req-1' });
     });
   });
+
+  describe('dismissMaintenanceRequest', () => {
+    it('posts to dismiss URL with reason body', () => {
+      service
+        .dismissMaintenanceRequest('req-1', { reason: 'Tenant moved out' })
+        .subscribe();
+
+      const req = httpMock.expectOne('/api/v1/maintenance-requests/req-1/dismiss');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ reason: 'Tenant moved out' });
+      req.flush(null);
+    });
+
+    it('completes on 204 response', () => {
+      let completed = false;
+      service
+        .dismissMaintenanceRequest('req-1', { reason: 'Some reason' })
+        .subscribe({ complete: () => (completed = true) });
+
+      const req = httpMock.expectOne('/api/v1/maintenance-requests/req-1/dismiss');
+      req.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(completed).toBe(true);
+    });
+  });
 });

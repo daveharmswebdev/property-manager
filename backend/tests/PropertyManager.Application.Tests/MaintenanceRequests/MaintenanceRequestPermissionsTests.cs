@@ -29,4 +29,25 @@ public class MaintenanceRequestPermissionsTests
         tenantPermissions.Should().Contain(Permissions.MaintenanceRequests.Create);
         tenantPermissions.Should().Contain(Permissions.MaintenanceRequests.ViewOwn);
     }
+
+    [Fact]
+    public void RolePermissions_Owner_Has_DismissMaintenanceRequests()
+    {
+        RolePermissions.Mappings["Owner"]
+            .Should().Contain(Permissions.MaintenanceRequests.Dismiss);
+    }
+
+    [Fact]
+    public void RolePermissions_Tenant_DoesNotHave_DismissMaintenanceRequests()
+    {
+        RolePermissions.Mappings["Tenant"]
+            .Should().NotContain(Permissions.MaintenanceRequests.Dismiss);
+    }
+
+    [Fact]
+    public void RolePermissions_Contributor_DoesNotHave_DismissMaintenanceRequests()
+    {
+        RolePermissions.Mappings["Contributor"]
+            .Should().NotContain(Permissions.MaintenanceRequests.Dismiss);
+    }
 }
