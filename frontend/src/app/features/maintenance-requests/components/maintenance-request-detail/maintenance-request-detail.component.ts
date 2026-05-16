@@ -1,12 +1,20 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorCardComponent } from '../../../../shared/components/error-card/error-card.component';
 import { MaintenanceRequestStore } from '../../stores/maintenance-request.store';
+import { MaintenanceRequestDto } from '../../services/maintenance-request.service';
+import {
+  ConvertRequestDialogComponent,
+  ConvertRequestDialogData,
+  ConvertRequestDialogResult,
+} from '../convert-request-dialog/convert-request-dialog.component';
 
 /**
  * MaintenanceRequestDetailComponent (Story 20.7, AC #3, #5, #12).
@@ -30,10 +38,26 @@ import { MaintenanceRequestStore } from '../../stores/maintenance-request.store'
   ],
   template: `
     <div class="request-detail-page" data-testid="request-detail-page">
-      <button mat-button routerLink="/maintenance-requests" class="back-button" data-testid="back-button">
-        <mat-icon>arrow_back</mat-icon>
-        Back to Inbox
-      </button>
+      <div class="page-header">
+        <button mat-button routerLink="/maintenance-requests" class="back-button" data-testid="back-button">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Inbox
+        </button>
+        @if (store.selectedRequest(); as req) {
+          @if (req.status === 'Submitted') {
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="openConvertDialog(req)"
+              class="convert-button"
+              data-testid="convert-button"
+            >
+              <mat-icon>build</mat-icon>
+              Convert to Work Order
+            </button>
+          }
+        }
+      </div>
 
       @if (store.isLoadingDetail()) {
         <app-loading-spinner />
@@ -159,12 +183,25 @@ import { MaintenanceRequestStore } from '../../stores/maintenance-request.store'
         margin: 0 auto;
       }
 
-      .back-button {
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
         margin-bottom: 16px;
       }
 
-      .back-button mat-icon {
+      .back-button mat-icon,
+      .convert-button mat-icon {
         margin-right: 4px;
+      }
+
+      @media (max-width: 768px) {
+        .page-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
       }
 
       .detail-card {
@@ -311,6 +348,9 @@ import { MaintenanceRequestStore } from '../../stores/maintenance-request.store'
 export class MaintenanceRequestDetailComponent implements OnInit, OnDestroy {
   protected readonly store = inject(MaintenanceRequestStore);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   private requestId = '';
 
@@ -333,5 +373,39 @@ export class MaintenanceRequestDetailComponent implements OnInit, OnDestroy {
 
   getStatusLabel(status: string): string {
     return status === 'InProgress' ? 'In Progress' : status;
+  }
+
+  /**
+   * Open the convert-to-work-order dialog (Story 20.8, AC #4, #8).
+   * On success navigate to the new work order and show the success snackbar.
+   * On cancel (no result) do nothing — AC #16.
+   */
+  openConvertDialog(req: MaintenanceRequestDto): void {
+    const dialogRef = this.dialog.open<
+      ConvertRequestDialogComponent,
+      ConvertRequestDialogData,
+      ConvertRequestDialogResult
+    >(ConvertRequestDialogComponent, {
+      data: {
+        maintenanceRequestId: req.id,
+        propertyId: req.propertyId,
+        propertyName: req.propertyName,
+        description: req.description,
+      },
+      width: '600px',
+      maxWidth: '95vw',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+      this.snackBar.open(
+        'Work order created — maintenance request marked In Progress',
+        'Close',
+        { duration: 4000 },
+      );
+      this.router.navigate(['/work-orders', result.workOrderId]);
+    });
   }
 }

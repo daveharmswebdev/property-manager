@@ -52,6 +52,27 @@ export interface PaginatedMaintenanceRequests {
 }
 
 /**
+ * Request body for the convert-to-work-order endpoint (Story 20.8).
+ *
+ * Empty-string `categoryId` / `vendorId` from the dialog should be coerced
+ * to `undefined` so the backend sees `null` (which means "no category" /
+ * "Self (DIY)" respectively).
+ */
+export interface ConvertMaintenanceRequestRequest {
+  description: string;
+  categoryId?: string | null;
+  vendorId?: string | null;
+}
+
+/**
+ * Response shape from the convert endpoint (Story 20.8, AC #7).
+ */
+export interface ConvertMaintenanceRequestResponse {
+  workOrderId: string;
+  maintenanceRequestId: string;
+}
+
+/**
  * Query parameters for the landlord maintenance requests inbox.
  *
  * Backend's `GetMaintenanceRequestsQuery.Status` is parsed via a single
@@ -107,5 +128,21 @@ export class MaintenanceRequestService {
    */
   getMaintenanceRequestById(id: string): Observable<MaintenanceRequestDto> {
     return this.http.get<MaintenanceRequestDto>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Convert a maintenance request into a work order (Story 20.8, AC #5, #7).
+   *
+   * On success the backend has atomically created the work order, mirrored
+   * its photos by reference, and transitioned the request to InProgress.
+   */
+  convertToWorkOrder(
+    id: string,
+    body: ConvertMaintenanceRequestRequest,
+  ): Observable<ConvertMaintenanceRequestResponse> {
+    return this.http.post<ConvertMaintenanceRequestResponse>(
+      `${this.baseUrl}/${id}/convert`,
+      body,
+    );
   }
 }

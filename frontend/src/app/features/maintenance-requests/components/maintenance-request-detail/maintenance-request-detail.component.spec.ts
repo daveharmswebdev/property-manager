@@ -1,12 +1,15 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { of } from 'rxjs';
 import { MaintenanceRequestDetailComponent } from './maintenance-request-detail.component';
 import { MaintenanceRequestStore } from '../../stores/maintenance-request.store';
 import {
@@ -18,6 +21,9 @@ describe('MaintenanceRequestDetailComponent', () => {
   let fixture: ComponentFixture<MaintenanceRequestDetailComponent>;
   let component: MaintenanceRequestDetailComponent;
   let storeMock: any;
+  let dialogMock: { open: ReturnType<typeof vi.fn> };
+  let snackBarMock: { open: ReturnType<typeof vi.fn> };
+  let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   const mockPhoto: MaintenanceRequestPhotoDto = {
     id: 'photo-1',
@@ -46,7 +52,14 @@ describe('MaintenanceRequestDetailComponent', () => {
     photos: null,
   };
 
-  function setupTest(initial?: { request?: MaintenanceRequestDto | null; detailError?: string | null; isLoading?: boolean }) {
+  function setupTest(
+    initial?: {
+      request?: MaintenanceRequestDto | null;
+      detailError?: string | null;
+      isLoading?: boolean;
+      dialogResult?: { workOrderId: string; maintenanceRequestId: string } | null | undefined;
+    },
+  ) {
     storeMock = {
       selectedRequest: signal<MaintenanceRequestDto | null>(initial?.request ?? mockRequest),
       isLoadingDetail: signal(initial?.isLoading ?? false),
@@ -55,6 +68,14 @@ describe('MaintenanceRequestDetailComponent', () => {
       clearSelectedRequest: vi.fn(),
     };
 
+    dialogMock = {
+      open: vi.fn().mockReturnValue({
+        afterClosed: () => of(initial?.dialogResult ?? undefined),
+      }),
+    };
+    snackBarMock = { open: vi.fn() };
+    routerMock = { navigate: vi.fn() };
+
     TestBed.configureTestingModule({
       imports: [MaintenanceRequestDetailComponent, NoopAnimationsModule],
       providers: [
@@ -62,6 +83,9 @@ describe('MaintenanceRequestDetailComponent', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: MaintenanceRequestStore, useValue: storeMock },
+        { provide: MatDialog, useValue: dialogMock },
+        { provide: MatSnackBar, useValue: snackBarMock },
+        { provide: Router, useValue: routerMock },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -185,5 +209,74 @@ describe('MaintenanceRequestDetailComponent', () => {
     fixture.detectChanges();
     fixture.destroy();
     expect(storeMock.clearSelectedRequest).toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────
+  // Story 20.8: Convert button + dialog
+  // ───────────────────────────────────────────────────────────────────
+
+  it('renders Convert button when status is Submitted (AC #1)', () => {
+    setupTest();
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="convert-button"]'));
+    expect(btn).toBeTruthy();
+    expect(btn.nativeElement.textContent).toContain('Convert to Work Order');
+  });
+
+  it('hides Convert button when status is InProgress (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'InProgress' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="convert-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('hides Convert button when status is Resolved (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'Resolved' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="convert-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('hides Convert button when status is Dismissed (AC #2)', () => {
+    setupTest({ request: { ...mockRequest, status: 'Dismissed' } });
+    fixture.detectChanges();
+    const btn = fixture.debugElement.query(By.css('[data-testid="convert-button"]'));
+    expect(btn).toBeFalsy();
+  });
+
+  it('openConvertDialog opens the dialog with the request data', () => {
+    setupTest({ dialogResult: undefined });
+    fixture.detectChanges();
+    component.openConvertDialog(mockRequest);
+    expect(dialogMock.open).toHaveBeenCalled();
+    const callArgs = dialogMock.open.mock.calls[0];
+    expect(callArgs[1].data).toEqual({
+      maintenanceRequestId: 'req-1',
+      propertyId: 'prop-1',
+      propertyName: 'Test Property',
+      description: 'Leaky faucet in the kitchen',
+    });
+  });
+
+  it('on dialog success: shows snackbar and navigates to the new work order', () => {
+    setupTest({
+      dialogResult: { workOrderId: 'wo-new-1', maintenanceRequestId: 'req-1' },
+    });
+    fixture.detectChanges();
+    component.openConvertDialog(mockRequest);
+    expect(snackBarMock.open).toHaveBeenCalledWith(
+      'Work order created — maintenance request marked In Progress',
+      'Close',
+      { duration: 4000 },
+    );
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/work-orders', 'wo-new-1']);
+  });
+
+  it('on dialog cancel (no result): does NOT show snackbar or navigate (AC #16)', () => {
+    setupTest({ dialogResult: undefined });
+    fixture.detectChanges();
+    component.openConvertDialog(mockRequest);
+    expect(snackBarMock.open).not.toHaveBeenCalled();
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 });

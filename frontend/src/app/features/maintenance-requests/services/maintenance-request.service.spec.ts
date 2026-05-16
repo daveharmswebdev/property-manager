@@ -125,4 +125,35 @@ describe('MaintenanceRequestService', () => {
       req.flush(mockRequest);
     });
   });
+
+  describe('convertToWorkOrder', () => {
+    it('should POST to /api/v1/maintenance-requests/:id/convert with the body', () => {
+      const body = { description: 'Fix the heater' };
+      const response = {
+        workOrderId: 'wo-1',
+        maintenanceRequestId: 'req-1',
+      };
+      service.convertToWorkOrder('req-1', body).subscribe((r) => {
+        expect(r).toEqual(response);
+      });
+
+      const req = httpMock.expectOne('/api/v1/maintenance-requests/req-1/convert');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(body);
+      req.flush(response);
+    });
+
+    it('should send categoryId and vendorId when provided', () => {
+      const body = {
+        description: 'Fix it',
+        categoryId: 'cat-1',
+        vendorId: 'vendor-1',
+      };
+      service.convertToWorkOrder('req-1', body).subscribe();
+
+      const req = httpMock.expectOne('/api/v1/maintenance-requests/req-1/convert');
+      expect(req.request.body).toEqual(body);
+      req.flush({ workOrderId: 'wo-1', maintenanceRequestId: 'req-1' });
+    });
+  });
 });
