@@ -134,6 +134,36 @@ describe('BottomNavComponent', () => {
       const navTabs = fixture.debugElement.queryAll(By.css('.nav-tab'));
       expect(navTabs.length).toBe(2);
     });
+
+    // Story 20.11, AC #16: Tenant bottom nav must contain ONLY Dashboard (→ /tenant) and Submit.
+    // No landlord nav items may leak through.
+    describe('Tenant lockdown sweep (Story 20.11, AC #16)', () => {
+      const forbiddenLandlordLabels: readonly string[] = [
+        'Properties',
+        'Expenses',
+        'Income',
+        'Receipts',
+        'Vendors',
+        'Work Orders',
+        'Maintenance Requests',
+        'Reports',
+        'Settings',
+      ];
+
+      it.each(forbiddenLandlordLabels)(
+        'should NOT show landlord nav item "%s" for Tenant in bottom nav',
+        (forbiddenLabel) => {
+          const labels = component.navItems().map((item) => item.label);
+          expect(labels).not.toContain(forbiddenLabel);
+        },
+      );
+
+      it('Dashboard tab points to /tenant (not /dashboard) for Tenant role', () => {
+        const dashboard = component.navItems().find((i) => i.label === 'Dashboard');
+        expect(dashboard).toBeTruthy();
+        expect(dashboard?.route).toBe('/tenant');
+      });
+    });
   });
 
   describe('Contributor role (AC: #6)', () => {

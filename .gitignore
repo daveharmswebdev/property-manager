@@ -139,3 +139,5 @@ backend/CoverageReport
 # Playwright MCP screenshots (development)
 screenshots/*
 !screenshots/.gitkeep
+
+scratch.txt

@@ -231,6 +231,37 @@ describe('SidebarNavComponent', () => {
       const labels = component.navItems().map((item) => item.label);
       expect(labels).not.toContain('Maintenance Requests');
     });
+
+    // Story 20.11, AC #16: Tenant nav must contain ONLY Dashboard (→ /tenant) and Submit Request.
+    // No landlord nav items may leak through. The sweep is explicit so any future regression
+    // (e.g., an accidental add to the Owner allItems list with the wrong filter) fails here.
+    describe('Tenant lockdown sweep (Story 20.11, AC #16)', () => {
+      const forbiddenLandlordLabels: readonly string[] = [
+        'Properties',
+        'Expenses',
+        'Income',
+        'Receipts',
+        'Vendors',
+        'Work Orders',
+        'Maintenance Requests',
+        'Reports',
+        'Settings',
+      ];
+
+      it.each(forbiddenLandlordLabels)(
+        'should NOT show landlord nav item "%s" for Tenant',
+        (forbiddenLabel) => {
+          const labels = component.navItems().map((item) => item.label);
+          expect(labels).not.toContain(forbiddenLabel);
+        },
+      );
+
+      it('Dashboard nav item points to /tenant (not /dashboard) for Tenant role', () => {
+        const dashboard = component.navItems().find((i) => i.label === 'Dashboard');
+        expect(dashboard).toBeTruthy();
+        expect(dashboard?.route).toBe('/tenant');
+      });
+    });
   });
 
   describe('userDisplayName fallback logic (AC-7.2.2)', () => {

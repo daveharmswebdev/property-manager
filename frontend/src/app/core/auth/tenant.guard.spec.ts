@@ -68,4 +68,18 @@ describe('tenantGuard', () => {
       expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
     });
   });
+
+  // Story 20.11, AC #15 (inverse): a null user trying to hit /tenant is redirected to /dashboard
+  // (authGuard catches unauthenticated users earlier; this is a defense-in-depth case).
+  it('should redirect null user to /dashboard', () => {
+    currentUserSignal.set(null);
+    const mockUrlTree = {} as UrlTree;
+    vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
+
+    TestBed.runInInjectionContext(() => {
+      const result = tenantGuard(null as any, { url: '/tenant' } as any);
+      expect(result).toBe(mockUrlTree);
+      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
+    });
+  });
 });
