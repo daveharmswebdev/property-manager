@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PropertyManager.Domain.Entities;
+using PropertyManager.Domain.Enums;
 using PropertyManager.Infrastructure.Persistence;
 
 namespace PropertyManager.Api.Tests;
@@ -686,6 +688,198 @@ public class WorkOrdersControllerTests : IClassFixture<PropertyManagerWebApplica
     }
 
     // =====================================================
+    // PUT /api/v1/work-orders/{id} — Story 20.10 resolution sync (AC #1, #2, #4, #7, #10)
+    // =====================================================
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToCompleted_WithLinkedRequest_MarksRequestResolved()
+    {
+        // AC #1, #5 — landlord completes a WO linked to an InProgress MR → MR is Resolved.
+        var (accessToken, propertyId, accountId, userId) = await CreateUserPropertyAndCaptureContextAsync();
+        var workOrderId = await CreateWorkOrderAsync(accessToken, propertyId, status: "Reported");
+        var requestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountId, propertyId, userId, workOrderId, MaintenanceRequestStatus.InProgress);
+
+        var updateRequest = new { Description = "Job done", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var wo = await db.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+        wo.Status.Should().Be(WorkOrderStatus.Completed);
+        var mr = await db.MaintenanceRequests.IgnoreQueryFilters().FirstAsync(m => m.Id == requestId);
+        mr.Status.Should().Be(MaintenanceRequestStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToCompleted_NoLinkedRequest_StillSucceeds()
+    {
+        // AC #4 — unlinked WO completion is unaffected.
+        var (accessToken, propertyId, _, _) = await CreateUserPropertyAndCaptureContextAsync();
+        var workOrderId = await CreateWorkOrderAsync(accessToken, propertyId, status: "Assigned");
+
+        var updateRequest = new { Description = "Job done", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var wo = await db.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+        wo.Status.Should().Be(WorkOrderStatus.Completed);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToAssigned_DoesNotModifyLinkedRequest()
+    {
+        // AC #2 — non-Completed transitions leave the linked MR untouched.
+        var (accessToken, propertyId, accountId, userId) = await CreateUserPropertyAndCaptureContextAsync();
+        var workOrderId = await CreateWorkOrderAsync(accessToken, propertyId, status: "Reported");
+        var requestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountId, propertyId, userId, workOrderId, MaintenanceRequestStatus.InProgress);
+
+        var updateRequest = new { Description = "Reassigning", Status = "Assigned" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var wo = await db.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+        wo.Status.Should().Be(WorkOrderStatus.Assigned);
+        var mr = await db.MaintenanceRequests.IgnoreQueryFilters().FirstAsync(m => m.Id == requestId);
+        mr.Status.Should().Be(MaintenanceRequestStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_NoOpStatusCompleted_DoesNotRetransitionRequest()
+    {
+        // AC #3 — Completed → Completed is gated out; linked Resolved MR is not touched.
+        var (accessToken, propertyId, accountId, userId) = await CreateUserPropertyAndCaptureContextAsync();
+        // Create a WO and seed it as Completed directly via DbContext so we don't have to
+        // first complete it through the handler (which would itself trigger the sync).
+        var workOrderId = await CreateWorkOrderAsync(accessToken, propertyId, status: "Reported");
+        var requestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountId, propertyId, userId, workOrderId, MaintenanceRequestStatus.Resolved);
+
+        using (var seedScope = _factory.Services.CreateScope())
+        {
+            var seedDb = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seedWo = await seedDb.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+            seedWo.Status = WorkOrderStatus.Completed;
+            await seedDb.SaveChangesAsync();
+        }
+
+        var updateRequest = new { Description = "Tag tweak", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var wo = await db.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+        wo.Status.Should().Be(WorkOrderStatus.Completed);
+        wo.Description.Should().Be("Tag tweak");
+        var mr = await db.MaintenanceRequests.IgnoreQueryFilters().FirstAsync(m => m.Id == requestId);
+        mr.Status.Should().Be(MaintenanceRequestStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToCompleted_LinkedRequestDismissed_Returns400_RollsBackWO()
+    {
+        // AC #7 — Dismissed MR cannot transition to Resolved; entire SaveChanges rolls back.
+        var (accessToken, propertyId, accountId, userId) = await CreateUserPropertyAndCaptureContextAsync();
+        var workOrderId = await CreateWorkOrderAsync(accessToken, propertyId, status: "Assigned");
+        var requestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountId, propertyId, userId, workOrderId, MaintenanceRequestStatus.Dismissed);
+
+        var updateRequest = new { Description = "Should not stick", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, accessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Dismissed").And.Contain("Resolved");
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var wo = await db.WorkOrders.IgnoreQueryFilters().FirstAsync(w => w.Id == workOrderId);
+        wo.Status.Should().Be(WorkOrderStatus.Assigned);
+        wo.Description.Should().NotBe("Should not stick");
+        var mr = await db.MaintenanceRequests.IgnoreQueryFilters().FirstAsync(m => m.Id == requestId);
+        mr.Status.Should().Be(MaintenanceRequestStatus.Dismissed);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToCompleted_AsTenant_Returns403()
+    {
+        // AC #10 — Tenant role cannot reach the sync code path (CanManageWorkOrders denies).
+        var ownerEmail = $"owner-{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail);
+        var (ownerToken, _) = await LoginUserAsync(ownerEmail);
+
+        var propertyId = await _factory.CreatePropertyInAccountAsync(ownerAccountId);
+        var workOrderId = await CreateWorkOrderAsync(ownerToken, propertyId, status: "Assigned");
+
+        var tenantEmail = $"tenant-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTenantUserInAccountAsync(ownerAccountId, propertyId, tenantEmail);
+        var (tenantToken, _) = await LoginUserAsync(tenantEmail);
+
+        var updateRequest = new { Description = "Forbidden", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, tenantToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateWorkOrder_StatusToCompleted_LinkedRequestFromDifferentAccount_DoesNotMutateCrossAccount()
+    {
+        // Multi-tenancy — Owner A's WO completion must not touch Owner B's MR (even though
+        // the MR's WorkOrderId is forged to match A's WO id).
+        var (ownerAToken, propertyAId, accountAId, userAId) = await CreateUserPropertyAndCaptureContextAsync();
+        var workOrderId = await CreateWorkOrderAsync(ownerAToken, propertyAId, status: "Reported");
+        var ownAccountRequestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountAId, propertyAId, userAId, workOrderId, MaintenanceRequestStatus.InProgress);
+
+        // Owner B (different account) — forge an MR with B's accountId but A's WorkOrderId.
+        var ownerBEmail = $"owner-b-{Guid.NewGuid():N}@example.com";
+        var (_, accountBId) = await _factory.CreateTestUserAsync(ownerBEmail);
+        var propertyBId = await _factory.CreatePropertyInAccountAsync(accountBId);
+        var userBId = Guid.NewGuid();
+        var crossAccountRequestId = await SeedMaintenanceRequestLinkedToAsync(
+            accountBId, propertyBId, userBId, workOrderId, MaintenanceRequestStatus.InProgress);
+
+        var updateRequest = new { Description = "Done", Status = "Completed" };
+
+        var response = await PutAsJsonWithAuthAsync(
+            $"/api/v1/work-orders/{workOrderId}", updateRequest, ownerAToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var ownMr = await db.MaintenanceRequests.IgnoreQueryFilters()
+            .FirstAsync(m => m.Id == ownAccountRequestId);
+        ownMr.Status.Should().Be(MaintenanceRequestStatus.Resolved);
+        var crossMr = await db.MaintenanceRequests.IgnoreQueryFilters()
+            .FirstAsync(m => m.Id == crossAccountRequestId);
+        crossMr.Status.Should().Be(MaintenanceRequestStatus.InProgress);
+    }
+
+    // =====================================================
     // DELETE /api/v1/work-orders/{id} Tests
     // =====================================================
 
@@ -1066,6 +1260,81 @@ public class WorkOrdersControllerTests : IClassFixture<PropertyManagerWebApplica
         var request = new HttpRequestMessage(HttpMethod.Delete, url);
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
         return await _client.SendAsync(request);
+    }
+
+    /// <summary>
+    /// Owner registration helper that ALSO exposes the freshly-created AccountId and UserId
+    /// (RegisterAndLoginAsync only returns the access token / user id). Used by the Story 20.10
+    /// integration tests which need to seed a linked MaintenanceRequest directly.
+    /// </summary>
+    private async Task<(string AccessToken, Guid PropertyId, Guid AccountId, Guid UserId)>
+        CreateUserPropertyAndCaptureContextAsync()
+    {
+        var email = $"workorder-sync-{Guid.NewGuid():N}@example.com";
+        var password = "Test@123456";
+        var (userId, accountId) = await _factory.CreateTestUserAsync(email, password);
+
+        var loginRequest = new { Email = email, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.EnsureSuccessStatusCode();
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var accessToken = loginContent!.AccessToken;
+
+        var propertyId = await _factory.CreatePropertyInAccountAsync(accountId);
+
+        return (accessToken, propertyId, accountId, userId);
+    }
+
+    private async Task<(string AccessToken, Guid? UserId)> LoginUserAsync(
+        string email, string password = "Test@123456")
+    {
+        var loginRequest = new { Email = email, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.EnsureSuccessStatusCode();
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        return (loginContent!.AccessToken, null);
+    }
+
+    private async Task<Guid> CreateWorkOrderAsync(string accessToken, Guid propertyId, string status)
+    {
+        var createResponse = await PostAsJsonWithAuthAsync(
+            "/api/v1/work-orders",
+            new { PropertyId = propertyId, Description = "Test WO", Status = status },
+            accessToken);
+        createResponse.EnsureSuccessStatusCode();
+        var content = await createResponse.Content.ReadFromJsonAsync<CreateWorkOrderResponse>();
+        return content!.Id;
+    }
+
+    /// <summary>
+    /// Direct-DB seed of a MaintenanceRequest linked to an existing WorkOrder.
+    /// Mirrors <c>MaintenanceRequestsControllerTests.SeedMaintenanceRequestAsync</c>, but
+    /// adds the <c>WorkOrderId</c> link so the Story 20.10 sync block sees it.
+    /// </summary>
+    private async Task<Guid> SeedMaintenanceRequestLinkedToAsync(
+        Guid accountId,
+        Guid propertyId,
+        Guid submittedByUserId,
+        Guid workOrderId,
+        MaintenanceRequestStatus status)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var entity = new MaintenanceRequest
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            PropertyId = propertyId,
+            SubmittedByUserId = submittedByUserId,
+            WorkOrderId = workOrderId,
+            Description = "seeded for sync test",
+            Status = status
+        };
+
+        db.MaintenanceRequests.Add(entity);
+        await db.SaveChangesAsync();
+        return entity.Id;
     }
 }
 

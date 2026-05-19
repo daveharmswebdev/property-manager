@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Domain.Enums;
@@ -28,13 +29,16 @@ public class UpdateWorkOrderCommandHandler : IRequestHandler<UpdateWorkOrderComm
 {
     private readonly IAppDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly ILogger<UpdateWorkOrderCommandHandler> _logger;
 
     public UpdateWorkOrderCommandHandler(
         IAppDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ILogger<UpdateWorkOrderCommandHandler> logger)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _logger = logger;
     }
 
     public async Task Handle(UpdateWorkOrderCommand request, CancellationToken cancellationToken)
@@ -48,6 +52,10 @@ public class UpdateWorkOrderCommandHandler : IRequestHandler<UpdateWorkOrderComm
         {
             throw new NotFoundException(nameof(WorkOrder), request.Id);
         }
+
+        // Capture prior status BEFORE any mutation so we can detect a true status transition
+        // for the Story 20.10 sync block below.
+        var priorStatus = workOrder.Status;
 
         // Validate category if provided
         if (request.CategoryId.HasValue)
@@ -117,6 +125,34 @@ public class UpdateWorkOrderCommandHandler : IRequestHandler<UpdateWorkOrderComm
                     WorkOrderId = workOrder.Id,
                     TagId = tagId
                 });
+            }
+        }
+
+        // Story 20.10: Sync linked MaintenanceRequest to Resolved when this WO transitions
+        // from a non-Completed status to Completed. Guarded transition-only (AC #3): a no-op
+        // PUT that keeps Completed → Completed does NOT trigger the sync. Unlinked work orders
+        // and non-Completed transitions skip the lookup entirely (AC #4, #11).
+        if (workOrder.Status == WorkOrderStatus.Completed
+            && priorStatus != WorkOrderStatus.Completed)
+        {
+            var linkedRequest = await _dbContext.MaintenanceRequests
+                .FirstOrDefaultAsync(
+                    mr => mr.WorkOrderId == workOrder.Id
+                        && mr.AccountId == _currentUser.AccountId
+                        && mr.DeletedAt == null,
+                    cancellationToken);
+
+            if (linkedRequest != null && linkedRequest.Status != MaintenanceRequestStatus.Resolved)
+            {
+                // Domain enforces InProgress → Resolved. Any other source status throws
+                // BusinessRuleException → 400 (AC #7) and rolls back the WO update via EF's
+                // implicit SaveChanges transaction.
+                linkedRequest.TransitionTo(MaintenanceRequestStatus.Resolved);
+
+                _logger.LogInformation(
+                    "Linked maintenance request {RequestId} marked Resolved due to work order {WorkOrderId} completion",
+                    linkedRequest.Id,
+                    workOrder.Id);
             }
         }
 
