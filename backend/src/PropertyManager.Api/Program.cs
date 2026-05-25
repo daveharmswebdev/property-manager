@@ -208,13 +208,17 @@ void AddPermissionPolicy(AuthorizationOptions options, string policyName, string
                     var loggerFactory = httpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                     var logger = loggerFactory.CreateLogger("PropertyManager.Authorization.Audit");
 
+                    // Strip CR/LF from user-controlled values before logging to prevent log forging (CWE-117).
+                    var safeMethod = SanitizeLogValue(httpContext.Request.Method);
+                    var safePath = SanitizeLogValue(httpContext.Request.Path.Value);
+
                     logger.LogWarning(
                         "Authorization denied: user={UserId} account={AccountId} role={Role} method={Method} path={Path} policy={Policy}",
                         currentUser.UserId,
                         currentUser.AccountId,
                         currentUser.Role,
-                        httpContext.Request.Method,
-                        httpContext.Request.Path.Value,
+                        safeMethod,
+                        safePath,
                         policyName);
                 }
                 catch
@@ -228,6 +232,16 @@ void AddPermissionPolicy(AuthorizationOptions options, string policyName, string
             return false;
         });
     });
+}
+
+static string SanitizeLogValue(string? value)
+{
+    if (string.IsNullOrEmpty(value))
+    {
+        return string.Empty;
+    }
+
+    return value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 }
 
 // Configure MediatR
