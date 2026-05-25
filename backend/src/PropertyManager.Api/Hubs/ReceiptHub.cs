@@ -7,8 +7,13 @@ namespace PropertyManager.Api.Hubs;
 /// <summary>
 /// SignalR Hub for real-time receipt notifications (AC-5.6.1, AC-5.6.2, AC-5.6.5).
 /// Users are grouped by account to ensure account-based isolation.
+///
+/// Story 20.11 lockdown — the hub broadcasts to <c>account-{accountId}</c> groups, which
+/// include the landlord's receipt-completion stream. Without a policy gate a Tenant would
+/// receive landlord notifications. CanAccessReceipts matches the rest of the receipts surface
+/// and yields 403 on negotiate for Tenant.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "CanAccessReceipts")]
 public class ReceiptHub : Hub
 {
     private readonly ILogger<ReceiptHub> _logger;

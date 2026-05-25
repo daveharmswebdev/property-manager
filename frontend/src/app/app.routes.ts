@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
 import { ownerGuard } from './core/auth/owner.guard';
 import { tenantGuard } from './core/auth/tenant.guard';
+import { notTenantGuard } from './core/auth/not-tenant.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
@@ -48,21 +49,27 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard],
     children: [
-      // Dashboard (AC7.7) - default route
+      // Dashboard (AC7.7) - default route. Shared between Owner and Contributor;
+      // notTenantGuard redirects Tenant to /tenant (Story 20.11, AC #15) but
+      // allows Owner and Contributor through (which ownerGuard would not).
       {
         path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent
           ),
+        canActivate: [notTenantGuard],
       },
-      // Properties (AC7.7, AC-2.1.1)
+      // Properties list (AC7.7, AC-2.1.1). Visible to Owner only (Contributor's
+      // sidebar excludes it), but notTenantGuard explicitly redirects Tenant
+      // away (Story 20.11, AC #15).
       {
         path: 'properties',
         loadComponent: () =>
           import('./features/properties/properties.component').then(
             (m) => m.PropertiesComponent
           ),
+        canActivate: [notTenantGuard],
       },
       {
         path: 'properties/new',
@@ -145,13 +152,14 @@ export const routes: Routes = [
           ),
         canActivate: [ownerGuard],
       },
-      // Receipts (AC7.7)
+      // Receipts (AC7.7). Owner + Contributor only; Tenant redirected per Story 20.11 AC #15.
       {
         path: 'receipts',
         loadComponent: () =>
           import('./features/receipts/receipts.component').then(
             (m) => m.ReceiptsComponent
           ),
+        canActivate: [notTenantGuard],
       },
       // Receipt Processing (AC-5.4.1) — Owner-only (Contributors can view list but not process)
       {
@@ -217,13 +225,15 @@ export const routes: Routes = [
         canActivate: [ownerGuard],
         canDeactivate: [unsavedChangesGuard],
       },
-      // Work Orders (Story 9.2 - AC #6)
+      // Work Orders (Story 9.2 - AC #6). Shared between Owner and Contributor;
+      // notTenantGuard pushes Tenant to /tenant per Story 20.11 AC #15.
       {
         path: 'work-orders',
         loadComponent: () =>
           import('./features/work-orders/work-orders.component').then(
             (m) => m.WorkOrdersComponent
           ),
+        canActivate: [notTenantGuard],
       },
       {
         path: 'work-orders/new',
@@ -239,6 +249,7 @@ export const routes: Routes = [
           import('./features/work-orders/pages/work-order-detail/work-order-detail.component').then(
             (m) => m.WorkOrderDetailComponent
           ),
+        canActivate: [notTenantGuard],
       },
       // Work Order Edit (Story 9-9, AC #1)
       {

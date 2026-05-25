@@ -14,6 +14,11 @@ namespace PropertyManager.Api.Controllers;
 [ApiController]
 [Route("api/v1/test")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+// Story 20.11 lockdown — Reset destroys per-account data. A Tenant token must NOT be able to
+// trigger it (the Dev-only return-404 guard inside Reset only fires AFTER the controller is reached,
+// which still lets a Tenant get past authorization). CanManageProperties = Owner-only, which
+// matches the e2e teardown helper login (`claude@claude.com` = Owner).
+[Authorize(Policy = "CanManageProperties")]
 public class TestController : ControllerBase
 {
     private readonly AppDbContext _dbContext;

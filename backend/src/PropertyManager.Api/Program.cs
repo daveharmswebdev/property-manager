@@ -158,6 +158,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Permission-based authorization policies.
+// The `AddPermissionPolicy` helper below is the PRIMARY tenant lockdown enforcement point —
+// every landlord controller is gated by one of these policies. The lockdown regression suite
+// lives in `backend/tests/PropertyManager.Api.Tests/TenantAuthorizationLockdownTests.cs`
+// (Story 20.11). Any controller that does NOT carry one of these policy attributes is
+// implicitly accessible to all authenticated roles, including Tenant.
 builder.Services.AddAuthorization(options =>
 {
     AddPermissionPolicy(options, "CanManageProperties", Permissions.Properties.Create);
@@ -175,7 +181,9 @@ builder.Services.AddAuthorization(options =>
     AddPermissionPolicy(options, "CanDismissMaintenanceRequests", Permissions.MaintenanceRequests.Dismiss);
 });
 
-// Helper method to create permission-based policies
+// Helper method to create permission-based policies with structured audit logging on denial (Story 20.11 / NFR-TP3).
+// On permission denial we emit a structured Serilog warning carrying userId, accountId, role,
+// HTTP method, request path, and the failing policy name. JWT, password, and email are NEVER logged.
 void AddPermissionPolicy(AuthorizationOptions options, string policyName, string permission)
 {
     options.AddPolicy(policyName, policy =>
@@ -186,11 +194,54 @@ void AddPermissionPolicy(AuthorizationOptions options, string policyName, string
             if (context.Resource is HttpContext httpContext)
             {
                 var permissionService = httpContext.RequestServices.GetRequiredService<IPermissionService>();
-                return permissionService.HasPermission(permission);
+                if (permissionService.HasPermission(permission))
+                {
+                    return true;
+                }
+
+                // Authorization failure — emit structured audit log (NFR-TP3).
+                // Read identity from ICurrentUser (already populated from JWT claims) so logged
+                // identifiers are non-PII (Guids + role string).
+                try
+                {
+                    var currentUser = httpContext.RequestServices.GetRequiredService<ICurrentUser>();
+                    var loggerFactory = httpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("PropertyManager.Authorization.Audit");
+
+                    // Strip CR/LF from user-controlled values before logging to prevent log forging (CWE-117).
+                    var safeMethod = SanitizeLogValue(httpContext.Request.Method);
+                    var safePath = SanitizeLogValue(httpContext.Request.Path.Value);
+
+                    logger.LogWarning(
+                        "Authorization denied: user={UserId} account={AccountId} role={Role} method={Method} path={Path} policy={Policy}",
+                        currentUser.UserId,
+                        currentUser.AccountId,
+                        currentUser.Role,
+                        safeMethod,
+                        safePath,
+                        policyName);
+                }
+                catch
+                {
+                    // Logging must NEVER break the auth pipeline. Swallow any unexpected
+                    // resolution failure (e.g., scoped service in non-request context).
+                }
+
+                return false;
             }
             return false;
         });
     });
+}
+
+static string SanitizeLogValue(string? value)
+{
+    if (string.IsNullOrEmpty(value))
+    {
+        return string.Empty;
+    }
+
+    return value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 }
 
 // Configure MediatR

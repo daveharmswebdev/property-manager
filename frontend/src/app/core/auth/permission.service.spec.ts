@@ -219,5 +219,46 @@ describe('PermissionService', () => {
       currentUserSignal.set(null);
       expect(service.canAccess('/dashboard')).toBe(false);
     });
+
+    // Story 20.11, AC #17: Tenant role denied access to every landlord route from AC #15.
+    // The sweep mirrors the backend integration matrix and the owner.guard.spec.ts sweep.
+    describe('Tenant role sweep across all landlord routes (Story 20.11, AC #17)', () => {
+      const landlordRoutes: readonly string[] = [
+        '/dashboard',
+        '/properties',
+        '/properties/abc123',
+        '/expenses',
+        '/expenses/abc123',
+        '/income',
+        '/income/abc123',
+        '/reports',
+        '/vendors',
+        '/vendors/abc123',
+        '/work-orders',
+        '/work-orders/abc123',
+        '/work-orders/abc123/edit',
+        '/maintenance-requests',
+        '/maintenance-requests/abc123',
+        '/settings',
+        '/settings/users',
+      ];
+
+      it.each(landlordRoutes)('denies Tenant access to %s', (url) => {
+        currentUserSignal.set(createUser('Tenant'));
+        expect(service.canAccess(url)).toBe(false);
+      });
+
+      it('allows Tenant access to /tenant', () => {
+        currentUserSignal.set(createUser('Tenant'));
+        expect(service.canAccess('/tenant')).toBe(true);
+      });
+
+      it('allows Tenant access to /tenant/requests/00000000-0000-0000-0000-000000000123', () => {
+        currentUserSignal.set(createUser('Tenant'));
+        expect(service.canAccess('/tenant/requests/00000000-0000-0000-0000-000000000123')).toBe(
+          true,
+        );
+      });
+    });
   });
 });

@@ -15,6 +15,12 @@ namespace PropertyManager.Api.Controllers;
 [Route("api/v1/photos")]
 [Produces("application/json")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+// Story 20.11 lockdown — the generic photo endpoints accept entityType=Receipt/Vendor/WorkOrder/Property,
+// which are all landlord-owned entities. Without a policy gate a Tenant could obtain a signed S3 URL
+// into the landlord's bucket. CanAccessReceipts matches the receipts surface (the receipt-photo flow
+// is the primary caller) and yields 403 for Tenant. Tenants upload maintenance-request photos via
+// the dedicated MaintenanceRequestPhotosController, which has handler-level property scoping.
+[Authorize(Policy = "CanAccessReceipts")]
 public class PhotosController : ControllerBase
 {
     private readonly IMediator _mediator;

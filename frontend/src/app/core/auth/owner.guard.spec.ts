@@ -105,4 +105,40 @@ describe('ownerGuard', () => {
       expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
     });
   });
+
+  // Story 20.11, AC #15: Tenant attempting to navigate to any ownerGuard-wired landlord route
+  // is redirected to /tenant. Only URLs whose routes use `ownerGuard` in `app.routes.ts` are
+  // included here — routes wired to `notTenantGuard` (e.g. /dashboard, /work-orders,
+  // /work-orders/:id, /receipts) live in `not-tenant.guard.spec.ts` so the test exercises the
+  // ACTUAL guard the route is wired to (post-evaluate fix 2026-05-19).
+  describe('Tenant role sweep across ownerGuard-wired landlord routes (Story 20.11, AC #15)', () => {
+    const landlordRoutes: readonly string[] = [
+      '/properties',
+      '/properties/abc123',
+      '/expenses',
+      '/expenses/abc123',
+      '/income',
+      '/income/abc123',
+      '/reports',
+      '/vendors',
+      '/vendors/abc123',
+      '/work-orders/abc123/edit',
+      '/maintenance-requests',
+      '/maintenance-requests/abc123',
+      '/settings',
+      '/settings/users',
+    ];
+
+    it.each(landlordRoutes)('redirects Tenant from %s to /tenant', (url) => {
+      currentUserSignal.set(createUser('Tenant'));
+      const mockUrlTree = {} as UrlTree;
+      vi.mocked(mockRouter.createUrlTree!).mockReturnValue(mockUrlTree);
+
+      TestBed.runInInjectionContext(() => {
+        const result = ownerGuard(null as any, { url } as any);
+        expect(result).toBe(mockUrlTree);
+        expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/tenant']);
+      });
+    });
+  });
 });
