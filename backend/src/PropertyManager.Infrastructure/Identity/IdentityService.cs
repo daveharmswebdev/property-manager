@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PropertyManager.Application.AccountUsers;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Authorization;
 using PropertyManager.Infrastructure.Persistence;
 
 namespace PropertyManager.Infrastructure.Identity;
@@ -149,7 +150,7 @@ public class IdentityService : IIdentityService
         }
     }
 
-    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, string? ErrorMessage)> ValidateCredentialsAsync(
+    public async Task<(bool Success, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, bool IsPlatformAdmin, string? ErrorMessage)> ValidateCredentialsAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
@@ -164,23 +165,29 @@ public class IdentityService : IIdentityService
 
         if (user == null)
         {
-            return (false, null, null, null, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, null, false, invalidCredentialsError);
         }
 
         // Check if email is verified per AC4.4
         if (!user.EmailConfirmed)
         {
-            return (false, null, null, null, null, null, null, "Please verify your email before logging in");
+            return (false, null, null, null, null, null, null, false, "Please verify your email before logging in");
         }
 
         // Validate password
         var passwordValid = await _userManager.CheckPasswordAsync(user, password);
         if (!passwordValid)
         {
-            return (false, null, null, null, null, null, null, invalidCredentialsError);
+            return (false, null, null, null, null, null, null, false, invalidCredentialsError);
         }
 
-        return (true, user.Id, user.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId, null);
+        // Story 22.1 — surface the platformAdmin claim so the JWT can carry it.
+        var userClaims = await _userManager.GetClaimsAsync(user);
+        var isPlatformAdmin = userClaims.Any(c =>
+            c.Type == PlatformClaims.PlatformAdmin &&
+            string.Equals(c.Value, "true", StringComparison.Ordinal));
+
+        return (true, user.Id, user.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId, isPlatformAdmin, null);
     }
 
     public async Task<Guid?> GetUserIdByEmailAsync(string email, CancellationToken cancellationToken = default)

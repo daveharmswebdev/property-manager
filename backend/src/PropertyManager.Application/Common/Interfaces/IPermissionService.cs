@@ -10,4 +10,10 @@ public interface IPermissionService
     bool IsOwner();
     bool IsContributor();
     bool IsTenant();
+
+    /// <summary>
+    /// True when the current user carries the "platformAdmin"="true" claim (Story 22.1).
+    /// Orthogonal to the per-account role — does NOT key into <see cref="HasPermission"/>.
+    /// </summary>
+    bool IsPlatformAdmin();
 }

@@ -34,4 +34,6 @@ public class PermissionService : IPermissionService
     public bool IsContributor() => string.Equals(_currentUser.Role, "Contributor", StringComparison.Ordinal);
 
     public bool IsTenant() => string.Equals(_currentUser.Role, "Tenant", StringComparison.Ordinal);
+
+    public bool IsPlatformAdmin() => _currentUser.IsPlatformAdmin;
 }

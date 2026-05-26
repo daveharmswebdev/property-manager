@@ -8,7 +8,7 @@ describe('PermissionService', () => {
   let service: PermissionService;
   let currentUserSignal: ReturnType<typeof signal<User | null>>;
 
-  function createUser(role: string): User {
+  function createUser(role: string, overrides: Partial<User> = {}): User {
     return {
       userId: 'test-user-id',
       accountId: 'test-account-id',
@@ -16,6 +16,8 @@ describe('PermissionService', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
+      ...overrides,
     };
   }
 
@@ -259,6 +261,33 @@ describe('PermissionService', () => {
           true,
         );
       });
+    });
+  });
+
+  describe('isPlatformAdmin (Story 22.1, AC #8)', () => {
+    it('should return true when current user has isPlatformAdmin=true', () => {
+      currentUserSignal.set(createUser('Owner', { isPlatformAdmin: true }));
+      expect(service.isPlatformAdmin()).toBe(true);
+    });
+
+    it('should return false for Owner without isPlatformAdmin flag', () => {
+      currentUserSignal.set(createUser('Owner', { isPlatformAdmin: false }));
+      expect(service.isPlatformAdmin()).toBe(false);
+    });
+
+    it('should return false for Contributor without isPlatformAdmin flag', () => {
+      currentUserSignal.set(createUser('Contributor', { isPlatformAdmin: false }));
+      expect(service.isPlatformAdmin()).toBe(false);
+    });
+
+    it('should return false for Tenant without isPlatformAdmin flag', () => {
+      currentUserSignal.set(createUser('Tenant', { isPlatformAdmin: false }));
+      expect(service.isPlatformAdmin()).toBe(false);
+    });
+
+    it('should return false when currentUser() is null', () => {
+      currentUserSignal.set(null);
+      expect(service.isPlatformAdmin()).toBe(false);
     });
   });
 });

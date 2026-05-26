@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Authorization;
 
 namespace PropertyManager.Infrastructure.Identity;
 
@@ -58,4 +59,17 @@ public class CurrentUserService : ICurrentUser
 
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+
+    public bool IsPlatformAdmin
+    {
+        get
+        {
+            // Story 22.1 — claim value is the literal string "true" (JWT serialization).
+            // Case-sensitive match keeps the contract narrow: a missing claim, "false",
+            // or any other string returns false.
+            var claimValue = _httpContextAccessor.HttpContext?.User?
+                .FindFirst(PlatformClaims.PlatformAdmin)?.Value;
+            return string.Equals(claimValue, "true", StringComparison.Ordinal);
+        }
+    }
 }

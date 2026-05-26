@@ -11,7 +11,7 @@ namespace PropertyManager.Application.Tests.Common;
 public class AuthorizationPolicyTests
 {
     /// <summary>
-    /// The set of policy names registered in Program.cs via AddPermissionPolicy().
+    /// The set of policy names registered in Program.cs (via AddPermissionPolicy() or directly).
     /// Keep in sync with the actual registrations in Program.cs.
     /// </summary>
     private static readonly HashSet<string> RegisteredPolicies = new()
@@ -28,7 +28,8 @@ public class AuthorizationPolicyTests
         "CanAccessReports",
         "CanManageUsers",
         "CanCreateMaintenanceRequests",
-        "CanDismissMaintenanceRequests"
+        "CanDismissMaintenanceRequests",
+        "CanInviteLandlords"  // Story 22.1 — claim-based (RequireClaim "platformAdmin"="true"); consumed by PlatformAdminStubController until Story 22.2 lands the production endpoint.
     };
 
     [Fact]

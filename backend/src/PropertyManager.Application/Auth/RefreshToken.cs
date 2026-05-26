@@ -40,7 +40,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         // Validate the refresh token
-        var (isValid, userId, accountId, role, email, displayName, propertyId) = await _jwtService.ValidateRefreshTokenAsync(
+        var (isValid, userId, accountId, role, email, displayName, propertyId, isPlatformAdmin) = await _jwtService.ValidateRefreshTokenAsync(
             request.RefreshToken,
             cancellationToken);
 
@@ -50,7 +50,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             throw new UnauthorizedAccessException("Invalid or expired refresh token");
         }
 
-        // Generate new access token
+        // Generate new access token. Story 22.1 — preserves the PlatformAdmin claim across refresh.
         var (accessToken, expiresIn) = await _jwtService.GenerateAccessTokenAsync(
             userId.Value,
             accountId.Value,
@@ -58,6 +58,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             email,
             displayName,
             propertyId,
+            isPlatformAdmin,
             cancellationToken);
 
         _logger.LogInformation(

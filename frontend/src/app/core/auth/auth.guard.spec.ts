@@ -21,6 +21,7 @@ describe('Auth Guards', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: role === 'Tenant' ? 'prop-1' : null,
+      isPlatformAdmin: false,
     };
   }
 

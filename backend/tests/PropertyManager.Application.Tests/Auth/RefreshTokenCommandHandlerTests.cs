@@ -34,11 +34,11 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.1
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, Role, Email, "Dave H.", (Guid?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, Role, Email, "Dave H.", (Guid?)null, false));
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, It.IsAny<CancellationToken>()))
+                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(("new.access.jwt", 3600));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
@@ -54,7 +54,7 @@ public class RefreshTokenCommandHandlerTests
 
         _jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, It.IsAny<CancellationToken>()),
+                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, false, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -64,7 +64,7 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.2 — isValid = false
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null));
+            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null, false));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
 
@@ -78,7 +78,7 @@ public class RefreshTokenCommandHandlerTests
         _jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+                It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -88,7 +88,7 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.3 — defensive null check at RefreshToken.cs:47
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)null, (Guid?)_testAccountId, Role, Email, (string?)null, (Guid?)null));
+            .ReturnsAsync((true, (Guid?)null, (Guid?)_testAccountId, Role, Email, (string?)null, (Guid?)null, false));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
 
@@ -106,7 +106,7 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.3
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)null, Role, Email, (string?)null, (Guid?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)null, Role, Email, (string?)null, (Guid?)null, false));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
 
@@ -124,7 +124,7 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.3
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, (string?)null, Email, (string?)null, (Guid?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, (string?)null, Email, (string?)null, (Guid?)null, false));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
 
@@ -142,7 +142,7 @@ public class RefreshTokenCommandHandlerTests
         // Arrange — AC-2.3
         _jwtServiceMock
             .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, Role, (string?)null, (string?)null, (Guid?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, Role, (string?)null, (string?)null, (Guid?)null, false));
 
         var command = new RefreshTokenCommand(IncomingRefreshToken);
 
@@ -152,5 +152,30 @@ public class RefreshTokenCommandHandlerTests
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Invalid or expired refresh token");
+    }
+
+    [Fact]
+    public async Task Handle_PlatformAdmin_PropagatesIsPlatformAdminTrueToAccessTokenGeneration()
+    {
+        // Arrange — Story 22.1 AC #3: PlatformAdmin claim must survive refresh.
+        _jwtServiceMock
+            .Setup(x => x.ValidateRefreshTokenAsync(IncomingRefreshToken, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, Role, Email, "Dave H.", (Guid?)null, true));
+
+        _jwtServiceMock
+            .Setup(x => x.GenerateAccessTokenAsync(
+                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("new.access.jwt", 3600));
+
+        var command = new RefreshTokenCommand(IncomingRefreshToken);
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert — isPlatformAdmin=true survives refresh round-trip.
+        _jwtServiceMock.Verify(
+            x => x.GenerateAccessTokenAsync(
+                _testUserId, _testAccountId, Role, Email, "Dave H.", (Guid?)null, true, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

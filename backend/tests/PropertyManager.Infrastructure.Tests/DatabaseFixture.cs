@@ -60,6 +60,7 @@ public class TestCurrentUser : ICurrentUser
     public string Role { get; set; } = "Owner";
     public Guid? PropertyId { get; set; }
     public bool IsAuthenticated { get; set; } = true;
+    public bool IsPlatformAdmin { get; set; }
 }
 
 /// <summary>

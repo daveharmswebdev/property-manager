@@ -31,6 +31,8 @@ export interface User {
   email: string;
   displayName: string | null;
   propertyId: string | null;
+  /** Story 22.1 — true when the JWT carries the "platformAdmin"="true" claim. */
+  isPlatformAdmin: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -210,6 +212,8 @@ export class AuthService {
         email: payload.email,
         displayName: payload.displayName || null,
         propertyId: payload.propertyId || null,
+        // Story 22.1 — JWT serializes the claim value as the literal string "true".
+        isPlatformAdmin: payload.platformAdmin === 'true',
       };
     } catch {
       return null;

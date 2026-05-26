@@ -23,6 +23,7 @@ describe('DashboardComponent', () => {
     email: 'test@example.com',
     displayName: 'Test User',
     propertyId: null,
+    isPlatformAdmin: false,
   };
 
   const mockProperties: PropertySummaryDto[] = [
