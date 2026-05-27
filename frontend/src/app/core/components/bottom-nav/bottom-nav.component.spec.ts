@@ -29,6 +29,7 @@ describe('BottomNavComponent', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
 
     TestBed.resetTestingModule();

@@ -179,6 +179,18 @@ builder.Services.AddAuthorization(options =>
     AddPermissionPolicy(options, "CanManageUsers", Permissions.Users.View);
     AddPermissionPolicy(options, "CanCreateMaintenanceRequests", Permissions.MaintenanceRequests.Create);
     AddPermissionPolicy(options, "CanDismissMaintenanceRequests", Permissions.MaintenanceRequests.Dismiss);
+
+    // Story 22.1 — platform-level claim policy for landlord provisioning.
+    // Orthogonal to RolePermissions.Mappings: a user can be Owner+PlatformAdmin or just PlatformAdmin.
+    // Story 22.2 will gate POST /api/v1/admin/landlord-invitations with this policy.
+    // Uses RequireClaim (not the AddPermissionPolicy helper) because the helper is keyed on
+    // role-based permissions in RolePermissions.Mappings, which intentionally has no
+    // "PlatformAdmin" key — see story Dev Notes "Why Not Add 'PlatformAdmin' to ..."
+    options.AddPolicy("CanInviteLandlords", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim(PlatformClaims.PlatformAdmin, "true");
+    });
 });
 
 // Helper method to create permission-based policies with structured audit logging on denial (Story 20.11 / NFR-TP3).

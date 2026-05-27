@@ -17,6 +17,7 @@ describe('notTenantGuard (Story 20.11, AC #15)', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 

@@ -35,6 +35,7 @@ describe('PropertiesComponent', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 
@@ -124,6 +125,7 @@ describe('PropertiesComponent — Contributor role (AC: #4)', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 
@@ -169,6 +171,7 @@ describe('PropertiesComponent loading state', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 
@@ -218,6 +221,7 @@ describe('PropertiesComponent error state', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 
@@ -269,6 +273,7 @@ describe('PropertiesComponent empty state', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       propertyId: null,
+      isPlatformAdmin: false,
     };
   }
 

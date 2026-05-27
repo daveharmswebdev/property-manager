@@ -294,6 +294,40 @@ public class PermissionServiceTests
         result.Should().BeFalse();
     }
 
+    // ===== Story 22.1 — PlatformAdmin orthogonal-claim tests (AC #4) =====
+
+    [Fact]
+    public void IsPlatformAdmin_WhenCurrentUserIsPlatformAdmin_ReturnsTrue()
+    {
+        _mockCurrentUser.Setup(x => x.Role).Returns("Owner");
+        _mockCurrentUser.Setup(x => x.IsPlatformAdmin).Returns(true);
+        var service = new PermissionService(_mockCurrentUser.Object);
+
+        service.IsPlatformAdmin().Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsPlatformAdmin_WhenCurrentUserIsNotPlatformAdmin_ReturnsFalse()
+    {
+        _mockCurrentUser.Setup(x => x.Role).Returns("Owner");
+        _mockCurrentUser.Setup(x => x.IsPlatformAdmin).Returns(false);
+        var service = new PermissionService(_mockCurrentUser.Object);
+
+        service.IsPlatformAdmin().Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsPlatformAdmin_DoesNotDependOnRole()
+    {
+        // Story 22.1 AC #1 — PlatformAdmin is orthogonal to ApplicationUser.Role.
+        // A Tenant who somehow carries the claim must still report true.
+        _mockCurrentUser.Setup(x => x.Role).Returns("Tenant");
+        _mockCurrentUser.Setup(x => x.IsPlatformAdmin).Returns(true);
+        var service = new PermissionService(_mockCurrentUser.Object);
+
+        service.IsPlatformAdmin().Should().BeTrue();
+    }
+
     /// <summary>
     /// Helper to get all permission constants via reflection.
     /// </summary>

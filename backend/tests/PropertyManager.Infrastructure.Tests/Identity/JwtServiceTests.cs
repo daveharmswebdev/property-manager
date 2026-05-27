@@ -1,6 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Moq;
+using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Identity;
 
 namespace PropertyManager.Infrastructure.Tests.Identity;
@@ -26,9 +29,11 @@ public class JwtServiceTests
 
         var options = Options.Create(_settings);
 
-        // Note: DbContext is null because GenerateAccessTokenAsync doesn't use it
-        // Only refresh token operations require the database
-        _jwtService = new JwtService(options, null!);
+        // Note: DbContext and UserManager are null/mocked because GenerateAccessTokenAsync
+        // doesn't use them. Only refresh token operations require the database/UserManager.
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            Mock.Of<IUserStore<ApplicationUser>>(), null!, null!, null!, null!, null!, null!, null!, null!);
+        _jwtService = new JwtService(options, null!, userManagerMock.Object);
     }
 
     [Fact]
@@ -43,7 +48,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -64,7 +69,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -85,7 +90,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -107,7 +112,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -133,7 +138,7 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: propertyId, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: propertyId, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
@@ -154,12 +159,48 @@ public class JwtServiceTests
 
         // Act
         var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
-            userId, accountId, role, email, displayName, propertyId: null, CancellationToken.None);
+            userId, accountId, role, email, displayName, propertyId: null, cancellationToken: CancellationToken.None);
 
         // Assert
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(accessToken);
 
         token.Claims.Should().NotContain(c => c.Type == "propertyId");
+    }
+
+    // ===== Story 22.1 — PlatformAdmin claim emission tests (AC #3) =====
+
+    [Fact]
+    public async Task GenerateAccessToken_WhenIsPlatformAdminTrue_IncludesPlatformAdminClaim()
+    {
+        // Arrange — Story 22.1 AC #3
+        var userId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+
+        // Act
+        var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
+            userId, accountId, "Owner", "admin@example.com", "Admin User",
+            propertyId: null, isPlatformAdmin: true, cancellationToken: CancellationToken.None);
+
+        // Assert — claim is present and value is the literal string "true"
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+        token.Claims.Should().Contain(c => c.Type == "platformAdmin" && c.Value == "true");
+    }
+
+    [Fact]
+    public async Task GenerateAccessToken_WhenIsPlatformAdminFalse_OmitsPlatformAdminClaim()
+    {
+        // Arrange — Story 22.1 AC #3 (negative case — claim must be ABSENT, not "false")
+        var userId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+
+        // Act
+        var (accessToken, _) = await _jwtService.GenerateAccessTokenAsync(
+            userId, accountId, "Owner", "user@example.com", "Regular User",
+            propertyId: null, isPlatformAdmin: false, cancellationToken: CancellationToken.None);
+
+        // Assert
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+        token.Claims.Should().NotContain(c => c.Type == "platformAdmin");
     }
 }

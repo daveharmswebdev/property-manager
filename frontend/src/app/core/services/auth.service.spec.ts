@@ -21,6 +21,7 @@ describe('AuthService', () => {
     email: 'test@example.com',
     displayName: 'Test User',
     propertyId: null,
+    isPlatformAdmin: false,
   };
 
   // Create a mock JWT token (header.payload.signature)
@@ -583,6 +584,56 @@ describe('AuthService', () => {
       // Token is stored but user decoding fails
       expect(service.accessToken()).toBe(invalidToken);
       expect(service.currentUser()).toBeNull();
+    });
+  });
+
+  describe('decodeToken — isPlatformAdmin extraction (Story 22.1, AC #8)', () => {
+    it('should set isPlatformAdmin=true when JWT carries platformAdmin="true"', () => {
+      const tokenPayload = {
+        userId: 'user-123',
+        accountId: 'account-456',
+        role: 'Owner',
+        email: 'admin@example.com',
+        platformAdmin: 'true',
+      };
+      const response = { accessToken: createMockToken(tokenPayload), expiresIn: 3600 };
+
+      service.login('admin@example.com', 'password').subscribe();
+      httpMock.expectOne(`${baseUrl}/login`).flush(response);
+
+      expect(service.currentUser()?.isPlatformAdmin).toBe(true);
+    });
+
+    it('should set isPlatformAdmin=false when JWT omits the platformAdmin claim', () => {
+      const tokenPayload = {
+        userId: 'user-123',
+        accountId: 'account-456',
+        role: 'Owner',
+        email: 'user@example.com',
+        // no platformAdmin field
+      };
+      const response = { accessToken: createMockToken(tokenPayload), expiresIn: 3600 };
+
+      service.login('user@example.com', 'password').subscribe();
+      httpMock.expectOne(`${baseUrl}/login`).flush(response);
+
+      expect(service.currentUser()?.isPlatformAdmin).toBe(false);
+    });
+
+    it('should set isPlatformAdmin=false when JWT carries platformAdmin="false" (defensive)', () => {
+      const tokenPayload = {
+        userId: 'user-123',
+        accountId: 'account-456',
+        role: 'Owner',
+        email: 'user@example.com',
+        platformAdmin: 'false',
+      };
+      const response = { accessToken: createMockToken(tokenPayload), expiresIn: 3600 };
+
+      service.login('user@example.com', 'password').subscribe();
+      httpMock.expectOne(`${baseUrl}/login`).flush(response);
+
+      expect(service.currentUser()?.isPlatformAdmin).toBe(false);
     });
   });
 });

@@ -23,6 +23,15 @@ export class PermissionService {
   readonly isTenant = computed(() => this.authService.currentUser()?.role === 'Tenant');
 
   /**
+   * True if the current user carries the platform-level "platformAdmin"="true" claim
+   * (Story 22.1). Orthogonal to role — a user can simultaneously be Owner AND PlatformAdmin.
+   * Reactive source of truth for any future PlatformAdmin-only UI affordances (Story 22.4).
+   */
+  readonly isPlatformAdmin = computed(
+    () => this.authService.currentUser()?.isPlatformAdmin === true,
+  );
+
+  /**
    * Check if the current user's role allows access to the given route path.
    * Owners can access all routes. Contributors can only access a subset.
    * Tenants can only access tenant routes (populated in Story 20.5).

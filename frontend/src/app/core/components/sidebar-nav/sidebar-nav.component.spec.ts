@@ -36,6 +36,7 @@ describe('SidebarNavComponent', () => {
       email: 'test@example.com',
       displayName: 'John Doe',
       propertyId: null,
+      isPlatformAdmin: false,
     };
 
     mockLogout = vi.fn().mockReturnValue(of(undefined));
@@ -273,6 +274,7 @@ describe('SidebarNavComponent', () => {
         email: 'fallback@example.com',
         displayName: null,
         propertyId: null,
+        isPlatformAdmin: false,
       };
 
       const mockAuthServiceNoDisplayName = {
@@ -316,6 +318,7 @@ describe('SidebarNavComponent', () => {
         email: '',
         displayName: null,
         propertyId: null,
+        isPlatformAdmin: false,
       };
 
       const mockAuthServiceNoEmail = {

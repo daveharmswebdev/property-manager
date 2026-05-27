@@ -9,6 +9,8 @@ public interface IJwtService
     /// <summary>
     /// Generates a JWT access token with the required claims (AC4.2).
     /// Claims: userId, accountId, role, email, displayName, exp (60 minutes from issue).
+    /// When <paramref name="isPlatformAdmin"/> is true, also emits a "platformAdmin"="true"
+    /// claim (Story 22.1). When false, the claim is omitted entirely.
     /// </summary>
     /// <returns>Tuple of (AccessToken, ExpiresInSeconds).</returns>
     Task<(string AccessToken, int ExpiresIn)> GenerateAccessTokenAsync(
@@ -18,6 +20,7 @@ public interface IJwtService
         string email,
         string? displayName,
         Guid? propertyId = null,
+        bool isPlatformAdmin = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -33,8 +36,8 @@ public interface IJwtService
     /// <summary>
     /// Validates a refresh token and returns the associated user info if valid.
     /// </summary>
-    /// <returns>Tuple of (IsValid, UserId, AccountId, Role, Email, DisplayName).</returns>
-    Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId)> ValidateRefreshTokenAsync(
+    /// <returns>Tuple of (IsValid, UserId, AccountId, Role, Email, DisplayName, PropertyId, IsPlatformAdmin).</returns>
+    Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, bool IsPlatformAdmin)> ValidateRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default);
 

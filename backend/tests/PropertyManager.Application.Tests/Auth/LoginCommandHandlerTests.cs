@@ -41,11 +41,11 @@ public class LoginCommandHandlerTests
 
         _identityServiceMock
             .Setup(x => x.ValidateCredentialsAsync(email, "Pw1!", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, role, email, displayName, (Guid?)null, (string?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, role, email, displayName, (Guid?)null, false, (string?)null));
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, role, email, displayName, (Guid?)null, It.IsAny<CancellationToken>()))
+                _testUserId, _testAccountId, role, email, displayName, (Guid?)null, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(("access.jwt", 3600));
 
         _jwtServiceMock
@@ -68,7 +68,7 @@ public class LoginCommandHandlerTests
 
         _jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, role, email, displayName, (Guid?)null, It.IsAny<CancellationToken>()),
+                _testUserId, _testAccountId, role, email, displayName, (Guid?)null, false, It.IsAny<CancellationToken>()),
             Times.Once);
         _jwtServiceMock.Verify(
             x => x.GenerateRefreshTokenAsync(_testUserId, _testAccountId, It.IsAny<CancellationToken>()),
@@ -81,7 +81,7 @@ public class LoginCommandHandlerTests
         // Arrange — AC-1.2
         _identityServiceMock
             .Setup(x => x.ValidateCredentialsAsync("bad@example.com", "wrong", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null, "Invalid email or password"));
+            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null, false, "Invalid email or password"));
 
         var command = new LoginCommand("bad@example.com", "wrong");
 
@@ -95,7 +95,7 @@ public class LoginCommandHandlerTests
         _jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+                It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _jwtServiceMock.Verify(
             x => x.GenerateRefreshTokenAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
@@ -108,7 +108,7 @@ public class LoginCommandHandlerTests
         // Arrange — AC-1.3 — exercise the `?? "Invalid email or password"` fallback at Login.cs:83
         _identityServiceMock
             .Setup(x => x.ValidateCredentialsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null, (string?)null));
+            .ReturnsAsync((false, (Guid?)null, (Guid?)null, (string?)null, (string?)null, (string?)null, (Guid?)null, false, (string?)null));
 
         var command = new LoginCommand("bad@example.com", "wrong");
 
@@ -130,11 +130,11 @@ public class LoginCommandHandlerTests
 
         _identityServiceMock
             .Setup(x => x.ValidateCredentialsAsync(email, "Pw1!", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, role, email, (string?)null, (Guid?)propertyId, (string?)null));
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, role, email, (string?)null, (Guid?)propertyId, false, (string?)null));
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)propertyId, It.IsAny<CancellationToken>()))
+                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)propertyId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(("access.jwt", 3600));
 
         _jwtServiceMock
@@ -149,7 +149,39 @@ public class LoginCommandHandlerTests
         // Assert — propertyId for tenant flows through to the JWT generation call
         _jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(
-                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)propertyId, It.IsAny<CancellationToken>()),
+                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)propertyId, false, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_PlatformAdmin_PassesIsPlatformAdminTrueToAccessTokenGeneration()
+    {
+        // Arrange — Story 22.1 AC #3: PlatformAdmin flag is propagated end-to-end through login
+        const string email = "admin@example.com";
+        const string role = "Owner"; // PlatformAdmin is orthogonal to role
+
+        _identityServiceMock
+            .Setup(x => x.ValidateCredentialsAsync(email, "Pw1!", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((true, (Guid?)_testUserId, (Guid?)_testAccountId, role, email, (string?)null, (Guid?)null, true, (string?)null));
+
+        _jwtServiceMock
+            .Setup(x => x.GenerateAccessTokenAsync(
+                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)null, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("access.jwt", 3600));
+
+        _jwtServiceMock
+            .Setup(x => x.GenerateRefreshTokenAsync(_testUserId, _testAccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("refresh.token");
+
+        var command = new LoginCommand(email, "Pw1!");
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert — isPlatformAdmin=true flows through to JWT generation
+        _jwtServiceMock.Verify(
+            x => x.GenerateAccessTokenAsync(
+                _testUserId, _testAccountId, role, email, It.IsAny<string?>(), (Guid?)null, true, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

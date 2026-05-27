@@ -2,10 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PropertyManager.Application.Common.Interfaces;
+using PropertyManager.Domain.Authorization;
 using PropertyManager.Domain.Entities;
 using PropertyManager.Infrastructure.Persistence;
 
@@ -18,13 +20,16 @@ public class JwtService : IJwtService
 {
     private readonly JwtSettings _settings;
     private readonly AppDbContext _dbContext;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public JwtService(
         IOptions<JwtSettings> settings,
-        AppDbContext dbContext)
+        AppDbContext dbContext,
+        UserManager<ApplicationUser> userManager)
     {
         _settings = settings.Value;
         _dbContext = dbContext;
+        _userManager = userManager;
     }
 
     public Task<(string AccessToken, int ExpiresIn)> GenerateAccessTokenAsync(
@@ -34,6 +39,7 @@ public class JwtService : IJwtService
         string email,
         string? displayName,
         Guid? propertyId = null,
+        bool isPlatformAdmin = false,
         CancellationToken cancellationToken = default)
     {
         var expiresIn = _settings.AccessTokenExpiryMinutes * 60; // Convert to seconds
@@ -60,6 +66,13 @@ public class JwtService : IJwtService
         if (propertyId.HasValue)
         {
             claims.Add(new("propertyId", propertyId.Value.ToString()));
+        }
+
+        // Story 22.1 — emit the platformAdmin claim only when true. Omit otherwise to keep
+        // the token minimal for the 99% non-admin case.
+        if (isPlatformAdmin)
+        {
+            claims.Add(new(PlatformClaims.PlatformAdmin, "true"));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
@@ -110,7 +123,7 @@ public class JwtService : IJwtService
         return refreshToken;
     }
 
-    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId)> ValidateRefreshTokenAsync(
+    public async Task<(bool IsValid, Guid? UserId, Guid? AccountId, string? Role, string? Email, string? DisplayName, Guid? PropertyId, bool IsPlatformAdmin)> ValidateRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default)
     {
@@ -123,7 +136,7 @@ public class JwtService : IJwtService
 
         if (storedToken == null || !storedToken.IsValid)
         {
-            return (false, null, null, null, null, null, null);
+            return (false, null, null, null, null, null, null, false);
         }
 
         // Get user info
@@ -133,10 +146,16 @@ public class JwtService : IJwtService
 
         if (user == null)
         {
-            return (false, null, null, null, null, null, null);
+            return (false, null, null, null, null, null, null, false);
         }
 
-        return (true, storedToken.UserId, storedToken.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId);
+        // Story 22.1 — read the platformAdmin claim so it can be re-issued in the new JWT.
+        var userClaims = await _userManager.GetClaimsAsync(user);
+        var isPlatformAdmin = userClaims.Any(c =>
+            c.Type == PlatformClaims.PlatformAdmin &&
+            string.Equals(c.Value, "true", StringComparison.Ordinal));
+
+        return (true, storedToken.UserId, storedToken.AccountId, user.Role, user.Email, user.DisplayName, user.PropertyId, isPlatformAdmin);
     }
 
     public async Task RevokeRefreshTokenAsync(

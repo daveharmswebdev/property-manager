@@ -67,7 +67,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
     public async Task<LoginResult> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         // Validate credentials (checks email exists, password correct, email verified)
-        var (success, userId, accountId, role, email, displayName, propertyId, errorMessage) = await _identityService.ValidateCredentialsAsync(
+        var (success, userId, accountId, role, email, displayName, propertyId, isPlatformAdmin, errorMessage) = await _identityService.ValidateCredentialsAsync(
             request.Email,
             request.Password,
             cancellationToken);
@@ -83,7 +83,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
             throw new UnauthorizedAccessException(errorMessage ?? "Invalid email or password");
         }
 
-        // Generate JWT access token (AC4.2)
+        // Generate JWT access token (AC4.2). Story 22.1 — also propagates the PlatformAdmin claim.
         var (accessToken, expiresIn) = await _jwtService.GenerateAccessTokenAsync(
             userId!.Value,
             accountId!.Value,
@@ -91,6 +91,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
             email!,
             displayName,
             propertyId,
+            isPlatformAdmin,
             cancellationToken);
 
         // Generate and store refresh token (AC4.6)
