@@ -102,7 +102,7 @@ public class OwnerAccountSeeder
 
             if (result.Succeeded)
             {
-                _logger.LogInformation("Owner account seeded successfully: {Email}", LogSanitizer.MaskEmail(OwnerEmail));
+                _logger.LogInformation("Owner account seeded successfully.");
             }
             else
             {
@@ -137,9 +137,7 @@ public class OwnerAccountSeeder
 
         if (claimResult.Succeeded)
         {
-            _logger.LogInformation(
-                "Granted PlatformAdmin claim to seeded owner {Email}",
-                LogSanitizer.MaskEmail(OwnerEmail));
+            _logger.LogInformation("Granted PlatformAdmin claim to seeded owner.");
         }
         else
         {
