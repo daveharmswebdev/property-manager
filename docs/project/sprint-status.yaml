@@ -375,7 +375,7 @@ development_status:
   # User Outcome: "I can invite a new landlord as their own top-level account — the beta-onboarding tool."
   epic-22: in-progress
   22-1-platform-admin-role-permission-infrastructure: done    # FR-LP4, NFR-LP1, NFR-LP4 - Size 3
-  22-2-create-landlord-invitation-api-and-email: review    # FR-LP1, FR-LP3, FR-LP4, NFR-LP1, NFR-LP2 - Size 5
+  22-2-create-landlord-invitation-api-and-email: done    # FR-LP1, FR-LP3, FR-LP4, NFR-LP1, NFR-LP2 - Size 5
   22-3-accept-landlord-invitation-verification: pending    # FR-LP2, FR-LP6, NFR-LP3 - Size 3
   22-4-admin-console-landlord-invitations-ui: pending    # FR-LP1, FR-LP5 - Size 5
   epic-22-retrospective: optional

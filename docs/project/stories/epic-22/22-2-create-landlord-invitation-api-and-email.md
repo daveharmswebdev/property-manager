@@ -1,6 +1,6 @@
 # Story 22.2: Create Landlord Invitation API and Email
 
-Status: review
+Status: done
 
 ## Story
 
