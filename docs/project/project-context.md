@@ -234,6 +234,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - S3 presigned URLs with 15-min expiry for receipt/photo access
 - CORS restricted to application domain
 - Input validation on all endpoints via FluentValidation
+- **NEVER log emails, user/account IDs, storage keys, or request fields — even when wrapped in `LogSanitizer.MaskEmail`, `MaskId`, `MaskStorageKey`, or `Sanitize`.** CodeQL's CWE-359 ("Exposure of private information") taint analyzer does NOT recognize these custom sanitizers as safe sinks and will flag every PR that logs a sanitized value. Prefer structured correlation IDs (`InvitationId`, `UserId` of an admin actor, trace IDs) — they give the same diagnostic value without tripping the scanner. Stories 22-1 (commit `5e52256`) and 22-2 (commit `f0a1da7`) both shipped masked-email logs that had to be ripped out post-PR; do not be the third.
 
 **Performance Considerations:**
 - Vitest max 3 threads to prevent OOM (configured in `vitest.config.ts`)
