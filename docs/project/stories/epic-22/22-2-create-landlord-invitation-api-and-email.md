@@ -48,7 +48,7 @@ so that I can onboard beta customers as their own top-level Upkeep account witho
 
 10. **Given** a successful landlord invitation creation,
     **When** the structured log is emitted,
-    **Then** a single `LogInformation` entry fires carrying `InvitationId`, `InvitedByUserId`, and the **masked** recipient email (via `LogSanitizer.MaskEmail`). Raw email, JWT, password, and any code/hash material are NEVER logged.
+    **Then** a single `LogInformation` entry fires carrying `InvitationId` and `InvitedByUserId` only. The recipient email is never logged (not even masked) because CodeQL's CWE-359 taint analyzer does not recognize `LogSanitizer.MaskEmail` as a safe sink; the structured `InvitationId` is sufficient for diagnostic correlation. Raw email, JWT, password, and any code/hash material are NEVER logged.
 
 11. **Given** the Story 22.1 dev-only `PlatformAdminStubController` at `GET /api/v1/test/platform-admin-only`,
     **When** this story ships,

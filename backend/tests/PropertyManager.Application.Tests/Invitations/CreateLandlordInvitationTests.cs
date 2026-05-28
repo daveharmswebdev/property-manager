@@ -265,10 +265,10 @@ public class CreateLandlordInvitationTests
         store.Should().HaveCount(2); // used + new
     }
 
-    // ===== AC #10 — log shape with masked email =====
+    // ===== AC #10 — log shape: structured ids only, no email =====
 
     [Fact]
-    public async Task Handle_SuccessfulCreation_LogsInfoWithMaskedEmail()
+    public async Task Handle_SuccessfulCreation_LogsInfoWithoutEmail()
     {
         // AC: 22.2 #10
         var email = "newlandlord@example.com";
@@ -289,9 +289,9 @@ public class CreateLandlordInvitationTests
                 It.Is<It.IsAnyType>((state, _) =>
                     // Raw email must NOT be present in any rendered/structured form
                     !state.ToString()!.Contains("newlandlord@example.com")
-                    // The masked email contains a "***" pattern
-                    && state.ToString()!.Contains("***")
-                    // Structured fields present
+                    // No Email placeholder at all (not even masked) — CodeQL CWE-359 compliance
+                    && !state.ToString()!.Contains("Email")
+                    // Structured ids present for diagnostic correlation
                     && state.ToString()!.Contains("InvitationId")
                     && state.ToString()!.Contains("InvitedByUserId")),
                 It.IsAny<Exception?>(),

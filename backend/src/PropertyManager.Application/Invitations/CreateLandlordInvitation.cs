@@ -3,7 +3,6 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using PropertyManager.Application.Common;
 using PropertyManager.Application.Common.Interfaces;
 using PropertyManager.Domain.Entities;
 
@@ -103,12 +102,13 @@ public class CreateLandlordInvitationCommandHandler
         // AC: 22.2 #6 — landlord-flavored email, not co-owner or tenant
         await _emailService.SendLandlordInvitationEmailAsync(email, rawCode, cancellationToken);
 
-        // AC: 22.2 #10 — log carries InvitationId + InvitedByUserId + masked email; raw email/code never logged
+        // AC: 22.2 #10 — log carries InvitationId + InvitedByUserId only; email/code never logged
+        // (CodeQL CWE-359 taint analyzer does not recognize LogSanitizer.MaskEmail as a safe sink,
+        // and structured InvitationId is sufficient for diagnostic correlation.)
         _logger.LogInformation(
-            "Landlord invitation created. InvitationId: {InvitationId}, InvitedByUserId: {InvitedByUserId}, Email: {Email}",
+            "Landlord invitation created. InvitationId: {InvitationId}, InvitedByUserId: {InvitedByUserId}",
             invitation.Id,
-            _currentUser.UserId,
-            LogSanitizer.MaskEmail(email));
+            _currentUser.UserId);
 
         return new CreateLandlordInvitationResult(invitation.Id, "Landlord invitation sent successfully");
     }
