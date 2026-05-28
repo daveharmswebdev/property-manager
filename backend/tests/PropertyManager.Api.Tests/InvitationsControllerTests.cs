@@ -1,10 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PropertyManager.Domain.Authorization;
 using PropertyManager.Domain.Entities;
+using PropertyManager.Infrastructure.Identity;
 using PropertyManager.Infrastructure.Persistence;
 
 namespace PropertyManager.Api.Tests;
@@ -771,6 +775,369 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         payload["role"]!.ToString().Should().Be("Owner");
     }
 
+    // ==================== LANDLORD ACCEPT (Story 22.3) ====================
+    //
+    // These tests prove the two halves of the landlord-onboarding flow connect:
+    // the create-side (POST /api/v1/admin/landlord-invitations — Story 22.2, produces an
+    // AccountId == null invitation) and the accept-side (POST /api/v1/invitations/{code}/accept
+    // — provisions a brand-new top-level account). They exercise the full HTTP + real
+    // PostgreSQL + EF Core global-query-filter pipeline, which unit mocks cannot.
+
+    [Fact]
+    public async Task Accept_LandlordInvitation_Returns201_CreatesNewTopLevelAccount()
+    {
+        // Arrange — AC-22.3.1 — full create→accept flow.
+        // Create a PlatformAdmin (who is also Owner of their own account) and issue a
+        // landlord invitation through the real admin endpoint so AccountId == null.
+        var (adminUserId, adminAccountId, adminToken) = await CreatePlatformAdminAsync();
+
+        var inviteeEmail = $"landlord{Guid.NewGuid():N}@example.com";
+        var createResponse = await PostAsJsonWithAuthAsync(
+            "/api/v1/admin/landlord-invitations", new { Email = inviteeEmail }, adminToken);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var code = GetLandlordInvitationCode(inviteeEmail);
+
+        // Act
+        var acceptRequest = new { Password = "NewLandlord@123456" };
+        var response = await _client.PostAsJsonAsync($"/api/v1/invitations/{code}/accept", acceptRequest);
+
+        // Assert — response body shape
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var content = await response.Content.ReadFromJsonAsync<AcceptInvitationResponse>();
+        content.Should().NotBeNull();
+        content!.UserId.Should().NotBe(Guid.Empty);
+        content.Message.Should().Contain("Account created");
+
+        // Assert — DB post-conditions
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var newUser = await userManager.FindByEmailAsync(inviteeEmail);
+        newUser.Should().NotBeNull("the accepted invitation should have created a user");
+        newUser!.Id.Should().Be(content.UserId);
+        newUser.Role.Should().Be("Owner");
+        newUser.EmailConfirmed.Should().BeTrue();
+        newUser.Email.Should().Be(inviteeEmail);
+
+        // The new account exists, is distinct from the inviter's, and is owned by the new user.
+        newUser.AccountId.Should().NotBe(adminAccountId, "the landlord must get their OWN account");
+        var newAccount = await dbContext.Accounts.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(a => a.Id == newUser.AccountId);
+        newAccount.Should().NotBeNull();
+        newAccount!.CreatedByUserId.Should().Be(content.UserId);
+
+        // The invitation was consumed.
+        var invitation = await dbContext.Invitations.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(i => i.Email == inviteeEmail.ToLowerInvariant());
+        invitation.Should().NotBeNull();
+        invitation!.UsedAt.Should().NotBeNull();
+        invitation.AccountId.Should().BeNull("a landlord invitation is created with a null AccountId");
+
+        // Sanity: the inviter is untouched.
+        adminUserId.Should().NotBe(content.UserId);
+    }
+
+    [Fact]
+    public async Task Accept_LandlordInvitation_NewOwnerSeesZeroInheritedData()
+    {
+        // Arrange — AC-22.3.2 — the inviter's account already owns a property (and a vendor).
+        var (_, adminAccountId, adminToken) = await CreatePlatformAdminAsync();
+        await _factory.CreatePropertyInAccountAsync(adminAccountId, name: $"Inviter Property {Guid.NewGuid():N}");
+
+        // Seed a vendor in the inviter's account via the API so it carries the right AccountId.
+        var vendorRequest = new { FirstName = "Inviter", LastName = $"Vendor{Guid.NewGuid():N}" };
+        var vendorResponse = await PostAsJsonWithAuthAsync("/api/v1/vendors", vendorRequest, adminToken);
+        vendorResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var inviteeEmail = $"landlord{Guid.NewGuid():N}@example.com";
+        await PostAsJsonWithAuthAsync(
+            "/api/v1/admin/landlord-invitations", new { Email = inviteeEmail }, adminToken);
+        var code = GetLandlordInvitationCode(inviteeEmail);
+
+        var password = "NewLandlord@123456";
+        var acceptResponse = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{code}/accept", new { Password = password });
+        acceptResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Act — log in as the new landlord and query their own data.
+        var landlordToken = await GetAccessTokenAsync(inviteeEmail, password);
+        var propertiesResponse = await GetWithAuthAsync("/api/v1/properties", landlordToken);
+        var vendorsResponse = await GetWithAuthAsync("/api/v1/vendors", landlordToken);
+
+        // Assert — both lists are empty for the brand-new account (tenant isolation).
+        propertiesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var properties = await propertiesResponse.Content.ReadFromJsonAsync<ListEnvelope>();
+        properties.Should().NotBeNull();
+        properties!.TotalCount.Should().Be(0);
+        properties.Items.Should().BeEmpty();
+
+        vendorsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var vendors = await vendorsResponse.Content.ReadFromJsonAsync<ListEnvelope>();
+        vendors.Should().NotBeNull();
+        vendors!.TotalCount.Should().Be(0);
+        vendors.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Accept_LandlordInvitation_JwtCarriesNewAccountId_NotInviters()
+    {
+        // Arrange — AC-22.3.6 — JWT must carry the NEW account id, role Owner, no platformAdmin.
+        var (_, adminAccountId, adminToken) = await CreatePlatformAdminAsync();
+
+        var inviteeEmail = $"landlord{Guid.NewGuid():N}@example.com";
+        await PostAsJsonWithAuthAsync(
+            "/api/v1/admin/landlord-invitations", new { Email = inviteeEmail }, adminToken);
+        var code = GetLandlordInvitationCode(inviteeEmail);
+
+        var password = "NewLandlord@123456";
+        var acceptResponse = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{code}/accept", new { Password = password });
+        acceptResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Resolve the new account id from the DB.
+        Guid newAccountId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var newUser = await userManager.FindByEmailAsync(inviteeEmail);
+            newUser.Should().NotBeNull();
+            newAccountId = newUser!.AccountId;
+        }
+
+        // Act — log in as the new landlord and decode the JWT.
+        var loginRequest = new { Email = inviteeEmail, Password = password };
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        var payload = DecodeJwtPayload(loginContent!.AccessToken);
+
+        // Assert
+        payload["accountId"]!.ToString().Should().Be(newAccountId.ToString());
+        payload["accountId"]!.ToString().Should().NotBe(adminAccountId.ToString(),
+            "the new landlord's token must not carry the inviting PlatformAdmin's account id");
+        payload["role"]!.ToString().Should().Be("Owner");
+        payload.Should().NotContainKey("platformAdmin",
+            "the new landlord is an account Owner, not a platform admin");
+    }
+
+    [Fact]
+    public async Task Accept_LandlordInvitation_DoesNotContaminateInviterData()
+    {
+        // Arrange — AC-22.3.7 — provisioning a new landlord must not change the inviter's view.
+        var (_, adminAccountId, adminToken) = await CreatePlatformAdminAsync();
+        await _factory.CreatePropertyInAccountAsync(adminAccountId, name: $"Inviter Property {Guid.NewGuid():N}");
+
+        // Capture the inviter's property count BEFORE acceptance (delta-based, pollution-robust).
+        var beforeResponse = await GetWithAuthAsync("/api/v1/properties", adminToken);
+        beforeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var before = await beforeResponse.Content.ReadFromJsonAsync<ListEnvelope>();
+        var beforeCount = before!.TotalCount;
+        beforeCount.Should().BeGreaterThan(0, "the inviter seeded at least one property");
+
+        var inviteeEmail = $"landlord{Guid.NewGuid():N}@example.com";
+        await PostAsJsonWithAuthAsync(
+            "/api/v1/admin/landlord-invitations", new { Email = inviteeEmail }, adminToken);
+        var code = GetLandlordInvitationCode(inviteeEmail);
+
+        var acceptResponse = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{code}/accept", new { Password = "NewLandlord@123456" });
+        acceptResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Act — re-query as the inviter AFTER the new landlord account exists.
+        var afterResponse = await GetWithAuthAsync("/api/v1/properties", adminToken);
+
+        // Assert — the inviter's view is unchanged.
+        afterResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var after = await afterResponse.Content.ReadFromJsonAsync<ListEnvelope>();
+        after!.TotalCount.Should().Be(beforeCount,
+            "provisioning a new landlord account must not alter the inviter's data");
+    }
+
+    [Fact]
+    public async Task Accept_LandlordInvitation_WeakPassword_RollsBackOrphanAccount()
+    {
+        // Arrange — AC-22.3.3 — a too-weak password fails the Identity policy AFTER the new
+        // account row is created, so the handler must roll that account back.
+        var inviteeEmail = $"landlord{Guid.NewGuid():N}@example.com";
+        var rawCode = GenerateSecureCode();
+        var codeHash = ComputeHash(rawCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Invitations.Add(new Invitation
+            {
+                Email = inviteeEmail,
+                CodeHash = codeHash,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24),
+                AccountId = null,
+                InvitedByUserId = null,
+                Role = "Owner"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Capture the total account count before the failing attempt.
+        int accountCountBefore;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountCountBefore = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+        }
+
+        // Act — accept with a password that fails the Identity policy.
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{rawCode}/accept", new { Password = "weak" });
+
+        // Assert — 400 with a Password error in the body (not just a status code).
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Password");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            // No orphan account row remains.
+            var accountCountAfter = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+            accountCountAfter.Should().Be(accountCountBefore, "the orphan account must be rolled back");
+
+            // No user exists for the invitation email (Identity failure persisted nothing).
+            var orphanUser = await dbContext.Users.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.NormalizedEmail == inviteeEmail.ToUpperInvariant());
+            orphanUser.Should().BeNull("a failed acceptance must not leave a user behind");
+
+            // The invitation is still unused so the code can be retried.
+            var invitation = await dbContext.Invitations.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.CodeHash == codeHash);
+            invitation.Should().NotBeNull();
+            invitation!.UsedAt.Should().BeNull("a failed acceptance must not consume the code");
+        }
+    }
+
+    [Fact]
+    public async Task Accept_TenantInvitation_JoinsExistingAccount_NoNewAccount()
+    {
+        // Arrange — AC-22.3.4 — a tenant invitation must NOT create a new account; the tenant
+        // joins the inviter's existing account with Role=Tenant and the correct PropertyId.
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+        var propertyId = await _factory.CreatePropertyInAccountAsync(ownerAccountId);
+
+        var inviteeEmail = $"tenant{Guid.NewGuid():N}@example.com";
+        var rawCode = GenerateSecureCode();
+        var codeHash = ComputeHash(rawCode);
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Invitations.Add(new Invitation
+            {
+                Email = inviteeEmail,
+                CodeHash = codeHash,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24),
+                AccountId = ownerAccountId,
+                PropertyId = propertyId,
+                Role = "Tenant"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        int accountCountBefore;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountCountBefore = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+        }
+
+        // Act
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{rawCode}/accept", new { Password = "NewTenant@123456" });
+
+        // Assert — response shape
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var content = await response.Content.ReadFromJsonAsync<AcceptInvitationResponse>();
+        content!.Message.Should().Contain("joined account");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            // The negative invariant this story owns: NO new account was created.
+            var accountCountAfter = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+            accountCountAfter.Should().Be(accountCountBefore, "a tenant invitation must not create a new account");
+
+            var newUser = await userManager.FindByEmailAsync(inviteeEmail);
+            newUser.Should().NotBeNull();
+            newUser!.AccountId.Should().Be(ownerAccountId);
+            newUser.Role.Should().Be("Tenant");
+            newUser.PropertyId.Should().Be(propertyId);
+        }
+    }
+
+    [Fact]
+    public async Task Accept_CoOwnerInvitation_JoinsExistingAccount_NoNewAccount()
+    {
+        // Arrange — AC-22.3.5 — a co-owner (Contributor) invitation must NOT create a new
+        // account; the user joins the inviter's existing account with the invited role.
+        var ownerEmail = $"owner{Guid.NewGuid():N}@example.com";
+        var (_, ownerAccountId) = await _factory.CreateTestUserAsync(ownerEmail, "Test@123456", "Owner");
+
+        var inviteeEmail = $"coowner{Guid.NewGuid():N}@example.com";
+        var rawCode = GenerateSecureCode();
+        var codeHash = ComputeHash(rawCode);
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Invitations.Add(new Invitation
+            {
+                Email = inviteeEmail,
+                CodeHash = codeHash,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24),
+                AccountId = ownerAccountId,
+                PropertyId = null,
+                Role = "Contributor"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        int accountCountBefore;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountCountBefore = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+        }
+
+        // Act
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/invitations/{rawCode}/accept", new { Password = "NewCoOwner@123456" });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var content = await response.Content.ReadFromJsonAsync<AcceptInvitationResponse>();
+        content!.Message.Should().Contain("joined account");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            var accountCountAfter = await dbContext.Accounts.IgnoreQueryFilters().CountAsync();
+            accountCountAfter.Should().Be(accountCountBefore, "a co-owner invitation must not create a new account");
+
+            var newUser = await userManager.FindByEmailAsync(inviteeEmail);
+            newUser.Should().NotBeNull();
+            newUser!.AccountId.Should().Be(ownerAccountId);
+            newUser.Role.Should().Be("Contributor");
+        }
+    }
+
     // ==================== GET ACCOUNT INVITATIONS TESTS ====================
 
     [Fact]
@@ -960,6 +1327,46 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
         return await _client.SendAsync(request);
     }
 
+    // Story 22.3 helpers — lifted from AdminLandlordInvitationsControllerTests
+    // (duplication across integration test classes is accepted per project convention).
+
+    /// <summary>
+    /// Creates an Owner user, grants the PlatformAdmin claim, and returns a logged-in token.
+    /// </summary>
+    private async Task<(Guid UserId, Guid AccountId, string Token)> CreatePlatformAdminAsync()
+    {
+        var email = $"admin{Guid.NewGuid():N}@example.com";
+        var (userId, accountId) = await _factory.CreateTestUserAsync(email, "Test@123456", "Owner");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await userManager.FindByIdAsync(userId.ToString())
+                ?? throw new InvalidOperationException($"User {userId} not found");
+            var result = await userManager.AddClaimAsync(
+                user, new Claim(PlatformClaims.PlatformAdmin, "true"));
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to grant PlatformAdmin claim: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+
+        var token = await GetAccessTokenAsync(email, "Test@123456");
+        return (userId, accountId, token);
+    }
+
+    /// <summary>
+    /// Reads the raw landlord-invitation accept code captured by the fake email service.
+    /// </summary>
+    private string GetLandlordInvitationCode(string inviteeEmail)
+    {
+        var fakeEmailService = _factory.Services.GetRequiredService<FakeEmailService>();
+        var sent = fakeEmailService.SentLandlordInvitationEmails
+            .First(e => e.Email == inviteeEmail.ToLowerInvariant());
+        return sent.Code;
+    }
+
     // DTOs for deserialization
     private record CreateInvitationResponse(Guid InvitationId, string Message);
     private record ValidateInvitationResponse(bool IsValid, string? Email, string? Role, string? ErrorMessage);
@@ -968,4 +1375,7 @@ public class InvitationsControllerTests : IClassFixture<PropertyManagerWebApplic
     private record GetAccountInvitationsResponse(List<InvitationItemDto> Items, int TotalCount);
     private record InvitationItemDto(Guid Id, string Email, string Role, DateTime CreatedAt, DateTime ExpiresAt, DateTime? UsedAt, string Status);
     private record LoginResponse(string AccessToken, int ExpiresIn);
+
+    // Generic list-envelope shape { items, totalCount } used by list endpoints (AC-22.3.2, .7).
+    private record ListEnvelope(List<System.Text.Json.JsonElement> Items, int TotalCount);
 }

@@ -146,8 +146,12 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             ? "Successfully joined account"
             : "Account created successfully";
 
-        _logger.LogInformation("Invitation {InvitationId} accepted, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
-            invitation.Id, userId, invitation.AccountId.HasValue);
+        // Story 22.3 (AC-22.3.8) — carry the resolved AccountId so the landlord-provisioning
+        // (new-account) path is diagnosable during beta. JoinedExisting distinguishes the
+        // join-existing case from the new-account case. CWE-359: never log the email.
+        _logger.LogInformation(
+            "Invitation {InvitationId} accepted. UserId: {UserId}, AccountId: {AccountId}, JoinedExisting: {JoinedExisting}",
+            invitation.Id, userId, accountId, invitation.AccountId.HasValue);
 
         return new AcceptInvitationResult(userId.Value, message);
     }

@@ -304,4 +304,78 @@ public class AcceptInvitationTests
             null,
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // === Story 22.3 Tests ===
+    // NOTE: The end-to-end landlord-provisioning + tenant-isolation + rollback assertions
+    // are owned by the integration tests in
+    // PropertyManager.Api.Tests/InvitationsControllerTests.cs (Story 22.3, Tasks 3-5).
+    // This unit test covers only the observability log shape (AC-22.3.8).
+
+    [Fact]
+    public async Task Handle_NewAccountProvisioned_LogsAccountId()
+    {
+        // Arrange — AC-22.3.8 — new-account (null AccountId) acceptance emits a single
+        // LogInformation entry carrying AccountId + UserId and NO email (CWE-359).
+        var invitation = CreateValidInvitation(accountId: null, role: "Owner");
+        SetupInvitationDbSet(new List<Invitation> { invitation });
+        SetupAccountDbSet();
+        SetupIdentitySuccess();
+        _mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var command = new AcceptInvitationCommand("test-code", "NewUser@123456");
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert — exactly one Information log was written
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // Assert — the structured state surfaces AccountId and UserId for beta diagnostics,
+        // carries the new user's id and the invitation id, and contains NO email substring.
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) =>
+                    StateContainsKey(state, "AccountId") &&
+                    StateContainsKey(state, "UserId") &&
+                    StateContainsKey(state, "InvitationId") &&
+                    StateContainsValue(state, _createdUserId) &&
+                    !StateContainsEmail(state, invitation.Email)),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    private static bool StateContainsKey(object state, string key)
+    {
+        return state is IReadOnlyList<KeyValuePair<string, object?>> kvps
+               && kvps.Any(kvp => kvp.Key == key);
+    }
+
+    private static bool StateContainsValue(object state, object value)
+    {
+        return state is IReadOnlyList<KeyValuePair<string, object?>> kvps
+               && kvps.Any(kvp => Equals(kvp.Value, value));
+    }
+
+    private static bool StateContainsEmail(object state, string email)
+    {
+        if (state is not IReadOnlyList<KeyValuePair<string, object?>> kvps)
+        {
+            return false;
+        }
+
+        // Check both the rendered message ("{OriginalFormat}") and every value —
+        // the email must never appear anywhere in the structured log entry.
+        return kvps.Any(kvp =>
+            kvp.Value?.ToString()?.Contains(email, StringComparison.OrdinalIgnoreCase) == true);
+    }
 }
