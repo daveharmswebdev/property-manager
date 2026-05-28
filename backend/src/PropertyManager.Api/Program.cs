@@ -182,7 +182,7 @@ builder.Services.AddAuthorization(options =>
 
     // Story 22.1 — platform-level claim policy for landlord provisioning.
     // Orthogonal to RolePermissions.Mappings: a user can be Owner+PlatformAdmin or just PlatformAdmin.
-    // Story 22.2 will gate POST /api/v1/admin/landlord-invitations with this policy.
+    // Gates POST /api/v1/admin/landlord-invitations (Story 22.2 — AdminLandlordInvitationsController).
     // Uses RequireClaim (not the AddPermissionPolicy helper) because the helper is keyed on
     // role-based permissions in RolePermissions.Mappings, which intentionally has no
     // "PlatformAdmin" key — see story Dev Notes "Why Not Add 'PlatformAdmin' to ..."

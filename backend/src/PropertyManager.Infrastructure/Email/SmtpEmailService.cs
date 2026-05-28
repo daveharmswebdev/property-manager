@@ -303,4 +303,69 @@ IMPORTANT: This invitation expires in 24 hours.
 
 If you didn't expect this invitation, you can safely ignore this email.";
     }
+
+    /// <summary>
+    /// Sends a landlord invitation email — distinct from co-owner and tenant invitations (AC: 22.2 #6).
+    /// Recipient is being invited to create their OWN top-level Upkeep account.
+    /// </summary>
+    public async Task SendLandlordInvitationEmailAsync(
+        string email,
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        var inviteUrl = $"{_settings.BaseUrl}/accept-invitation?code={Uri.EscapeDataString(code)}";
+
+        var subject = "You're invited to create your Upkeep account";
+        var htmlBody = GenerateLandlordInvitationEmailHtml(inviteUrl);
+        var textBody = GenerateLandlordInvitationEmailText(inviteUrl);
+
+        await SendEmailAsync(email, subject, htmlBody, textBody, cancellationToken);
+
+        _logger.LogInformation("Landlord invitation email sent");
+    }
+
+    private static string GenerateLandlordInvitationEmailHtml(string inviteUrl)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Create your Upkeep account</title>
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"">
+    <div style=""background-color: #66BB6A; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;"">
+        <h1 style=""color: white; margin: 0;"">Upkeep</h1>
+    </div>
+    <div style=""background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;"">
+        <h2 style=""color: #333; margin-top: 0;"">Create your Upkeep account</h2>
+        <p>You've been invited to set up your <strong>own</strong> Upkeep account — your private dashboard for tracking rental property expenses, generating tax-ready reports, and managing tenants and vendors.</p>
+        <p>When you accept, a new account will be created for you. You'll be the owner, with full control over your own properties, expenses, and data.</p>
+        <div style=""text-align: center; margin: 30px 0;"">
+            <a href=""{inviteUrl}"" style=""background-color: #66BB6A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;"">Create my account</a>
+        </div>
+        <p style=""color: #d9534f; font-size: 14px;""><strong>Important:</strong> This invitation expires in 24 hours.</p>
+        <p style=""color: #666; font-size: 14px;"">If you didn't expect this invitation, you can safely ignore this email.</p>
+        <hr style=""border: none; border-top: 1px solid #ddd; margin: 20px 0;"">
+        <p style=""color: #999; font-size: 12px;"">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style=""color: #999; font-size: 12px; word-break: break-all;"">{inviteUrl}</p>
+    </div>
+</body>
+</html>";
+    }
+
+    private static string GenerateLandlordInvitationEmailText(string inviteUrl)
+    {
+        return $@"Upkeep - Create your Upkeep account
+
+You've been invited to set up your OWN Upkeep account — your private dashboard for tracking rental property expenses, generating tax-ready reports, and managing tenants and vendors.
+
+When you accept, a new account will be created for you. You'll be the owner, with full control over your own properties, expenses, and data.
+
+Create my account: {inviteUrl}
+
+IMPORTANT: This invitation expires in 24 hours.
+
+If you didn't expect this invitation, you can safely ignore this email.";
+    }
 }
