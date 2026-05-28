@@ -41,4 +41,14 @@ public interface IEmailService
         string code,
         string propertyAddress,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a landlord invitation email — distinct from co-owner and tenant invitations.
+    /// Recipient is being invited to create their OWN top-level Upkeep account (AC: 22.2 #6).
+    /// Link format: {frontend_url}/accept-invitation?code={code}
+    /// </summary>
+    Task SendLandlordInvitationEmailAsync(
+        string email,
+        string code,
+        CancellationToken cancellationToken = default);
 }

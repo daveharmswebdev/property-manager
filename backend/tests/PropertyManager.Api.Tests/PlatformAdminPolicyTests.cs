@@ -11,14 +11,14 @@ using PropertyManager.Infrastructure.Identity;
 namespace PropertyManager.Api.Tests;
 
 /// <summary>
-/// Integration tests for Story 22.1 — the "CanInviteLandlords" policy and the platformAdmin
-/// JWT-claim round trip. Hits the Dev-only stub endpoint
-/// (<c>GET /api/v1/test/platform-admin-only</c>) registered by
-/// <c>PlatformAdminStubController</c>.
+/// Integration tests for the "CanInviteLandlords" policy and the platformAdmin
+/// JWT-claim round trip (Story 22.1). After Story 22.2 these now target the real
+/// production endpoint <c>POST /api/v1/admin/landlord-invitations</c> instead of
+/// the Story 22.1 stub (which has been deleted per AC #11).
 /// </summary>
 public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicationFactory>
 {
-    private const string StubEndpoint = "/api/v1/test/platform-admin-only";
+    private const string TargetEndpoint = "/api/v1/admin/landlord-invitations";
 
     private readonly PropertyManagerWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -60,12 +60,16 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
         }
     }
 
-    private static HttpRequestMessage Get(string url, string? token = null)
+    private static HttpRequestMessage Post(string url, object? body, string? token = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
         if (token != null)
         {
             request.Headers.Add("Authorization", $"Bearer {token}");
+        }
+        if (body != null)
+        {
+            request.Content = JsonContent.Create(body);
         }
         return request;
     }
@@ -73,7 +77,7 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
     // ===== AC #6 — Policy enforcement =====
 
     [Fact]
-    public async Task CanInviteLandlordsPolicy_AsPlatformAdmin_Returns200()
+    public async Task CanInviteLandlordsPolicy_AsPlatformAdmin_Returns201()
     {
         // Arrange — Owner who also carries the platformAdmin claim
         var email = $"admin-{Guid.NewGuid():N}@example.com";
@@ -81,11 +85,13 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
         await GrantPlatformAdminClaimAsync(userId);
         var token = await LoginAsync(email);
 
-        // Act
-        var response = await _client.SendAsync(Get(StubEndpoint, token));
+        var invited = $"new-{Guid.NewGuid():N}@example.com";
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Act
+        var response = await _client.SendAsync(Post(TargetEndpoint, new { Email = invited }, token));
+
+        // Assert — Story 22.2 endpoint returns 201 Created on the happy path.
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]
@@ -96,8 +102,8 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
         await _factory.CreateTestUserAsync(email, role: "Owner");
         var token = await LoginAsync(email);
 
-        // Act
-        var response = await _client.SendAsync(Get(StubEndpoint, token));
+        // Act — body irrelevant; policy fires before model binding
+        var response = await _client.SendAsync(Post(TargetEndpoint, new { }, token));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -114,7 +120,7 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
         var token = await LoginAsync(contributorEmail);
 
         // Act
-        var response = await _client.SendAsync(Get(StubEndpoint, token));
+        var response = await _client.SendAsync(Post(TargetEndpoint, new { }, token));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -132,7 +138,7 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
         var token = await LoginAsync(tenantEmail);
 
         // Act
-        var response = await _client.SendAsync(Get(StubEndpoint, token));
+        var response = await _client.SendAsync(Post(TargetEndpoint, new { }, token));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -142,7 +148,7 @@ public class PlatformAdminPolicyTests : IClassFixture<PropertyManagerWebApplicat
     public async Task CanInviteLandlordsPolicy_AsUnauthenticated_Returns401()
     {
         // Act — no Authorization header
-        var response = await _client.SendAsync(Get(StubEndpoint, token: null));
+        var response = await _client.SendAsync(Post(TargetEndpoint, new { }, token: null));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
