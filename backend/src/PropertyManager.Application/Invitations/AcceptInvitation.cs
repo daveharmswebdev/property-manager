@@ -146,7 +146,13 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             ? "Successfully joined account"
             : "Account created successfully";
 
-        _logger.LogInformation("Invitation {InvitationId} accepted, UserId: {UserId}, JoinedExisting: {JoinedExisting}",
+        // Story 22.3 (AC-22.3.8) — JoinedExisting distinguishes the landlord-provisioning
+        // (new-account) path from the join-existing path. AccountId is intentionally NOT
+        // logged: CodeQL cs/cleartext-storage-of-sensitive-information (HIGH) taints the
+        // Guid as sensitive. The provisioning path stays traceable via InvitationId, from
+        // which the resulting account and user are derivable. Never log the email (CWE-359).
+        _logger.LogInformation(
+            "Invitation {InvitationId} accepted. UserId: {UserId}, JoinedExisting: {JoinedExisting}",
             invitation.Id, userId, invitation.AccountId.HasValue);
 
         return new AcceptInvitationResult(userId.Value, message);
