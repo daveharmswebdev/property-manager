@@ -312,10 +312,11 @@ public class AcceptInvitationTests
     // This unit test covers only the observability log shape (AC-22.3.8).
 
     [Fact]
-    public async Task Handle_NewAccountProvisioned_LogsAccountId()
+    public async Task Handle_NewAccountProvisioned_LogsTraceableEntryWithoutSensitiveData()
     {
         // Arrange — AC-22.3.8 — new-account (null AccountId) acceptance emits a single
-        // LogInformation entry carrying AccountId + UserId and NO email (CWE-359).
+        // LogInformation entry carrying InvitationId + UserId for traceability, with NO
+        // email (CWE-359) and NO AccountId (CodeQL cs/cleartext-storage-of-sensitive-information).
         var invitation = CreateValidInvitation(accountId: null, role: "Owner");
         SetupInvitationDbSet(new List<Invitation> { invitation });
         SetupAccountDbSet();
@@ -337,16 +338,17 @@ public class AcceptInvitationTests
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
 
-        // Assert — the structured state surfaces AccountId and UserId for beta diagnostics,
-        // carries the new user's id and the invitation id, and contains NO email substring.
+        // Assert — the structured state surfaces UserId and InvitationId for beta diagnostics,
+        // carries the new user's id, and contains NO email substring (CWE-359) and NO
+        // AccountId key (CodeQL cs/cleartext-storage-of-sensitive-information, HIGH).
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((state, _) =>
-                    StateContainsKey(state, "AccountId") &&
                     StateContainsKey(state, "UserId") &&
                     StateContainsKey(state, "InvitationId") &&
+                    !StateContainsKey(state, "AccountId") &&
                     StateContainsValue(state, _createdUserId) &&
                     !StateContainsEmail(state, invitation.Email)),
                 It.IsAny<Exception?>(),
