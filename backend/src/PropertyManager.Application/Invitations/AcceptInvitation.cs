@@ -146,12 +146,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             ? "Successfully joined account"
             : "Account created successfully";
 
-        // Story 22.3 (AC-22.3.8) — carry the resolved AccountId so the landlord-provisioning
-        // (new-account) path is diagnosable during beta. JoinedExisting distinguishes the
-        // join-existing case from the new-account case. CWE-359: never log the email.
+        // Story 22.3 (AC-22.3.8) — carry a non-reversible AccountId fingerprint so the
+        // landlord-provisioning (new-account) path is diagnosable during beta without
+        // logging the raw account identifier. JoinedExisting distinguishes the join-existing
+        // case from the new-account case. CWE-359: never log sensitive identifiers in clear text.
+        var accountIdHash = ComputeHash(accountId.ToString("N"));
         _logger.LogInformation(
-            "Invitation {InvitationId} accepted. UserId: {UserId}, AccountId: {AccountId}, JoinedExisting: {JoinedExisting}",
-            invitation.Id, userId, accountId, invitation.AccountId.HasValue);
+            "Invitation {InvitationId} accepted. UserId: {UserId}, AccountIdHash: {AccountIdHash}, JoinedExisting: {JoinedExisting}",
+            invitation.Id, userId, accountIdHash, invitation.AccountId.HasValue);
 
         return new AcceptInvitationResult(userId.Value, message);
     }
