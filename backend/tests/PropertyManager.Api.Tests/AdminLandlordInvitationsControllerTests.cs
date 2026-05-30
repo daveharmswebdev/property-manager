@@ -293,6 +293,278 @@ public class AdminLandlordInvitationsControllerTests : IClassFixture<PropertyMan
         inv.PropertyId.Should().BeNull();
     }
 
+    // ===== Story 22.4 — GET list helpers =====
+
+    private async Task<HttpResponseMessage> GetListAsync(string? token)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
+        if (token != null)
+        {
+            request.Headers.Add("Authorization", $"Bearer {token}");
+        }
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> PostResendAsync(Guid id, string? token)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{Endpoint}/{id}/resend");
+        if (token != null)
+        {
+            request.Headers.Add("Authorization", $"Bearer {token}");
+        }
+        return await _client.SendAsync(request);
+    }
+
+    /// <summary>
+    /// Seeds an expired landlord invitation (AccountId == null) directly in the DB.
+    /// </summary>
+    private async Task<Guid> SeedExpiredLandlordInvitationAsync(Guid invitedByUserId, string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var inv = new Domain.Entities.Invitation
+        {
+            Id = Guid.NewGuid(),
+            Email = email.ToLowerInvariant(),
+            // CodeHash is uniquely indexed (IX_Invitations_CodeHash) — must be unique per seed
+            // so concurrent tests in this shared-DB class don't collide.
+            CodeHash = $"seeded-{Guid.NewGuid():N}",
+            Role = "Owner",
+            AccountId = null,
+            InvitedByUserId = invitedByUserId,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            ExpiresAt = DateTime.UtcNow.AddDays(-1),
+            UsedAt = null
+        };
+        dbContext.Invitations.Add(inv);
+        await dbContext.SaveChangesAsync();
+        return inv.Id;
+    }
+
+    private async Task<Guid> SeedLandlordInvitationAsync(
+        Guid invitedByUserId, string email, DateTime expiresAt, DateTime? usedAt = null)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var inv = new Domain.Entities.Invitation
+        {
+            Id = Guid.NewGuid(),
+            Email = email.ToLowerInvariant(),
+            CodeHash = $"seeded-{Guid.NewGuid():N}",
+            Role = "Owner",
+            AccountId = null,
+            InvitedByUserId = invitedByUserId,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            ExpiresAt = expiresAt,
+            UsedAt = usedAt
+        };
+        dbContext.Invitations.Add(inv);
+        await dbContext.SaveChangesAsync();
+        return inv.Id;
+    }
+
+    // ===== AC 22.4 #3 — GET list =====
+
+    [Fact]
+    public async Task GetLandlordInvitations_AsPlatformAdmin_Returns200WithNullAccountInvitations()
+    {
+        // AC: 22.4 #3 — list returns only AccountId == null rows; account-scoped excluded
+        var (adminUserId, token) = await CreatePlatformAdminAsync();
+        var landlordEmail = $"land-{Guid.NewGuid():N}@example.com";
+
+        // Seed a landlord invitation via the create endpoint
+        var createResp = await PostAsync(new { Email = landlordEmail }, token);
+        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Seed an account-scoped invitation via the regular owner invitations route
+        var ownerEmail = $"owner-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail, role: "Owner");
+        var ownerToken = await LoginAsync(ownerEmail);
+        var scopedEmail = $"scoped-{Guid.NewGuid():N}@example.com";
+        var scopedReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/invitations")
+        {
+            Content = JsonContent.Create(new { Email = scopedEmail, Role = "Contributor" })
+        };
+        scopedReq.Headers.Add("Authorization", $"Bearer {ownerToken}");
+        var scopedResp = await _client.SendAsync(scopedReq);
+        scopedResp.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Act
+        var response = await GetListAsync(token);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<GetLandlordInvitationsResponse>();
+        body.Should().NotBeNull();
+        body!.Items.Should().Contain(i => i.Email == landlordEmail.ToLowerInvariant());
+        body.Items.Should().NotContain(i => i.Email == scopedEmail.ToLowerInvariant());
+        body.Items.Should().OnlyContain(i => i.Status == "Pending" || i.Status == "Expired" || i.Status == "Accepted");
+    }
+
+    [Fact]
+    public async Task GetLandlordInvitations_AsRegularOwner_Returns403()
+    {
+        // AC: 22.4 #3 / #7 — non-PlatformAdmin is forbidden
+        var email = $"owner-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(email, role: "Owner");
+        var token = await LoginAsync(email);
+
+        var response = await GetListAsync(token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetLandlordInvitations_AsUnauthenticated_Returns401()
+    {
+        // AC: 22.4 #3 / #7
+        var response = await GetListAsync(token: null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ===== AC 22.4 #6 — resend =====
+
+    [Fact]
+    public async Task ResendLandlordInvitation_AsPlatformAdmin_ExpiredInvitation_Returns201_CreatesFreshNullAccountInvitation()
+    {
+        // AC: 22.4 #6
+        var (adminUserId, token) = await CreatePlatformAdminAsync();
+        var email = $"resend-{Guid.NewGuid():N}@example.com";
+        var lowered = email.ToLowerInvariant();
+        var expiredId = await SeedExpiredLandlordInvitationAsync(adminUserId, email);
+
+        var fakeEmail = _factory.Services.GetRequiredService<FakeEmailService>();
+        var landlordBefore = fakeEmail.SentLandlordInvitationEmails.Count(e => e.Email == lowered);
+        var coOwnerBefore = fakeEmail.SentInvitationEmails.Count(e => e.Email == lowered);
+
+        // Act
+        var response = await PostResendAsync(expiredId, token);
+
+        // Assert — 201 + response body
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<ResendLandlordInvitationResponse>();
+        body.Should().NotBeNull();
+        body!.InvitationId.Should().NotBe(Guid.Empty);
+        body.InvitationId.Should().NotBe(expiredId);
+
+        // A fresh null-account invitation with future expiry was created
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var fresh = await dbContext.Invitations.AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == body.InvitationId);
+        fresh.Should().NotBeNull();
+        fresh!.AccountId.Should().BeNull();
+        fresh.Role.Should().Be("Owner");
+        fresh.PropertyId.Should().BeNull();
+        fresh.Email.Should().Be(lowered);
+        fresh.UsedAt.Should().BeNull();
+        fresh.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+
+        // Landlord email sent; co-owner email NOT sent
+        fakeEmail.SentLandlordInvitationEmails.Count(e => e.Email == lowered).Should().Be(landlordBefore + 1);
+        fakeEmail.SentInvitationEmails.Count(e => e.Email == lowered).Should().Be(coOwnerBefore);
+    }
+
+    [Fact]
+    public async Task ResendLandlordInvitation_AsRegularOwner_Returns403()
+    {
+        // AC: 22.4 #6 / #7
+        var (adminUserId, _) = await CreatePlatformAdminAsync();
+        var expiredId = await SeedExpiredLandlordInvitationAsync(
+            adminUserId, $"resend-{Guid.NewGuid():N}@example.com");
+
+        var ownerEmail = $"owner-{Guid.NewGuid():N}@example.com";
+        await _factory.CreateTestUserAsync(ownerEmail, role: "Owner");
+        var ownerToken = await LoginAsync(ownerEmail);
+
+        var response = await PostResendAsync(expiredId, ownerToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ResendLandlordInvitation_NotYetExpired_Returns400()
+    {
+        // AC: 22.4 #6 — can only resend expired invitations; assert body message
+        var (adminUserId, token) = await CreatePlatformAdminAsync();
+        var pendingId = await SeedLandlordInvitationAsync(
+            adminUserId, $"pending-{Guid.NewGuid():N}@example.com", DateTime.UtcNow.AddHours(23));
+
+        var response = await PostResendAsync(pendingId, token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("expired");
+    }
+
+    [Fact]
+    public async Task ResendLandlordInvitation_AlreadyUsed_Returns400()
+    {
+        // AC: 22.4 #6 — cannot resend a used invitation; assert body message
+        var (adminUserId, token) = await CreatePlatformAdminAsync();
+        var usedId = await SeedLandlordInvitationAsync(
+            adminUserId,
+            $"used-{Guid.NewGuid():N}@example.com",
+            DateTime.UtcNow.AddDays(-1),
+            usedAt: DateTime.UtcNow.AddDays(-1));
+
+        var response = await PostResendAsync(usedId, token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("used");
+    }
+
+    [Fact]
+    public async Task ResendLandlordInvitation_NonExistentId_Returns404()
+    {
+        // AC: 22.4 #6
+        var (_, token) = await CreatePlatformAdminAsync();
+
+        var response = await PostResendAsync(Guid.NewGuid(), token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ResendLandlordInvitation_AccountScopedId_Returns404()
+    {
+        // AC: 22.4 #6 — an account-scoped invitation must NOT be resendable here
+        var (_, token) = await CreatePlatformAdminAsync();
+
+        // Seed an account-scoped (AccountId != null) invitation
+        var (ownerUserId, accountId) = await _factory.CreateTestUserAsync($"o-{Guid.NewGuid():N}@example.com");
+        Guid scopedId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var inv = new Domain.Entities.Invitation
+            {
+                Id = Guid.NewGuid(),
+                Email = $"scoped-{Guid.NewGuid():N}@example.com",
+                CodeHash = $"seeded-{Guid.NewGuid():N}",
+                Role = "Contributor",
+                AccountId = accountId,
+                InvitedByUserId = ownerUserId,
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                ExpiresAt = DateTime.UtcNow.AddDays(-1),
+                UsedAt = null
+            };
+            dbContext.Invitations.Add(inv);
+            await dbContext.SaveChangesAsync();
+            scopedId = inv.Id;
+        }
+
+        var response = await PostResendAsync(scopedId, token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private sealed record LoginResponse(string AccessToken, int ExpiresIn);
     private sealed record CreateLandlordInvitationResponse(Guid InvitationId, string Message);
+    private sealed record ResendLandlordInvitationResponse(Guid InvitationId, string Message);
+    private sealed record GetLandlordInvitationsResponse(IReadOnlyList<LandlordInvitationItem> Items, int TotalCount);
+    private sealed record LandlordInvitationItem(
+        Guid Id, string Email, DateTime CreatedAt, DateTime ExpiresAt, DateTime? UsedAt, string Status, string InvitedBy);
 }

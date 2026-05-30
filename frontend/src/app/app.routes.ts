@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, publicGuard } from './core/auth/auth.guard';
 import { ownerGuard } from './core/auth/owner.guard';
+import { platformAdminGuard } from './core/auth/platform-admin.guard';
 import { tenantGuard } from './core/auth/tenant.guard';
 import { notTenantGuard } from './core/auth/not-tenant.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
@@ -187,6 +188,15 @@ export const routes: Routes = [
             (m) => m.SettingsComponent
           ),
         canActivate: [ownerGuard],
+      },
+      // Admin Console — platform-level, PlatformAdmin only (Story 22.4)
+      {
+        path: 'admin',
+        loadComponent: () =>
+          import('./features/admin/admin-landing.component').then(
+            (m) => m.AdminLandingComponent
+          ),
+        canActivate: [platformAdminGuard],
       },
       // Vendors (Story 8.3 - AC #1)
       {

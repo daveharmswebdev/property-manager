@@ -265,6 +265,78 @@ describe('SidebarNavComponent', () => {
     });
   });
 
+  // Story 22.4, AC #1: "Admin" nav entry visible only to PlatformAdmins.
+  describe('PlatformAdmin nav entry (Story 22.4, AC #1)', () => {
+    async function setupWithPlatformAdmin(role: string, isPlatformAdmin: boolean) {
+      const mockUser: User = {
+        userId: 'test-user-id',
+        accountId: 'test-account-id',
+        role,
+        email: 'test@example.com',
+        displayName: 'John Doe',
+        propertyId: null,
+        isPlatformAdmin,
+      };
+
+      const mockAuthService = {
+        currentUser: signal<User | null>(mockUser),
+        logout: vi.fn().mockReturnValue(of(undefined)),
+        logoutAndRedirect: vi.fn(),
+      };
+
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [SidebarNavComponent, NoopAnimationsModule],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: AuthService, useValue: mockAuthService },
+          { provide: ReceiptStore, useValue: mockReceiptStore },
+          {
+            provide: ApiClient,
+            useValue: {
+              receipts_GetUnprocessed: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 })),
+            },
+          },
+        ],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(SidebarNavComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    it('should show the Admin entry when isPlatformAdmin is true', async () => {
+      await setupWithPlatformAdmin('Owner', true);
+      const adminItems = component.adminNavItems();
+      expect(adminItems.map((i) => i.label)).toEqual(['Admin']);
+      expect(adminItems[0].route).toBe('/admin');
+      expect(adminItems[0].icon).toBe('admin_panel_settings');
+
+      const adminLink = fixture.debugElement.query(By.css('[data-testid="nav-admin"]'));
+      expect(adminLink).toBeTruthy();
+    });
+
+    it('should NOT show the Admin entry for an Owner without the claim', async () => {
+      await setupWithPlatformAdmin('Owner', false);
+      expect(component.adminNavItems()).toEqual([]);
+      expect(fixture.debugElement.query(By.css('[data-testid="nav-admin"]'))).toBeNull();
+    });
+
+    it('should NOT show the Admin entry for a Contributor', async () => {
+      await setupWithPlatformAdmin('Contributor', false);
+      expect(component.adminNavItems()).toEqual([]);
+      expect(fixture.debugElement.query(By.css('[data-testid="nav-admin"]'))).toBeNull();
+    });
+
+    it('should NOT show the Admin entry for a Tenant', async () => {
+      await setupWithPlatformAdmin('Tenant', false);
+      expect(component.adminNavItems()).toEqual([]);
+      expect(fixture.debugElement.query(By.css('[data-testid="nav-admin"]'))).toBeNull();
+    });
+  });
+
   describe('userDisplayName fallback logic (AC-7.2.2)', () => {
     it('should fall back to email when displayName is null', async () => {
       const userWithoutDisplayName: User = {
