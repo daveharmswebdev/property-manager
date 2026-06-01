@@ -57,6 +57,6 @@
     "nswag": "^14.7.1",
     "source-map-explorer": "^2.5.3",
     "typescript": "~5.9.2",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   }
 }
