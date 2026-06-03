@@ -25,6 +25,25 @@
     }
   </mat-nav-list>
 
+  <!-- Platform-level admin area, shown only to PlatformAdmins (Story 22.4, AC #1) -->
+  @if (adminNavItems().length > 0) {
+    <mat-divider></mat-divider>
+    <mat-nav-list class="nav-list">
+      @for (item of adminNavItems(); track item.route) {
+        <a
+          mat-list-item
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          class="nav-item"
+          [attr.data-testid]="'nav-' + item.label.toLowerCase()"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  }
+
   <!-- Spacer to push footer to bottom -->
   <div class="spacer"></div>
 

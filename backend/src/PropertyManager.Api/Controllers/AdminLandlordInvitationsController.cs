@@ -19,16 +19,80 @@ public class AdminLandlordInvitationsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateLandlordInvitationCommand> _createValidator;
+    private readonly IValidator<ResendLandlordInvitationCommand> _resendValidator;
     private readonly ILogger<AdminLandlordInvitationsController> _logger;
 
     public AdminLandlordInvitationsController(
         IMediator mediator,
         IValidator<CreateLandlordInvitationCommand> createValidator,
+        IValidator<ResendLandlordInvitationCommand> resendValidator,
         ILogger<AdminLandlordInvitationsController> logger)
     {
         _mediator = mediator;
         _createValidator = createValidator;
+        _resendValidator = resendValidator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// List all landlord invitations (those with AccountId == null), newest first.
+    /// </summary>
+    /// <returns>The landlord invitations with their derived status and inviting admin.</returns>
+    /// <response code="200">The list of landlord invitations.</response>
+    /// <response code="401">If not authenticated.</response>
+    /// <response code="403">If caller lacks the PlatformAdmin claim.</response>
+    [HttpGet]
+    [ProducesResponseType(typeof(GetLandlordInvitationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetLandlordInvitations()
+    {
+        var result = await _mediator.Send(new GetLandlordInvitationsQuery());
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Resend an expired landlord invitation — creates a fresh invitation (AccountId == null,
+    /// Role == "Owner") with a new code/expiry and sends the landlord-flavored email.
+    /// </summary>
+    /// <param name="id">The ID of the expired landlord invitation to resend.</param>
+    /// <returns>The new invitation ID on success.</returns>
+    /// <response code="201">Invitation resent successfully.</response>
+    /// <response code="400">If the invitation is not expired or already used.</response>
+    /// <response code="401">If not authenticated.</response>
+    /// <response code="403">If caller lacks the PlatformAdmin claim.</response>
+    /// <response code="404">If no landlord invitation matches the ID.</response>
+    [HttpPost("{id:guid}/resend")]
+    [ProducesResponseType(typeof(ResendLandlordInvitationResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResendLandlordInvitation([FromRoute] Guid id)
+    {
+        var command = new ResendLandlordInvitationCommand(id);
+
+        var validationResult = await _resendValidator.ValidateAsync(command);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(CreateValidationProblemDetails(validationResult));
+        }
+
+        try
+        {
+            var result = await _mediator.Send(command);
+            var response = new ResendLandlordInvitationResponse(result.InvitationId, result.Message);
+
+            return CreatedAtAction(
+                nameof(ResendLandlordInvitation),
+                new { id = result.InvitationId },
+                response);
+        }
+        catch (ValidationException ex)
+        {
+            // Handler-thrown FluentValidation exceptions (not-expired / already-used) → 400.
+            return BadRequest(CreateValidationProblemDetails(ex));
+        }
     }
 
     /// <summary>
@@ -107,3 +171,4 @@ public class AdminLandlordInvitationsController : ControllerBase
 // DTOs at bottom of file per project convention.
 public record CreateLandlordInvitationRequest(string Email);
 public record CreateLandlordInvitationResponse(Guid InvitationId, string Message);
+public record ResendLandlordInvitationResponse(Guid InvitationId, string Message);

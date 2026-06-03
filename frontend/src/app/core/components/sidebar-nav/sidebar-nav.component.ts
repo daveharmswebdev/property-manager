@@ -89,6 +89,18 @@ export class SidebarNavComponent implements OnInit {
     return allItems.filter((item) => contributorRoutes.includes(item.route));
   });
 
+  /**
+   * Platform-level nav items, shown ONLY to PlatformAdmins (Story 22.4, AC #1).
+   * Orthogonal to role (a user can be Owner AND PlatformAdmin), so this is a
+   * separate computed appended after a divider — not folded into the role branches.
+   */
+  readonly adminNavItems = computed<NavItem[]>(() => {
+    if (this.authService.currentUser()?.isPlatformAdmin === true) {
+      return [{ label: 'Admin', route: '/admin', icon: 'admin_panel_settings' }];
+    }
+    return [];
+  });
+
   ngOnInit(): void {
     // Load unprocessed receipts on init to populate badge count
     // Skip for Tenant users who don't use receipts (Story 20.5)
