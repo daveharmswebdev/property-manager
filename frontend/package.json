@@ -51,7 +51,7 @@
     "@angular/compiler-cli": "^21.2.14",
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.9",
     "baseline-browser-mapping": "^2.10.32",
     "jsdom": "^29.1.1",
     "nswag": "^14.7.1",
