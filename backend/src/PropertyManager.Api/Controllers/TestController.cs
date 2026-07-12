@@ -135,13 +135,25 @@ public class TestController : ControllerBase
             .Where(gr => gr.AccountId == accountId)
             .ExecuteDeleteAsync(cancellationToken);
 
-        // 13. Properties (has AccountId)
+        // 13a. MaintenanceRequestPhotos (has AccountId) — child of MaintenanceRequest
+        response.MaintenanceRequestPhotos = await _dbContext.MaintenanceRequestPhotos
+            .IgnoreQueryFilters()
+            .Where(p => p.AccountId == accountId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        // 13b. MaintenanceRequests (has AccountId) — FK to Property is Restrict, must be deleted before Properties
+        response.MaintenanceRequests = await _dbContext.MaintenanceRequests
+            .IgnoreQueryFilters()
+            .Where(mr => mr.AccountId == accountId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        // 14. Properties (has AccountId)
         response.Properties = await _dbContext.Properties
             .IgnoreQueryFilters()
             .Where(p => p.AccountId == accountId)
             .ExecuteDeleteAsync(cancellationToken);
 
-        // 14. RefreshTokens (has AccountId)
+        // 15. RefreshTokens (has AccountId)
         response.RefreshTokens = await _dbContext.RefreshTokens
             .IgnoreQueryFilters()
             .Where(rt => rt.AccountId == accountId)
@@ -172,9 +184,12 @@ public record TestResetResponse
     public int PropertyPhotos { get; set; }
     public int Receipts { get; set; }
     public int GeneratedReports { get; set; }
+    public int MaintenanceRequestPhotos { get; set; }
+    public int MaintenanceRequests { get; set; }
     public int Properties { get; set; }
     public int RefreshTokens { get; set; }
     public int TotalDeleted => WorkOrderTagAssignments + WorkOrderPhotos + Notes +
         Expenses + Income + WorkOrders + VendorTradeTagAssignments + Vendors +
-        Persons + PropertyPhotos + Receipts + GeneratedReports + Properties + RefreshTokens;
+        Persons + PropertyPhotos + Receipts + GeneratedReports +
+        MaintenanceRequestPhotos + MaintenanceRequests + Properties + RefreshTokens;
 }
