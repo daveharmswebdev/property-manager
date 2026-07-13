@@ -50,7 +50,7 @@
     "@angular/cli": "^21.2.12",
     "@angular/compiler-cli": "^21.2.14",
     "@playwright/test": "^1.60.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.5",
     "baseline-browser-mapping": "^2.10.32",
     "jsdom": "^29.1.1",
