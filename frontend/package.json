@@ -39,8 +39,8 @@
     "@angular/platform-browser": "^21.2.14",
     "@angular/router": "^21.2.14",
     "@microsoft/signalr": "^10.0.0",
-    "@ngrx/signals": "^21.1.0",
-    "date-fns": "^4.3.0",
+    "@ngrx/signals": "^21.1.1",
+    "date-fns": "^4.4.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.16.2"
@@ -49,14 +49,14 @@
     "@angular/build": "^21.2.12",
     "@angular/cli": "^21.2.12",
     "@angular/compiler-cli": "^21.2.14",
-    "@playwright/test": "^1.60.0",
-    "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.5",
-    "baseline-browser-mapping": "^2.10.32",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "baseline-browser-mapping": "^2.10.43",
     "jsdom": "^29.1.1",
     "nswag": "^14.7.1",
     "source-map-explorer": "^2.5.3",
     "typescript": "~5.9.2",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }
