@@ -7,6 +7,14 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    ignore:
+      # Angular's @angular/build peer-depends on a narrow TypeScript range
+      # (Angular 21: >=5.9 <6.0). Anything past a patch bump breaks npm install,
+      # so TypeScript only moves as part of an Angular major upgrade.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     groups:
       # Group minor/patch updates to reduce PR noise
       angular:
