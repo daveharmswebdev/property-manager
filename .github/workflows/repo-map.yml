@@ -1,0 +1,26 @@
+name: Repo Map
+
+# Verifies the generated repo-map block in docs/project/architecture.md still
+# matches the code. Deliberately NOT filtered by paths-ignore: unlike ci.yml,
+# this job is ~15s, and a docs-only PR is exactly where the generated block
+# would be hand-edited.
+
+on:
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: repo-map-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freshness:
+    name: Repo Map Freshness
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check architecture.md repo-map is current
+        run: ./scripts/gen-repo-map.sh --check

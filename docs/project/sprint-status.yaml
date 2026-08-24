@@ -6,7 +6,7 @@ story_location: docs/project/stories
 
 development_status:
   # Epic 1: Foundation
-  epic-1: contexted
+  epic-1: done
   1-1-project-infrastructure-setup: done
   1-2-database-schema-and-ef-core-setup: done
   1-3-user-registration-with-email-verification: done
@@ -18,7 +18,7 @@ development_status:
   epic-1-retrospective: completed
 
   # Epic 2: Property Management
-  epic-2: contexted
+  epic-2: done
   2-1-create-property: done
   2-2-view-properties-list-with-dashboard-stats: done
   2-3-view-property-detail-page: done
@@ -27,7 +27,7 @@ development_status:
   epic-2-retrospective: completed
 
   # Epic 3: Expense Tracking
-  epic-3: contexted
+  epic-3: done
   3-1-expense-workspace-create-expense: done
   3-2-edit-expense: done
   3-3-delete-expense: done
@@ -37,7 +37,7 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Income Tracking
-  epic-4: contexted
+  epic-4: done
   4-1-income-workspace-create-income-entry: done
   4-2-edit-and-delete-income-entry: done
   4-3-view-all-income-with-date-filter: done
@@ -73,7 +73,7 @@ development_status:
 
   # Epic 7: Bug Fixes & UX Improvements
   # GitHub Issues: #57, #59, #60, #61, #62
-  epic-7: in-progress
+  epic-7: done
   7-1-mobile-logout-option: done               # Issue #60 - Review Passed & Fixed
   7-2-profile-display-with-user-name: done   # Issue #57
   7-3-year-selection-persistence: done # Issue #59 - Code Review Passed
@@ -89,7 +89,7 @@ development_status:
 
   # Epic 8: Vendor Management
   # User Outcome: "I have my vendor network in the system with their trade specialties"
-  epic-8: in-progress
+  epic-8: done
   8-1-person-vendor-entity-foundation: done
   8-2-trade-tag-taxonomy-setup: done
   8-3-create-vendor-minimal: done
@@ -120,7 +120,7 @@ development_status:
 
   # Epic 9: Work Order Tracking
   # User Outcome: "I can track maintenance issues across my properties"
-  epic-9: in-progress
+  epic-9: done
   9-1-work-order-entity-category-hierarchy: done
   9-2-create-work-order: done
   9-3-add-work-order-tags: done
@@ -149,7 +149,7 @@ development_status:
 
   # Epic 11: Work Order-Expense Integration
   # User Outcome: "I know the story behind every expense - which work order it came from"
-  epic-11: in-progress
+  epic-11: done
   11-1-expense-workorder-relationship: done
   11-2-link-expense-to-work-order: done
   11-3-link-work-order-to-expense: done
@@ -162,7 +162,7 @@ development_status:
 
   # Epic 12: Work Order Output
   # User Outcome: "I can generate a professional work order PDF to share with vendors"
-  epic-12: in-progress
+  epic-12: done
   12-1-work-order-pdf-generation-service: done
   12-2-work-order-pdf-download-and-preview: done  # Combined 12-2 + 12-3 (FR50 + FR51)
   # 12-3-preview-work-order-pdf: merged into 12-2
@@ -213,7 +213,7 @@ development_status:
 
   # Epic 15: Manual Testing Bug Fixes
   # User Outcome: "The bugs I found during testing are fixed"
-  epic-15: in-progress
+  epic-15: done
   15-1-login-form-fixes: done                  # Issues #198, #199, #200 - email validation, remove remember me, honor returnUrl
   15-2-quick-fix-form-validation-bugs: done      # Issues #202, #205 - note field reset, category required indicator
   15-3-expense-list-ux-improvements: done              # Issues #204, #206, #207 - add expense button, date filter persistence, column sorting
@@ -256,7 +256,7 @@ development_status:
 
   # Epic 17: Tech Debt, Bug Fixes & UX Consistency
   # User Outcome: "Every form works correctly, every list behaves consistently, and I don't hit visual glitches"
-  epic-17: in-progress
+  epic-17: done
   17-1-css-dialog-label-fixes: done             # Issues #273, #275, #278 - XS — PR #281 merged
   17-2-form-behavior-fixes-vendor-edit: done    # Issues #272, #265 - S — PR #281 merged
   17-3-work-order-list-refresh-after-delete: done  # Issue #269 - S — PR #281 merged
@@ -298,7 +298,7 @@ development_status:
 
   # Epic 19: Multi-User Account with RBAC
   # User Outcome: "My wife and I can both use the app — the tool reflects that we're a team"
-  epic-19: in-progress
+  epic-19: done
   19-1-refactor-invitation-join-account: done    # FR58, FR59 - Size 5
   19-2-permission-infrastructure: done              # Size 3
   19-3-backend-permission-enforcement: done           # FR60 - Size 5 - depends on 19.2
@@ -324,7 +324,7 @@ development_status:
   # User Outcome: "Tenants can submit maintenance requests and I can triage them into work orders"
   # PAUSED 2026-04-17 — interrupted by Epic 21 (test coverage backfill, issue #371).
   # RESUMED 2026-05-06 after Epic 21 completed.
-  epic-20: in-progress
+  epic-20: done
   20-1-tenant-role-property-association: done    # FR-TP2, FR-TP3, FR-TP10, NFR-TP3 - Size 5
   20-2-tenant-invitation-flow: done    # FR-TP1, FR-TP4, FR-TP5, NFR-TP4 - Size 5
   20-3-maintenance-request-entity-api: done    # FR-TP18, FR-TP19, FR-TP20, NFR-TP6 - Size 5
@@ -373,9 +373,77 @@ development_status:
 
   # Epic 22: Landlord Account Provisioning
   # User Outcome: "I can invite a new landlord as their own top-level account — the beta-onboarding tool."
-  epic-22: in-progress
+  epic-22: done
   22-1-platform-admin-role-permission-infrastructure: done    # FR-LP4, NFR-LP1, NFR-LP4 - Size 3
   22-2-create-landlord-invitation-api-and-email: done    # FR-LP1, FR-LP3, FR-LP4, NFR-LP1, NFR-LP2 - Size 5
   22-3-accept-landlord-invitation-verification: done    # FR-LP2, FR-LP6, NFR-LP3 - Size 3
   22-4-admin-console-landlord-invitations-ui: done    # FR-LP1, FR-LP5 - Size 5
   epic-22-retrospective: optional
+
+  # ============================================================
+  # ANGULAR 22 MIGRATION
+  # Source: epics-angular-22-migration.md
+  # Added: 2026-07-14
+  # Dependencies: STRICTLY SEQUENTIAL — 23.1 → 23.2 → 23.3
+  #
+  # Unblocks Dependabot PR #441 (red since 2026-06-01). Dependabot cannot land
+  # this itself: Angular 22 peers typescript >=6.0 <6.1, but Dependabot files
+  # TypeScript separately (its TS PR #487 overshot to 7.0.2 — closed 2026-07-14).
+  #
+  # The 3-way split is legal because @angular/material@21 peers
+  # "@angular/core": "^21.0.0 || ^22.0.0" — so the framework can move to 22
+  # while Material is held at 21, isolating the OnPush flip from theme drift.
+  #
+  # Measured exposure (see epic doc): 92 components / 0 set changeDetection →
+  # all flip to OnPush; 120 files use signals, 0 use `| async`, 0 call
+  # markForCheck. 40 SCSS files reference --mat-/--mdc- tokens.
+  # ============================================================
+
+  # Epic 23: Angular 22 Migration
+  # User Outcome: "The frontend is on a current Angular, and the Upkeep theme survived it"
+  # FROZEN 2026-08-06 — see consultant-eval-2026-08-06.md §5. Not resumed until a
+  # paying beta landlord exists. The framework version does not block revenue.
+  epic-23: frozen
+  23-1-angular-22-readiness-and-visual-baseline: pending    # MR-A22-1..3 - Size 5 - ships on Angular 21, no dep changes
+  23-2-angular-22-framework-upgrade: pending    # MR-A22-4..6 - Size 5 - depends on 23.1; Material HELD at 21
+  23-3-angular-material-22-and-theme-reconciliation: pending    # MR-A22-7, MR-A22-8 - Size 5 - depends on 23.2
+  epic-23-retrospective: optional
+
+  # ============================================================
+  # STRIPE SUBSCRIPTION BILLING
+  # Source: epics-stripe.md
+  # Added: 2026-08-06
+  # Dependencies: 24.1 → 24.2 and 24.3 (parallel) → 24.4 (needs 24.3),
+  #   24.5 (needs 24.2 + 24.3)
+  #
+  # Gated on Phase 2 loop validation completing first — see
+  # consultant-eval-2026-08-06.md §5. Scope is subscription billing ONLY;
+  # Stripe Connect and tenant rent payments are explicitly out of scope.
+  # ============================================================
+
+  # Epic 24: Stripe Subscription Billing
+  # User Outcome: "A landlord can pay me, and access depends on it."
+  epic-24: pending
+  24-1-subscription-domain-model-and-stripe-config: pending    # FR78, NFR10 - Size 3
+  24-2-subscribe-via-stripe-checkout: pending    # FR78, NFR12 - Size 5 - depends on 24.1
+  24-3-stripe-webhook-handler: pending    # FR81, NFR29 - Size 5 - depends on 24.1
+  24-4-subscription-access-gating-grace-period: pending    # FR80, NFR28 - Size 5 - depends on 24.3
+  24-5-billing-management-ui: pending    # FR79 - Size 5 - depends on 24.2, 24.3
+  epic-24-retrospective: optional
+
+  # ============================================================
+  # TECH DEBT SPRINT 2 — EMAIL DELIVERY
+  # Added: 2026-08-22
+  # Source: 2026-08-22 incident — landlord invitations were silently
+  #   undeliverable. upkeep-io.dev MX still pointed at Namecheap email
+  #   forwarding with an empty alias table; every invitation was rejected
+  #   with "554 5.7.1 Relay access denied" and the app never learned it.
+  #   Infrastructure fixed same day (MX -> Zoho); these two stories close
+  #   the product gaps the incident exposed.
+  #   See docs/email-infrastructure.md for architecture + runbook.
+  # Independent — either may ship first.
+  # ============================================================
+
+  tech-debt-sprint-2: pending
+  td-7-cancel-and-resend-pending-invitations: pending    # Size 3 - makes a bounced invitation recoverable
+  td-8-sendgrid-event-webhook: pending    # Size 5 - makes a bounced invitation visible

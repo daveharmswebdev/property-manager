@@ -3,6 +3,14 @@ name: CD
 on:
   push:
     branches: [main, master]
+    # Docs never reach either image: render.yaml sets dockerContext to ./backend
+    # and ./frontend, so docs/, .claude/ and root *.md are outside both build
+    # contexts. Deploying them only burns Render build minutes and restarts prod.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+  workflow_dispatch:
 
 concurrency:
   group: cd-${{ github.ref }}
