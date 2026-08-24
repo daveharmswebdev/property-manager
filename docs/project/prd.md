@@ -2,7 +2,7 @@
 
 **Author:** Dave
 **Date:** 2025-11-28
-**Version:** 2.0 (evolved 2026-03-28)
+**Version:** 2.1 (2026-08-23 — single-master revision)
 
 ---
 
@@ -24,10 +24,6 @@ Built for landlords who manage properties as a team (typically a couple), the sy
 5. At tax time, one click → Schedule E worksheets ready for the accountant
 
 **Competitive advantage:** Solo developer with agentic coding tools can ship faster and respond to real user feedback quicker than enterprise teams with 50 people shipping features nobody asked for.
-
-### Secondary Value
-
-This is Dave's graduate school — a career-building portfolio piece demonstrating full-stack SaaS development from database design to Stripe integration to deployment. Even if the business doesn't scale, the skills transfer directly to professional work.
 
 ---
 
@@ -81,11 +77,13 @@ A tenant submits a maintenance request. The landlord assigns it to a vendor. The
 - **"I like this"** — Positive feedback, not just tolerance
 - **They keep using it** — Sustained adoption, not a one-week trial that fades
 
-### Demo Readiness
-Before demoing to the target beta candidate:
+### Beta Readiness
+Before onboarding the beta candidates who already volunteered:
 - Co-manager invitation flow with UI (not just API)
 - Tenant portal (minimal — submit maintenance request, view status)
-- Stripe integration (demonstrates project maturity and technical capability)
+- Stripe integration — subscriptions only; the revenue mechanism, not a credibility signal
+
+**Definition of done for beta:** a landlord who is not Dave, using Upkeep on their own properties, with a card on file.
 
 ### Tax Time Victory (Still Core)
 - One-click export → Schedule E worksheets for all properties
@@ -96,11 +94,6 @@ Before demoing to the target beta candidate:
 - Nothing gets lost — every expense reliably stored
 - Accurate totals — reports match bank statements
 - Audit-ready — any line item traceable to source
-
-### Technical Learning (Dave's Goals)
-- **Full-stack SaaS** — Auth, multi-tenancy, Stripe, tenant portal, deployment
-- **Agentic development** — Built with Claude Code, demonstrating what solo dev + AI can produce
-- **Portfolio piece** — LinkedIn-worthy: "Built a SaaS property management platform with Stripe integration"
 
 ---
 
@@ -129,14 +122,14 @@ Before demoing to the target beta candidate:
 - Responsive design (desktop primary, mobile for receipt capture)
 - CI/CD pipeline (GitHub Actions), deployed on Render
 
-### Next Phase (Demo-Ready)
+### Next Phase (Beta-Ready)
 
 | Feature | Description | Why |
 |---------|-------------|-----|
 | Co-manager invitation UI | Primary owner invites co-manager via email, UI for the invitation flow | Small landlords work as a team |
 | RBAC | Owner and co-manager roles with appropriate permissions | Foundation for multi-user |
 | Tenant portal (minimal) | Tenant submits maintenance request, views status | Core workflow starts with the tenant |
-| Stripe integration | Subscription billing for landlord accounts | Business model + credibility for demo |
+| Stripe integration | Subscription billing for landlord accounts | Revenue mechanism — beta users pay |
 
 ### Future State
 
@@ -380,3 +373,9 @@ A lean property management platform for small landlords. Full lifecycle from ten
 ---
 
 _Evolved from v1.0 (2025-11-28) through collaborative discovery. Original vision: single-user tax tool. Current vision: multi-role SaaS property management platform._
+
+_v2.1 (2026-08-23): removed the portfolio / "graduate school" goal and the
+Technical Learning success criteria. Per `consultant-eval-2026-08-06.md` §3,
+those goals competed with shipping to paying users, and the epic ledger shows
+which one won. This PRD now serves one master: landlords paying for Upkeep.
+Product vision and target users live in `product-brief.md`._
