@@ -141,3 +141,5 @@ screenshots/*
 !screenshots/.gitkeep
 
 scratch.txt
+# Claude Code git worktrees (registered worktrees live here; never commit them)
+.claude/worktrees/
