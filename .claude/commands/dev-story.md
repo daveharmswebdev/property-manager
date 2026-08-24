@@ -93,6 +93,7 @@ For each incomplete task/subtask, follow this cycle:
 **Verify locally** (before review):
 - Verify ALL tests for this task actually exist and pass
 - Run full test suite to ensure no regressions
+- Scan new/modified log statements for PII (emails, user/account IDs, storage keys, request fields). CodeQL flags these as "Exposure of private information" (CWE-359) even when masked via `LogSanitizer.MaskEmail/MaskId/MaskStorageKey/Sanitize` — the taint analyzer does not recognize our custom sanitizers. Prefer removing PII from the message entirely; rely on structured context (correlation IDs, trace IDs) instead.
 
 **Two-stage review**: Dispatch a spec-compliance subagent, then a code-quality subagent. Each gets fresh context — they judge the diff on its merits, not on your narrative. You (the implementer) stay in-context throughout. See the **Two-Stage Review Protocol** section below for the skip rule, dispatch templates, and iteration caps. Skip both only if the task qualifies as trivial under the skip rule.
 
@@ -253,6 +254,15 @@ Do not stretch to invent issues, but do not soften criticism either.
   Mocks hiding integration risk?
 - **Security:** input validation at trust boundaries, authorization
   checks present, no secrets in code, no SQL injection or XSS exposure?
+- **PII in logs:** any log statement embedding emails, user IDs, account
+  IDs, storage keys, or other PII — even when wrapped in
+  `LogSanitizer.MaskEmail`, `MaskId`, `MaskStorageKey`, or `Sanitize`?
+  CodeQL's taint analyzer does not recognize our custom sanitizers as
+  safe sinks and will flag these as "Exposure of private information"
+  (CWE-359). Preferred fix: remove the PII from the message entirely —
+  structured context (correlation IDs, trace IDs) is usually sufficient.
+  Reserve masking for cases where the value is genuinely diagnostic and
+  accept that CodeQL may still flag it.
 - **Patterns:** does the code follow conventions from
   project-context.md? Any unjustified deviations?
 - **Comments:** comments that just describe WHAT the code does (when
